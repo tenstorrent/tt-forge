@@ -32,7 +32,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 from .module import Module, PyTorchModule, PyBudaModule, TFGraphDefModule, OnnxModule, JaxModule, TFLiteModule
-from .compile import pybuda_compile_torch, compile_main as compile
 from .torch_compile import compile_torch
 from .compiled_graph_state import CompiledGraphState 
 from .config import CompilerConfig, CompileDepth, set_configuration_options, set_epoch_break, set_chip_break, override_op_size, PerfTraceLevel, insert_buffering_nop, insert_nop, _internal_insert_fj_buffering_nop, override_dram_queue_placement, configure_mixed_precision
@@ -47,6 +46,9 @@ from ._C import k_dim
 import pybuda.op as op
 import pybuda.transformers
 
+import pybuda.typing
+from .compile import pybuda_compile_torch, compile_main as compile
+
 # Torch backend registration
 # TODO: move this in a separate file / module.
 from torch._dynamo.backends.registry import _BACKENDS
@@ -58,3 +60,4 @@ from torch._dynamo import register_backend
 if "tt" in _BACKENDS:
     del _BACKENDS["tt"]
 register_backend(compile_torch, "tt")
+

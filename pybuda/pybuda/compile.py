@@ -37,6 +37,7 @@ from pybuda.parameter import Parameter
 from pybuda.pybudaglobal import state_changed, clear_state_changed
 import pybuda.query as query
 from pybuda.tensor import Tensor, to_pt_tensors
+from pybuda.typing import *
 from pybuda.verify import VerifyConfig, do_verify, _generate_random_losses, _run_pytorch_backward
 
 
@@ -163,7 +164,7 @@ def calculate_grads(
     return losses
 
 def compile_main(
-        module: torch.nn.Module | tf.keras.Model | PyBudaModule,
+        module: AnyModule,
         sample_inputs: List[torch.Tensor],
         module_name: Optional[str] = None,
         loss: Optional[torch.nn.Module | PyBudaModule] = None,
@@ -174,7 +175,7 @@ def compile_main(
 
     Parameters
     ----------
-    module: torch.nn.Module | tf.keras.Model | PyBudaModule
+    module: AnyModule
         Torch, TensorFlow, or PyBuda module to compile
 
     sample_inputs: List[torch.Tensor]
@@ -195,7 +196,7 @@ def compile_main(
 
     """
 
-    assert isinstance(module, torch.nn.Module) or isinstance(module, tf.keras.Model) or isinstance(module, PyBudaModule), "Only PyTorch, TensorFlow, and PyBuda modules are supported."
+    assert isinstance(module, AnyModule), "Only PyTorch, TensorFlow, and PyBuda modules are supported."
 
     compiler_cfg = _get_global_compiler_config()
     compiler_cfg.apply_env_config_overrides()
@@ -571,9 +572,10 @@ def generate_initial_graph(context: CompileContext) -> CompileDepth:
         module_inputs = context.inputs
         for index, module in enumerate(context.modules):
             if not isinstance(module, PyBudaModule):
-                pybuda_module, module_inputs = create_pybuda_module(module, module_inputs, context.compiler_cfg, context.verify_cfg)
+                pybuda_module, module_inputs = convert_to_forge_module(module, module_inputs, context.compiler_cfg, context.verify_cfg)
                 context.inputs = module_inputs
                 modules_.append(pybuda_module)
+                assert isinstance(pybuda_module, PyBudaModule)
             else:
                 modules_.append(module)
 
@@ -845,7 +847,15 @@ def finish_compile(context: CompileContext) -> CompileDepth:
 
     return CompileDepth.FULL
 
-def create_pybuda_module(module: torch.nn.Module, module_inputs: Union[torch.Tensor, List[torch.Tensor]], compiler_cfg: CompilerConfig, verify_cfg: VerifyConfig) -> PyBudaModule:
+def convert_to_forge_module(module: AnyModule, module_inputs: Union[AnyTensor, List[AnyTensor]], compiler_cfg: CompilerConfig, verify_cfg: VerifyConfig) -> PyBudaModule:
+    """
+    Converts given module to a Forge module, along with the module_inputs (which will be converted to Forge tensors).
+
+    Returns
+    -------
+    PyBudaModule, Tuple[Tensor, ...]
+    """
+
     from .tvm_to_python import generate_pybuda_module
     prev_state = state_changed()
 
@@ -853,8 +863,8 @@ def create_pybuda_module(module: torch.nn.Module, module_inputs: Union[torch.Ten
         logger.error("No inputs provided for module {}", module.name)
         assert False
 
-    module, dev_types, module_inputs = generate_pybuda_module(module, to_pt_tensors(module_inputs), compiler_cfg, module.name, verify_cfg,)
-    assert len(module) == 1, "Attemping to load split model onto single devices"
+    forge_module, dev_types, module_inputs = generate_pybuda_module(module, to_pt_tensors(module_inputs), compiler_cfg, module.name, verify_cfg,)
+    assert len(forge_module) == 1, "Attemping to load split model onto single devices"
 
     if not(prev_state):
         clear_state_changed()
@@ -862,7 +872,7 @@ def create_pybuda_module(module: torch.nn.Module, module_inputs: Union[torch.Ten
     if isinstance(module_inputs, Tensor):
         module_inputs = (module_inputs,) # Force a tuple
 
-    return module[0], module_inputs
+    return forge_module[0], module_inputs
 
 def generate_graph(
         modules,
