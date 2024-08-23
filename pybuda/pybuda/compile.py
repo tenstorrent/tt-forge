@@ -571,23 +571,11 @@ def generate_initial_graph(context: CompileContext) -> CompileDepth:
         module_inputs = context.inputs
         for index, module in enumerate(context.modules):
             if not isinstance(module, PyBudaModule):
-                from .tvm_to_python import generate_pybuda_module
-                prev_state = state_changed()
-                if module_inputs is None:
-                    logger.error("No inputs provided for module {}", module.name)
-                    assert False
-                modules, dev_types, module_inputs = generate_pybuda_module(module, to_pt_tensors(module_inputs), context.compiler_cfg, module.name, context.verify_cfg,)
-                assert len(modules) == 1, "Attemping to load split model onto single devices"
-
-                modules_.append(modules[0])
-                if index == 0:
-                    context.inputs = module_inputs
-
-                if not(prev_state):
-                    clear_state_changed()
-
-                if isinstance(module_inputs, Tensor):
-                    module_inputs = (module_inputs,) # Force a tuple
+                pybuda_module, module_inputs = create_pybuda_module(module, module_inputs, context.compiler_cfg, context.verify_cfg)
+                context.inputs = module_inputs
+                modules_.append(pybuda_module)
+            else:
+                modules_.append(module)
 
     if context.graph is None:
         context.graph, context.outputs, context.intermediate_tensors, context.inputs, _ = generate_graph(modules_, *context.inputs, return_intermediate=context.verify_cfg.intermediates, graph_name=context.graph_name, compiler_cfg=context.compiler_cfg, target_tensors=context.targets)
@@ -856,6 +844,25 @@ def finish_compile(context: CompileContext) -> CompileDepth:
     context.output_kwargs["consteval_trace"] = pygraph.record_consteval_operations(context.final_graph)
 
     return CompileDepth.FULL
+
+def create_pybuda_module(module: torch.nn.Module, module_inputs: Union[torch.Tensor, List[torch.Tensor]], compiler_cfg: CompilerConfig, verify_cfg: VerifyConfig) -> PyBudaModule:
+    from .tvm_to_python import generate_pybuda_module
+    prev_state = state_changed()
+
+    if module_inputs is None:
+        logger.error("No inputs provided for module {}", module.name)
+        assert False
+
+    module, dev_types, module_inputs = generate_pybuda_module(module, to_pt_tensors(module_inputs), compiler_cfg, module.name, verify_cfg,)
+    assert len(module) == 1, "Attemping to load split model onto single devices"
+
+    if not(prev_state):
+        clear_state_changed()
+
+    if isinstance(module_inputs, Tensor):
+        module_inputs = (module_inputs,) # Force a tuple
+
+    return module[0], module_inputs
 
 def generate_graph(
         modules,
