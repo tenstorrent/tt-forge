@@ -68,18 +68,18 @@ def test_forge():
 
         def forward(self, x, y):
             return pybuda.op.Add("", x, y)
-    
+
     inputs = to_buda_tensors([torch.rand(1, 32, 32), torch.rand(1, 32, 32)])
-    
+
     model = ForgeAdd()
     golden = model(*inputs)
-    
+
     compiled_model = pybuda.compile(model, sample_inputs=inputs)
 
     # Issue #161 : currently, we expect inputs to be torch tensors
     inputs = to_pt_tensors(inputs)
     output = compiled_model(*inputs)
-    
+
     print(f"golden: {golden}")
     print(f"output: {output}")
 
