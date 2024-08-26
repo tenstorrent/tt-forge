@@ -59,10 +59,10 @@ jobs:
       run: |
         source env/activate
         pytest
-      continue-on-error: true
 
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
+      if: success() || failure()
       with:
         name: test-reports-${{ matrix.build.runs-on }}
         path: reports/report.xml
@@ -73,3 +73,4 @@ jobs:
       with:
         report_paths: reports/report.xml
         check_name: TT-Forge Tests
+        require_tests: true
