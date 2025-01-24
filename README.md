@@ -27,14 +27,23 @@ We are currently still in developer preview for early adopters to check out what
 # Project Overview
 
 tt-Forge is composed of various projects ranging from Frontends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project.
+tt-Forge lowers to our tt-metalium project providing additional functionality to our AI Sofware ecosystem.
 
-----
-## Current Front End projects
+![Tenstorrent Software overview](docs/public/images/tt-sw-overview.png)
+
+
+## Current AI Framework Front End projects
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
 
   - A graph compiler designed to optimize and transform computational graphs for deep learning models, enhancing their performance and efficiency.
 Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM (tt-tvm). 
   - Based on TVM IR, enables breaking down graphs from different frameworks into individual operations, making model bringup effort data-driven. 
+
+- [TT-torch](https://github.com/tenstorrent/tt-torch)
+
+  - tt-torch is a MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to tt-mlir. 
+  - Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
+  - Enables breaking down PyTorch graphs into individual operations, facilitating parallelized bug or missing operation discovery
 
 - [TT-xla](https://github.com/tenstorrent/tt-xla)
   - Leverages a PJRT interface to integrate JAX (and in the future other frameworks), tt-mlir and Tenstorrent hardware.
@@ -42,11 +51,6 @@ Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML fra
   - Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to tt-mlir compiler
 
 
-- [TT-torch](https://github.com/tenstorrent/tt-torch)
-
-  - tt-torch is a MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to tt-mlir. 
-  - Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
-  - Enables breaking down PyTorch graphs into individual operations, facilitating parallelized bug or missing operation discovery
 
 ## TT-MLIR project
 
@@ -72,6 +76,10 @@ The compiler employs various optimization passes, including layout transformatio
 
 - ttnn-standalone - post-compile tuning/debugging tool for C++ TTNN generated code.
 
+
+# Getting Started Guide 
+
+TODO: https://github.com/tenstorrent/tt-forge/issues/29
 
 -----
 # Related Tenstorrent Projects
