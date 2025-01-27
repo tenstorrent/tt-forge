@@ -34,7 +34,7 @@ tt-Forge lowers to our tt-metalium project providing additional functionality to
 
 ## Current AI Framework Front End projects
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
-  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models.Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([`tt-tvm`](https://github.com/tenstorrent/`tt-tvm`)).
+  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([`tt-tvm`](https://github.com/tenstorrent/`tt-tvm`)).
 
 - [`tt-torch`](https://github.com/tenstorrent/`tt-torch`)
 
