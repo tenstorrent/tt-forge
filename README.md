@@ -18,6 +18,11 @@ TT-Forge – is Tenstorrent's MLIR-based compiler integrated into various framew
 We are currently still in developer preview for early adopters to check out what we've built and give it a try. 
   
 -----
+# What is this Repo?
+This repository is the central hub for the TT-Forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Currently in early developer preview, we’ll be providing frequent updates to keep you informed on the latest developments. Please file any issues with questions or feedback you may have.
+
+# Getting Started Guide 
+See our individual front end documentations in the [Front end](#current-ai-framework-front-end-projects) section to get started running some tests.
 
 # Project goals
 - Provide abstraction of many different frontend frameworks
@@ -26,8 +31,8 @@ We are currently still in developer preview for early adopters to check out what
 
 # Project Overview
 
-tt-Forge is composed of various projects ranging from Frontends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project.
-tt-Forge lowers to our tt-metalium project providing additional functionality to our AI Sofware ecosystem.
+TT-Forge is composed of various projects ranging from Frontends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project.
+TT-Forge lowers to our tt-metalium project providing additional functionality to our AI Sofware ecosystem.
 
 ![Tenstorrent Software overview](docs/public/images/tt-sw-overview.png)
 
@@ -35,6 +40,7 @@ tt-Forge lowers to our tt-metalium project providing additional functionality to
 ## Current AI Framework Front End projects
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
   - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([`tt-tvm`](https://github.com/tenstorrent/tt-tvm)).
+  - See [docs pages](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html) for an overview and getting started guide.
 
 - [`tt-torch`](https://github.com/tenstorrent/tt-torch)
 
@@ -43,7 +49,7 @@ tt-Forge lowers to our tt-metalium project providing additional functionality to
 
 - [`tt-xla`](https://github.com/tenstorrent/tt-xla)
   - Leverages a PJRT interface to integrate JAX (and in the future other frameworks), `tt-mlir` and Tenstorrent hardware. Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to `tt-mlir` compiler
-
+  - See [README](https://github.com/tenstorrent/tt-xla/blob/main/README.md) for an overview and getting started guide.
 
 
 ## [`tt-mlir`](https://github.com/tenstorrent/tt-mlir) project
@@ -70,10 +76,6 @@ The compiler employs various optimization passes, including layout transformatio
 
 - ttnn-standalone - post-compile tuning/debugging tool for C++ TTNN generated code.
 
-
-# Getting Started Guide 
-
-TODO: https://github.com/tenstorrent/tt-forge/issues/29
 
 -----
 # Related Tenstorrent Projects
