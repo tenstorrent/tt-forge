@@ -39,6 +39,7 @@ tt-Forge lowers to our tt-metalium project providing additional functionality to
 - [`tt-torch`](https://github.com/tenstorrent/tt-torch)
 
   - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to `tt-mlir`. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
+  - See [docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide. 
 
 - [`tt-xla`](https://github.com/tenstorrent/tt-xla)
   - Leverages a PJRT interface to integrate JAX (and in the future other frameworks), `tt-mlir` and Tenstorrent hardware. Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to `tt-mlir` compiler
@@ -77,8 +78,8 @@ TODO: https://github.com/tenstorrent/tt-forge/issues/29
 -----
 # Related Tenstorrent Projects
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
-- [`tt-xla`](https://github.com/tenstorrent/`tt-xla`)
-- [`tt-torch`](https://github.com/tenstorrent/`tt-torch`)
-- [`tt-mlir`](https://github.com/tenstorrent/`tt-mlir`)
+- [tt-xla](https://github.com/tenstorrent/tt-xla)
+- [tt-torch](https://github.com/tenstorrent/tt-torch)
+- [tt-mlir](https://github.com/tenstorrent/tt-mlir)
 - [tt-Metallium](https://github.com/tenstorrent/tt-metal)
 - [tt-tvm](https://github.com/tenstorrent/tt-tvm)
