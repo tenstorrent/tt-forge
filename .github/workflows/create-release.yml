@@ -1,0 +1,57 @@
+name: Build Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        type: string
+        default: "test"
+        description: Put PR in draft mode
+      draft:
+        type: boolean
+        default: true
+        description: Put PR in draft mode
+      prerelease:
+        type: boolean
+        default: true
+        description: Put PR in prerelease mode
+
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Uplift tenstorrent/tt-forge-fe artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: tt-forge-fe-artifacts
+      with:
+        repo: tenstorrent/tt-forge-fe
+        workflow: On nightly
+        workflow_allow_failed: true
+    - name: Uplift tenstorrent/tt-torch artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: tt-torch-artifacts
+      with:
+        repo: tenstorrent/tt-torch
+        branch: 'aknezevic/whel_fixes'
+        workflow: Nightly Tests
+        artifact_download_glob: '*install-artifacts*'
+        artifact_cleanup_glob: 'torchvision*'
+    
+    - name: Generate Changelog
+      run: echo "# Good things have arrived" > ${{ github.workspace }}-CHANGELOG.txt
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body_path: ${{ github.workspace }}-CHANGELOG.txt
+        token: ${{ github.token }}
+        name: ${{ github.event.inputs.prerelease }}
+        draft: ${{ github.event.inputs.prerelease }}
+        prerelease: ${{ github.event.inputs.prerelease }}
+        fail_on_unmatched_files: true
+        files: |
+          ${{ steps.tt-forge-fe-artifacts.outputs.download-path }}/**
+          ${{ steps.tt-torch-artifacts.outputs.download-path }}/**

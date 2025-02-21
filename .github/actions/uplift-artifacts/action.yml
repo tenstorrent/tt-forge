@@ -1,0 +1,110 @@
+name: "Uplift Artifacts from downstream workflows"
+description: "Uplift Artifacts from downstream workflows"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+    type: string
+  branch:
+    description: "Branch name"
+    default: "main"
+    required: false
+    type: string
+  workflow:
+    description: "Workflow name"
+    type: string
+    required: true
+  workflow_allow_failed:
+    description: "Download artifact even is workflow has failed"
+    type: bool
+    default: false
+    required: false
+  artifact_download_glob:
+    description: "Glob to use download artifacts"
+    type: string
+    default: "*{wheel,perf}*"
+    required: false
+  artifact_cleanup_glob:
+    description: "Glob to use to delete extra files after a artifact is downloaded/exploded"
+    type: string
+    required: false
+
+outputs:
+  download-path: 
+    description: 'Path of where artifacts are downloaded'
+    value: ${{ steps.artifacts.outputs.download-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Find workflow artifact candidate
+      shell: bash
+      id: fetch_run_id
+      run: |
+        loop_count=20
+        echo "Search the lastest $loop_count workflow runs to find artifact candidate"
+        runs=$(gh run list -R ${{ inputs.repo }} -w '${{ inputs.workflow }}' -L $loop_count --json status,databaseId,conclusion,url,headBranch) 
+
+        array_ptr=0
+        success=false
+
+        # Find last workflow run that completed and successful
+        while [[ $array_ptr -ne $loop_count ]]; do
+          run_status=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].status')
+          run_id=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].databaseId')
+          run_conclusion=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].conclusion')
+          run_url=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].url')
+          run_branch=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].headBranch')
+          
+          if [[ "$run_branch" != "${{ inputs.branch }}" ]]; then
+              echo "Skipping Workflow Run: $run_url due to branch not being ${{ inputs.branch }}"
+              array_ptr=$((array_ptr+1))
+              continue
+          fi
+
+
+          if [[ "$run_status" == "completed" ]]; then
+            if [[ "${{ inputs.workflow_allow_failed }}" == "true" ]]; then
+              success=true
+              break
+            elif [[ "$run_conclusion" == "success" ]]; then
+              success=true
+              break
+            else
+              echo "Skipping Workflow Run: $run_url due to run failure"
+              array_ptr=$((array_ptr+1))
+              continue
+            fi
+          fi
+
+          echo "Skipping Workflow Run: $run_url due to in progress"
+          array_ptr=$((array_ptr+1))
+        done
+        
+        if [[ "$success" == "false" ]]; then
+          echo "Failed to find workflow run for as a artifact candidate"
+          exit 1
+        fi
+        
+        echo "Using Workflow Run: $run_url on branch $run_branch"
+        echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+
+    - name: Download Artifacts
+      id: artifacts 
+      uses: actions/download-artifact@v4
+      with:
+        repository: ${{ inputs.repo }}
+        pattern: ${{ inputs.artifact_download_glob }}
+        run-id: ${{ steps.fetch_run_id.outputs.run_id }}
+        github-token: ${{ github.token }}
+        path: ${{ github.workspace }}/release/${{ inputs.repo }}
+    - name: Explode and clean up artifact path
+      shell: bash
+      run: |
+        set -x
+        tree ${{ steps.artifacts.outputs.download-path }}
+        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar" -print0 -execdir tar xf {} \; -delete
+        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar.gz" -print0 -execdir tar xf {} \; -delete
+        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "${{ inputs.artifact_cleanup_glob }}" -delete
+        tree ${{ steps.artifacts.outputs.download-path }}
