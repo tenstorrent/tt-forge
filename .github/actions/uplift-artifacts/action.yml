@@ -1,0 +1,137 @@
+name: "Uplift artifacts from downstream workflows"
+description: "Uplift artifacts from downstream workflows"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+    type: string
+  branch:
+    description: "Branch name"
+    default: "main"
+    required: false
+    type: string
+  workflow:
+    description: "Workflow name"
+    type: string
+    required: true
+  artifact_download_glob:
+    description: "Glob to use for download artifacts"
+    type: string
+    required: true
+  artifact_cleanup_glob:
+    description: "Glob to use for deleting extra files after a artifact is downloaded or exploded"
+    type: string
+    required: false
+  workflow_allow_failed:
+    description: "Download artifacts even is workflow has failed"
+    type: bool
+    default: false
+    required: false
+
+outputs:
+  download-path: 
+    description: 'Path of where artifacts are downloaded'
+    value: ${{ steps.artifacts.outputs.download-path }}
+  download-files: 
+    description: 'Downloaded Files names'
+    value: ${{ steps.files.outputs.download-files }}
+  run-url: 
+    description: 'Workflow run url'
+    value: ${{ steps.fetch_run_id.outputs.run_url }}
+  run-status-symbol:
+    description: 'Workflow run unicode symbol'
+    value: ${{ steps.fetch_run_id.outputs.run_status_symbol }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Find workflow artifact candidate
+      shell: bash
+      id: fetch_run_id
+      run: |
+        loop_count=20
+        echo "Search the lastest $loop_count workflow runs to find artifact candidate"
+        runs=$(gh run list -R ${{ inputs.repo }} -w '${{ inputs.workflow }}' -L $loop_count --json status,databaseId,conclusion,url,headBranch,headSha) 
+
+        array_ptr=0
+        success=false
+
+        while [[ $array_ptr -ne $loop_count ]]; do
+          run_status=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].status')
+          run_id=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].databaseId')
+          run_conclusion=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].conclusion')
+          run_url=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].url')
+          run_branch=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].headBranch')
+          run_commit_sha=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].headSha')
+          
+          if [[ "$run_branch" != "${{ inputs.branch }}" ]]; then
+              echo "Skipping Workflow Run: $run_url due to branch not being ${{ inputs.branch }}"
+              array_ptr=$((array_ptr+1))
+              continue
+          fi
+
+          if [[ "$run_status" == "completed" ]]; then
+
+            run_artifact_count=$(gh api repos/${{ inputs.repo }}/actions/runs/$run_id/artifacts | jq -r '.total_count')
+
+            if [[ "$run_artifact_count" == "0" ]]; then
+              echo "Skipping Workflow Run: $run_url due to artifact count being zero"
+              array_ptr=$((array_ptr+1))
+              continue
+
+            # Select if we don't care about workflow failures
+            elif [[ "${{ inputs.workflow_allow_failed }}" == "true" ]]; then
+              run_status_symbol=":x:"
+              success=true
+              break
+
+            elif [[ "$run_conclusion" == "success" ]]; then
+              run_status_symbol=":white_check_mark:"
+              success=true
+              break
+
+            else
+              echo "Skipping Workflow Run: $run_url due to run failure"
+              array_ptr=$((array_ptr+1))
+              continue
+            fi
+          fi
+
+          echo "Skipping Workflow Run: $run_url due to in progress"
+          array_ptr=$((array_ptr+1))
+        done
+        
+        if [[ "$success" == "false" ]]; then
+          echo "Failed to find workflow run as a artifact candidate"
+          exit 1
+        fi
+        
+        echo "Using Workflow Run: $run_url on branch: $run_branch with commit: $run_commit_sha"
+        echo "run_id=$run_id" >> $GITHUB_OUTPUT
+        echo "run_url=$run_url" >> $GITHUB_OUTPUT
+        echo "run_status_symbol=$run_status_symbol" >> $GITHUB_OUTPUT
+
+
+    - name: Download artifacts
+      id: artifacts 
+      uses: actions/download-artifact@v4
+      with:
+        repository: ${{ inputs.repo }}
+        pattern: ${{ inputs.artifact_download_glob }}
+        run-id: ${{ steps.fetch_run_id.outputs.run_id }}
+        github-token: ${{ github.token }}
+        path: ${{ github.workspace }}/release/${{ inputs.repo }}
+    - name: Explode and clean up artifact path
+      id: files
+      shell: bash
+      run: |
+        tree ${{ steps.artifacts.outputs.download-path }}
+        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar" -print0 -execdir tar xf {} \; -delete
+        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar.gz" -print0 -execdir tar xf {} \; -delete
+        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "${{ inputs.artifact_cleanup_glob }}" -delete
+        tree ${{ steps.artifacts.outputs.download-path }}
+        found_files=$(find ${{ steps.artifacts.outputs.download-path }} -type f -exec basename {} \;)
+        download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
+        echo "$download_list_files"
+        echo "download-files=$download_list_files" >> $GITHUB_OUTPUT
