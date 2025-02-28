@@ -85,3 +85,7 @@ The compiler employs various optimization passes, including layout transformatio
 - [tt-mlir](https://github.com/tenstorrent/tt-mlir)
 - [tt-Metallium](https://github.com/tenstorrent/tt-metal)
 - [tt-tvm](https://github.com/tenstorrent/tt-tvm)
+
+
+### Tenstorrent Bounty Program Terms and Conditions
+This repo is a part of Tenstorrent’s bounty program. If you are interested in helping to improve tt-metal, please make sure to read the [Tenstorrent Bounty Program Terms and Conditions](https://github.com/tenstorrent/tt-forge/blob/main/BOUNTY_TERMS.md) before heading to the issues tab. Look for the issues that are tagged with both “bounty” and difficulty level!
