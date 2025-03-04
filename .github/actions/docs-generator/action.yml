@@ -1,0 +1,26 @@
+
+name: "Uplift artifacts from downstream workflows"
+description: "Uplift artifacts from downstream workflows"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+    type: string
+
+
+outputs:
+  readme: 
+    description: 'Path of where artifacts are downloaded'
+    value: ${{ steps.artifacts.outputs.download-path }}
+
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Find workflow artifact candidate
+      shell: bash
+      id: fetch_run_id
+      run: |
+        gh issue list -R ${{ inputs.repo }} --search "sort:created-desc label:bug state:open"  --json title,closedAt,url
+        

@@ -80,14 +80,15 @@ runs:
               array_ptr=$((array_ptr+1))
               continue
 
-            # Select if we don't care about workflow failures
-            elif [[ "${{ inputs.workflow_allow_failed }}" == "true" ]]; then
-              run_status_symbol=":x:"
-              success=true
-              break
 
             elif [[ "$run_conclusion" == "success" ]]; then
               run_status_symbol=":white_check_mark:"
+              success=true
+              break
+            
+            # Select if we don't care about workflow failures
+            elif [[ "${{ inputs.workflow_allow_failed }}" == "true" ]]; then
+              run_status_symbol=":x:"
               success=true
               break
 

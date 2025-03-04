@@ -64,12 +64,13 @@ jobs:
         token: ${{ github.token }}
         name: Nightly Release ${{ steps.date-tag.outputs.tag }}
         tag_name: nightly-${{ steps.date-tag.outputs.tag }}
-        draft: ${{ github.event.inputs.draft  || false }}
+        #draft: ${{ github.event.inputs.draft  || false }}
+        draft: true
         prerelease: true
         fail_on_unmatched_files: true
         files: |
           ${{ steps.tt-forge-fe-artifacts.outputs.download-path }}/**
           ${{ steps.tt-torch-artifacts.outputs.download-path }}/**
-    - name: Prune Nightly releases
-      shell: bash
-      run: .github/scripts/prune-nightly-releases.sh
+#    - name: Prune Nightly releases
+#      shell: bash
+#      run: .github/scripts/prune-nightly-releases.sh
