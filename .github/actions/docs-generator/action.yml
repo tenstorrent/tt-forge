@@ -1,0 +1,50 @@
+
+name: "Uplift artifacts from downstream workflows"
+description: "Uplift artifacts from downstream workflows"
+inputs:
+  owner:
+    description: "Repo's owner name"
+    required: true
+    type: string
+  repo:
+    description: "Repo's name"
+    required: true
+    type: string
+  artifact_job_json:
+    description: ""
+    required: true
+    type: string
+
+outputs:
+  readme: 
+    description: 'Path of where artifacts are downloaded'
+    value: ${{ steps.artifacts.outputs.download-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get relevant issues. 
+      shell: bash
+      id: fetch_issues
+      run: |
+        issue_url_params="sort:created-desc label:bug state:open created:2025-01-01T00:00:00+00:00..2025-03-04T00:00:00+00:00"
+        base_url="https://github.com/$owner/$repo/issues?q="
+
+        encoded_params=$(echo -n $issue_url_params|jq -sRr @uri)
+        issues_url="$base_url$encoded_params"
+        echo "issues_url=$issues_url" >> $GITHUB_OUTPUT
+    - name: output docs
+      shell: bash
+      id: fetch_run_id
+      run: |
+        variable_name=$(cat <<EOF
+        ### ${{ inputs.repo }}
+        :green_book: [Getting started](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html)
+        :bug: [Known bugs](${{ steps.fetch_issues.outputs.issues_url }})
+        #### Test status: ${{fromJson(inputs.artifact_job_json).run-status-symbol }}
+        #### Workflow run:  ${{fromJson(inputs.artifact_job_json).run-url }}
+        #### Files:
+          ${{ steps.tt-forge-fe-artifacts.outputs.download-files }}
+        EOF
+        )
+        echo "$variable_name"
