@@ -1,0 +1,75 @@
+name: Nightly Release
+
+on:
+  schedule:
+  - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      draft:
+        type: boolean
+        default: true
+        description: Put PR in draft mode for testing
+
+
+jobs:
+  nightly-release:
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Uplift tenstorrent/tt-forge-fe nightly artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: tt-forge-fe-artifacts
+      with:
+        repo: tenstorrent/tt-forge-fe
+        workflow: On nightly
+        artifact_download_glob: '*wheel*'
+        workflow_allow_failed: true
+    - name: Uplift tenstorrent/tt-torch nightly artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: tt-torch-artifacts
+      with:
+        repo: tenstorrent/tt-torch
+        workflow: Nightly Tests
+        artifact_download_glob: '*install-artifacts*'
+        artifact_cleanup_glob: 'torchvision*'
+        workflow_allow_failed: true
+    - name: Date tag
+      id: date-tag
+      run: |
+        tag="$(date +"%Y-%m-%dT%H-%M-%S")"
+        echo "tag=$tag" >> $GITHUB_OUTPUT
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body: |
+          ### tt-forge-fe
+          :green_book: [Getting started](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html)
+          :bug: [Known bugs](https://github.com/tenstorrent/tt-forge-fe/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug)
+          #### Test status: ${{ steps.tt-forge-fe-artifacts.outputs.run-status-symbol }}
+          #### Workflow run: ${{ steps.tt-forge-fe-artifacts.outputs.run-url }}
+          #### Files:
+            ${{ steps.tt-forge-fe-artifacts.outputs.download-files }}
+
+          ### tt-torch
+          :green_book: [Getting started](https://docs.tenstorrent.com/tt-torch/getting_started.html)
+          :bug: [Known bugs](https://github.com/tenstorrent/tt-torch/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug)
+          #### Test status: ${{ steps.tt-torch-artifacts.outputs.run-status-symbol }}
+          #### Workflow Run: ${{ steps.tt-torch-artifacts.outputs.run-url }}
+          #### Files:
+            ${{ steps.tt-torch-artifacts.outputs.download-files }}
+
+        token: ${{ github.token }}
+        name: Nightly Release ${{ steps.date-tag.outputs.tag }}
+        tag_name: nightly-${{ steps.date-tag.outputs.tag }}
+        draft: ${{ github.event.inputs.draft  || false }}
+        prerelease: true
+        fail_on_unmatched_files: true
+        files: |
+          ${{ steps.tt-forge-fe-artifacts.outputs.download-path }}/**
+          ${{ steps.tt-torch-artifacts.outputs.download-path }}/**
+    - name: Prune Nightly releases
+      if: ${{ !github.event.inputs.draft || true }}
+      shell: bash
+      run: .github/scripts/prune-nightly-releases.sh
