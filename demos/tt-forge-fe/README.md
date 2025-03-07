@@ -19,35 +19,33 @@ Before running the demos, make sure you have TT-Forge-FE installed. You can inst
 
 | Model | Model Type | Description | Demo Code |
 |-------|------------|-------------|------------|
-| ViLT | Vision-Language | Vision-and-Language Transformer for visual question answering | [`vilt_demo.py`](vilt_demo.py) |
-| DeiT | Vision | Data-efficient Image Transformer for image classification | [`deit_demo.py`](deit_demo.py) |
-| EfficientNet | Vision | Efficient CNN architecture using compound scaling (timm) | [`efficientnet_timm_demo.py`](efficientnet_timm_demo.py) |
-| EfficientNet | Vision | Efficient CNN architecture using compound scaling (torchvision) | [`efficientnet_torchvision_demo.py`](efficientnet_torchvision_demo.py) |
-| GPT-2 | NLP | Large language model for text generation | [`gpt2_demo.py`](gpt2_demo.py) |
-| Falcon-3B | NLP | 3B parameter language model for text generation | [`falcon3_demo.py`](falcon3_demo.py) |
+| MobileNetV2 | CNN | Lightweight convolutional neural network for efficient image classification | [`cnn/mobile_netv2_demo.py`](cnn/mobile_netv2_demo.py) |
+| ResNet-50 | CNN | Deep residual network for image classification | [`cnn/resnet_50_demo.py`](cnn/resnet_50_demo.py) |
+| ViLT | Vision-Language | Vision-and-Language Transformer for visual question answering | [`cnn/vilt_demo.py`](cnn/vilt_demo.py) |
+| EfficientNet | Vision | Efficient CNN architecture using compound scaling (timm) | [`cnn/efficientnet_timm_demo.py`](cnn/efficientnet_timm_demo.py) |
+| EfficientNet | Vision | Efficient CNN architecture using compound scaling (torchvision) | [`cnn/efficientnet_torchvision_demo.py`](cnn/efficientnet_torchvision_demo.py) |
+| BERT | NLP | Bidirectional Encoder Representations from Transformers for natural language understanding | [`nlp/bert_demo.py`](nlp/bert_demo.py) |
+| BERT (Turkish) | NLP | BERT model fine-tuned for Turkish language tasks | [`nlp/bert_demo_turkish.py`](nlp/bert_demo_turkish.py) |
+| Falcon-3B | NLP | 3B parameter language model for text generation | [`llm/falcon3_demo.py`](llm/falcon3_demo.py) |
 
 ## Running the Demos
 
-Each demo can be run directly using Python:
+Each demo can be run directly using Python from its respective directory:
 
 ```bash
-python vilt_demo.py                    # Run ViLT demo
-python efficientnet_timm_demo.py       # Run EfficientNet (timm) demo
-python gpt2_demo.py                    # Run GPT-2 demo
+# CNN Models
+python cnn/resnet_50_demo.py              # Run ResNet-50 demo
+python cnn/mobile_netv2_demo.py           # Run MobileNetV2 demo
+python cnn/vilt_demo.py                   # Run ViLT demo
+python cnn/efficientnet_timm_demo.py      # Run EfficientNet (timm) demo
+
+# NLP Models
+python nlp/bert_demo.py                   # Run BERT demo
+python nlp/bert_demo_turkish.py           # Run Turkish BERT demo
+
+# Large Language Models
+python llm/falcon3_demo.py                # Run Falcon-3B demo
 ```
-
-### Demo Status
-
-Some demos may have limitations with the current version of TT-Forge-FE:
-
-- **Fully Working**:
-  - ViLT: Visual question answering
-  - EfficientNet: Image classification (both timm and torchvision variants)
-
-- **Partial Support** (Original model works, compilation in progress):
-  - DeiT: Working on conv2d operator support
-  - GPT-2: Working on attention mechanism support
-  - Falcon-3B: Working on large model support
 
 If you encounter any issues or have questions, please file them at [github.com/tenstorrent/tt-forge/issues](https://github.com/tenstorrent/tt-forge/issues).
 
