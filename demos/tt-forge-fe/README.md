@@ -21,7 +21,6 @@ Before running the demos, make sure you have TT-Forge-FE installed. You can inst
 |-------|------------|-------------|------------|
 | MobileNetV2 | CNN | Lightweight convolutional neural network for efficient image classification | [`cnn/mobile_netv2_demo.py`](cnn/mobile_netv2_demo.py) |
 | ResNet-50 | CNN | Deep residual network for image classification | [`cnn/resnet_50_demo.py`](cnn/resnet_50_demo.py) |
-| ViLT | CNN | Vision-and-Language Transformer for vision-language tasks | [`cnn/vilt_demo.py`](cnn/vilt_demo.py) |
 | BERT | NLP | Bidirectional Encoder Representations from Transformers for natural language understanding tasks | [`nlp/bert_demo.py`](nlp/bert_demo.py) |
 
 ## Running the Demos
