@@ -1,5 +1,6 @@
 import lxml.etree
 import pathlib
+import ast
 
 current_path = pathlib.Path(__file__).parent.joinpath('test.xml').resolve()
 root = lxml.etree.parse(current_path)
@@ -12,16 +13,21 @@ test_cases = root.xpath(path)
 
 def fetch_all_model_names():
     a = root.xpath('/testsuites/testsuite/testcase/properties/property[@name="tags"]')
-    json.loads(a[0].get('value'))
-    print('a')
-
-print()
-fetch_all_model_names()
-
-table = []
-
-
+    # string is a python dict not a json value due to single qoutes.
+    c = { ast.literal_eval(x.get('value'))['model_name'] for x in a }
+    return c 
     
+
+def fetch_all_model_names():
+    a = root.xpath('/testsuites/testsuite/testcase/properties/property[@name="tags"]')
+    # string is a python dict not a json value due to single qoutes.
+    c = { ast.literal_eval(x.get('value'))['model_name'] for x in a }
+    return c 
+
+a = fetch_all_model_names()
+
+
+#['model','frontend','n150','n300']
     
 
 
