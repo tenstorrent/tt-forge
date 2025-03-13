@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+    <testsuite name="pytest" errors="0" failures="0" skipped="44" tests="47" time="429.503"
+        timestamp="2025-03-12T19:52:48.881018+00:00" hostname="95bbd20b7cde">
+        <testcase classname="tests.jax.models.albert_v2.base.test_albert_base"
+            name="test_flax_albert_v2_base_inference" time="55.608">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_albert_v2_base_inference', 'specific_test_case': 'test_flax_albert_v2_base_inference', 'category': 'model_test', 'model_name': 'jax_albert_v2_base_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131036.078125. Required: atol=0.16" />
+        </testcase>
+        <testcase classname="tests.jax.models.albert_v2.large.test_albert_large"
+            name="test_flax_albert_v2_large_inference" time="19.642">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_albert_v2_large_inference', 'specific_test_case': 'test_flax_albert_v2_large_inference', 'category': 'model_test', 'model_name': 'jax_albert_v2_large_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131026.9375. Required: atol=0.16" />
+        </testcase>
+        <testcase classname="tests.jax.models.albert_v2.xlarge.test_albert_xlarge"
+            name="test_flax_albert_v2_xlarge_inference" time="22.148">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_albert_v2_xlarge_inference', 'specific_test_case': 'test_flax_albert_v2_xlarge_inference', 'category': 'model_test', 'model_name': 'jax_albert_v2_xlarge_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131030.6953125. Required: atol=0.16." />
+        </testcase>
+        <testcase classname="tests.jax.models.albert_v2.xxlarge.test_albert_xxlarge"
+            name="test_flax_albert_v2_xxlarge_inference" time="22.703">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_albert_v2_xxlarge_inference', 'specific_test_case': 'test_flax_albert_v2_xxlarge_inference', 'category': 'model_test', 'model_name': 'jax_albert_v2_xxlarge_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131022.7578125. Required: atol=0.16." />
+        </testcase>
+        <testcase classname="tests.jax.models.bart.base.test_bart_base"
+            name="test_flax_bart_base_inference" time="9.846">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_bart_base_inference', 'specific_test_case': 'test_flax_bart_base_inference', 'category': 'model_test', 'model_name': 'jax_bart_base_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_RUNTIME: Invalid arguments to reshape (https://github.com/tenstorrent/tt-xla/issues/307)" />
+        </testcase>
+        <testcase classname="tests.jax.models.bart.large.test_bart_large"
+            name="test_flax_bart_large_inference" time="11.110">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_bart_large_inference', 'specific_test_case': 'test_flax_bart_large_inference', 'category': 'model_test', 'model_name': 'jax_bart_large_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_RUNTIME: Invalid arguments to reshape (https://github.com/tenstorrent/tt-xla/issues/307)" />
+        </testcase>
+        <testcase classname="tests.jax.models.beit.base.test_beit_base"
+            name="test_flax_beit_base_inference" time="3.855">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_beit_base_inference', 'specific_test_case': 'test_flax_beit_base_inference', 'category': 'model_test', 'model_name': 'jax_beit_base_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'ttir.gather'" />
+        </testcase>
+        <testcase classname="tests.jax.models.beit.large.test_beit_large"
+            name="test_flax_beit_large_inference" time="7.172">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_beit_large_inference', 'specific_test_case': 'test_flax_beit_large_inference', 'category': 'model_test', 'model_name': 'jax_beit_large_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'ttir.gather'" />
+        </testcase>
+        <testcase classname="tests.jax.models.bert.base.test_bert_base"
+            name="test_flax_bert_base_inference" time="27.039">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_bert_base_inference', 'specific_test_case': 'test_flax_bert_base_inference', 'category': 'model_test', 'model_name': 'jax_bert_base_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131025.0078125. Required: atol=0.16." />
+        </testcase>
+        <testcase classname="tests.jax.models.bert.large.test_bert_large"
+            name="test_flax_bert_large_inference" time="25.943">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_bert_large_inference', 'specific_test_case': 'test_flax_bert_large_inference', 'category': 'model_test', 'model_name': 'jax_bert_large_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131037.828125. Required: atol=0.16." />
+        </testcase>
+        <testcase classname="tests.jax.models.bloom.bloom_1b1.test_1b1"
+            name="test_bloom_1b1_inference" time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_bloom_1b1_inference', 'specific_test_case': 'test_bloom_1b1_inference', 'category': 'model_test', 'model_name': 'jax_bloom_1b1_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/bloom/bloom_1b1/test_1b1.py:50:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.bloom.bloom_1b7.test_1b7"
+            name="test_bloom_1b7_inference" time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_bloom_1b7_inference', 'specific_test_case': 'test_bloom_1b7_inference', 'category': 'model_test', 'model_name': 'jax_bloom_1b7_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/bloom/bloom_1b7/test_1b7.py:46:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.bloom.bloom_3b.test_3b" name="test_bloom_3b_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_bloom_3b_inference', 'specific_test_case': 'test_bloom_3b_inference', 'category': 'model_test', 'model_name': 'jax_bloom_3b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/bloom/bloom_3b/test_3b.py:46:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.bloom.bloom_560m.test_560m"
+            name="test_bloom_560m_inference" time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_bloom_560m_inference', 'specific_test_case': 'test_bloom_560m_inference', 'category': 'model_test', 'model_name': 'jax_bloom_560m_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/bloom/bloom_560m/test_560m.py:46:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.bloom.bloom_7b.test_7b" name="test_bloom_7b_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_bloom_7b_inference', 'specific_test_case': 'test_bloom_7b_inference', 'category': 'model_test', 'model_name': 'jax_bloom_7b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/bloom/bloom_7b/test_7b.py:45:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.clip.base_patch16.test_clip_base_patch16"
+            name="test_clip_base_patch16_inference" time="4.922">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_clip_base_patch16_inference', 'specific_test_case': 'test_clip_base_patch16_inference', 'category': 'model_test', 'model_name': 'jax_clip_vit_patch16_base_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'ttir.gather'" />
+        </testcase>
+        <testcase classname="tests.jax.models.clip.base_patch32.test_clip_base_patch32"
+            name="test_clip_base_patch32_inference" time="3.564">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_clip_base_patch32_inference', 'specific_test_case': 'test_clip_base_patch32_inference', 'category': 'model_test', 'model_name': 'jax_clip_vit_patch32_base_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'ttir.gather'" />
+        </testcase>
+        <testcase classname="tests.jax.models.clip.large_patch14.test_clip_large_patch14"
+            name="test_clip_large_patch14_inference" time="9.245">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_clip_large_patch14_inference', 'specific_test_case': 'test_clip_large_patch14_inference', 'category': 'model_test', 'model_name': 'jax_clip_vit_patch14_large_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'ttir.gather'" />
+        </testcase>
+        <testcase classname="tests.jax.models.clip.large_patch14_336.test_clip_large_patch14_336"
+            name="test_clip_large_patch14_336_inference" time="10.038">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_clip_large_patch14_336_inference', 'specific_test_case': 'test_clip_large_patch14_336_inference', 'category': 'model_test', 'model_name': 'jax_clip_vit_patch14_336_large_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'ttir.gather'" />
+        </testcase>
+        <testcase classname="tests.jax.models.distilbert.test_distilbert"
+            name="test_flax_distilbert_inference" time="5.868">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_distilbert_inference', 'specific_test_case': 'test_flax_distilbert_inference', 'category': 'model_test', 'model_name': 'jax_distilbert_uncased_base_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_RUNTIME: Invalid arguments to reshape (https://github.com/tenstorrent/tt-xla/issues/307)" />
+        </testcase>
+        <testcase classname="tests.jax.models.gpt2.base.test_gpt2_base"
+            name="test_gpt2_base_inference" time="6.127">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_gpt2_base_inference', 'specific_test_case': 'test_gpt2_base_inference', 'category': 'model_test', 'model_name': 'jax_gpt2_base_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_RUNTIME: Invalid arguments to reshape (https://github.com/tenstorrent/tt-xla/issues/307)" />
+        </testcase>
+        <testcase classname="tests.jax.models.gpt2.large.test_gpt2_large"
+            name="test_gpt2_large_inference" time="26.896">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_gpt2_large_inference', 'specific_test_case': 'test_gpt2_large_inference', 'category': 'model_test', 'model_name': 'jax_gpt2_large_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_RUNTIME: Invalid arguments to reshape (https://github.com/tenstorrent/tt-xla/issues/307)" />
+        </testcase>
+        <testcase classname="tests.jax.models.gpt2.medium.test_gpt2_medium"
+            name="test_gpt2_medium_inference" time="14.118">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_gpt2_medium_inference', 'specific_test_case': 'test_gpt2_medium_inference', 'category': 'model_test', 'model_name': 'jax_gpt2_medium_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_RUNTIME: Invalid arguments to reshape (https://github.com/tenstorrent/tt-xla/issues/307)" />
+        </testcase>
+        <testcase classname="tests.jax.models.gpt2.xl.test_gpt2_xl" name="test_gpt2_xl_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_gpt2_xl_inference', 'specific_test_case': 'test_gpt2_xl_inference', 'category': 'model_test', 'model_name': 'jax_gpt2_xl_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_FE_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186">/__w/tt-xla/tt-xla/tests/jax/models/gpt2/xl/test_gpt2_xl.py:46:
+                FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.gpt_neo.gpt_neo_125m.test_gpt_neo_125m"
+            name="test_gpt_neo_125m_inference" time="5.852">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_gpt_neo_125m_inference', 'specific_test_case': 'test_gpt_neo_125m_inference', 'category': 'model_test', 'model_name': 'jax_gpt_neo_125m_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_RUNTIME: Invalid arguments to reshape (https://github.com/tenstorrent/tt-xla/issues/307)" />
+        </testcase>
+        <testcase classname="tests.jax.models.gpt_neo.gpt_neo_1_3b.test_gpt_neo_1_3b"
+            name="test_gpt_neo_1_3b_inference" time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_gpt_neo_1_3b_inference', 'specific_test_case': 'test_gpt_neo_1_3b_inference', 'category': 'model_test', 'model_name': 'jax_gpt_neo_1.3b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_FE_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186">/__w/tt-xla/tt-xla/tests/jax/models/gpt_neo/gpt_neo_1_3b/test_gpt_neo_1_3b.py:46:
+                FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.gpt_neo.gpt_neo_2_7b.test_gpt_neo_2_7b"
+            name="test_gpt_neo_2_7b_inference" time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_gpt_neo_2_7b_inference', 'specific_test_case': 'test_gpt_neo_2_7b_inference', 'category': 'model_test', 'model_name': 'jax_gpt_neo_2.7b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_FE_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186">/__w/tt-xla/tt-xla/tests/jax/models/gpt_neo/gpt_neo_2_7b/test_gpt_neo_2_7b.py:45:
+                FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.llama.openllama_3b_v2.test_openllama_3b_v2"
+            name="test_openllama3b_inference" time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_openllama3b_inference', 'specific_test_case': 'test_openllama3b_inference', 'category': 'model_test', 'model_name': 'jax_open_llama_v2_3b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_FE_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186">/__w/tt-xla/tt-xla/tests/jax/models/llama/openllama_3b_v2/test_openllama_3b_v2.py:46:
+                FAILED_FE_COMPILATION: OOMs in CI (https://github.com/tenstorrent/tt-xla/issues/186</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.mlpmixer.test_mlpmixer" name="test_mlpmixer_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_mlpmixer_inference', 'specific_test_case': 'test_mlpmixer_inference', 'category': 'model_test', 'model_name': 'jax_mlpmixer_base_cv_image_cls_custom', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="FAILED_RUNTIME: Statically allocated circular buffers in program 16 clash with L1 buffers on core range [(x=0,y=0) - (x=6,y=0)]. L1 buffer allocated at 475136 and static circular buffer region ends at 951136 (segfault)(https://github.com/tenstorrent/tt-xla/issues/187)">/__w/tt-xla/tt-xla/tests/jax/models/mlpmixer/test_mlpmixer.py:108:
+                FAILED_RUNTIME: Statically allocated circular buffers in program 16 clash with L1
+                buffers on core range [(x=0,y=0) - (x=6,y=0)]. L1 buffer allocated at 475136 and
+                static circular buffer region ends at 951136
+                (segfault)(https://github.com/tenstorrent/tt-xla/issues/187)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.mnist.cnn.dropout.test_mnist_cnn_dropout"
+            name="test_mnist_cnn_dropout_inference" time="17.663">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_mnist_cnn_dropout_inference', 'specific_test_case': 'test_mnist_cnn_dropout_inference', 'category': 'model_test', 'model_name': 'jax_mnist_cnn_dropout_cv_image_cls_custom', 'run_mode': 'inference', 'bringup_status': 'PASSED'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.jax.models.mnist.cnn.nodropout.test_mnist_cnn_nodropout"
+            name="test_mnist_cnn_nodropout_inference" time="9.477">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_mnist_cnn_nodropout_inference', 'specific_test_case': 'test_mnist_cnn_nodropout_inference', 'category': 'model_test', 'model_name': 'jax_mnist_cnn_nodropout_cv_image_cls_custom', 'run_mode': 'inference', 'bringup_status': 'PASSED'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.jax.models.mnist.mlp.test_mnist_mlp"
+            name="test_mnist_mlp_inference[(256, 128, 64)]" time="3.974">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_mnist_mlp_inference', 'specific_test_case': 'test_mnist_mlp_inference[(256, 128, 64)]', 'category': 'model_test', 'model_name': 'jax_mnist_mlp_cv_image_cls_custom', 'run_mode': 'inference', 'bringup_status': 'PASSED'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.jax.models.opt.opt_125m.test_125m" name="test_opt_125m_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_opt_125m_inference', 'specific_test_case': 'test_opt_125m_inference', 'category': 'model_test', 'model_name': 'jax_opt_125m_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/opt/opt_125m/test_125m.py:44:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.opt.opt_1_3b.test_1_3b" name="test_opt_1_3b_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_opt_1_3b_inference', 'specific_test_case': 'test_opt_1_3b_inference', 'category': 'model_test', 'model_name': 'jax_opt_1.3b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/opt/opt_1_3b/test_1_3b.py:45:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.opt.opt_2_7b.test_2_7b" name="test_opt_2_7b_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_opt_2_7b_inference', 'specific_test_case': 'test_opt_2_7b_inference', 'category': 'model_test', 'model_name': 'jax_opt_2.7b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/opt/opt_2_7b/test_2_7b.py:47:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.opt.opt_350m.test_350m" name="test_opt_350m_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_opt_350m_inference', 'specific_test_case': 'test_opt_350m_inference', 'category': 'model_test', 'model_name': 'jax_opt_350m_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/opt/opt_350m/test_350m.py:46:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.opt.opt_6_7b.test_6_7b" name="test_opt_6_7b_inference"
+            time="0.000">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_opt_6_7b_inference', 'specific_test_case': 'test_opt_6_7b_inference', 'category': 'model_test', 'model_name': 'jax_opt_6.7b_nlp_causal_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.skip" message="FAILED_RUNTIME: Unsupported data type (segfault)">/__w/tt-xla/tt-xla/tests/jax/models/opt/opt_6_7b/test_6_7b.py:45:
+                FAILED_RUNTIME: Unsupported data type (segfault)</skipped>
+        </testcase>
+        <testcase classname="tests.jax.models.resnet_v1_5.resnet_101.test_resnet_101"
+            name="test_resnet_v1_5_101_inference" time="10.214">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_resnet_v1_5_101_inference', 'specific_test_case': 'test_resnet_v1_5_101_inference', 'category': 'model_test', 'model_name': 'jax_resnet_v1.5_101_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'stablehlo.reduce_window'" />
+        </testcase>
+        <testcase classname="tests.jax.models.resnet_v1_5.resnet_152.test_resnet_152"
+            name="test_resnet_v1_5_152_inference" time="3.757">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_resnet_v1_5_152_inference', 'specific_test_case': 'test_resnet_v1_5_152_inference', 'category': 'model_test', 'model_name': 'jax_resnet_v1.5_152_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'stablehlo.reduce_window'" />
+        </testcase>
+        <testcase classname="tests.jax.models.resnet_v1_5.resnet_18.test_resnet_18"
+            name="test_resnet_v1_5_18_inference" time="2.438">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_resnet_v1_5_18_inference', 'specific_test_case': 'test_resnet_v1_5_18_inference', 'category': 'model_test', 'model_name': 'jax_resnet_v1.5_18_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'stablehlo.reduce_window'" />
+        </testcase>
+        <testcase classname="tests.jax.models.resnet_v1_5.resnet_26.test_resnet_26"
+            name="test_resnet_v1_5_26_inference" time="0.892">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_resnet_v1_5_26_inference', 'specific_test_case': 'test_resnet_v1_5_26_inference', 'category': 'model_test', 'model_name': 'jax_resnet_v1.5_26_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'stablehlo.reduce_window'" />
+        </testcase>
+        <testcase classname="tests.jax.models.resnet_v1_5.resnet_34.test_resnet_34"
+            name="test_resnet_v1_5_34_inference" time="1.046">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_resnet_v1_5_34_inference', 'specific_test_case': 'test_resnet_v1_5_34_inference', 'category': 'model_test', 'model_name': 'jax_resnet_v1.5_34_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'stablehlo.reduce_window'" />
+        </testcase>
+        <testcase classname="tests.jax.models.resnet_v1_5.resnet_50.test_resnet_50"
+            name="test_resnet_v1_5_50_inference" time="1.465">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_resnet_v1_5_50_inference', 'specific_test_case': 'test_resnet_v1_5_50_inference', 'category': 'model_test', 'model_name': 'jax_resnet_v1.5_50_cv_image_cls_huggingface', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'stablehlo.reduce_window'" />
+        </testcase>
+        <testcase classname="tests.jax.models.roberta.base.test_roberta_base"
+            name="test_flax_roberta_base_inference" time="21.276">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_roberta_base_inference', 'specific_test_case': 'test_flax_roberta_base_inference', 'category': 'model_test', 'model_name': 'jax_roberta_base_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131044.359375. Required: atol=0.16" />
+        </testcase>
+        <testcase classname="tests.jax.models.roberta.large.test_roberta_large"
+            name="test_flax_roberta_large_inference" time="23.792">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_roberta_large_inference', 'specific_test_case': 'test_flax_roberta_large_inference', 'category': 'model_test', 'model_name': 'jax_roberta_large_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131078.359375. Required: atol=0.16" />
+        </testcase>
+        <testcase
+            classname="tests.jax.models.roberta_prelayernorm.efficient_mlm_m0_40.test_efficient_mlm_m0_40"
+            name="test_flax_roberta_prelayernorm_inference" time="20.568">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_flax_roberta_prelayernorm_inference', 'specific_test_case': 'test_flax_roberta_prelayernorm_inference', 'category': 'model_test', 'model_name': 'jax_roberta_prelayernorm_efficient_mlm_m0.40_nlp_masked_lm_huggingface', 'run_mode': 'inference', 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="INCORRECT_RESULT: Atol comparison failed. Calculated: atol=131048.65625. Required: atol=0.16" />
+        </testcase>
+        <testcase classname="tests.jax.models.squeezebert.test_squeezebert"
+            name="test_squeezebert_inference" time="2.467">
+            <properties>
+                <property name="tags"
+                    value="{'test_name': 'test_squeezebert_inference', 'specific_test_case': 'test_squeezebert_inference', 'category': 'model_test', 'model_name': 'jax_squeezebert_uncased_nlp_masked_lm_custom', 'run_mode': 'inference', 'bringup_status': 'FAILED_TTMLIR_COMPILATION'}" />
+                <property name="owner" value="tt-xla" />
+                <property name="group" value="generality" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="FAILED_TTMLIR_COMPILATION: failed to legalize operation 'ttir.convolution'" />
+        </testcase>
+    </testsuite>
+</testsuites>
