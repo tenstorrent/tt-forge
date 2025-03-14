@@ -14,8 +14,7 @@
 </div>
 <br>
 
-TT-Forge – is Tenstorrent's MLIR-based compiler integrated into various frameworks, AI/ML models from domain-specific compilers to custom kernel generation.
-We are currently still in developer preview for early adopters to check out what we've built and give it a try. 
+TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. We are currently still in developer preview for early adopters to check out what we've built and give it a try. 
   
 -----
 # What is this Repo?
