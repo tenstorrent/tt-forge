@@ -1,0 +1,12 @@
+name: Postgres Test
+
+on:
+    push:
+
+jobs:
+  postgres-test:
+    runs-on: tt-beta-ubuntu-2204-small
+    steps:
+    - name: ping test
+      run: |
+        ping -c 5 ${{ secrets.POSTGRES_HOST }}
