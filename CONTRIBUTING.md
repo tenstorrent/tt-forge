@@ -11,13 +11,13 @@ The initial review encompasses the following:
 ## Internal Contributions
 For internal contributions Tenstorrent has the following guidelines:
 
-* A 24 hour merge rule exists. The rule is to wait at least 24 hours since the PR was initially opened for review. This gives members of Tenstorrent teams that span the globe opportunity to provide feedback to PRs.
+* A 24 hour merge rule exists. Wait at least 24 hours after the PR was initially opened for review. This gives members of Tenstorrent teams that span the globe the opportunity to provide feedback on PRs.
 
 In addition to the 24 hour rule, the following prerequisites for landing a PR exist:
 * At least 1 reviewer signs off on the change
 * Component owners must sign-off (GitHub will tell you if this hasn't been met)
 * Green CI
-* Wait at least 24 hours since opening the PR to give all tagged reviewers a chance to take a look, or at least comment on the issue that they need more time to review
+* Wait at least 24 hours after opening the PR to give all tagged reviewers a chance to take a look, or at least comment on the issue that they need more time to review
 
 ```
 > [!NOTE]
@@ -31,7 +31,9 @@ Our long-term aim is to have the entire codebase adhere to these conventions.
 
 Since our compiler is built on the LLVM MLIR framework, we strive to align closely with the LLVM coding style guidelines outlined here [LLVM Coding Standards](https://llvm.org/docs/CodingStandards.html).
 
-### Naming
+### Coding Guidelines and Standards for C++ 
+
+#### Naming
 
 Clear and descriptive names are crucial for code readability and preventing bugs. It’s important to choose names that accurately reflect the semantics and purpose of the underlying entities, within reason. Avoid abbreviations unless they are widely recognized. Once you settle on a name, ensure consistent capitalization throughout the codebase to avoid confusion.
 
@@ -48,7 +50,7 @@ Use *camel case* for most names (e.g., WorkaroundPass, isRankedTensor()).
     - Represent actions and should be verb phrases
     - Use **lower camel case** (e.g. createTTNNOptimizer(), emitTTNNAsCpp())
 
-### Includes
+#### Includes
 
 We prefer #includes to be listed in this order:
 
@@ -85,7 +87,7 @@ Using TTIRToTTNN.cpp as an example, this is what includes would look like for us
 #include <cstdio>  # system includes
 #include <algorithm>
 ```
-### Comments
+#### Comments
 
 Write comments as full sentences, starting with a capital letter and ending with a period. Comments should explain why the code exists, not just what it does. Use comments to clarify logic, assumptions, or any non-obvious aspects of the code.
 
@@ -107,7 +109,7 @@ counter++;
 
 Ensure comments are accurate and reflect the current state of the code. Outdated or misleading comments can be worse than no comments at all.
 
-### Code Denesting (Inversion)
+#### Code Denesting (Inversion)
 
 Strive to minimize unnecessary indentation without compromising code clarity. One effective way to achieve this is by using early exits and the continue keyword in long loops.
 
@@ -144,7 +146,7 @@ void doSomething(Operation *op)
 
 This reduces loop nesting, makes the reasoning behind the conditions clearer, and signals to the reader that there is no subsequent else to worry about, reducing cognitive load. This can significantly improve code readability and comprehension.
 
-### Function Declaration and Definition Order
+#### Function Declaration and Definition Order
 
 To improve code readability and maintainability, we should adopt a consistent approach for organizing function declarations and definitions within a file. The goal is to make it easier for readers to follow the logical flow of function dependencies.
 
@@ -184,13 +186,13 @@ void A() {
 }
 ```
 
-### Helper Functions
+#### Helper Functions
 
 This coding guideline addresses visibility and linkage of simple helper functions to ensure clarity, prevent linking errors, and improve maintainability:
 1. If a helper function needs to be defined in a .cpp file, it should be declared **static** or wrapped inside an **anonymous namespace**. **Note**: A significant concern with declaring functions as non-public (e.g., static functions or functions in unnamed namespaces) is that they cannot be unit tested in isolation. This limitation hinders our ability to write focused, granular tests that verify the correctness of individual components and it also reduces test coverage.
 2. If a helper function needs to be defined in a header file (e.g., for templated or performance-critical code), it should be marked as inline.
 
-### Using Namespaces
+#### Using Namespaces
 
 Namespaces are an important part of C++ programming, providing a way to organize code and avoid naming conflicts. Choose namespace names that reflect the purpose or functionality of the code contained within.
 
@@ -209,11 +211,11 @@ using namespace std;
   - Try to avoid mixing concepts from different namespaces in a single function or class. If a function belongs to one namespace but calls classes from others, ensure the relationships are clear.
   - Wrap classes/structs declared in `.cpp` files inside of an [anonymous namespace](https://en.cppreference.com/w/cpp/language/namespace#Unnamed_namespaces) to avoid violating [ODR](https://en.cppreference.com/w/cpp/language/definition). See [LLVM docs](https://llvm.org/docs/CodingStandards.html#anonymous-namespaces) for more detailed information.
 
-### Using Alternative Tokens (and, or, xor, etc.)
+#### Using Alternative Tokens (and, or, xor, etc.)
 
 Although they are standard, we should avoid their use. They are very rarely used in practice and the C++ community widely uses the standard operators (&&, ||, !, etc.), as they are more familiar and easily recognizable to most C++ developers. Their usage can make the code harder to read and maintain, especially for developers who are not familiar with these alternatives. We should stick to the standard operators (&&, ||, !, etc.) for clarity, consistency, and compatibility with other C++ developers and tools.
 
-### Type Aliasing
+#### Type Aliasing
 
 When declaring type aliases in C++ prefer ```using``` over ```typedef```. ```using``` provides better readability, especially for complex types, and supports alias templates. Here is example:
 ```c++
@@ -226,7 +228,7 @@ typedef void (*Callback)(int, double);
 
 Choose alias names that clarify their role in the code. Avoid overly generic names that might obscure the type’s purpose, hence do not create a type alias unless it significantly improves clarity or simplifies complex types.
 
-### Using Auto to Deduce Type
+#### Using Auto to Deduce Type
 
 Use auto only when it enhances code readability or maintainability. Avoid defaulting to “always use auto.” Instead, apply it thoughtfully in the following scenarios:
 	- When the type is immediately clear from the initializer, such as in `cast<Foo>(...)`.
@@ -235,3 +237,27 @@ Use auto only when it enhances code readability or maintainability. Avoid defaul
 
 In all other cases, prefer explicit type declarations to maintain clarity and ensure the code remains easy to understand.
 
+### Coding Guidelines and Standards for Python
+
+#### Python Version and Source Code Formatting
+The current minimum version of Python required is 3.8 or higher. Python code in the LLVM repository should only use language features available in this version of Python.
+
+The Python code within the LLVM repository should adhere to the formatting guidelines outlined in PEP 8.
+
+For consistency and to limit churn, code should be automatically formatted with the black utility, which is PEP 8 compliant. Use its default rules. For example, avoid specifying --line-length even though it does not default to 80. The default rules can change between major versions of black. In order to avoid unnecessary churn in the formatting rules, we currently use black version 23.x in LLVM.
+
+When contributing a patch unrelated to formatting, you should format only the Python code that the patch modifies. For this purpose, use the darker utility, which runs default black rules over only the modified Python code. Doing so should ensure the patch will pass the Python format checks in LLVM’s pre-commit CI, which also uses darker. When contributing a patch specifically for reformatting Python files, use black, which currently only supports formatting entire files.
+
+Here are some quick examples, but see the black and darker documentation for details:
+
+``` $ pip install black=='23.*' darker # install black 23.x and darker
+$ darker test.py                   # format uncommitted changes
+$ darker -r HEAD^ test.py          # also format changes from last commit
+$ black test.py                    # format entire file
+```
+
+Instead of individual file names, you can specify directories to darker, and it will find the changed files. However, if a directory is large, like a clone of the LLVM repository, darker can be painfully slow. In that case, you might wish to use git to list changed files. For example:
+
+```
+$ darker -r HEAD^ $(git diff --name-only --diff-filter=d HEAD^)
+```
