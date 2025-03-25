@@ -36,6 +36,12 @@ Our long-term aim is to have the entire codebase adhere to these conventions.
 
 Since our compiler is built on the LLVM MLIR framework, we strive to align closely with the LLVM coding style guidelines outlined here: [LLVM Coding Standards](https://llvm.org/docs/CodingStandards.html).
 
+In addition to these guidelines, we also provide suggestions for best practices when coding your contribution:
+
+* [Best Practices for Contributions](/docs/contributing_best_practices.md)
+* [Best Practices for Writing Error Messages](/docs/contributing_error_best_practices.md)
+
+
 ### Naming
 
 Clear and descriptive names are crucial for code readability and preventing bugs. It’s important to choose names that accurately reflect the semantics and purpose of the underlying entities, within reason. Avoid abbreviations unless they are widely recognized. Once you settle on a name, ensure consistent capitalization throughout the codebase to avoid confusion.
