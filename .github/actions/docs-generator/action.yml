@@ -1,0 +1,112 @@
+
+name: "Create docs"
+description: "Creates a release doc for all frontend and cats them to one single file"
+inputs:
+  owner:
+    description: "Repo's owner name"
+    required: true
+    type: string
+  repo:
+    description: "Repo's name"
+    required: true
+    type: string
+  artifact_job_json:
+    description: ""
+    required: true
+    type: string
+  release_type:
+        type: choice
+        description: select release type
+        options: 
+        - nightly
+        - beta
+        - stable
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get last release 
+      shell: bash
+      id: last_release
+      run: |
+        loop_count=50
+        echo "Search the lastest $loop_count releases to find latest ${{ inputs.release_type }}"
+        releases=$(gh release list -R tenstorrent/tt-forge -L $loop_count --json name,tagName,publishedAt,isDraft) 
+        
+        array_ptr=0
+        success=false
+
+        while [[ $array_ptr -ne $loop_count ]]; do
+          name=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].name')
+          tagName=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].tagName')
+          publishedAt=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].publishedAt')
+          isDraft=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].isDraft')
+
+          if [[ "$isDraft" == "true" ]]; then
+            echo "Skipping draft release name: $name tag: $tagName publishedAt: $publishedAt"
+            array_ptr=$((array_ptr+1))
+            continue
+          fi
+
+          if [[ "$tagName" =~ ${{ inputs.release_type }} ]]; then
+            echo "Selected release name: $name tag: $tagName publishedAt: $publishedAt"
+            echo "publishedAt=$publishedAt" >> $GITHUB_OUTPUT
+            success=true
+            break
+          fi
+
+          array_ptr=$((array_ptr+1))
+        done
+
+        if [[ "$success" == "false" ]]; then
+          echo "Failed to find a previous release with ${{ inputs.release_type }}"
+          exit 1
+        fi
+
+    - name: All changes urls
+      shell: bash
+      id: all_changes
+      run: |
+        start=${{ steps.last_release.outputs.publishedAt }}
+        end=$(date +'%FT%T'Z)
+
+        function store_encoded_url() {
+          local url_parms=$1
+          local store_var=$2
+          local base_url="https://github.com/${{ inputs.owner }}/${{ inputs.repo }}/issues?q="
+          local encoded_params
+          local url
+
+          encoded_params=$(echo -n $url_parms|jq -sRr @uri)
+          url="$base_url$encoded_params"
+        
+          echo "$store_var=$url" >> $GITHUB_OUTPUT
+        }
+
+        # test query for github issues.
+        #merged_changes="sort:created-desc  state:merged created:2025-03-12T00:00:00+00:00..2025-03-24T18:41:53Z -label:uplift"
+
+        merged_changes_parms="sort:created-desc  state:merged created:$start..$end"
+        store_encoded_url "$merged_changes_parms" "merged_changes"
+        
+        bug_fixes_parms="label:bug created:<$end -label:\"CI / Infra\""
+        store_encoded_url "$bug_fixes_parms" "bug_fixes"
+
+    - name: output readme
+      shell: bash
+      run: |
+        readme_path="${{ github.workspace }}/release/docs"
+        mkdir -p $readme_path
+        cat <<- EOF >> "$readme_path/readme"
+
+        ### ${{ inputs.repo }}
+        :green_book: [Getting started](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html)
+        :bug: [Bugs](${{ steps.all_changes.outputs.bug_fixes }})
+        :leftwards_arrow_with_hook: [All Merged Changes](${{ steps.all_changes.outputs.merged_changes }})
+        #### Test status: ${{fromJson(inputs.artifact_job_json).run-status-symbol }}
+        #### Workflow run: ${{fromJson(inputs.artifact_job_json).run-url }}
+        #### Files:
+          ${{ fromJson(inputs.artifact_job_json).download-files }}
+
+        EOF
+        
