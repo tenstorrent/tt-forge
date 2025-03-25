@@ -17,7 +17,7 @@ Before making a contribution, make sure you've reviewed the standards in this ch
 * As applicable:
     * [Coding Guidelines and Standards for C++](#coding-guidelines-and-standards-for-c)
     * [Coding Guidelines and Standards for Python](#coding-guidelines-and-standards-for-python)
-* File Structure for Legal
+* [File Structure and Format for Legal](#file-structure-and-format-for-legal)
 * Testing 
     * Pre-Commit and Post-Commit
     * CI/CD Principles
@@ -40,7 +40,6 @@ In addition to these guidelines, we also provide suggestions for best practices 
 
 * [Best Practices for Contributions](/docs/contributing_best_practices.md)
 * [Best Practices for Writing Error Messages](/docs/contributing_error_best_practices.md)
-
 
 ### Naming
 
@@ -155,7 +154,7 @@ void doSomething(Operation *op)
 
 This reduces loop nesting, makes the reasoning behind the conditions clearer, and signals to the reader that there is no subsequent else to worry about, reducing cognitive load. This can significantly improve code readability and comprehension.
 
-## Function Declaration and Definition Order
+### Function Declaration and Definition Order
 
 To improve code readability and maintainability, we should adopt a consistent approach for organizing function declarations and definitions within a file. The goal is to make it easier for readers to follow the logical flow of function dependencies.
 
@@ -281,6 +280,26 @@ $ black test.py                    # format entire file
 Instead of individual file names, you can specify directories to darker, and it will find the changed files. However, if a directory is large, like a clone of the LLVM repository, darker can be painfully slow. In that case, you might wish to use git to list changed files. For example:
 
 ``` $ darker -r HEAD^ $(git diff --name-only --diff-filter=d HEAD^) ```
+
+## File Structure and Format for Legal 
+
+Every source file must have the appropriate Software Package Data Exchange (SPDX) header at the top. 
+
+C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux/v6.5.1/source/Documentation/process/license-rules.rst#L71) for C++ source files, RST files, ASM files, and scripts. C++ header files should be treated as C++ source files and use this convention: 
+
+```
+// SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
+//
+// SPDX-License-Identifier: Apache-2.0
+```
+
+Python files should use this convention: 
+
+```
+# SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
+
+# SPDX-License-Identifier: Apache-2.0
+```
 
 <!----Not ready yet after this line
 ## STUFF ABOUT PULL REQUESTS 
