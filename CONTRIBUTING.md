@@ -255,7 +255,26 @@ In all other cases, prefer explicit type declarations to maintain clarity and en
 
 ## Coding Guidelines and Standards for Python
 
-For specifics about working with Python, please refer to the section [Python version and Source Code Formatting](https://llvm.org/docs/CodingStandards.html#python-version-and-source-code-formatting) from the LLVM Coding Standards.
+### Python Version and Source Code Formatting
+The current minimum version of Python required is 3.8 or higher. Python code in the LLVM repository should only use language features available in this version of Python.
+
+The Python code within the LLVM repository should adhere to the formatting guidelines outlined in PEP 8.
+
+For consistency and to limit churn, code should be automatically formatted with the black utility, which is PEP 8 compliant. Use its default rules. For example, avoid specifying --line-length even though it does not default to 80. The default rules can change between major versions of black. In order to avoid unnecessary churn in the formatting rules, we currently use black version 23.x in LLVM.
+
+When contributing a patch unrelated to formatting, you should format only the Python code that the patch modifies. For this purpose, use the darker utility, which runs default black rules over only the modified Python code. Doing so should ensure the patch will pass the Python format checks in LLVM’s pre-commit CI, which also uses darker. When contributing a patch specifically for reformatting Python files, use black, which currently only supports formatting entire files.
+
+Here are some quick examples, but see the black and darker documentation for details:
+
+```
+$ darker test.py                   # format uncommitted changes
+$ darker -r HEAD^ test.py          # also format changes from last commit
+$ black test.py                    # format entire file
+```
+
+Instead of individual file names, you can specify directories to darker, and it will find the changed files. However, if a directory is large, like a clone of the LLVM repository, darker can be painfully slow. In that case, you might wish to use git to list changed files. For example:
+
+``` $ darker -r HEAD^ $(git diff --name-only --diff-filter=d HEAD^) ```
 
 <!----Not ready yet after this line
 ## STUFF ABOUT PULL REQUESTS 
