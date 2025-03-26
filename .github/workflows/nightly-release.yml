@@ -26,6 +26,13 @@ jobs:
         workflow: On nightly
         artifact_download_glob: '*wheel*'
         workflow_allow_failed: true
+    - name: tt-forge-fe-docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: tt-forge-fe
+        artifact_job_json: "${{ toJSON(steps.tt-forge-fe-artifacts.outputs) }}"
+        release_type: 'nightly'
     - name: Uplift tenstorrent/tt-torch nightly artifacts
       uses: ./.github/actions/uplift-artifacts
       id: tt-torch-artifacts
@@ -35,7 +42,14 @@ jobs:
         artifact_download_glob: '*install-artifacts*'
         artifact_cleanup_glob: 'torchvision*'
         workflow_allow_failed: true
-    - name: Date tag
+    - name: tt-torch-docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: tt-torch
+        artifact_job_json: "${{ toJSON(steps.tt-torch-artifacts.outputs) }}"
+        release_type: 'nightly'
+    - name: Git date tag
       id: date-tag
       run: |
         tag="$(date +"%Y-%m-%dT%H-%M-%S")"
@@ -43,23 +57,7 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
-        body: |
-          ### tt-forge-fe
-          :green_book: [Getting started](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html)
-          :bug: [Known bugs](https://github.com/tenstorrent/tt-forge-fe/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug)
-          #### Test status: ${{ steps.tt-forge-fe-artifacts.outputs.run-status-symbol }}
-          #### Workflow run: ${{ steps.tt-forge-fe-artifacts.outputs.run-url }}
-          #### Files:
-            ${{ steps.tt-forge-fe-artifacts.outputs.download-files }}
-
-          ### tt-torch
-          :green_book: [Getting started](https://docs.tenstorrent.com/tt-torch/getting_started.html)
-          :bug: [Known bugs](https://github.com/tenstorrent/tt-torch/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug)
-          #### Test status: ${{ steps.tt-torch-artifacts.outputs.run-status-symbol }}
-          #### Workflow Run: ${{ steps.tt-torch-artifacts.outputs.run-url }}
-          #### Files:
-            ${{ steps.tt-torch-artifacts.outputs.download-files }}
-
+        body_path: "${{ github.workspace }}/release/docs/readme"
         token: ${{ github.token }}
         name: Nightly Release ${{ steps.date-tag.outputs.tag }}
         tag_name: nightly-${{ steps.date-tag.outputs.tag }}
