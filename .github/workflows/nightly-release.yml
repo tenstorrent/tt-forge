@@ -18,6 +18,11 @@ jobs:
         GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v4
+    - name: version tag
+      id: version-tag
+      run: |
+        tag="$(date +"%Y%m%d%H%M%S").nightly"
+        echo "tag=$tag" >> $GITHUB_OUTPUT
     - name: Uplift tenstorrent/tt-forge-fe nightly artifacts
       uses: ./.github/actions/uplift-artifacts
       id: tt-forge-fe-artifacts
@@ -26,13 +31,6 @@ jobs:
         workflow: On nightly
         artifact_download_glob: '*wheel*'
         workflow_allow_failed: true
-    - name: tt-forge-fe-docs
-      uses: ./.github/actions/docs-generator
-      with:
-        owner: tenstorrent
-        repo: tt-forge-fe
-        artifact_job_json: "${{ toJSON(steps.tt-forge-fe-artifacts.outputs) }}"
-        release_type: 'nightly'
     - name: Uplift tenstorrent/tt-torch nightly artifacts
       uses: ./.github/actions/uplift-artifacts
       id: tt-torch-artifacts
@@ -42,6 +40,18 @@ jobs:
         artifact_download_glob: '*install-artifacts*'
         artifact_cleanup_glob: 'torchvision*'
         workflow_allow_failed: true
+    - name: Update Wheel versions
+      env:
+        WHEEL_VERSION: ${{ steps.version-tag.outputs.tag }}
+        WHEEL_ROOT_PATH: ${{ github.workspace }}/release/artifacts
+      run: ./.github/scripts/wheel-version-updater.sh
+    - name: tt-forge-fe-docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: tt-forge-fe
+        artifact_job_json: "${{ toJSON(steps.tt-forge-fe-artifacts.outputs) }}"
+        release_type: 'nightly'
     - name: tt-torch-docs
       uses: ./.github/actions/docs-generator
       with:
@@ -49,18 +59,13 @@ jobs:
         repo: tt-torch
         artifact_job_json: "${{ toJSON(steps.tt-torch-artifacts.outputs) }}"
         release_type: 'nightly'
-    - name: Git date tag
-      id: date-tag
-      run: |
-        tag="$(date +"%Y-%m-%dT%H-%M-%S")"
-        echo "tag=$tag" >> $GITHUB_OUTPUT
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
         body_path: "${{ github.workspace }}/release/docs/readme"
         token: ${{ github.token }}
-        name: Nightly Release ${{ steps.date-tag.outputs.tag }}
-        tag_name: nightly-${{ steps.date-tag.outputs.tag }}
+        name: ${{ steps.version-tag.outputs.tag }}
+        tag_name: ${{ steps.version-tag.outputs.tag }}
         draft: ${{ github.event.inputs.draft  || false }}
         prerelease: true
         fail_on_unmatched_files: true

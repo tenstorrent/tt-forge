@@ -32,9 +32,6 @@ outputs:
   download-path: 
     description: 'Path of where artifacts are downloaded'
     value: ${{ steps.artifacts.outputs.download-path }}
-  download-files: 
-    description: 'Downloaded Files names'
-    value: ${{ steps.files.outputs.download-files }}
   run-url: 
     description: 'Workflow run url'
     value: ${{ steps.fetch_run_id.outputs.run_url }}
@@ -131,7 +128,3 @@ runs:
         find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar.gz" -print0 -execdir tar xf {} \; -delete
         find ${{ steps.artifacts.outputs.download-path }} -type f -iname "${{ inputs.artifact_cleanup_glob }}" -delete
         tree ${{ steps.artifacts.outputs.download-path }}
-        found_files=$(find ${{ steps.artifacts.outputs.download-path }} -type f -exec basename {} \;)
-        download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
-        echo "$download_list_files"
-        echo "download-files=$download_list_files" >> $GITHUB_OUTPUT
