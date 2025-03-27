@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+    <testsuite name="pytest" errors="0" failures="0" skipped="1" tests="10" time="3731.694"
+        timestamp="2025-03-27T07:32:33.074349+00:00" hostname="58577889300f">
+        <testcase classname="tests.models.beit.test_beit_image_classification"
+            name="test_beit_image_classification[full-microsoft/beit-base-patch16-224-eval]"
+            time="18.536">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T07:32:36.261710+00:00" />
+                <property name="model_name" value="microsoft/beit-base-patch16-224" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'microsoft/beit-base-patch16-224', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'microsoft/beit-base-patch16-224', 'frontend': 'tt-torch', 'pccs': [0.9999751981963404], 'atols': [0.03125], 'avg_pccs': 0.9999751981963404, 'min_pccs': 0.9999751981963404, 'max_pccs': 0.9999751981963404, 'avg_atols': 0.03125, 'min_atols': 0.03125, 'max_atols': 0.03125, 'pcc': 0.9999751981963404, 'atol': 0.03125, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T07:32:54.802946+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.beit.test_beit_image_classification"
+            name="test_beit_image_classification[full-microsoft/beit-large-patch16-224-eval]"
+            time="49.315">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T07:32:54.804906+00:00" />
+                <property name="model_name" value="microsoft/beit-large-patch16-224" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'microsoft/beit-large-patch16-224', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'microsoft/beit-large-patch16-224', 'frontend': 'tt-torch', 'pccs': [0.9999622890959393], 'atols': [0.0625], 'avg_pccs': 0.9999622890959393, 'min_pccs': 0.9999622890959393, 'max_pccs': 0.9999622890959393, 'avg_atols': 0.0625, 'min_atols': 0.0625, 'max_atols': 0.0625, 'pcc': 0.9999622890959393, 'atol': 0.0625, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T07:33:44.119852+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.mgp-str-base.test_mgp_str_base"
+            name="test_mgp_str_base[full-eval]" time="15.130">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T07:33:44.121979+00:00" />
+                <property name="model_name" value="alibaba-damo/mgp-str-base" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'alibaba-damo/mgp-str-base', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'alibaba-damo/mgp-str-base', 'frontend': 'tt-torch', 'pccs': [0.9998553067680765, 0.9999529687073203, 0.9998951382454848], 'atols': [1.5, 1.0, 1.5], 'avg_pccs': 0.9999011379069606, 'min_pccs': 0.9998553067680765, 'max_pccs': 0.9999529687073203, 'avg_atols': 1.3333333333333333, 'min_atols': 1.0, 'max_atols': 1.5, 'pcc': 0.9998553067680765, 'atol': 1.5, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T07:33:59.252104+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.segformer.test_segformer" name="test_segformer[full-eval]"
+            time="82.934">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T07:33:59.253845+00:00" />
+                <property name="model_name" value="SegFormer" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="red" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'SegFormer', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'SegFormer', 'frontend': 'tt-torch', 'pccs': [0.9999361969389865], 'atols': [0.375], 'avg_pccs': 0.9999361969389865, 'min_pccs': 0.9999361969389865, 'max_pccs': 0.9999361969389865, 'avg_atols': 0.375, 'min_atols': 0.375, 'max_atols': 0.375, 'pcc': 0.9999361969389865, 'atol': 0.375, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T07:35:22.192483+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.squeeze_bert.test_squeeze_bert"
+            name="test_squeeze_bert[full-eval]" time="12.137">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T07:35:22.194233+00:00" />
+                <property name="model_name" value="SqueezeBERT" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'SqueezeBERT', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'SqueezeBERT', 'frontend': 'tt-torch', 'pccs': [0.999999831383944], 'atols': [0.0009765625], 'avg_pccs': 0.999999831383944, 'min_pccs': 0.999999831383944, 'max_pccs': 0.999999831383944, 'avg_atols': 0.0009765625, 'min_atols': 0.0009765625, 'max_atols': 0.0009765625, 'pcc': 0.999999831383944, 'atol': 0.0009765625, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T07:35:34.331802+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.vilt.test_vilt" name="test_vilt[full-eval]" time="20.103">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T07:35:34.333169+00:00" />
+                <property name="model_name" value="ViLT" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'ViLT', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'ViLT', 'frontend': 'tt-torch', 'pccs': [0.9998178648913316], 'atols': [0.125], 'avg_pccs': 0.9998178648913316, 'min_pccs': 0.9998178648913316, 'max_pccs': 0.9998178648913316, 'avg_atols': 0.125, 'min_atols': 0.125, 'max_atols': 0.125, 'pcc': 0.9998178648913316, 'atol': 0.125, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T07:35:54.436371+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.stable_diffusion.test_stable_diffusion_unet"
+            name="test_stable_diffusion_unet[full-eval]" time="3428.545">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T07:35:54.437923+00:00" />
+                <property name="model_name" value="Stable Diffusion UNET" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'Stable Diffusion UNET', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'Stable Diffusion UNET', 'frontend': 'tt-torch', 'pccs': [0.999852149135296], 'atols': [0.056640625], 'avg_pccs': 0.999852149135296, 'min_pccs': 0.999852149135296, 'max_pccs': 0.999852149135296, 'avg_atols': 0.056640625, 'min_atols': 0.056640625, 'max_atols': 0.056640625, 'pcc': 0.999852149135296, 'atol': 0.056640625, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T08:33:02.988734+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.whisper.test_whisper" name="test_whisper[full-eval]"
+            time="74.425">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T08:33:02.991819+00:00" />
+                <property name="model_name" value="Whisper" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'Whisper', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="end_timestamp" value="2025-03-27T08:34:19.128788+00:00" />
+            </properties>
+            <skipped type="pytest.xfail"
+                message="Fails due to pt2 compile issue when finishing generation, but we can still generate a graph" />
+        </testcase>
+        <testcase classname="tests.models.yolos.test_yolos" name="test_yolos[full-eval]"
+            time="12.577">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T08:34:19.130353+00:00" />
+                <property name="model_name" value="YOLOS" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'YOLOS', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'YOLOS', 'frontend': 'tt-torch', 'pccs': [0.997964225021394, 0.9969290397954814, 0.9995914864226566], 'atols': [6.5, 0.2734375, 1.5234375], 'avg_pccs': 0.9981615837465106, 'min_pccs': 0.9969290397954814, 'max_pccs': 0.9995914864226566, 'avg_atols': 2.765625, 'min_atols': 0.2734375, 'max_atols': 6.5, 'pcc': 0.9969290397954814, 'atol': 6.5, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T08:34:31.712829+00:00" />
+            </properties>
+        </testcase>
+        <testcase classname="tests.models.deit.test_deit"
+            name="test_deit[full-facebook/deit-base-patch16-224-eval]" time="13.052">
+            <properties>
+                <property name="start_timestamp" value="2025-03-27T08:34:31.714423+00:00" />
+                <property name="model_name" value="facebook/deit-base-patch16-224" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="generality" />
+                <property name="config"
+                    value="{'compiler_config': {'compile_depth': 'CompileDepth.TTNN_IR', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'facebook/deit-base-patch16-224', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': True, '_consteval_parameters': True, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="tags"
+                    value="{'model_name': 'facebook/deit-base-patch16-224', 'frontend': 'tt-torch', 'pccs': [0.9998703646832083], 'atols': [0.0625], 'avg_pccs': 0.9998703646832083, 'min_pccs': 0.9998703646832083, 'max_pccs': 0.9998703646832083, 'avg_atols': 0.0625, 'min_atols': 0.0625, 'max_atols': 0.0625, 'pcc': 0.9998703646832083, 'atol': 0.0625, 'bringup_status': 'FAILED_RUNTIME'}" />
+                <property name="end_timestamp" value="2025-03-27T08:34:44.766481+00:00" />
+            </properties>
+        </testcase>
+    </testsuite>
+</testsuites>
