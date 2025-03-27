@@ -1,43 +1,6 @@
-# Contributing Guidelines for TT-Forge
+# MLIR Coding Guidelines
 
-Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-forge) project, we appreciate your support. TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. The TT-Forge repository is the central hub for the various sub-projects that create the TT-Forge product. Sub-project repositories include: 
-
-* [tt-mlir](https://github.com/tenstorrent/tt-mlir)
-* [tt-xla](https://github.com/tenstorrent/tt-xla)
-* [tt-npe](https://github.com/tenstorrent/tt-npe)
-* [tt-thomas](https://github.com/tenstorrent/tt-thomas)
-* [tt-torch](https://github.com/tenstorrent/tt-torch)
-* [tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe)
-
-This document covers how to contribute to TT-Forge repositories. 
-
-If you need to file a bug, ask for support, or make a feature request, please use the appropriate issue template:
-* File a Bug
-* Support 
-* Request a Feature
-
-If you are ready to make a contribution, each repository follows this process:
-
-1. Fork the repository.
-2. Clone the repository.
-3. Set up the environment and build the project.
-4. Make changes using the style guidelines for the repository. 
-  * [C++ Coding Guidelines](#c-coding-guidelines)
-  * [Python Coding Guidelines](#python-coding-guidelines)
-  * [File Structure and Format](#file-structure-and-format-for-legal)
-  * [Git and Branch Naming Guidelines](#git-and-branch-naming-guidelines)
-  * [Including Documentation](#including-documentation)
-5. Commit your changes.
-  * Commit Changes
-    * Pre-commit
-    * Post-commit
-    * CI/CD Principles
-6. Create a Pull Request 
-  * Pull Request Guidelines
-
-## C++ Coding Guidelines
-
-This section outlines the coding standards used in the tt-forge project. These guidelines are designed to enhance the readability and maintainability of our shared codebase. While these guidelines are not strict rules for every situation, they are essential for maintaining consistency across the repository.
+These guidelines are designed to enhance the readability and maintainability of our shared codebase. While these guidelines are not strict rules for every situation, they are essential for maintaining consistency across the repository.
 
 Our long-term aim is to have the entire codebase adhere to these conventions.
 
@@ -48,7 +11,7 @@ In addition to these guidelines, we also provide suggestions for best practices 
 * [Best Practices for Contributions](/docs/contributing_best_practices.md)
 * [Best Practices for Writing Error Messages](/docs/contributing_error_best_practices.md)
 
-### Naming
+## Naming
 
 Clear and descriptive names are crucial for code readability and preventing bugs. It’s important to choose names that accurately reflect the semantics and purpose of the underlying entities, within reason. Avoid abbreviations unless they are widely recognized. Once you settle on a name, ensure consistent capitalization throughout the codebase to avoid confusion.
 
@@ -65,7 +28,7 @@ The general naming rule is to use camel case for most names (e.g., WorkaroundPas
     * Represent actions and should be verb phrases
     * Use lower camel case (e.g. createTTNNOptimizer(), emitTTNNAsCpp()).
 
-### Includes
+## Includes
 
 We prefer #includes to be listed in this order:
 
@@ -101,7 +64,7 @@ Using TTIRToTTNN.cpp as an example, this is what includes would look like for us
 #include <algorithm> 
 ```
 
-### Comments
+## Comments
 
 Write comments as full sentences, starting with a capital letter and ending with a period. Comments should explain why the code exists, not just what it does. Use comments to clarify logic, assumptions, or any non-obvious aspects of the code.
 
@@ -122,7 +85,7 @@ counter++;
 
 Ensure comments are accurate and reflect the current state of the code. Outdated or misleading comments can be worse than no comments at all.
 
-### Code Denesting (Inversion)
+## Code Denesting (Inversion)
 
 Strive to minimize unnecessary indentation without compromising code clarity. One effective way to achieve this is by using early exits and the continue keyword in long loops.
 
@@ -161,7 +124,7 @@ void doSomething(Operation *op)
 
 This reduces loop nesting, makes the reasoning behind the conditions clearer, and signals to the reader that there is no subsequent else to worry about, reducing cognitive load. This can significantly improve code readability and comprehension.
 
-### Function Declaration and Definition Order
+## Function Declaration and Definition Order
 
 To improve code readability and maintainability, we should adopt a consistent approach for organizing function declarations and definitions within a file. The goal is to make it easier for readers to follow the logical flow of function dependencies.
 
@@ -205,7 +168,7 @@ void A() {
 }
 ```
 
-### Helper Functions
+## Helper Functions
 
 This coding guideline addresses visibility and linkage of simple helper functions to ensure clarity, prevent linking errors, and improve maintainability:
 
@@ -220,7 +183,7 @@ If a helper function needs to be defined in a .cpp file, it should be declared s
 
 If a helper function needs to be defined in a header file (e.g., for templated or performance-critical code), it should be marked as inline.
 
-### Using Namespaces
+## Using Namespaces
 
 Namespaces are an important part of C++ programming, providing a way to organize code and avoid naming conflicts. Choose namespace names that reflect the purpose or functionality of the code contained within.
 
@@ -246,7 +209,7 @@ Using Alternative Tokens (and, or, xor, etc.)
 
 Although they are standard, we should avoid their use. They are very rarely used in practice and the C++ community widely uses the standard operators (&&, ||, !, etc.), as they are more familiar and easily recognizable to most C++ developers. Their usage can make the code harder to read and maintain, especially for developers who are not familiar with these alternatives. We should stick to the standard operators (&&, ||, !, etc.) for clarity, consistency, and compatibility with other C++ developers and tools.
 
-### Type Aliasing
+## Type Aliasing
 
 When declaring type aliases in C++ prefer using over typedef. using provides better readability, especially for complex types, and supports alias templates. Here is example:
 
@@ -259,7 +222,7 @@ typedef void (*Callback)(int, double);
 Choose alias names that clarify their role in the code. Avoid overly generic names that might obscure the type’s purpose, hence do not create a type alias unless it significantly improves clarity or simplifies complex types.
 ```
 
-### Using Auto to Deduce Type
+## Using Auto to Deduce Type
 
 Use auto only when it enhances code readability or maintainability. Avoid defaulting to “always use auto.” Instead, apply it thoughtfully in the following scenarios: - When the type is immediately clear from the initializer, such as in cast<Foo>(...). - When the type is obvious from the context, making the code cleaner and more concise. - When the type is already abstracted, such as with container typedefs like std::vector<T>::iterator.
 
@@ -287,302 +250,3 @@ $ black test.py                    # format entire file
 Instead of individual file names, you can specify directories to darker, and it will find the changed files. However, if a directory is large, like a clone of the LLVM repository, darker can be painfully slow. In that case, you might wish to use git to list changed files. For example:
 
 ``` $ darker -r HEAD^ $(git diff --name-only --diff-filter=d HEAD^) ```
-
-## File Structure and Format for Legal 
-
-Every source file must have the appropriate Software Package Data Exchange (SPDX) header at the top. 
-
-C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux/v6.5.1/source/Documentation/process/license-rules.rst#L71) for C++ source files, RST files, ASM files, and scripts. C++ header files should be treated as C++ source files and use this convention: 
-
-```
-// SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
-//
-// SPDX-License-Identifier: Apache-2.0
-```
-
-Python files should use this convention: 
-
-```
-# SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
-
-# SPDX-License-Identifier: Apache-2.0
-```
-
-## Git and Branch Naming Guidelines 
-
-* Filing an issue is encouraged for any item that needs alignment or long term tracking.
-
-* Link your issue under the `Ticket` headline in your PR description.
-
-* Use descriptive commit messages.
-
-* Merge commits are not allowed in our main branch. We enforce a linear
-  history.
-
-* You can use either of the following methods to merge your branch on the
-  GitHub UI:
-  * Squash and merge
-  * Rebase and merge
-
-### Creating a Branch
-
-Include the user, the issue number, and optionally a description of the change.
-/ and - are used as separators between user and issue number. And - and _
-between issue number and description. E.g.
-
-```
-git checkout -b user-123
-git checkout -b user/123
-git checkout -b user-123_rename_method_x
-git checkout -b user/123-add-x-unit-test
-```
-
-### Saving Your Changes
-
-Edit the files that you want, making sure relevant unit tests pass. Then add
-them in. E.g.
-
-```
-git add abc.py
-git add "*.py"
-```
-
-Please avoid using `git add -A`, which is fairly error prone.
-
-You can restore files if you need to get the original. E.g.
-
-```
-git restore abc.py
-git restore '*'
-git restore --staged abc.py # if the file was already added
-```
-
-```
-git commit -m "Rename method x"
-```
-
-> [!NOTE] each commit on the main branch and any feature branch where multiple
-> engineers collaborate should work. That is, everything compiles properly on the
-> architecture used by your machine, you can run relevant code on the card, and
-> relevant unit tests pass. Furthermore, for the main branch, you should run
-> CI pipelines and make sure that the commit doesn't break anything important.
-
-> You can use git log to see the sequence of commits in the branch. That allows
-> you to see where your branch is relative to main, and can help you figure out
-> how the commits are structured, before and after commits and rebases.
-
-### Saving the Commit to Origin and Creating a Pull Request
-
-You will need to push the change to origin. The command will provide a url that
-you should use to create pull request. This should be done the first time you
-push a change. After that you may need to set upstream to be able to push
-changes in the future. E.g.
-
-```
-git push origin user-123:user-123
-git branch --set-upstream-to=origin/user-123 user-123
-```
-
-or
-
-```
-git push -u branch_name
-```
-
-> [!NOTE] you may be able to push and set the upstream at the same time, but that
-> assumes that you haven't rebased, which is probably not the case. The command
-> would be something like:
-
-```
-git push origin --set-upstream origin user-123
-```
-
-If that doesn't work, you should use `branch --set-upstream-to`.
-
-Once you have a pull request, in the UI you can run actions against the branch.
-Go to Actions (https://github.com/tenstorrent/tt-metal/actions) and run the
-workflows that you want against your branch. At the very least, you should run
-All post-commit tests.
-
-You can make more changes, commit them, and then if everything is set up and you
-don't need to rebase, then you can just do
-
-```
-git push
-```
-
-Occasionally, and for the final set of tests before the final commit, you should
-rebase your branch.
-
-### Rebasing Your Branch
-
-Your branch needs to be kept up to date with main via rebase. You should rebase
-your local branch, and then once everything looks good, push the change. You
-should not rebase your origin branch. That way, if anything goes wrong, you can
-use origin to restore your branch to a good state.
-
-> [!NOTE] for very small changes where you don't expect to create a second commit
-> it might be okay to use the UI to rebase origin. However, in general, it's
-> better to avoid that.
-
-You should first make sure main is up to date:
-
-```
-git checkout main
-git fetch origin
-git submodule sync
-git pull --rebase --prune
-git submodule update --init --recursive
-```
-
-Then you can:
-
-```
-git checkout user-123
-git rebase main
-```
-
-This will apply one commit at a time. Each commit is in order. If your branch
-has two commits, then the first one is applied, then the second one is applied.
-
-If there are no conflicts, everything will complete successfully. Then you can
-push the changes to origin. This is done through a forced push to save the
-rebase information:
-
-```
-git push -f
-```
-
-If there is any conflict with the commits being processed, you will need to
-edit the files to fix the problem. Information should be printed about what to
-do. It's probably a good idea not to skip commits.
-
-Don't be surprised if changes from a subsequent commit are not there in the
-first commit. For example, if you are editing the files to fix up the first of
-two commits, the files will not have the edits of the second commit. When
-editing files, only fix up the conflicts listed. Do not change anything else.
-
-If you do change anything else, then `git rebase --continue` will complain and
-you will probably have to restart.
-
-Look for HEAD. The conflict will look something like:
-
-```
-<<<< HEAD
-Some other edits
-====
-Your edits
->>>> Your branch
-```
-
-Update the file to have a single piece of working code and remove the commit
-info. Make sure everything compiles and all the tests pass. Then you can
-continue with the rebase.
-
-```
-git rebase --continue
-```
-
-If something is wrong enough that you want to abort the rebase and undo all the
-changes, then you can start over. Do
-
-```
-git rebase --abort # go to before the rebase
-```
-
-If your local is in a bad state, you may also want to start from scratch on your
-local by pulling from origin, reflogging, or checking out a specific commit via
-its hash:
-
-```
-git pull --rebase # will undo changes
-git reflog
-git checkout <hash>
-```
-
-If none of those work you can also try:
-
-```
-git reset --hard origin/<BRANCH>
-```
-
-> [!NOTE] If you are getting errors you may need to update the origin info via
-> `git branch --set-upstream-to`.
-
-If everything goes well with all the updates. Then you can update origin:
-
-```
-git push -f
-```
-
-> [!NOTE] It's okay to have a few commits, as long as each one works on its own.
-If you do want to combine commits you would want to run something like:
-
-```
-git rebase -i HEAD~10 # the number indicates how many commits you want to look at - here 10 commits
-```
-
-The latest one is at the bottom. You can use fixup or squash. Usually you want
-to use fixup (indicated by f) since that discards the message. Then edit the
-messages appropriately.
-
-However, new squash and merge functionality in the UI is much easier than
-doing this process manually. Therefore you should use the UI whenever possible.
-
-### Merging to Main
-
-You will probably need to iterate several times in terms of pushing changes and
-rebasing your branch.
-
-Once you have all of your changes working locally, your pull request (PR)
-approved, and all the workflows that you want passing after a final rebase, It
-is time to merge in your branch into main. This should be done in the Github UI.
-
-Go to your PR and press the `Squash and merge` button. That will automatically
-squash all of your commits, which is very useful. The button has an alternate
-option to merge without squashing. You should use `Squash and merge` unless you
-have a good reason not to.
-
-After that, the UI will usually delete your branch.
-
-
-<!----Not ready yet after this line
-## STUFF ABOUT PULL REQUESTS 
-
-For all your Pull Requests (PRs), Tenstorrent has an internal policy which your PR goes through after an initial review.
-
-The initial review encompasses the following:
-* Reviewing the PR for CI/CD readiness, making sure that the code and PR at a high level make sense for the project.
-* Once approved for CI/CD readiness, a Tenstorrent developer kicks off the CI/CD pipeline on your behalf.
-
-## Internal Contributions
-For internal contributions Tenstorrent has the following guidelines:
-
-* A 24 hour merge rule exists. Wait at least 24 hours after the PR was initially opened for review. This gives members of Tenstorrent teams that span the globe the opportunity to provide feedback on PRs.
-
-In addition to the 24 hour rule, the following prerequisites for landing a PR exist:
-* At least 1 reviewer signs off on the change
-* Component owners must sign-off (GitHub will tell you if this hasn't been met)
-* Green CI
-* Wait at least 24 hours after opening the PR to give all tagged reviewers a chance to take a look, or at least comment on the issue that they need more time to review
-
-```
-> [!NOTE]
-> *Rebasing or further changes to the PR do not reset the 24 hour counter.* 
-``` --->
-
-
-
-## Including Documentation
-
-You should include documentation if you are:
-* Making a significant change that requires explanation for how to work with your change.
-* Adding a new feature. 
-
-## Commit Changes
-
-### Pre-commit
-
-### Post-commit
-
-### CI/CD Principles
