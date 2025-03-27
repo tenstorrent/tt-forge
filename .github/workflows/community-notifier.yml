@@ -1,0 +1,16 @@
+name: Community notifier
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+
+jobs:
+    check-community:
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ github.token }}
+        steps:
+            - name: Check community
+              run: |
+                echo "Checking community"\
+                gh api graphql --file notifier-query.graphql
