@@ -1,8 +1,9 @@
 name: Community notifier
 
 on:
-  schedule:
-    - cron: '*/10 * * * *'
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '*/10 * * * *'
 
 jobs:
     check-community:
