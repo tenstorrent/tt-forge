@@ -6,11 +6,36 @@ on:
 
 jobs:
     check-community:
-        runs-on: ubuntu-latest
-        env:
+      strategy:
+        fail-fast: false
+        matrix:
+          build: [
+            { repo: "tt-forge-fe", key: "LAST_PR_FORGE_FE" },
+            { repo: "tt-xla",      key: "LAST_PR_XLA" },
+            { repo: "tt-mlir",     key: "LAST_PR_MLIR" },
+            { repo: "tt-torch",    key: "LAST_PR_TORCH" },
+          ]
+      runs-on: ubuntu-latest
+      timeout-minutes: 9
+      steps:
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: '3.10'
+
+        - name: Checkout .github/workflows directory
+          uses: actions/checkout@v4
+          with:
+            sparse-checkout: |
+              .github/workflows/get_new_prs.py
+            fetch-depth: 0 # Fetch all history and tags
+
+        - name: Check PRs
+          run: |
+            echo "Checking community"
+            python .github/workflows/get_new_prs.py ${{ matrix.build.repo }} ${{ matrix.build.key }}
+          env:
             GH_TOKEN: ${{ github.token }}
-        steps:
-            - name: Check community
-              run: |
-                echo "Checking community"\
-                gh api graphql --file notifier-query.graphql
+            ORG_READ_GITHUB_TOKEN: ${{ secrets.ORG_READ_GITHUB_TOKEN }}
+            SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    

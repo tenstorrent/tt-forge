@@ -72,11 +72,13 @@ def fetch_and_filter_prs(repo, key, last):
         author_login = pr.get("author", {}).get("login")
         print(f"DEBUG: Processing PR by {author_login}.")
         if not checkTT(author_login):
-            print(f"DEBUG: {author_login} is not a member. Sending message.")
-            message = f"New PR in {repo}:\nTitle: {pr['title']}\nURL: {pr['url']}\nAuthor: {pr['author']}\nCreated At: {pr['createdAt']}"
+            print(f"DEBUG: {author_login} is not a TT member. Sending message.")
+            verb = "is not"
+            message = f"New PR in {repo}:\nTitle: {pr['title']}\nURL: {pr['url']}\nAuthor: {author_login}\nCreated At: {pr['createdAt']}"
             send_message(message)
         else:
-            print(f"DEBUG: {author_login} is a member.\nPR in {repo}:\nTitle: {pr['title']}\nURL: {pr['url']}\nAuthor: {pr['author']}\nCreated At: {pr['createdAt']}")
+            verb = "is"
+        print(f"DEBUG: {author_login} {verb} a member.\n  PR in {repo}:\n  Title: {pr['title']}\n  URL: {pr['url']}\n  Author: {author_login}\n  Created At: {pr['createdAt']}")
 
     # Add the endCursor value
     last = prs.get("pageInfo", {}).get("endCursor")
@@ -114,12 +116,26 @@ def send_message(message):
     except urllib.error.HTTPError as e:
         print(f"DEBUG: HTTPError while sending Slack message: {e}")
 
+def get_last(key):
+    # Retrieve the GitHub variable value using the `gh` command
+    command = [
+        "gh", "variable", "get", key
+    ]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"ERROR: Failed to retrieve GitHub variable. stderr: {result.stderr}")
+        return ""
+
+    # Return the output of the command as a string
+    return result.stdout.strip()
+
 
 if __name__ == "__main__":
     print("DEBUG: Script started.")
     if len(sys.argv) != 3:
         print("DEBUG: Invalid arguments. Exiting.")
-        print("Usage: python get_new_prs.py <repo> <key> <last>")
+        print("Usage: python get_new_prs.py <repo> <key>")
     else:
-        print(f"DEBUG: Running with arguments: {sys.argv[1]}, {sys.argv[2]} {sys.argv[3]}")
-        fetch_and_filter_prs(sys.argv[1], sys.argv[2], sys.argv[3])
+        last = get_last(sys.argv[2])
+        print(f"DEBUG: Running with arguments: {sys.argv[1]}, {sys.argv[2]} (last={last})")
+        fetch_and_filter_prs(sys.argv[1], sys.argv[2], last)
