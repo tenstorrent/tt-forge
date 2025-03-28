@@ -22,271 +22,29 @@ If you are ready to make a contribution, each repository follows this process:
 2. Clone the repository.
 3. Set up the environment and build the project.
 4. Make changes using the style guidelines for the repository. 
-  * [C++ Coding Guidelines](#c-coding-guidelines)
-  * [Python Coding Guidelines](#python-coding-guidelines)
-  * [File Structure and Format](#file-structure-and-format-for-legal)
-  * [Git and Branch Naming Guidelines](#git-and-branch-naming-guidelines)
+  * [Coding Guidelines](#coding-guidelines)
+  * [File Structure and Format for Legal](#file-structure-and-format-for-legal)
+  * [Git, Branch Naming, and Pull Request Guidelines](#git-branch-naming-and-pull-request-guidelines)
   * [Including Documentation](#including-documentation)
 5. Commit your changes.
   * Commit Changes
-    * Pre-commit
-    * Post-commit
-    * CI/CD Principles
+    * [Pre-commit](#pre-commit)
+    * [Post-commit](#post-commit)
+    * [CI/CD Principles](#cicd-principles)
 6. Create a Pull Request 
-  * Pull Request Guidelines
+  * [Pull Request Notes](#pull-request-notes)
 
-## C++ Coding Guidelines
+## Coding Guidelines
 
-This section outlines the coding standards used in the tt-forge project. These guidelines are designed to enhance the readability and maintainability of our shared codebase. While these guidelines are not strict rules for every situation, they are essential for maintaining consistency across the repository.
+Coding guidelines differ slightly by repo. Review the guidelines that are appropriate for the sub-project you're working with:
 
-Our long-term aim is to have the entire codebase adhere to these conventions.
+* [tt-mlir coding-guidelines.md](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md)
+* tt-xla
+* tt-npe
+* tt-thomas
+* tt-torch
+* tt-forge-fe
 
-Since our compiler is built on the LLVM MLIR framework, we strive to align closely with the LLVM coding style guidelines outlined here: [LLVM Coding Standards](https://llvm.org/docs/CodingStandards.html).
-
-In addition to these guidelines, we also provide suggestions for best practices when coding your contribution:
-
-* [Best Practices for Contributions](/docs/contributing_best_practices.md)
-* [Best Practices for Writing Error Messages](/docs/contributing_error_best_practices.md)
-
-### Naming
-
-Clear and descriptive names are crucial for code readability and preventing bugs. It’s important to choose names that accurately reflect the semantics and purpose of the underlying entities, within reason. Avoid abbreviations unless they are widely recognized. Once you settle on a name, ensure consistent capitalization throughout the codebase to avoid confusion.
-
-The general naming rule is to use camel case for most names (e.g., WorkaroundPass, isRankedTensor())
-
-* Type Names
-    * Applies to classes, structs, enums, and typedefs.
-    * Should be nouns that describe the entity's purpose.
-    * Use upper camel case (e.g. TTNNOptimizerOptions, DecompositionPass).
-* Variable Names
-    * Should be nouns, as they represent state.
-    * Use lower camel case (e.g. inputLayout).
-* Function Names
-    * Represent actions and should be verb phrases
-    * Use lower camel case (e.g. createTTNNOptimizer(), emitTTNNAsCpp()).
-
-### Includes
-
-We prefer #includes to be listed in this order:
-
-1. Main Module Header
-2. Local/Private Headers
-3. LLVM project/subproject headers (clang/..., lldb/..., llvm/..., etc)
-4. System #includes
-
-Each category should:
-* Be sorted lexicographically by the full path.
-* Be separated by a single blank line for clarity.
-
-Only the [standard lib header](https://en.cppreference.com/w/cpp/header) includes should use <> whereas all the others should use quotes "". Additionally, all project headers must use absolute paths (rooted at ttmlir) to prevent preprocessor and namespacing issues. For example, prefer:
-
-``` #include "ttmlir/module/something.h" ```
-
-over:
-
-``` #include "something.h" ```
-
-Using TTIRToTTNN.cpp as an example, this is what includes would look like for us:
-
-``` 
-#include "ttmlir/Conversion/TTIRToTTNN/TTIRToTTNN.h"  # main header
-
-#include "ttmlir/Dialect/TT/IR/TTOpsTypes.h"  # these are local/private headers
-#include "ttmlir/Dialect/TTNN/Utils/Utils.h"
-
-#include "mlir/Dialect/MemRef/IR/MemRef.h"  # llvm project/subproj headers
-#include "llvm/Support/LogicalResult.h"
-
-#include <cstdio>  # system includes
-#include <algorithm> 
-```
-
-### Comments
-
-Write comments as full sentences, starting with a capital letter and ending with a period. Comments should explain why the code exists, not just what it does. Use comments to clarify logic, assumptions, or any non-obvious aspects of the code.
-
-Example of a comment:
-
-``` // Initialize the buffer to store incoming data from the network. ```
-
-In general, C++ style comments (//) should be used. Use C-style comments (/**/) only for when documenting the significance of constants used as actual parameters in a call:
-
-``` object.callFunction(/*arg0=*/nullptr); ```
-
-Every function, class, or non-trivial piece of logic should have a comment. Avoid redundant comments for self-explanatory code, but never leave complex code unexplained. Example of redundant comment:
-
-``` 
-// Increment the counter by 1.  // Redundant, avoid. 
-counter++; 
-```
-
-Ensure comments are accurate and reflect the current state of the code. Outdated or misleading comments can be worse than no comments at all.
-
-### Code Denesting (Inversion)
-
-Strive to minimize unnecessary indentation without compromising code clarity. One effective way to achieve this is by using early exits and the continue keyword in long loops.
-
-Consider following example:
-
-```
-void doSomething(Operation *op)
-{
-    if (op->getNumOperands() > 0
-        && isDpsOp(op)
-        && doSomethingDifferent(op))
-    {
-        // ... some long code ...
-    }
-}
-```
-
-It is strongly recommended to format the code as follows:
-
-```
-void doSomething(Operation *op)
-{
-    // ...
-    // We need to do something with the op that has more than 0 operands
-    if (op->getNumOperands() <= 0 ) return;
-
-    // We need something to do with the DPS op
-    if (!isDpsOp(op)) return;
-
-    // Just for example purposes
-    if (!doSomethingDifferent(op)) return;
-
-    // .. some long code ...
-}
-```
-
-This reduces loop nesting, makes the reasoning behind the conditions clearer, and signals to the reader that there is no subsequent else to worry about, reducing cognitive load. This can significantly improve code readability and comprehension.
-
-### Function Declaration and Definition Order
-
-To improve code readability and maintainability, we should adopt a consistent approach for organizing function declarations and definitions within a file. The goal is to make it easier for readers to follow the logical flow of function dependencies.
-
-Follow a bottom-up call order:
-* Arrange functions so that lower-level helper functions are defined first, followed by higher-level functions that call them.
-* This allows each function to be defined after its dependencies, making it clear which functions rely on which.
-* For example, if function A calls A1 and A2, then the preferred order is:
-
-```
-void A1();
-void A2();
-void A(){
-  A1();
-  A2();
-}
-```
-
-Group related functions together:
-* If functions are only relevant to a specific “parent” function (e.g., A1 and A2 are only called by A), place them directly before the “parent” function.
-* If a function (like A2) is also called by other functions (e.g., B), place it where it fits the overall bottom-up order.
-
-Avoid mixed ordering:
-* Mixing top-down and bottom-up call orders within the same file can make the code hard to read and maintain.
-
-Example of a preferred order:
-
-```
-void A1() {
-  /*...*/
-}
-void A2() {
-  /*...*/
-}
-void B() {
-  A2(); // A2 is defined before B, so dependencies are clear.
-}
-void A() {
-  A1();
-  A2();
-  B();
-}
-```
-
-### Helper Functions
-
-This coding guideline addresses visibility and linkage of simple helper functions to ensure clarity, prevent linking errors, and improve maintainability:
-
-If a helper function needs to be defined in a .cpp file, it should be declared static or wrapped inside an anonymous namespace. 
-
-> [!NOTE]
-> A significant concern with declaring functions as non-public (e.g., static functions 
-> or functions in unnamed namespaces) is that they cannot be unit tested in isolation. 
-> This limitation hinders our ability to write focused, granular tests that verify the 
-> correctness of individual components and it also reduces test coverage.
-
-
-If a helper function needs to be defined in a header file (e.g., for templated or performance-critical code), it should be marked as inline.
-
-### Using Namespaces
-
-Namespaces are an important part of C++ programming, providing a way to organize code and avoid naming conflicts. Choose namespace names that reflect the purpose or functionality of the code contained within.
-
-Follow these guidelines when defining namespaces:
-
-* Use lower-case letters for short, single-word names or those with a clear acronym (e.g., ttnn, mlir).
-* Use nested namespaces to group logically related code, avoiding too deep or unnecessarily complex hierarchy
-
-Follow these guidelines when using namespaces:
-
-* Do not use a using-directive to make all names from a namespace available because it pollutes the namespace.
-
-``` 
-// Forbidden -- This pollutes the namespace.
-using namespace std;
-```
-
-* Avoid placing code in the global namespace to reduce the potential for name conflicts and ambiguity. Always use specific namespaces. If necessary to use something from the global namespace (such as std), use an explicit std:: prefix rather than importing everything using using namespace std;.
-* Do not use namespace aliases at namespace scope in header files except in explicitly marked internal-only namespaces, because anything imported into a namespace in a header file becomes part of the public API exported by that file.
-* Try to avoid mixing concepts from different namespaces in a single function or class. If a function belongs to one namespace but calls classes from others, ensure the relationships are clear.
-* Wrap classes/structs declared in .cpp files inside of an [anonymous namespace](https://en.cppreference.com/w/cpp/language/namespace#Unnamed_namespaces) to avoid violating [ODR](https://en.cppreference.com/w/cpp/language/definition). See [LLVM docs](https://llvm.org/docs/CodingStandards.html#anonymous-namespaces) for more detailed information.
-Using Alternative Tokens (and, or, xor, etc.)
-
-Although they are standard, we should avoid their use. They are very rarely used in practice and the C++ community widely uses the standard operators (&&, ||, !, etc.), as they are more familiar and easily recognizable to most C++ developers. Their usage can make the code harder to read and maintain, especially for developers who are not familiar with these alternatives. We should stick to the standard operators (&&, ||, !, etc.) for clarity, consistency, and compatibility with other C++ developers and tools.
-
-### Type Aliasing
-
-When declaring type aliases in C++ prefer using over typedef. using provides better readability, especially for complex types, and supports alias templates. Here is example:
-
-```
-// Preferred
-using Callback = void(*)(int, double);
-
-// Avoid
-typedef void (*Callback)(int, double);
-Choose alias names that clarify their role in the code. Avoid overly generic names that might obscure the type’s purpose, hence do not create a type alias unless it significantly improves clarity or simplifies complex types.
-```
-
-### Using Auto to Deduce Type
-
-Use auto only when it enhances code readability or maintainability. Avoid defaulting to “always use auto.” Instead, apply it thoughtfully in the following scenarios: - When the type is immediately clear from the initializer, such as in cast<Foo>(...). - When the type is obvious from the context, making the code cleaner and more concise. - When the type is already abstracted, such as with container typedefs like std::vector<T>::iterator.
-
-In all other cases, prefer explicit type declarations to maintain clarity and ensure the code remains easy to understand.
-
-## Python Coding Guidelines
-
-### Python Version and Source Code Formatting
-The current minimum version of Python required is 3.8 or higher. Python code in the LLVM repository should only use language features available in this version of Python.
-
-The Python code within the LLVM repository should adhere to the formatting guidelines outlined in PEP 8.
-
-For consistency and to limit churn, code should be automatically formatted with the black utility, which is PEP 8 compliant. Use its default rules. For example, avoid specifying --line-length even though it does not default to 80. The default rules can change between major versions of black. In order to avoid unnecessary churn in the formatting rules, we currently use black version 23.x in LLVM.
-
-When contributing a patch unrelated to formatting, you should format only the Python code that the patch modifies. For this purpose, use the darker utility, which runs default black rules over only the modified Python code. Doing so should ensure the patch will pass the Python format checks in LLVM’s pre-commit CI, which also uses darker. When contributing a patch specifically for reformatting Python files, use black, which currently only supports formatting entire files.
-
-Here are some quick examples, but see the black and darker documentation for details:
-
-```
-$ darker test.py                   # format uncommitted changes
-$ darker -r HEAD^ test.py          # also format changes from last commit
-$ black test.py                    # format entire file
-```
-
-Instead of individual file names, you can specify directories to darker, and it will find the changed files. However, if a directory is large, like a clone of the LLVM repository, darker can be painfully slow. In that case, you might wish to use git to list changed files. For example:
-
-``` $ darker -r HEAD^ $(git diff --name-only --diff-filter=d HEAD^) ```
 
 ## File Structure and Format for Legal 
 
@@ -308,7 +66,7 @@ Python files should use this convention:
 # SPDX-License-Identifier: Apache-2.0
 ```
 
-## Git and Branch Naming Guidelines 
+## Git, Branch Naming, and Pull Request Guidelines 
 
 * Filing an issue is encouraged for any item that needs alignment or long term tracking.
 
@@ -545,19 +303,71 @@ have a good reason not to.
 
 After that, the UI will usually delete your branch.
 
+## Including Documentation
 
-<!----Not ready yet after this line
-## STUFF ABOUT PULL REQUESTS 
+You should include documentation if you are:
+* Making a significant change that requires explanation for how to work with your change.
+* Adding a new feature. 
 
-For all your Pull Requests (PRs), Tenstorrent has an internal policy which your PR goes through after an initial review.
+## Commit Changes
+This section goes over how to properly commit your contribution. 
+
+### Pre-commit
+
+As part of maintaining consistent codeformatting across the project, we integrated the [pre-commit](https://pre-commit.com/) framework into our workflow. Pre-commit is a framework for managing and maintaining multi-language pre-commit hooks. It helps catch common issues early by running a set of hooks before code is committed, automating tasks like:
+
+* Formatting code (for example, fixing trailing whitespace, enforcing end-of-file newlines)
+* Running linters (for example, `clang-format`, `black`, `flake8`)
+* Checking for merge conflicts or other common issues. 
+
+For more details pre-commit, you can visit the [official documentation](https://pre-commit.com/).
+
+For details about setting up pre-commit, refer to the pre-commit documentation for your repository: 
+
+* tt-mlir
+* tt-xla
+* tt-npe
+* tt-thomas
+* tt-torch
+* tt-forge-fe
+
+### Post-commit
+
+All developers are responsible for ensuring that post-commit regressions pass upon any submission to the project. Failure to ensure these tests pass will constitute a major regression and will likely mean reverting your commits.
+
+For details on how post-commit is handled, refer to the post-commit documentation for your repository:
+
+* tt-mlir
+* tt-xla
+* tt-npe
+* tt-thomas
+* tt-torch
+* tt-forge-fe
+
+### CI/CD Principles
+
+Revert commits on main which fail post-commit tests immediately.
+  * The names listed in the commit, and technical leads if their names are convenient and clear to find, will be pinged in their associated pipelines.
+  * We will usually give a grace period during working hours depending on the load of the teams to see if the author(s) can merge a fix quickly. Otherwise, the revert will be immediate to prevent the issue from spreading to other peoples' pipelines.
+
+There shall be a periodic discussion among the technical leads of this project concerning:
+  * Certain codeowners and project-specific members review current tests in post-commit.
+  * Certain codeowners and project-specific members decide whether to remove/add any current tests in post-commit as project priorities change on an ongoing basis.
+  * Certain codeowners and project-specific members decide if we need to change owners or add more as project priorities change on an ongoing basis.
+  * Communication channels for these decisions and meetings shall be kept internal to Tenstorrent with the intent of having such discussions in the open later.
+
+Non-post-commit pipelines will not necessarily mean we have to revert the breaking commit, however any broken pipelines will be considered a priority bug fix. The responsibility of identifying, announcing status-tracking, and escalating broken non-post-commit pipelines will be the responsibility of codeowners whose tests are in the said non-post-commit pipeline.
+
+In the case of the model performance test pipeline, there are codeowners for such tests. However, it is the collective responsibility of all developers to ensure that we do not regress this pipeline.
+
+
+## Pull Request Notes 
+
+For all your Pull Requests (PRs), Tenstorrent has an internal policy which your PR goes through after an initial review. For additional details about pull requests, see the [Saving the Commit to Origin and Creating a Pull Request](#saving-the-commit-to-origin-and-creating-a-pull-request) section.
 
 The initial review encompasses the following:
 * Reviewing the PR for CI/CD readiness, making sure that the code and PR at a high level make sense for the project.
 * Once approved for CI/CD readiness, a Tenstorrent developer kicks off the CI/CD pipeline on your behalf.
-
-## Internal Contributions
-For internal contributions Tenstorrent has the following guidelines:
-
 * A 24 hour merge rule exists. Wait at least 24 hours after the PR was initially opened for review. This gives members of Tenstorrent teams that span the globe the opportunity to provide feedback on PRs.
 
 In addition to the 24 hour rule, the following prerequisites for landing a PR exist:
@@ -569,20 +379,5 @@ In addition to the 24 hour rule, the following prerequisites for landing a PR ex
 ```
 > [!NOTE]
 > *Rebasing or further changes to the PR do not reset the 24 hour counter.* 
-``` --->
+``` 
 
-
-
-## Including Documentation
-
-You should include documentation if you are:
-* Making a significant change that requires explanation for how to work with your change.
-* Adding a new feature. 
-
-## Commit Changes
-
-### Pre-commit
-
-### Post-commit
-
-### CI/CD Principles
