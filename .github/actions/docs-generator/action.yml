@@ -97,6 +97,11 @@ runs:
       run: |
         readme_path="${{ github.workspace }}/release/docs"
         mkdir -p $readme_path
+
+        found_files=$(find ${{ fromJson(inputs.artifact_job_json).download-path }} -type f -exec basename {} \;)
+        download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
+        echo ""
+
         cat <<- EOF >> "$readme_path/readme"
 
         ### ${{ inputs.repo }}
@@ -106,7 +111,6 @@ runs:
         #### Test status: ${{fromJson(inputs.artifact_job_json).run-status-symbol }}
         #### Workflow run: ${{fromJson(inputs.artifact_job_json).run-url }}
         #### Files:
-          ${{ fromJson(inputs.artifact_job_json).download-files }}
-
+          $download_list_files
         EOF
         
