@@ -26,7 +26,7 @@ def checkTT(author_login):
     #     print(f"DEBUG: HTTPError while checking {author_login}: {e}")
     #     return False
 
-def fetch_and_filter_prs(last, repo):
+def fetch_and_filter_prs(repo, key, last):
     print(f"DEBUG: Fetching PRs for repo {repo} with last cursor: {last}")
     query = """
     query($last:String,$repo:String!) {
@@ -68,24 +68,26 @@ def fetch_and_filter_prs(last, repo):
     print(f"DEBUG: Retrieved {len(prs.get('nodes', []))} PRs for repo {repo}.")
     
     # Filter PRs and build the result
-    result = { prs: [] }
     for pr in prs.get("nodes", []):
         author_login = pr.get("author", {}).get("login")
         print(f"DEBUG: Processing PR by {author_login}.")
         if not checkTT(author_login):
-            print(f"DEBUG: {author_login} is not a member. Adding PR to results.")
-            result.prs.append({
-                "url": pr["url"],
-                "title": pr["title"],
-                "createdAt": pr["createdAt"],
-                "author": author_login
-            })
+            print(f"DEBUG: {author_login} is not a member. Sending message.")
+            message = f"New PR in {repo}:\nTitle: {pr['title']}\nURL: {pr['url']}\nAuthor: {pr['author']}\nCreated At: {pr['createdAt']}"
+            send_message(message)
+        else:
+            print(f"DEBUG: {author_login} is a member.\nPR in {repo}:\nTitle: {pr['title']}\nURL: {pr['url']}\nAuthor: {pr['author']}\nCreated At: {pr['createdAt']}")
 
     # Add the endCursor value
-    print(f"DEBUG: Updated last cursor for {repo}: {prs.get('pageInfo', {}).get('endCursor')}")
-    result["last"] = prs.get("pageInfo", {}).get("endCursor")
+    last = prs.get("pageInfo", {}).get("endCursor")
     
-    return result
+    # Update the GitHub variable with the new cursor value
+    command = [
+        "gh", "variable", "set", key, "--body", f"{last}"
+    ]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"ERROR: Failed to update GitHub variable. stderr: {result.stderr}")
 
 def send_message(message):
     print(f"DEBUG: Sending message to Slack: {message}")
@@ -112,45 +114,12 @@ def send_message(message):
     except urllib.error.HTTPError as e:
         print(f"DEBUG: HTTPError while sending Slack message: {e}")
 
-def load_and_run(json_file):
-    print(f"DEBUG: Loading and running with JSON file: {json_file}")
-    # Check if the JSON file exists, if not create it with default values
-    if not os.path.exists(json_file):
-        print(f"DEBUG: JSON file {json_file} does not exist. Creating default data.")
-        data = {
-            "tt-mlir": {"last": ""},
-            "tt-xla": {"last": ""},
-            "tt-forge-fe": {"last": ""},
-            "tt-torch": {"last": ""}
-        }
-    else:
-        print(f"DEBUG: JSON file {json_file} found. Loading data.")
-        with open(json_file, "r") as file:
-            data = json.load(file)
-
-    # Process each repository
-    for repo, info in data.items():
-        print(f"DEBUG: Processing repository {repo}.")
-        last = info.get("last", "")
-        result = fetch_and_filter_prs(last, repo)
-        data[repo]["last"] = result.get("last", "")
-
-        # Send messages for each PR
-        for pr in result.get("prs", []):
-            print(f"DEBUG: Sending Slack message for PR: {pr['url']}")
-            message = f"New PR in {repo}:\nTitle: {pr['title']}\nURL: {pr['url']}\nAuthor: {pr['author']}\nCreated At: {pr['createdAt']}"
-            send_message(message)
-
-    # Save the updated JSON back to the file
-    print(f"DEBUG: Saving updated data to {json_file}.")
-    with open(json_file, "w") as file:
-        json.dump(data, file, indent=4)
 
 if __name__ == "__main__":
     print("DEBUG: Script started.")
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         print("DEBUG: Invalid arguments. Exiting.")
-        print("Usage: python get_new_prs.py <json_file>")
+        print("Usage: python get_new_prs.py <repo> <key> <last>")
     else:
-        print(f"DEBUG: Running with argument: {sys.argv[1]}")
-        load_and_run(sys.argv[1])
+        print(f"DEBUG: Running with arguments: {sys.argv[1]}, {sys.argv[2]} {sys.argv[3]}")
+        fetch_and_filter_prs(sys.argv[1], sys.argv[2], sys.argv[3])
