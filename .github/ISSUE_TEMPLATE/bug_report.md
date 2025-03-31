@@ -1,13 +1,5 @@
----
-Name: File a bug
-About: Create a bug report to help us improve
-Title: "[Bug Report] ..."
-Labels: bug
-Assignees: ''
----
-
 **Describe the bug:**
-A clear and concise description of what the bug is.
+A clear and concise description of what the bug is and how to reproduce it.
 
 **To Reproduce:**
 Steps to reproduce the behavior:
@@ -23,7 +15,8 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Please complete the following environment information:**
-- OS: [e.g. Ubuntu 20.04]
+- OS: [e.g. Ubuntu 22.04]
+- Version of wheel 
 - Version of software (eg. commit)
 
 **Additional context:**
