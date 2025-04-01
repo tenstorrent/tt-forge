@@ -19,3 +19,6 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
       - uses: pre-commit/action@v3.0.1
+      - uses: enarx/spdx@master
+        with:
+          licenses: Apache-2.0
