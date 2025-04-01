@@ -17,7 +17,7 @@ inputs:
   release_type:
         type: choice
         description: select release type
-        options: 
+        options:
         - nightly
         - beta
         - stable
@@ -25,14 +25,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Get last release 
+    - name: Get last release
       shell: bash
       id: last_release
       run: |
         loop_count=50
         echo "Search the lastest $loop_count releases to find latest ${{ inputs.release_type }}"
-        releases=$(gh release list -R tenstorrent/tt-forge -L $loop_count --json name,tagName,publishedAt,isDraft) 
-        
+        releases=$(gh release list -R tenstorrent/tt-forge -L $loop_count --json name,tagName,publishedAt,isDraft)
+
         array_ptr=0
         success=false
 
@@ -79,7 +79,7 @@ runs:
 
           encoded_params=$(echo -n $url_parms|jq -sRr @uri)
           url="$base_url$encoded_params"
-        
+
           echo "$store_var=$url" >> $GITHUB_OUTPUT
         }
 
@@ -88,7 +88,7 @@ runs:
 
         merged_changes_parms="sort:created-desc  state:merged created:$start..$end"
         store_encoded_url "$merged_changes_parms" "merged_changes"
-        
+
         bug_fixes_parms="label:bug created:<$end -label:\"CI / Infra\""
         store_encoded_url "$bug_fixes_parms" "bug_fixes"
 
@@ -113,4 +113,3 @@ runs:
         #### Files:
           $download_list_files
         EOF
-        

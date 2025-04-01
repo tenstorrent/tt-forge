@@ -1,7 +1,7 @@
 <div align="center">
 
 <h1>
-   
+
 [Buy hardware](https://tenstorrent.com/cards/) | [Discord](https://discord.gg/tenstorrent)
 
 </h1>
@@ -14,13 +14,13 @@
 </div>
 <br>
 
-TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. We are currently still in developer preview for early adopters to check out what we've built and give it a try. 
-  
+TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. We are currently still in developer preview for early adopters to check out what we've built and give it a try.
+
 -----
 # What is this Repo?
 This repository is the central hub for the TT-Forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Currently in early developer preview, we’ll be providing frequent updates to keep you informed on the latest developments. Please file any issues with questions or feedback you may have.
 
-# Getting Started Guide 
+# Getting Started Guide
 See our individual front end documentations in the [Front end](#current-ai-framework-front-end-projects) section to get started running some tests.
 
 # Project goals
@@ -44,7 +44,7 @@ TT-Forge lowers to our tt-metalium project providing additional functionality to
 - [`tt-torch`](https://github.com/tenstorrent/tt-torch)
 
   - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to `tt-mlir`. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
-  - See [docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide. 
+  - See [docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide.
 
 - [`tt-xla`](https://github.com/tenstorrent/tt-xla)
   - Leverages a PJRT interface to integrate JAX (and in the future other frameworks), `tt-mlir` and Tenstorrent hardware. Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to `tt-mlir` compiler
@@ -59,7 +59,7 @@ At it's core `tt-mlir` is our compiler that is interfacing with tt-metalium our 
 
 - TTNN Dialect: Our entry point into the TTNN Library of Ops
 
-- TTMetalium Dialect: Our entry point into directly accessing tt-metalium kernels. 
+- TTMetalium Dialect: Our entry point into directly accessing tt-metalium kernels.
 
 The compiler employs various optimization passes, including layout transformation, operation fusing, decomposition, and sharding, ensuring the efficient lowering to the target dialect.​
 

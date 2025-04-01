@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Keep only the latest $max_count releases 
+# Keep only the latest $max_count releases
 max_count=30
 
 all_releases=$(gh release list --exclude-drafts --json name,tagName,isPrerelease)
