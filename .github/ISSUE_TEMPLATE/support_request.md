@@ -1,8 +1,8 @@
 
-**What are you trying to do:**
-Push a branch, run a workflow, view private data etc.
+**What you are trying to do:**
+Push a branch, run a workflow etc.
 
-**Who needs permissions:**
+**What issue you are encountering:**
 For the author, team, org, etc.
 
 **Optional screenshot:**
