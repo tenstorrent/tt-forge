@@ -40,14 +40,14 @@ Click on components to navigate to their repositories:
 
 ```mermaid
 flowchart TD
-    %% Define styles for the diagram
-    classDef frameworks fill:#f9d6d2,stroke:#e05d44,stroke-width:2px
-    classDef frontends fill:#fff3cd,stroke:#ffc107,stroke-width:2px
-    classDef compiler fill:#d1e7dd,stroke:#198754,stroke-width:2px
-    classDef runtime fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
-    classDef system fill:#e2e3e5,stroke:#6c757d,stroke-width:2px
-    classDef software fill:#d3d3ff,stroke:#6610f2,stroke-width:2px
-    classDef hardware fill:#f8f9fa,stroke:#212529,stroke-width:2px
+    %% Define styles for the diagram with improved contrast and font size
+    classDef frameworks fill:#f9d6d2,stroke:#e05d44,stroke-width:2px,color:#000000,font-size:14px,font-weight:bold
+    classDef frontends fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#000000,font-size:14px,font-weight:bold
+    classDef compiler fill:#d1e7dd,stroke:#198754,stroke-width:2px,color:#000000,font-size:14px,font-weight:bold
+    classDef runtime fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px,color:#000000,font-size:14px,font-weight:bold
+    classDef system fill:#e2e3e5,stroke:#6c757d,stroke-width:2px,color:#000000,font-size:14px,font-weight:bold
+    classDef software fill:#d3d3ff,stroke:#6610f2,stroke-width:2px,color:#000000,font-size:14px,font-weight:bold
+    classDef hardware fill:#f8f9fa,stroke:#212529,stroke-width:2px,color:#000000,font-size:14px,font-weight:bold
     classDef invisible opacity:0,fill:none,stroke:none
     
     %% Top level layout with invisible container to center frameworks
@@ -61,21 +61,21 @@ flowchart TD
         subgraph FrameworksContainer[" "]
             direction TB
             %% Top level frameworks
-            subgraph Frameworks["&nbsp;&nbsp;&nbsp;&nbsp;Frameworks&nbsp;&nbsp;&nbsp;&nbsp;"]
+            subgraph Frameworks["<span style='font-size:16px;font-weight:bold'>Frameworks</span>"]
                 direction LR
-                JAX("JAX")
-                ONX("ONNX")
-                PYTORCH("PyTorch")
-                TF("TensorFlow")
+                JAX("<span style='font-size:14px;font-weight:bold'>JAX</span>")
+                ONX("<span style='font-size:14px;font-weight:bold'>ONNX</span>")
+                PYTORCH("<span style='font-size:14px;font-weight:bold'>PyTorch</span>")
+                TF("<span style='font-size:14px;font-weight:bold'>TensorFlow</span>")
             end
             
             %% Front-ends
-            subgraph FrontEnds["&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Front Ends&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+            subgraph FrontEnds["<span style='font-size:16px;font-weight:bold'>Front Ends</span>"]
                 direction LR
                 %% Add extra spacing between frontend components
-                TT_TORCH("tt-torch")
-                TT_FORGE_FE("tt-forge-FE")
-                TT_XLA("tt-xla")
+                TT_TORCH("<span style='font-size:14px;font-weight:bold'>tt-torch</span>")
+                TT_FORGE_FE("<span style='font-size:14px;font-weight:bold'>tt-forge-FE</span>")
+                TT_XLA("<span style='font-size:14px;font-weight:bold'>tt-xla</span>")
             end
         end
         
@@ -88,17 +88,17 @@ flowchart TD
     FrameworksContainer:::invisible
     
     %% Compiler sections side by side
-    subgraph CompilerLayer["Compiler Layer"]
+    subgraph CompilerLayer["<span style='font-size:16px;font-weight:bold'>Compiler Layer</span>"]
         %% tt-MLIR Compiler section
-        subgraph TTMLIR["&nbsp;&nbsp;&nbsp;&nbsp;tt-MLIR Compiler&nbsp;&nbsp;&nbsp;&nbsp;"]
-            TTIR("TT-IR")
-            STABLEHLO("StableHLO-IR")
-            PYKERNEL("PyKernel")
+        subgraph TTMLIR["<span style='font-size:16px;font-weight:bold'>tt-MLIR Compiler</span>"]
+            TTIR("<span style='font-size:14px;font-weight:bold'>TT-IR</span>")
+            STABLEHLO("<span style='font-size:14px;font-weight:bold'>StableHLO-IR</span>")
+            PYKERNEL("<span style='font-size:14px;font-weight:bold'>PyKernel</span>")
             %% Graph Passes - using hexagon shape
-            GRAPH_PASSES{{"Graph Passes"}}
-            TTMETAL_IR("TT-Metal-IR")
-            TTNN("TTNN-IR")
-            TTKERNEL("TTKernel-IR")
+            GRAPH_PASSES{{"<span style='font-size:14px;font-weight:bold'>Graph Passes</span>"}}
+            TTMETAL_IR("<span style='font-size:14px;font-weight:bold'>TT-Metal-IR</span>")
+            TTNN("<span style='font-size:14px;font-weight:bold'>TTNN-IR</span>")
+            TTKERNEL("<span style='font-size:14px;font-weight:bold'>TTKernel-IR</span>")
             
             %% Connect PyKernel to Graph Passes
             PYKERNEL --> GRAPH_PASSES
@@ -110,11 +110,11 @@ flowchart TD
         end
         
         %% Compiler Tools section with vertical layout
-        subgraph CompilerTools["&nbsp;&nbsp;&nbsp;&nbsp;Compiler Tools&nbsp;&nbsp;&nbsp;&nbsp;"]
+        subgraph CompilerTools["<span style='font-size:16px;font-weight:bold'>Compiler Tools</span>"]
             direction TB
-            TTMLIROPT("ttmlir-opt")
-            TTNNSTANDALONE("ttnn-standalone")
-            TTEXPLORER("tt-explorer")
+            TTMLIROPT("<span style='font-size:14px;font-weight:bold'>ttmlir-opt</span>")
+            TTNNSTANDALONE("<span style='font-size:14px;font-weight:bold'>ttnn-standalone</span>")
+            TTEXPLORER("<span style='font-size:14px;font-weight:bold'>tt-explorer</span>")
         end
     end
     
@@ -123,30 +123,30 @@ flowchart TD
     TTMLIR --- CompilerTools
     
     %% TT-Metalium section
-    subgraph TTMETALIUM["&nbsp;&nbsp;&nbsp;&nbsp;TT-Metalium&nbsp;&nbsp;&nbsp;&nbsp;"]
-        TTNN_HW("TTNN")
-        TTMETAL("TTMetal")
+    subgraph TTMETALIUM["<span style='font-size:16px;font-weight:bold'>TT-Metalium</span>"]
+        TTNN_HW("<span style='font-size:14px;font-weight:bold'>TTNN</span>")
+        TTMETAL("<span style='font-size:14px;font-weight:bold'>TTMetal</span>")
         
         %% Connect TTNN to TTMetal within TT-Metalium
         TTNN_HW --> TTMETAL
     end
     
     %% LLK outside of TT-Metalium
-    LLK("&nbsp;&nbsp;&nbsp;&nbsp;LLK&nbsp;&nbsp;&nbsp;&nbsp;")
+    LLK("<span style='font-size:14px;font-weight:bold'>LLK</span>")
     
     %% System Tools and System Software sections side by side
-    subgraph SystemLayer["System Layer"]
+    subgraph SystemLayer["<span style='font-size:16px;font-weight:bold'>System Layer</span>"]
         %% System Tools section
-        subgraph SystemTools["&nbsp;&nbsp;&nbsp;&nbsp;System Tools&nbsp;&nbsp;&nbsp;&nbsp;"]
-            TTSMI("tt-smi")
-            LUWEN("luwen")
-            TTTOPOLOGY("tt-topology")
+        subgraph SystemTools["<span style='font-size:16px;font-weight:bold'>System Tools</span>"]
+            TTSMI("<span style='font-size:14px;font-weight:bold'>tt-smi</span>")
+            LUWEN("<span style='font-size:14px;font-weight:bold'>luwen</span>")
+            TTTOPOLOGY("<span style='font-size:14px;font-weight:bold'>tt-topology</span>")
         end
         
         %% System Software section
-        subgraph SystemSoftware["&nbsp;&nbsp;&nbsp;&nbsp;System Software&nbsp;&nbsp;&nbsp;&nbsp;"]
-            UMD("UMD")
-            KMD("KMD")
+        subgraph SystemSoftware["<span style='font-size:16px;font-weight:bold'>System Software</span>"]
+            UMD("<span style='font-size:14px;font-weight:bold'>UMD</span>")
+            KMD("<span style='font-size:14px;font-weight:bold'>KMD</span>")
         end
     end
     
@@ -154,9 +154,9 @@ flowchart TD
     SystemLayer:::none
     
     %% Hardware section
-    subgraph Hardware["&nbsp;&nbsp;&nbsp;&nbsp;Hardware&nbsp;&nbsp;&nbsp;&nbsp;"]
-        WORMHOLE("Wormhole")
-        BLACKHOLE("Blackhole")
+    subgraph Hardware["<span style='font-size:16px;font-weight:bold'>Hardware</span>"]
+        WORMHOLE("<span style='font-size:14px;font-weight:bold'>Wormhole</span>")
+        BLACKHOLE("<span style='font-size:14px;font-weight:bold'>Blackhole</span>")
     end
     
     %% Connect TTMetal to LLK, LLK to System Software, and System Layer to Hardware
