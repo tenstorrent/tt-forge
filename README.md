@@ -35,8 +35,83 @@ TT-Forge lowers to our tt-metalium project providing additional functionality to
 
 ![Tenstorrent Software overview](docs/public/images/tt-sw-overview.png)
 
+### Interactive Architecture Diagram
+Click on components to navigate to their repositories:
 
-## Current AI Framework Front End projects
+```mermaid
+graph TD
+    %% Define styles
+    classDef frameworks fill:#f9d6d2,stroke:#e05d44,stroke-width:2px
+    classDef compiler fill:#d1e7dd,stroke:#198754,stroke-width:2px
+    classDef runtime fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    classDef hardware fill:#e2e3e5,stroke:#6c757d,stroke-width:2px
+    classDef tools fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    
+    %% Main components in strict vertical alignment
+    USER[ML/AI Applications]
+    FrameworksBox[AI Framework Integration]
+    CompilerBox[TT-Forge Compiler Stack]
+    RuntimeBox[Runtime & Hardware SDK]
+    
+    %% Force vertical flow
+    USER --> FrameworksBox
+    FrameworksBox --> CompilerBox
+    CompilerBox --> RuntimeBox
+    
+    %% Framework components positioned inside their box
+    FrameworksBox --- FORGE_FE["TT-Forge-FE<br>(TVM-based)"]
+    FrameworksBox --- TORCH["tt-torch<br>(PyTorch 2.X)"]
+    FrameworksBox --- XLA["tt-xla<br>(JAX)"]
+    FrameworksBox --- TVM["tt-tvm"]
+    
+    %% Input models
+    PYTORCH["PyTorch"] --> FORGE_FE & TORCH
+    ONNX["ONNX"] --> FORGE_FE & TORCH
+    TF["TensorFlow"] --> FORGE_FE
+    PADDLE["PaddlePaddle"] --> FORGE_FE
+    JAX["JAX"] --> XLA
+    TVM --> FORGE_FE
+    
+    %% Compiler components
+    CompilerBox --- MLIR["tt-mlir"]
+    
+    %% MLIR Dialects
+    MLIR --- TTIR["TTIR Dialect<br>(Common IR)"]
+    MLIR --- TTNN["TTNN Dialect<br>(Library of Ops)"]
+    MLIR --- TTMETAL["TTMetalium Dialect<br>(Hardware Access)"]
+    
+    %% Compiler Tools
+    MLIR --- EXPLORER["tt-explorer<br>(Human-In-Loop)"]
+    MLIR --- TTMLIR_OPT["ttmlir-opt<br>(Compiler Passes)"]
+    MLIR --- TTMLIR_TRANSLATE["ttmlir-translate<br>(Format Conversion)"]
+    MLIR --- TTRT["ttrt<br>(Runtime Tool)"]
+    MLIR --- TTNN_STANDALONE["ttnn-standalone<br>(Tuning/Debugging)"]
+    
+    %% Direct connection to runtime
+    MLIR --> METAL["tt-Metallium<br>(AI Hardware SDK)"]
+    
+    %% Runtime components
+    RuntimeBox --- METAL
+    METAL --- GRAYSKULL["Grayskull"]
+    METAL --- WORMHOLE["Wormhole"]
+    METAL --- BLACKHOLE["BlackHole"]
+    
+    %% Apply styles
+    class FrameworksBox,FORGE_FE,TORCH,XLA,TVM,PYTORCH,ONNX,TF,PADDLE,JAX frameworks
+    class CompilerBox,MLIR,TTIR,TTNN,TTMETAL compiler
+    class EXPLORER,TTMLIR_OPT,TTMLIR_TRANSLATE,TTRT,TTNN_STANDALONE tools
+    class RuntimeBox,METAL,GRAYSKULL,WORMHOLE,BLACKHOLE runtime
+    
+    %% Click actions
+    click FORGE_FE "https://github.com/tenstorrent/tt-forge-fe" "TT-Forge-FE Repository"
+    click TORCH "https://github.com/tenstorrent/tt-torch" "tt-torch Repository"
+    click XLA "https://github.com/tenstorrent/tt-xla" "tt-xla Repository"
+    click MLIR "https://github.com/tenstorrent/tt-mlir" "tt-mlir Repository"
+    click METAL "https://github.com/tenstorrent/tt-metal" "tt-Metallium Repository"
+    click TVM "https://github.com/tenstorrent/tt-tvm" "tt-tvm Repository"
+```
+
+### Current AI Framework Front End Projects
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
   - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([`tt-tvm`](https://github.com/tenstorrent/tt-tvm)).
   - See [docs pages](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html) for an overview and getting started guide.
