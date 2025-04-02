@@ -29,7 +29,8 @@ jobs:
       with:
         repo: tenstorrent/tt-forge-fe
         workflow: On nightly
-        artifact_download_glob: '*wheel*'
+        artifact_download_glob: '*{wheel,reports}*'
+        artifact_cleanup_glob: '*.json'
         workflow_allow_failed: true
     - name: Uplift tenstorrent/tt-torch nightly artifacts
       uses: ./.github/actions/uplift-artifacts
@@ -37,7 +38,7 @@ jobs:
       with:
         repo: tenstorrent/tt-torch
         workflow: Nightly Tests
-        artifact_download_glob: '*install-artifacts*'
+        artifact_download_glob: '*{install-artifacts,test-reports-models-}*'
         artifact_cleanup_glob: 'torchvision*'
         workflow_allow_failed: true
     - name: Update Wheel versions
@@ -45,6 +46,21 @@ jobs:
         WHEEL_VERSION: ${{ steps.version-tag.outputs.tag }}
         WHEEL_ROOT_PATH: ${{ github.workspace }}/release/artifacts
       run: ./.github/scripts/wheel-version-updater.sh
+    - name: Create model compatible table
+      working-directory: ./.github/scripts/model-compatible-table
+      env:
+        XML_ROOT: ${{ github.workspace }}/release/artifacts
+        FILE_OUTPUT: ${{ github.workspace }}/release/docs/readme_hardware_table.md
+        URL_SHAS: '{"tt-forge-fe": "${{ steps.tt-forge-fe-artifacts.outputs.run-commit-sha }}", "tt-torch": "${{ steps.tt-torch-artifacts.outputs.run-commit-sha }}"}'
+      run: |
+        readme_path="${{ github.workspace }}/release/docs"
+        mkdir -p $readme_path
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        python main.py
+        # Clean up XML files
+        find ${{ github.workspace }}/release/artifacts -type f -iname "*.xml" -delete
     - name: tt-forge-fe-docs
       uses: ./.github/actions/docs-generator
       with:
@@ -59,6 +75,9 @@ jobs:
         repo: tt-torch
         artifact_job_json: "${{ toJSON(steps.tt-torch-artifacts.outputs) }}"
         release_type: 'nightly'
+    - name: cat readme
+      run: |
+        cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
@@ -70,8 +89,7 @@ jobs:
         prerelease: true
         fail_on_unmatched_files: true
         files: |
-          ${{ steps.tt-forge-fe-artifacts.outputs.download-path }}/**
-          ${{ steps.tt-torch-artifacts.outputs.download-path }}/**
+          ${{ github.workspace }}/release/artifacts/**
     - name: Prune Nightly releases
       if: ${{ !github.event.inputs.draft || true }}
       shell: bash

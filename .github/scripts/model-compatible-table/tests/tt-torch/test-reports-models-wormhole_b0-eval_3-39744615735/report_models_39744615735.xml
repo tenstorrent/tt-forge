@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+    <testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="2631.562"
+        timestamp="2025-04-01T04:47:49.270864+00:00" hostname="c91acd062e88">
+        <testcase classname="tests.models.phi.test_phi_1_1p5_2"
+            name="test_phi[full-microsoft/phi-1.5-eval]" time="2621.834">
+            <properties>
+                <property name="start_timestamp" value="2025-04-01T04:47:53.246903+00:00" />
+                <property name="model_name" value="microsoft/phi-1.5" />
+                <property name="frontend" value="tt-torch" />
+                <property name="owner" value="tt-torch" />
+                <property name="group" value="red" />
+                <property name="config"
+                    value="{'model_group': 'red', 'compiler_config': {'compile_depth': 'CompileDepth.EXECUTE', 'profile_ops': True, 'torch_mlir_module': None, 'stablehlo_mlir_module': None, 'unique_ops': {}, 'stable_hlo_ops': [], 'model_name': 'microsoft/phi-1.5', 'results_path': 'results/models/', 'single_op_timeout': 30, 'enable_consteval': False, '_consteval_parameters': False, '_enable_intermediate_verification': False, '_verify_op_by_op': False}}" />
+                <property name="achieved_compile_depth" value="STABLEHLO" />
+                <property name="achieved_compile_depth" value="TTNN_IR" />
+                <property name="achieved_compile_depth" value="EXECUTE" />
+                <property name="tags"
+                    value="{'model_name': 'microsoft/phi-1.5', 'frontend': 'tt-torch', 'avg_pccs': -1, 'min_pccs': -1, 'max_pccs': -1, 'avg_atols': -1, 'min_atols': -1, 'max_atols': -1, 'pcc': -1, 'atol': -1, 'bringup_status': 'INCORRECT_RESULT'}" />
+                <property name="end_timestamp" value="2025-04-01T05:31:35.090739+00:00" />
+            </properties>
+        </testcase>
+    </testsuite>
+</testsuites>

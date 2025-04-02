@@ -38,6 +38,9 @@ outputs:
   run-status-symbol:
     description: 'Workflow run unicode symbol'
     value: ${{ steps.fetch_run_id.outputs.run_status_symbol }}
+  run-commit-sha:
+    description: 'Workflow Branch commit sha'
+    value: ${{ steps.fetch_run_id.outputs.run_commit_sha }}
 
 
 runs:
@@ -108,6 +111,7 @@ runs:
         echo "run_id=$run_id" >> $GITHUB_OUTPUT
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
         echo "run_status_symbol=$run_status_symbol" >> $GITHUB_OUTPUT
+        echo "run_commit_sha=$run_commit_sha" >> $GITHUB_OUTPUT
 
 
     - name: Download artifacts
@@ -123,8 +127,10 @@ runs:
       id: files
       shell: bash
       run: |
+        sudo apt-get install unzip
         tree ${{ steps.artifacts.outputs.download-path }}
         find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar" -print0 -execdir tar xf {} \; -delete
         find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar.gz" -print0 -execdir tar xf {} \; -delete
+        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.zip" -print0 -execdir unzip {} \; -delete
         find ${{ steps.artifacts.outputs.download-path }} -type f -iname "${{ inputs.artifact_cleanup_glob }}" -delete
         tree ${{ steps.artifacts.outputs.download-path }}
