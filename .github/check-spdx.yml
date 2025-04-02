@@ -1,0 +1,15 @@
+DEFAULT:
+  perform_check: yes  # Perform check for all files
+  allowed_licenses:
+    - Apache-2.0
+    - BSD-3-Clause
+    - MIT
+  license_for_new_files: Apache-2.0  # license to be used when inserting a new copyright notice
+  new_notice_c: |+  # notice for new C, CPP, H, HPP and LD files
+    // SPDX-FileCopyrightText: (c) {years} Tenstorrent AI ULC
+    //
+    // SPDX-License-Identifier: {license}
+  new_notice_python: |+  # notice for new python files
+    # SPDX-FileCopyrightText: (c) {years} Tenstorrent AI ULC
+    #
+    # SPDX-License-Identifier: {license}
