@@ -39,76 +39,198 @@ TT-Forge lowers to our tt-metalium project providing additional functionality to
 Click on components to navigate to their repositories:
 
 ```mermaid
-graph TD
-    %% Define styles
+flowchart TD
+    %% Define styles for the diagram
     classDef frameworks fill:#f9d6d2,stroke:#e05d44,stroke-width:2px
+    classDef frontends fill:#fff3cd,stroke:#ffc107,stroke-width:2px
     classDef compiler fill:#d1e7dd,stroke:#198754,stroke-width:2px
     classDef runtime fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
-    classDef hardware fill:#e2e3e5,stroke:#6c757d,stroke-width:2px
-    classDef tools fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    classDef system fill:#e2e3e5,stroke:#6c757d,stroke-width:2px
+    classDef software fill:#d3d3ff,stroke:#6610f2,stroke-width:2px
+    classDef hardware fill:#f8f9fa,stroke:#212529,stroke-width:2px
+    classDef invisible opacity:0,fill:none,stroke:none
     
-    %% Main components in strict vertical alignment
-    USER[ML/AI Applications]
-    FrameworksBox[AI Framework Integration]
-    CompilerBox[TT-Forge Compiler Stack]
-    RuntimeBox[Runtime & Hardware SDK]
+    %% Top level layout with invisible container to center frameworks
+    subgraph TopLevel[" "]
+        direction LR
+        
+        %% Left spacer (invisible)
+        LeftSpacer[" "]:::invisible
+        
+        %% Center container for frameworks
+        subgraph FrameworksContainer[" "]
+            direction TB
+            %% Top level frameworks
+            subgraph Frameworks["&nbsp;&nbsp;&nbsp;&nbsp;Frameworks&nbsp;&nbsp;&nbsp;&nbsp;"]
+                direction LR
+                JAX("JAX")
+                ONX("ONNX")
+                PYTORCH("PyTorch")
+                TF("TensorFlow")
+            end
+            
+            %% Front-ends
+            subgraph FrontEnds["&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Front Ends&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+                direction LR
+                %% Add extra spacing between frontend components
+                TT_TORCH("tt-torch")
+                TT_FORGE_FE("tt-forge-FE")
+                TT_XLA("tt-xla")
+            end
+        end
+        
+        %% Right spacer (invisible)
+        RightSpacer[" "]:::invisible
+    end
     
-    %% Force vertical flow
-    USER --> FrameworksBox
-    FrameworksBox --> CompilerBox
-    CompilerBox --> RuntimeBox
+    %% Style invisible containers
+    TopLevel:::invisible
+    FrameworksContainer:::invisible
     
-    %% Framework components positioned inside their box
-    FrameworksBox --- FORGE_FE["TT-Forge-FE<br>(TVM-based)"]
-    FrameworksBox --- TORCH["tt-torch<br>(PyTorch 2.X)"]
-    FrameworksBox --- XLA["tt-xla<br>(JAX)"]
-    FrameworksBox --- TVM["tt-tvm"]
+    %% Compiler sections side by side
+    subgraph CompilerLayer["Compiler Layer"]
+        %% tt-MLIR Compiler section
+        subgraph TTMLIR["&nbsp;&nbsp;&nbsp;&nbsp;tt-MLIR Compiler&nbsp;&nbsp;&nbsp;&nbsp;"]
+            TTIR("TT-IR")
+            STABLEHLO("StableHLO-IR")
+            PYKERNEL("PyKernel")
+            %% Graph Passes - using hexagon shape
+            GRAPH_PASSES{{"Graph Passes"}}
+            TTMETAL_IR("TT-Metal-IR")
+            TTNN("TTNN-IR")
+            TTKERNEL("TTKernel-IR")
+            
+            %% Connect PyKernel to Graph Passes
+            PYKERNEL --> GRAPH_PASSES
+            
+            %% Connect Graph Passes to IRs
+            GRAPH_PASSES --> TTKERNEL
+            GRAPH_PASSES --> TTNN
+            GRAPH_PASSES --> TTMETAL_IR
+        end
+        
+        %% Compiler Tools section with vertical layout
+        subgraph CompilerTools["&nbsp;&nbsp;&nbsp;&nbsp;Compiler Tools&nbsp;&nbsp;&nbsp;&nbsp;"]
+            direction TB
+            TTMLIROPT("ttmlir-opt")
+            TTNNSTANDALONE("ttnn-standalone")
+            TTEXPLORER("tt-explorer")
+        end
+    end
     
-    %% Input models
-    PYTORCH["PyTorch"] --> FORGE_FE & TORCH
-    ONNX["ONNX"] --> FORGE_FE & TORCH
-    TF["TensorFlow"] --> FORGE_FE
-    PADDLE["PaddlePaddle"] --> FORGE_FE
-    JAX["JAX"] --> XLA
-    TVM --> FORGE_FE
+    %% Set direction for compiler sections to be side by side
+    CompilerLayer:::none
+    TTMLIR --- CompilerTools
     
-    %% Compiler components
-    CompilerBox --- MLIR["tt-mlir"]
+    %% TT-Metalium section
+    subgraph TTMETALIUM["&nbsp;&nbsp;&nbsp;&nbsp;TT-Metalium&nbsp;&nbsp;&nbsp;&nbsp;"]
+        TTNN_HW("TTNN")
+        TTMETAL("TTMetal")
+        
+        %% Connect TTNN to TTMetal within TT-Metalium
+        TTNN_HW --> TTMETAL
+    end
     
-    %% MLIR Dialects
-    MLIR --- TTIR["TTIR Dialect<br>(Common IR)"]
-    MLIR --- TTNN["TTNN Dialect<br>(Library of Ops)"]
-    MLIR --- TTMETAL["TTMetalium Dialect<br>(Hardware Access)"]
+    %% LLK outside of TT-Metalium
+    LLK("&nbsp;&nbsp;&nbsp;&nbsp;LLK&nbsp;&nbsp;&nbsp;&nbsp;")
     
-    %% Compiler Tools
-    MLIR --- EXPLORER["tt-explorer<br>(Human-In-Loop)"]
-    MLIR --- TTMLIR_OPT["ttmlir-opt<br>(Compiler Passes)"]
-    MLIR --- TTMLIR_TRANSLATE["ttmlir-translate<br>(Format Conversion)"]
-    MLIR --- TTRT["ttrt<br>(Runtime Tool)"]
-    MLIR --- TTNN_STANDALONE["ttnn-standalone<br>(Tuning/Debugging)"]
+    %% System Tools and System Software sections side by side
+    subgraph SystemLayer["System Layer"]
+        %% System Tools section
+        subgraph SystemTools["&nbsp;&nbsp;&nbsp;&nbsp;System Tools&nbsp;&nbsp;&nbsp;&nbsp;"]
+            TTSMI("tt-smi")
+            LUWEN("luwen")
+            TTTOPOLOGY("tt-topology")
+        end
+        
+        %% System Software section
+        subgraph SystemSoftware["&nbsp;&nbsp;&nbsp;&nbsp;System Software&nbsp;&nbsp;&nbsp;&nbsp;"]
+            UMD("UMD")
+            KMD("KMD")
+        end
+    end
     
-    %% Direct connection to runtime
-    MLIR --> METAL["tt-Metallium<br>(AI Hardware SDK)"]
+    %% Set direction for system sections to be side by side
+    SystemLayer:::none
     
-    %% Runtime components
-    RuntimeBox --- METAL
-    METAL --- GRAYSKULL["Grayskull"]
-    METAL --- WORMHOLE["Wormhole"]
-    METAL --- BLACKHOLE["BlackHole"]
+    %% Hardware section
+    subgraph Hardware["&nbsp;&nbsp;&nbsp;&nbsp;Hardware&nbsp;&nbsp;&nbsp;&nbsp;"]
+        WORMHOLE("Wormhole")
+        BLACKHOLE("Blackhole")
+    end
+    
+    %% Connect TTMetal to LLK, LLK to System Software, and System Layer to Hardware
+    TTMETAL --> LLK
+    LLK --> SystemSoftware
+    SystemLayer --> Hardware
+    
+    %% Connect frameworks to front-ends with longer arrows
+    ONX -.-> TT_TORCH
+    ONX -.-> TT_FORGE_FE
+    JAX -.-> TT_XLA
+    PYTORCH -.-> TT_TORCH
+    PYTORCH -.-> TT_FORGE_FE
+    TF -.-> TT_FORGE_FE
+    
+    %% Connect front-ends to tt-MLIR Compiler
+    TT_TORCH --> STABLEHLO
+    TT_XLA --> STABLEHLO
+    TT_FORGE_FE --> TTIR
+    
+    %% Connect tt-MLIR Compiler components
+    STABLEHLO --> TTIR
+    TTIR --> GRAPH_PASSES
+    
+    %% Connect IRs to hardware
+    TTNN --> TTNN_HW
+    TTMETAL_IR --> TTMETAL
+    TTKERNEL --> TTMETALIUM
     
     %% Apply styles
-    class FrameworksBox,FORGE_FE,TORCH,XLA,TVM,PYTORCH,ONNX,TF,PADDLE,JAX frameworks
-    class CompilerBox,MLIR,TTIR,TTNN,TTMETAL compiler
-    class EXPLORER,TTMLIR_OPT,TTMLIR_TRANSLATE,TTRT,TTNN_STANDALONE tools
-    class RuntimeBox,METAL,GRAYSKULL,WORMHOLE,BLACKHOLE runtime
+    class ONX,JAX,PYTORCH,TF frameworks
+    class TT_TORCH,TT_XLA,TT_FORGE_FE frontends
+    class TTIR,TTKERNEL,TTNN,TTMETAL_IR,GRAPH_PASSES,PYKERNEL,TTMLIROPT,TTNNSTANDALONE,TTEXPLORER compiler
+    class TTMETAL,TTNN_HW,LLK runtime
+    class TTSMI,LUWEN,TTTOPOLOGY system
+    class UMD,KMD software
+    class WORMHOLE,BLACKHOLE hardware
+    classDef none opacity:0,fill:none,stroke:none
+    class LeftSpacer,RightSpacer,TopLevel,FrameworksContainer invisible
     
-    %% Click actions
-    click FORGE_FE "https://github.com/tenstorrent/tt-forge-fe" "TT-Forge-FE Repository"
-    click TORCH "https://github.com/tenstorrent/tt-torch" "tt-torch Repository"
-    click XLA "https://github.com/tenstorrent/tt-xla" "tt-xla Repository"
-    click MLIR "https://github.com/tenstorrent/tt-mlir" "tt-mlir Repository"
-    click METAL "https://github.com/tenstorrent/tt-metal" "tt-Metallium Repository"
-    click TVM "https://github.com/tenstorrent/tt-tvm" "tt-tvm Repository"
+    %% Add clickable URLs to frontend components
+    click TT_XLA "https://github.com/tenstorrent/tt-xla" "tt-xla GitHub Repository" _blank
+    click TT_TORCH "https://github.com/tenstorrent/tt-torch" "tt-torch GitHub Repository" _blank
+    click TT_FORGE_FE "https://github.com/tenstorrent/tt-forge-fe" "tt-forge-fe GitHub Repository" _blank
+    
+    %% Add clickable URLs to IR components
+    click TTKERNEL "https://github.com/tenstorrent/tt-mlir/tree/main/lib/Dialect/TTKernel/IR" "TTKernel-IR GitHub Repository" _blank
+    click TTIR "https://github.com/tenstorrent/tt-mlir/tree/main/lib/Dialect/TTIR/IR" "TT-IR GitHub Repository" _blank
+    click TTMETAL_IR "https://github.com/tenstorrent/tt-mlir/tree/main/lib/Dialect/TTMetal/IR" "TT-Metal-IR GitHub Repository" _blank
+    click TTNN "https://github.com/tenstorrent/tt-mlir/tree/main/lib/Dialect/TTNN/IR" "TTNN-IR GitHub Repository" _blank
+    click PYKERNEL "https://github.com/tenstorrent/tt-mlir/tree/main/python/pykernel" "PyKernel GitHub Repository" _blank
+    click STABLEHLO "https://openxla.org/stablehlo/spec" "StableHLO Specification" _blank
+    
+    %% Add clickable URLs to System Software components
+    click UMD "https://github.com/tenstorrent/tt-umd" "UMD GitHub Repository" _blank
+    click KMD "https://github.com/tenstorrent/tt-kmd" "KMD GitHub Repository" _blank
+    
+    %% Add clickable URLs to System Tools components
+    click TTSMI "https://github.com/tenstorrent/tt-smi" "tt-smi GitHub Repository" _blank
+    click LUWEN "https://github.com/tenstorrent/luwen" "luwen GitHub Repository" _blank
+    click TTTOPOLOGY "https://github.com/tenstorrent/tt-kmd" "tt-topology GitHub Repository" _blank
+    
+    %% Add clickable URLs to TT-Metalium components
+    click TTMETAL "https://github.com/tenstorrent/tt-metal" "TTMetal GitHub Repository" _blank
+    click TTNN_HW "https://github.com/tenstorrent/tt-metal/tree/main/ttnn" "TTNN GitHub Repository" _blank
+    click LLK "https://github.com/tenstorrent/tt-llk" "LLK GitHub Repository" _blank
+    
+    %% Add clickable URLs to Compiler Tools components
+    click TTEXPLORER "https://github.com/tenstorrent/tt-mlir/tree/main/tools/explorer" "tt-explorer GitHub Repository" _blank
+    click TTNNSTANDALONE "https://github.com/tenstorrent/tt-mlir/tree/main/tools/ttnn-standalone" "ttnn-standalone GitHub Repository" _blank
+    click TTMLIROPT "https://github.com/tenstorrent/tt-mlir/tree/main/tools/ttmlir-opt" "ttmlir-opt GitHub Repository" _blank
+    
+    %% Add clickable URLs to Hardware components
+    click WORMHOLE "https://tenstorrent.com/hardware/wormhole" "Wormhole Hardware Product Page" _blank
 ```
 
 ### Current AI Framework Front End Projects
