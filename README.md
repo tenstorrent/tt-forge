@@ -254,7 +254,7 @@ flowchart TD
     %% Add clickable URLs to Metalium Tools components
     click TRACY "https://github.com/tenstorrent/tt-metal/tree/main/ttnn/tracy" "tracy GitHub Repository" _blank
     click TTNPE "https://github.com/tenstorrent/tt-npe" "tt-npe GitHub Repository" _blank
-    click TTNNVISUALIZER "https://github.com/tenstorrent/tt-metal/tree/main/ttnn/visualizer" "ttnn-visualizer GitHub Repository" _blank
+    click TTNNVISUALIZER "https://github.com/tenstorrent/ttnn-visualizer" "ttnn-visualizer GitHub Repository" _blank
 
     %% Add clickable URLs to Compiler Tools components
     click TTEXPLORER "https://github.com/tenstorrent/tt-mlir/tree/main/tools/explorer" "tt-explorer GitHub Repository" _blank
