@@ -46,7 +46,8 @@ TT-Forge lowers to our tt-metalium project providing additional functionality to
 
 ![Tenstorrent Software overview](docs/public/images/tt-sw-overview.png)
 
-### Interactive Architecture Diagram
+### Interactive Tenstorrent Sofware Architecture Diagram
+Overview of Tenstorrent's Opensource AI software ecosystem.
 Click on components to navigate to their repositories:
 
 ```mermaid
