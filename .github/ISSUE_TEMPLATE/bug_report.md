@@ -3,7 +3,7 @@ name: Report a Bug
 about: File a bug/issue report
 title: '[Bug Report] <title>'
 label: bug
-assignees: 
+assignees:
 ---
 
 **Describe the bug:**
@@ -24,7 +24,7 @@ If applicable, add screenshots to help explain your problem.
 
 **Please complete the following environment information:**
 - OS: [e.g. Ubuntu 22.04]
-- Version of wheel 
+- Version of wheel
 - Version of software (eg. commit)
 
 **Additional context:**

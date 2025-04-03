@@ -3,7 +3,7 @@ name: Propose a feature
 about: Request a new feature, suggest an idea/change
 title: '[Feature Request] <title>'
 label: Feature
-assignees: 
+assignees:
 ---
 
 **Is your feature request related to a problem? Please describe:**
