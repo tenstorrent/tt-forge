@@ -17,6 +17,17 @@
 TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. We are currently still in developer preview for early adopters to check out what we've built and give it a try. 
   
 -----
+# Quick Links
+- [How To run a model](demos/tt-forge-fe/README.md)
+- [Interactive Tenstorrent Software Diagram](#interactive-architecture-diagram)
+- [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
+- [tt-torch](https://github.com/tenstorrent/tt-torch)
+- [tt-xla](https://github.com/tenstorrent/tt-xla)
+- [tt-mlir](https://github.com/tenstorrent/tt-mlir)
+- [tt-metal](https://github.com/tenstorrent/tt-metal)
+- [tt-tvm](https://github.com/tenstorrent/tt-tvm)
+
+-----
 # What is this Repo?
 This repository is the central hub for the TT-Forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Currently in early developer preview, we’ll be providing frequent updates to keep you informed on the latest developments. Please file any issues with questions or feedback you may have.
 
