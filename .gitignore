@@ -1,2 +1,4 @@
 venv
 *.whl
+*.pyc
+__pycache__/**

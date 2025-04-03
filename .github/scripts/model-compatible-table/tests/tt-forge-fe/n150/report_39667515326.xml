@@ -1,0 +1,1088 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+    <testsuite name="pytest" errors="0" failures="0" skipped="88" tests="103" time="1328.121"
+        timestamp="2025-03-31T00:25:39.976493" hostname="cbea87c23535">
+        <testcase classname="forge.test.models.pytorch.audio.stereo.test_stereo"
+            name="test_stereo[facebook/musicgen-medium]" time="0.096">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:07" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:07" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/audio/stereo/test_stereo.py:32:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.audio.whisper.test_whisper"
+            name="test_whisper[openai/whisper-base]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:07" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:07" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/audio/whisper/test_whisper.py:38:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.audio.whisper.test_whisper_large_v3"
+            name="test_whisper_large_v3_speech_translation[openai/whisper-large-v3-turbo]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:07" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:07" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/audio/whisper/test_whisper_large_v3.py:43:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.multimodal.llava.test_llava"
+            name="test_llava[llava-hf/llava-1.5-7b-hf]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:07" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:07" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Insufficient host DRAM to run this model (requires a bit more than 30 GB)">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/multimodal/llava/test_llava.py:41:
+                Insufficient host DRAM to run this model (requires a bit more than 30 GB)</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.albert.test_albert"
+            name="test_albert_masked_lm_pytorch[large-v2]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:07" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:07" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/albert/test_albert.py:42:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.albert.test_albert"
+            name="test_albert_masked_lm_pytorch[xxlarge-v2]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:07" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:07" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/albert/test_albert.py:42:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.albert.test_albert"
+            name="test_albert_token_classification_pytorch[base-v2]" time="33.707">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:07" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_albert_base_v2_token_cls_hf', 'bringup_status': 'PASSED', 'pcc': 0.9757566321683407, 'atol': 0.9356953501701355, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.95, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:41" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.albert.test_albert"
+            name="test_albert_token_classification_pytorch[xlarge-v2]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:41" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:41" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/albert/test_albert.py:123:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.bert.test_bert"
+            name="test_bert_sequence_classification_pytorch[textattack/bert-base-uncased-SST-2]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:41" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:41" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/bert/test_bert.py:182:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.codegen.test_codegen"
+            name="test_codegen[Salesforce/codegen-350M-multi]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:41" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:41" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/codegen/test_codegen.py:32:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.distilbert.test_distilbert"
+            name="test_distilbert_masked_lm_pytorch[distilbert-base-multilingual-cased]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:41" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:41" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/distilbert/test_distilbert.py:33:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.dpr.test_dpr"
+            name="test_dpr_context_encoder_pytorch[facebook/dpr-ctx_encoder-multiset-base]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:41" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:41" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/dpr/test_dpr.py:32:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.dpr.test_dpr"
+            name="test_dpr_reader_pytorch[facebook/dpr-reader-multiset-base]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:41" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:26:41" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/dpr/test_dpr.py:162:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.falcon.test_falcon"
+            name="test_falcon_3[tiiuae/Falcon3-1B-Base]" time="75.193">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:26:41" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_falcon3_tiiuae_falcon3_1b_base_clm_hf', 'bringup_status': 'PASSED', 'pcc': 0.9990612431026281, 'atol': 1.826918125152588, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.gemma.test_gemma_2b"
+            name="test_gemma_pytorch_v2[google/gemma-2-9b-it]" time="0.000">
+            <skipped type="pytest.skip"
+                message="Insufficient host DRAM to run this model (requires a bit more than 50 GB during compile time)">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/gemma/test_gemma_2b.py:87:
+                Insufficient host DRAM to run this model (requires a bit more than 50 GB during
+                compile time)</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.gptneo.test_gptneo"
+            name="test_gptneo_causal_lm[EleutherAI/gpt-neo-1.3B]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/gptneo/test_gptneo.py:37:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.gptneo.test_gptneo"
+            name="test_gptneo_sequence_classification[EleutherAI/gpt-neo-2.7B]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/gptneo/test_gptneo.py:102:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.llama.test_llama3"
+            name="test_llama3_causal_lm[meta-llama/Meta-Llama-3-8B-Instruct]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/llama/test_llama3.py:136:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.llama.test_llama3"
+            name="test_llama3_causal_lm[meta-llama/Llama-3.1-8B]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/llama/test_llama3.py:136:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.llama.test_llama3"
+            name="test_llama3_sequence_classification[meta-llama/Meta-Llama-3-8B-Instruct]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/llama/test_llama3.py:197:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.llama.test_llama3"
+            name="test_llama3_sequence_classification[meta-llama/Llama-3.1-8B]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/llama/test_llama3.py:197:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.mamba.test_mamba"
+            name="test_mamba[state-spaces/mamba-2.8b-hf]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the base model (mamba-790m-hf) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/mamba/test_mamba.py:47:
+                Skipping this variant; only testing the base model (mamba-790m-hf) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.mistral.test_mistral"
+            name="test_mistral[mistralai/Mistral-7B-v0.1]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Insufficient host DRAM to run this model (requires a bit more than 30 GB)">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/mistral/test_mistral.py:21:
+                Insufficient host DRAM to run this model (requires a bit more than 30 GB)</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.opt.test_opt"
+            name="test_opt_causal_lm[facebook/opt-1.3b]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:57" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:57" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/opt/test_opt.py:37:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.opt.test_opt"
+            name="test_opt_sequence_classification[facebook/opt-1.3b]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:58" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:27:58" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/opt/test_opt.py:137:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.perceiverio.test_perceiverio"
+            name="test_perceiverio_masked_lm_pytorch[deepmind/language-perceiver]" time="63.833">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:27:58" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_perceiverio_deepmind_language_perceiver_mlm_hf', 'bringup_status': 'PASSED', 'pcc': 0.9998413906978963, 'atol': 1.4414119720458984, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:29:01" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.phi3.test_phi3_5"
+            name="test_phi3_5_causal_lm[microsoft/Phi-3.5-mini-instruct]" time="0.000">
+            <skipped type="pytest.skip" message="Test skipped due to segmentation fault issue">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/phi3/test_phi3_5.py:16:
+                Test skipped due to segmentation fault issue</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.qwen.test_qwen_coder"
+            name="test_qwen_clm[Qwen/Qwen2.5-Coder-1.5B-Instruct]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:29:02" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:29:02" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/qwen/test_qwen_coder.py:31:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.qwen.test_qwen_coder"
+            name="test_qwen_clm[Qwen/Qwen2.5-Coder-7B-Instruct]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:29:02" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:29:02" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/qwen/test_qwen_coder.py:31:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.qwen.test_qwen_v2"
+            name="test_qwen_clm[Qwen/Qwen2.5-3B-Instruct]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:29:02" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:29:02" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/qwen/test_qwen_v2.py:36:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.qwen.test_qwen_v2"
+            name="test_qwen2_token_classification[Qwen/Qwen2-7B]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:29:02" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:29:02" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Insufficient host DRAM to run this model (requires a bit more than 32 GB during compile time)">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/qwen/test_qwen_v2.py:78:
+                Insufficient host DRAM to run this model (requires a bit more than 32 GB during
+                compile time)</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.text.t5.test_t5"
+            name="test_t5_generation[google_flan_t5_large]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:29:02" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:29:02" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping google/flan-t5-large due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/text/t5/test_t5.py:46:
+                Skipping google/flan-t5-large due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.blazebase.test_blazepose"
+            name="test_blazepose_detector_pytorch" time="0.000">
+            <skipped type="pytest.skip" message="dependent on CCM repo">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/blazebase/test_blazepose.py:24:
+                dependent on CCM repo</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.deit.test_deit"
+            name="test_deit_imgcls_hf_pytorch[facebook/deit-base-distilled-patch16-224]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:29:02" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:29:02" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/deit/test_deit.py:48:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.densenet.test_densenet"
+            name="test_densenet_121_pytorch[densenet121_hf_xray]" time="141.780">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:29:02" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_densenet_densenet121_hf_xray_img_cls_torchvision', 'bringup_status': 'PASSED', 'pcc': 0.9861664965329922, 'atol': 0.10344463586807251, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.97, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:31:24" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.dla.test_dla"
+            name="test_dla_pytorch[dla46x_c]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:31:24" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:31:24" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/dla/test_dla.py:31:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.dla.test_dla"
+            name="test_dla_pytorch[dla102x]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:31:24" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:31:24" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/dla/test_dla.py:31:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.efficientnet.test_efficientnet"
+            name="test_efficientnet_timm[efficientnet_b4]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:31:24" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:31:24" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/efficientnet/test_efficientnet.py:53:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.efficientnet.test_efficientnet_lite"
+            name="test_efficientnet_lite_2_pytorch" time="0.000">
+            <skipped type="pytest.skip" message="dependent on CCM repo">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/efficientnet/test_efficientnet_lite.py:87:
+                dependent on CCM repo</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.fchardnet.test_fchardnet"
+            name="test_fchardnet" time="0.000">
+            <skipped type="pytest.skip" message="dependent on CCM repo">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/fchardnet/test_fchardnet.py:18:
+                dependent on CCM repo</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.fpn.test_fpn" name="test_fpn_pytorch"
+            time="11.867">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:31:24" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_fpn_base_img_cls_torchvision', 'bringup_status': 'PASSED', 'pcc': 0.9996809199011489, 'atol': 0.84173583984375, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:31:36" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.hardnet.test_hardnet"
+            name="test_hardnet_pytorch[hardnet85]" time="0.000">
+            <skipped type="pytest.skip" message="dependent on CCM repo">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/hardnet/test_hardnet.py:24:
+                dependent on CCM repo</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.hrnet.test_hrnet"
+            name="test_hrnet_osmr_pytorch[hrnetv2_w30]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:31:36" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:31:36" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/hrnet/test_hrnet.py:82:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.hrnet.test_hrnet"
+            name="test_hrnet_osmr_pytorch[hrnetv2_w48]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:31:36" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:31:36" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/hrnet/test_hrnet.py:82:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.hrnet.test_hrnet"
+            name="test_hrnet_timm_pytorch[hrnet_w18_small]" time="68.532">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:31:36" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_hrnet_hrnet_w18_small_pose_estimation_timm', 'bringup_status': 'PASSED', 'pcc': 0.9965650455930858, 'atol': 0.39399856328964233, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.hrnet.test_hrnet"
+            name="test_hrnet_timm_pytorch[hrnet_w40]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:45" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/hrnet/test_hrnet.py:162:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.inception.test_inception_v4"
+            name="test_inception_v4_timm_pytorch[inception_v4]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:45" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/inception/test_inception_v4.py:73:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.mlp_mixer.test_mlp_mixer"
+            name="test_mlp_mixer_timm_pytorch[mixer_b16_224_miil_in21k]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:45" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/mlp_mixer/test_mlp_mixer.py:53:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.mlp_mixer.test_mlp_mixer"
+            name="test_mlp_mixer_timm_pytorch[mixer_l32_224]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:45" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/mlp_mixer/test_mlp_mixer.py:53:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.mobilenet.test_mobilenet_v1"
+            name="test_mobilenetv1_192[google/mobilenet_v1_0.75_192]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:45" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+            <skipped type="pytest.skip" message="Hitting segmentation fault in MLIR">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/mobilenet/test_mobilenet_v1.py:74:
+                Hitting segmentation fault in MLIR</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.mobilenet.test_mobilenet_v2"
+            name="test_mobilenetv2_224[google/mobilenet_v2_1.0_224]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:45" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+            <skipped type="pytest.skip" message="Hitting segmentation fault in MLIR">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/mobilenet/test_mobilenet_v2.py:168:
+                Hitting segmentation fault in MLIR</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.mobilenet.test_mobilenet_v2"
+            name="test_mobilenetv2_timm[mobilenetv2_100]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:45" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:45" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/mobilenet/test_mobilenet_v2.py:221:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.mobilenet.test_mobilenet_v3"
+            name="test_mobilenetv3_timm[mobilenetv3_large_100]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:46" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:32:46" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/mobilenet/test_mobilenet_v3.py:101:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.mobilenet.test_mobilenet_v3_ssd"
+            name="test_mobilenetv3_ssd[resnet152]" time="95.615">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:32:46" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_mobilenetv3_ssd_resnet152_img_cls_torchvision', 'bringup_status': 'PASSED', 'pcc': 0.9972368412047351, 'atol': 0.38589954376220703, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:34:21" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.openpose.test_openpose"
+            name="test_openpose_basic[body_basic]" time="0.000">
+            <skipped type="pytest.skip" message="dependent on CCM repo">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/openpose/test_openpose.py:46:
+                dependent on CCM repo</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.pidnet.test_pidnet"
+            name="test_pidnet_pytorch[pidnet_l]" time="0.000">
+            <skipped type="pytest.skip" message="dependent on CCM repo">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/pidnet/test_pidnet.py:20:
+                dependent on CCM repo</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.regnet.test_regnet"
+            name="test_regnet_torchvision[regnet_y_800mf]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:34:21" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:34:21" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variant(regnet_y_400mf) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/regnet/test_regnet.py:128:
+                Skipping this variant; only testing the small variant(regnet_y_400mf) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.regnet.test_regnet"
+            name="test_regnet_torchvision[regnet_y_16gf]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:34:21" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:34:21" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variant(regnet_y_400mf) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/regnet/test_regnet.py:128:
+                Skipping this variant; only testing the small variant(regnet_y_400mf) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.regnet.test_regnet"
+            name="test_regnet_torchvision[regnet_x_400mf]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:34:21" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:34:21" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variant(regnet_y_400mf) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/regnet/test_regnet.py:128:
+                Skipping this variant; only testing the small variant(regnet_y_400mf) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.regnet.test_regnet"
+            name="test_regnet_torchvision[regnet_x_16gf]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:34:22" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:34:22" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variant(regnet_y_400mf) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/regnet/test_regnet.py:128:
+                Skipping this variant; only testing the small variant(regnet_y_400mf) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.resnext.test_resnext"
+            name="test_resnext_50_torchhub_pytorch[resnext50_32x4d]" time="36.677">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:34:22" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_resnext_resnext50_32x4d_img_cls_torchhub', 'bringup_status': 'PASSED', 'pcc': 0.9981984039782038, 'atol': 0.4231671094894409, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:34:58" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.resnext.test_resnext"
+            name="test_resnext_101_torchhub_pytorch[resnext101_32x8d]" time="114.119">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:34:58" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_resnext_resnext101_32x8d_img_cls_torchhub', 'bringup_status': 'PASSED', 'pcc': 0.9991971940119264, 'atol': 0.5379848480224609, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:52" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.retinanet.test_retinanet"
+            name="test_retinanet[retinanet_rn34fpn]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:52" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:52" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/retinanet/test_retinanet.py:31:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.segformer.test_segformer"
+            name="test_segformer_image_classification_pytorch[nvidia/mit-b3]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/segformer/test_segformer.py:39:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.segformer.test_segformer"
+            name="test_segformer_semantic_segmentation_pytorch[nvidia/segformer-b0-finetuned-ade-512-512]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/segformer/test_segformer.py:92:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.segformer.test_segformer"
+            name="test_segformer_semantic_segmentation_pytorch[nvidia/segformer-b4-finetuned-ade-512-512]"
+            time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/segformer/test_segformer.py:92:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.swin.test_swin"
+            name="test_swin_torchvision[swin_v2_s]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variants(swin_t,swin_v2_t) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/swin/test_swin.py:210:
+                Skipping this variant; only testing the small variants(swin_t,swin_v2_t) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.unet.test_unet"
+            name="test_unet_qubvel_pytorch" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/unet/test_unet.py:157:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.vgg.test_vgg"
+            name="test_vgg_osmr_pytorch[vgg13]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/vgg/test_vgg.py:38:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.vgg.test_vgg"
+            name="test_vgg_bn19_torchhub_pytorch" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/vgg/test_vgg.py:188:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.vgg.test_vgg"
+            name="test_vgg_torchvision[vgg13]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variant(vgg11) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/vgg/test_vgg.py:270:
+                Skipping this variant; only testing the small variant(vgg11) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.vgg.test_vgg"
+            name="test_vgg_torchvision[vgg19]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variant(vgg11) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/vgg/test_vgg.py:270:
+                Skipping this variant; only testing the small variant(vgg11) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.vit.test_vit"
+            name="test_vit_torchvision[vit_b_32]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:53" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:36:53" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping this variant; only testing the small variant(vit_b_16) for now.">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/vit/test_vit.py:91:
+                Skipping this variant; only testing the small variant(vit_b_16) for now.</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.vovnet.test_vovnet"
+            name="test_vovnet_osmr_pytorch[vovnet27s]" time="25.686">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:36:54" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="red" />
+                <property name="tags"
+                    value="{'model_name': 'pt_vovnet_vovnet27s_obj_det_osmr', 'bringup_status': 'PASSED', 'pcc': 0.9981369654518907, 'atol': 0.4306163787841797, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:37:19" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.vovnet.test_vovnet"
+            name="test_vovnet_timm_pytorch[ese_vovnet39b]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:37:19" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:37:19" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/vovnet/test_vovnet.py:162:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.wideresnet.test_wideresnet"
+            name="test_wideresnet_timm[wide_resnet50_2]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:37:19" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:37:19" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/wideresnet/test_wideresnet.py:88:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.xception.test_xception"
+            name="test_xception_timm[xception71]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:37:19" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:37:19" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/xception/test_xception.py:57:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.yolo.test_yolo_v3"
+            name="test_yolov3_holli_pytorch" time="0.000">
+            <skipped type="pytest.skip" message="dependent on CCM repo">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/yolo/test_yolo_v3.py:83:
+                dependent on CCM repo</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.yolo.test_yolo_v5"
+            name="test_yolov5_320x320[yolov5s]" time="45.584">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:37:20" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_yolo_v5_yolov5s_imgcls_torchhub_320x320', 'bringup_status': 'PASSED', 'pcc': 0.9998760392454469, 'atol': 25.974685668945312, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:38:05" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.yolo.test_yolo_v5"
+            name="test_yolov5_640x640[yolov5n]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:38:05" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:38:05" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/yolo/test_yolo_v5.py:99:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.yolo.test_yolo_v5"
+            name="test_yolov5_480x480[yolov5n]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:38:05" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:38:05" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/yolo/test_yolo_v5.py:158:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.yolo.test_yolo_v5"
+            name="test_yolov5_1280x1280[yolov5s]" time="0.101">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:38:05" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="tags" value="{'bringup_status': 'CI_FAILURE'}" />
+                <property name="end_timestamp" value="2025-03-31T00:38:05" />
+            </properties>
+            <skipped type="pytest.skip"
+                message="Skipping due to the current CI/CD pipeline limitations">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/pytorch/vision/yolo/test_yolo_v5.py:191:
+                Skipping due to the current CI/CD pipeline limitations</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.pytorch.vision.yolo.test_yolox"
+            name="test_yolox_pytorch[yolox_nano]" time="83.775">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:38:05" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'pt_yolox_yolox_nano_obj_det_torchhub', 'bringup_status': 'PASSED', 'pcc': 0.9901573803638116, 'atol': 2.3647310733795166, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:39:29" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.text.bert.test_bert"
+            name="test_bert_masked_lm_onnx[17-bert-base-uncased]" time="95.391">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:39:29" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'onnx_bert_bert_base_uncased_mlm_hf', 'bringup_status': 'PASSED', 'pcc': 0.9976709586687991, 'atol': 1.8835773468017578, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:41:05" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.text.bert.test_bert"
+            name="test_bert_question_answering_onnx[9-phiyodr/bert-large-finetuned-squad2]"
+            time="374.692">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:41:05" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'onnx_bert_phiyodr_bert_large_finetuned_squad2_qa_hf', 'bringup_status': 'PASSED', 'pcc': 0.9957383355423859, 'atol': 0.5113785266876221, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.99, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:47:19" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.ddrnet.test_ddrnet"
+            name="test_ddrnet[no_device-ddrnet39]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/ddrnet/test_ddrnet.py:21:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.ddrnet.test_ddrnet"
+            name="test_ddrnet_semantic_segmentation_onnx[no_device-ddrnet_23_slim_1024]"
+            time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/ddrnet/test_ddrnet.py:82:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.dla.test_dla"
+            name="test_dla_onnx[no_device-dla34]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/dla/test_dla.py:33:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.dla.test_dla"
+            name="test_dla_onnx[no_device-dla60x]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/dla/test_dla.py:33:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.dla.test_dla"
+            name="test_dla_onnx[no_device-dla102]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/dla/test_dla.py:33:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.hardnet.test_hardnet"
+            name="test_hardnet_onnx[no_device-hardnet85]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/hardnet/test_hardnet.py:20:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.perceiverio.test_perceiverio"
+            name="test_perceiver_for_image_classification_onnx[no_device-deepmind/vision-perceiver-learned]"
+            time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/perceiverio/test_perceiverio.py:29:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.resnet.test_resnet"
+            name="test_resnet_onnx[7-microsoft/resnet-50]" time="28.227">
+            <properties>
+                <property name="start_timestamp" value="2025-03-31T00:47:19" />
+                <property name="owner" value="tt-forge-fe" />
+                <property name="group" value="generality" />
+                <property name="tags"
+                    value="{'model_name': 'onnx_resnet_50_img_cls_hf', 'bringup_status': 'PASSED', 'pcc': 0.9941185849677827, 'atol': 0.4603548049926758, 'execution_stage': 'PASSED'}" />
+                <property name="config"
+                    value="{'compiler': {'enable_training': False, 'enable_recompute': False, 'match_subgraph_patterns': None, 'enable_consteval': True, 'compile_subgraphs': False, 'enable_link_past_cache_ios': False, 'enable_pt2_fx_graph_link': False, 'compile_depth': 'FULL', 'enable_tvm_cpu_fallback': False, 'cpu_fallback_ops': ['embedding'], 'enable_tm_cpu_fallback': False, 'tm_cpu_fallback_max_depth': 10, 'enable_tvm_dropout': False, 'enable_tvm_unsupported_ops': False, 'enable_tvm_constant_prop': False, 'convert_framework_params_to_tvm': False, 'enable_xla_jax_convert': False, 'enable_tvm_jax_freeze_large_model': True, 'framework_model_output_names': [], 'tvm_constnat_prop_mask': [], 'compile_tvm_to_python': True, 'retain_tvm_python_files': False, 'tvm_graph_store_path': '', 'tvm_graph_load_path': '', 'tvm_module_to_num_patterns': {}, 'extract_tvm_unique_ops_config': False, 'tvm_generate_unique_ops_tests': False, 'export_tvm_unique_ops_config_details': False, 'loopback_outputs': {}, 'default_df_override': None, 'default_accumulate_df': None, 'enable_broadcast_splitting': False, 'default_math_fidelity': 'HiFi3', 'amp_level': None, 'fracture_groups': [], 'amp_properties': []}, 'verify': {'enabled': True, 'verify_size': True, 'verify_dtype': True, 'verify_shape': True, 'verify_values': True, 'value_checker': {'rtol': 1e-05, 'atol': 1e-08, 'pcc': 0.95, 'dissimilarity_threshold': 0.001}, 'dump_tensors': False, 'dump_tensors_path': ''}}" />
+                <property name="end_timestamp" value="2025-03-31T00:47:47" />
+            </properties>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.retinanet.test_retinanet"
+            name="test_retinanet_onnx[no_device-retinanet_rn34fpn]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/retinanet/test_retinanet.py:111:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.segformer.test_segformer_imgcls"
+            name="test_segformer_image_classification_onnx[no_device-nvidia/mit-b0]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/segformer/test_segformer_imgcls.py:37:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.segformer.test_segformer_imgcls"
+            name="test_segformer_image_classification_onnx[no_device-nvidia/mit-b4]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/segformer/test_segformer_imgcls.py:37:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.segformer.test_segformer_semseg"
+            name="test_segformer_semantic_segmentation_onnx[no_device-nvidia/segformer-b1-finetuned-ade-512-512]"
+            time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/segformer/test_segformer_semseg.py:37:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.yolo.test_yolo_v5"
+            name="test_yolo_v5_320x320_onnx[no_device-yolov5n]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/yolo/test_yolo_v5.py:24:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.yolo.test_yolo_v5"
+            name="test_yolo_v5_480x480_onnx[no_device-yolov5m]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/yolo/test_yolo_v5.py:65:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.yolo.test_yolo_v5"
+            name="test_yolo_v5_640x640_onnx[no_device-yolov5l]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/yolo/test_yolo_v5.py:107:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.yolo.test_yolo_v5"
+            name="test_yolo_v5_640x640_onnx[no_device-yolov5x]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/yolo/test_yolo_v5.py:107:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.yolo.test_yolo_x"
+            name="test_yolox_onnx[no_device-yolox_m]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/yolo/test_yolo_x.py:43:
+                Requires restructuring</skipped>
+        </testcase>
+        <testcase classname="forge.test.models.onnx.vision.yolo.test_yolo_x"
+            name="test_yolox_onnx[no_device-yolox_x]" time="0.000">
+            <skipped type="pytest.skip" message="Requires restructuring">/__w/tt-forge-fe/tt-forge-fe/forge/test/models/onnx/vision/yolo/test_yolo_x.py:43:
+                Requires restructuring</skipped>
+        </testcase>
+    </testsuite>
+</testsuites>
