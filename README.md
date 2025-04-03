@@ -134,14 +134,29 @@ flowchart TD
     CompilerLayer:::none
     TTMLIR --- CompilerTools
 
-    %% TT-Metalium section
-    subgraph TTMETALIUM["<span style='font-size:16px;font-weight:bold'>TT-Metalium</span>"]
-        TTNN_HW("<span style='font-size:14px;font-weight:bold'>TTNN</span>")
-        TTMETAL("<span style='font-size:14px;font-weight:bold'>TTMetal</span>")
+    %% TT-Metalium section with Tools
+    subgraph MetaliumLayer["<span style='font-size:16px;font-weight:bold'>Metalium Layer</span>"]
+        %% TT-Metalium section
+        subgraph TTMETALIUM["<span style='font-size:16px;font-weight:bold'>TT-Metalium</span>"]
+            TTNN_HW("<span style='font-size:14px;font-weight:bold'>TTNN</span>")
+            TTMETAL("<span style='font-size:14px;font-weight:bold'>TTMetal</span>")
 
-        %% Connect TTNN to TTMetal within TT-Metalium
-        TTNN_HW --> TTMETAL
+            %% Connect TTNN to TTMetal within TT-Metalium
+            TTNN_HW --> TTMETAL
+        end
+
+        %% Metalium Tools section with vertical layout
+        subgraph MetaliumTools["<span style='font-size:16px;font-weight:bold'>Metalium Tools</span>"]
+            direction TB
+            TRACY("<span style='font-size:14px;font-weight:bold'>tracy</span>")
+            TTNPE("<span style='font-size:14px;font-weight:bold'>tt-npe</span>")
+            TTNNVISUALIZER("<span style='font-size:14px;font-weight:bold'>ttnn-visualizer</span>")
+        end
     end
+
+    %% Set direction for Metalium sections to be side by side
+    MetaliumLayer:::none
+    TTMETALIUM --- MetaliumTools
 
     %% LLK outside of TT-Metalium
     LLK("<span style='font-size:14px;font-weight:bold'>LLK</span>")
@@ -202,7 +217,7 @@ flowchart TD
     class ONX,JAX,PYTORCH,TF frameworks
     class TT_TORCH,TT_XLA,TT_FORGE_FE frontends
     class TTIR,TTKERNEL,TTNN,TTMETAL_IR,GRAPH_PASSES,PYKERNEL,TTMLIROPT,TTNNSTANDALONE,TTEXPLORER compiler
-    class TTMETAL,TTNN_HW,LLK runtime
+    class TTMETAL,TTNN_HW,LLK,TRACY,TTNPE,TTNNVISUALIZER runtime
     class TTSMI,LUWEN,TTTOPOLOGY system
     class UMD,KMD software
     class WORMHOLE,BLACKHOLE hardware
@@ -235,6 +250,11 @@ flowchart TD
     click TTMETAL "https://github.com/tenstorrent/tt-metal" "TTMetal GitHub Repository" _blank
     click TTNN_HW "https://github.com/tenstorrent/tt-metal/tree/main/ttnn" "TTNN GitHub Repository" _blank
     click LLK "https://github.com/tenstorrent/tt-llk" "LLK GitHub Repository" _blank
+
+    %% Add clickable URLs to Metalium Tools components
+    click TRACY "https://github.com/tenstorrent/tt-metal/tree/main/ttnn/tracy" "tracy GitHub Repository" _blank
+    click TTNPE "https://github.com/tenstorrent/tt-npe" "tt-npe GitHub Repository" _blank
+    click TTNNVISUALIZER "https://github.com/tenstorrent/tt-metal/tree/main/ttnn/visualizer" "ttnn-visualizer GitHub Repository" _blank
 
     %% Add clickable URLs to Compiler Tools components
     click TTEXPLORER "https://github.com/tenstorrent/tt-mlir/tree/main/tools/explorer" "tt-explorer GitHub Repository" _blank
