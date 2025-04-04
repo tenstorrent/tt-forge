@@ -263,6 +263,7 @@ flowchart TD
 
     %% Add clickable URLs to Hardware components
     click WORMHOLE "https://tenstorrent.com/hardware/wormhole" "Wormhole Hardware Product Page" _blank
+    click BLACKHOLE "https://tenstorrent.com/hardware/blacklhole" "Blackhole Hardware Product Page" _blank
 ```
 
 ### Current AI Framework Front End Projects
