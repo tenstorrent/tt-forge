@@ -37,23 +37,23 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     # Load data samples from a dataset
     print("Loading dataset...")
     dataset = load_dataset("zh-plus/tiny-imagenet")
-    
+
     # Select random images for the batch
     sample_indices = random.sample(range(len(dataset["valid"])), batch_size)
     images = [dataset["valid"][i]["image"] for i in sample_indices]
     labels = [dataset["valid"][i]["label"] for i in sample_indices]
-    
+
     # Get class names for the labels
     class_names = dataset["valid"].features["label"].names
     label_names = [class_names[label] for label in labels]
-    
+
     # Data preprocessing
     print("Preprocessing images...")
     processed_images = []
     for img in images:
         inputs = feature_extractor(img, return_tensors="pt")
         processed_images.append(inputs["pixel_values"])
-    
+
     batch_input = torch.cat(processed_images, dim=0)
 
     # Export model to ONNX
@@ -95,8 +95,6 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     print("\nResults:")
     for sample in range(batch_size):
         print(f"True Label: {label_names[sample]} | Predicted Label: {predicted_label[sample]}")
-
-
 
     # Clean up
     if os.path.exists(onnx_path):
