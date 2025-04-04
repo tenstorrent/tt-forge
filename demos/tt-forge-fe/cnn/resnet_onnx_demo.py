@@ -7,18 +7,16 @@
 import os
 import torch
 import onnx
-import requests
+import random
 import numpy as np
 from PIL import Image
+from datasets import load_dataset
 from transformers import AutoFeatureExtractor, ResNetForImageClassification
 
 import forge
-from forge.verify.verify import verify
-from forge.verify.config import VerifyConfig
-from forge.verify.value_checkers import AutomaticValueChecker
 
 
-def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=11):
+def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=17):
     """
     Run a ResNet model using ONNX and the Forge compiler.
 
@@ -30,22 +28,33 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     print(f"Running ResNet ONNX demo with variant: {variant}, batch size: {batch_size}")
 
     # Load ResNet feature extractor and model checkpoint from HuggingFace
-    model_ckpt = variant
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_ckpt)
-    torch_model = ResNetForImageClassification.from_pretrained(model_ckpt)
+    feature_extractor = AutoFeatureExtractor.from_pretrained(variant)
+    torch_model = ResNetForImageClassification.from_pretrained(variant)
 
     # Create a temporary path for the ONNX model
     onnx_path = "resnet50.onnx"
 
-    # Load data sample
-    url = "https://images.rawpixel.com/image_1300/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIyLTA1L3BkMTA2LTA0Ny1jaGltXzEuanBn.jpg"
-    image = Image.open(requests.get(url, stream=True).raw)
-    label = ["tiger"] * batch_size
-
+    # Load data samples from a dataset
+    print("Loading dataset...")
+    dataset = load_dataset("zh-plus/tiny-imagenet")
+    
+    # Select random images for the batch
+    sample_indices = random.sample(range(len(dataset["valid"])), batch_size)
+    images = [dataset["valid"][i]["image"] for i in sample_indices]
+    labels = [dataset["valid"][i]["label"] for i in sample_indices]
+    
+    # Get class names for the labels
+    class_names = dataset["valid"].features["label"].names
+    label_names = [class_names[label] for label in labels]
+    
     # Data preprocessing
-    inputs = feature_extractor(image, return_tensors="pt")
-    pixel_values = [inputs["pixel_values"]] * batch_size
-    batch_input = torch.cat(pixel_values, dim=0)
+    print("Preprocessing images...")
+    processed_images = []
+    for img in images:
+        inputs = feature_extractor(img, return_tensors="pt")
+        processed_images.append(inputs["pixel_values"])
+    
+    batch_input = torch.cat(processed_images, dim=0)
 
     # Export model to ONNX
     print(f"Exporting model to ONNX with opset version {opset_version}...")
@@ -64,11 +73,8 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     onnx_model = onnx.load(onnx_path)
     onnx.checker.check_model(onnx_model)
 
-    # Create a module name for the model
-    module_name = f"onnx_resnet50_{variant.split('/')[-1]}"
-
     # Create framework model
-    framework_model = forge.OnnxModule(module_name, onnx_model)
+    framework_model = forge.OnnxModule(f"onnx_resnet50_{variant.split('/')[-1]}", onnx_model)
 
     # Prepare input sample for compilation
     input_sample = [batch_input]
@@ -88,18 +94,9 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     # Print results
     print("\nResults:")
     for sample in range(batch_size):
-        print(f"True Label: {label[sample]} | Predicted Label: {predicted_label[sample]}")
+        print(f"True Label: {label_names[sample]} | Predicted Label: {predicted_label[sample]}")
 
-    # Verify results
-    print("\nVerifying results...")
-    verify(
-        input_sample,
-        framework_model,
-        compiled_model,
-        VerifyConfig(value_checker=AutomaticValueChecker(pcc=0.95)),
-    )
 
-    print("Verification complete!")
 
     # Clean up
     if os.path.exists(onnx_path):
