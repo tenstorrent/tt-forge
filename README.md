@@ -311,7 +311,7 @@ The compiler employs various optimization passes, including layout transformatio
 - [tt-xla](https://github.com/tenstorrent/tt-xla)
 - [tt-torch](https://github.com/tenstorrent/tt-torch)
 - [tt-mlir](https://github.com/tenstorrent/tt-mlir)
-- [tt-Metallium](https://github.com/tenstorrent/tt-metal)
+- [tt-Metalium](https://github.com/tenstorrent/tt-metal)
 - [tt-tvm](https://github.com/tenstorrent/tt-tvm)
 
 
