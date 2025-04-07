@@ -28,15 +28,18 @@ jobs:
       id: tt-forge-fe-artifacts
       with:
         repo: tenstorrent/tt-forge-fe
+        branch: "main"
         workflow: On nightly
         artifact_download_glob: '*{wheel,reports}*'
         artifact_cleanup_glob: '*.json'
         workflow_allow_failed: true
+        workflow_result_in_job: "fail-notify"
     - name: Uplift tenstorrent/tt-torch nightly artifacts
       uses: ./.github/actions/uplift-artifacts
       id: tt-torch-artifacts
       with:
         repo: tenstorrent/tt-torch
+        branch: "main"
         workflow: Nightly Tests
         artifact_download_glob: '*{install-artifacts,test-reports-models-}*'
         artifact_cleanup_glob: 'torchvision*'
