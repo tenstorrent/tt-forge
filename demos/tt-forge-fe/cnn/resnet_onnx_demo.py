@@ -82,14 +82,14 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     # Data postprocessing
     # Handle the output from Forge compiled model
     print(f"Output type: {type(output)}")
-    
+
     # The output is a list containing the model output tensor
     logits = output[0]
-    
+
     # Convert to torch tensor if needed
     if not isinstance(logits, torch.Tensor):
         logits = torch.tensor(logits)
-        
+
     predicted_value = logits.argmax(-1)
     predicted_label = [torch_model.config.id2label[pred.item()] for pred in predicted_value]
 
