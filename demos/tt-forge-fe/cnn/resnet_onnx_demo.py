@@ -7,7 +7,7 @@
 import os
 import torch
 import onnx
-import random
+
 import numpy as np
 from PIL import Image
 from datasets import load_dataset
@@ -38,10 +38,9 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     print("Loading dataset...")
     dataset = load_dataset("zh-plus/tiny-imagenet")
 
-    # Select random images for the batch
-    sample_indices = random.sample(range(len(dataset["valid"])), batch_size)
-    images = [dataset["valid"][i]["image"] for i in sample_indices]
-    labels = [dataset["valid"][i]["label"] for i in sample_indices]
+    # Select first N images for the batch (for repeatability)
+    images = [dataset["valid"][i]["image"] for i in range(batch_size)]
+    labels = [dataset["valid"][i]["label"] for i in range(batch_size)]
 
     # Get class names for the labels
     class_names = dataset["valid"].features["label"].names
@@ -64,8 +63,6 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
         onnx_path,
         opset_version=opset_version,
         input_names=["input"],
-        output_names=["output"],
-        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
     )
 
     # Load ONNX model
@@ -73,22 +70,27 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
     onnx_model = onnx.load(onnx_path)
     onnx.checker.check_model(onnx_model)
 
-    # Create framework model
-    framework_model = forge.OnnxModule(f"onnx_resnet50_{variant.split('/')[-1]}", onnx_model)
-
-    # Prepare input sample for compilation
-    input_sample = [batch_input]
-
     # Compile model using Forge
     print("Compiling model using Forge...")
-    compiled_model = forge.compile(onnx_model, input_sample)
+    # Forge expects the ONNX model and input samples
+    compiled_model = forge.compile(onnx_model, [batch_input])
 
     # Run inference
     print("Running inference...")
     output = compiled_model(batch_input)
 
     # Data postprocessing
-    predicted_value = output[0].argmax(-1)
+    # Handle the output from Forge compiled model
+    print(f"Output type: {type(output)}")
+    
+    # The output is a list containing the model output tensor
+    logits = output[0]
+    
+    # Convert to torch tensor if needed
+    if not isinstance(logits, torch.Tensor):
+        logits = torch.tensor(logits)
+        
+    predicted_value = logits.argmax(-1)
     predicted_label = [torch_model.config.id2label[pred.item()] for pred in predicted_value]
 
     # Print results
