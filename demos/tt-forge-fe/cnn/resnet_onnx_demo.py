@@ -57,12 +57,7 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
 
     # Export model to ONNX
     print(f"Exporting model to ONNX with opset version {opset_version}...")
-    torch.onnx.export(
-        torch_model,
-        batch_input,
-        onnx_path,
-        opset_version=opset_version
-    )
+    torch.onnx.export(torch_model, batch_input, onnx_path, opset_version=opset_version)
 
     # Load ONNX model
     print("Loading ONNX model...")
