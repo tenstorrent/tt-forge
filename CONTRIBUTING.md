@@ -9,6 +9,7 @@ Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-
 * [tt-torch](https://github.com/tenstorrent/tt-torch)
 * [tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe)
 
+
 This document covers how to contribute to TT-Forge repositories. 
 
 If you need to file a bug, ask for support, or make a feature request, please use the appropriate issue template:
@@ -126,6 +127,7 @@ Every source file must have the appropriate Software Package Data Exchange (SPDX
 
 C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux/v6.5.1/source/Documentation/process/license-rules.rst#L71) for C++ source files, RST files, ASM files, and scripts. C++ header files should be treated as C++ source files and use this convention: 
 
+
 ```
 // SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
 //
@@ -134,13 +136,16 @@ C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux
 
 Python files should use this convention: 
 
+
 ```
 # SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
 
 # SPDX-License-Identifier: Apache-2.0
 ```
 
+
 ## Git, Branch Naming, and Pull Request Guidelines 
+
 
 * Filing an issue is encouraged for any item that needs alignment or long term tracking.
 
@@ -380,10 +385,12 @@ After that, the UI will usually delete your branch.
 
 You should include documentation if you are:
 * Making a significant change that requires explanation for how to work with your change.
+
 * Adding a new feature. 
 
 ## Commit Changes
 This section goes over how to properly commit your contribution. 
+
 
 ### Pre-commit
 
@@ -452,5 +459,5 @@ In addition to the 24 hour rule, the following prerequisites for landing a PR ex
 ```
 > [!NOTE]
 > Rebasing or further changes to the PR do not reset the 24 hour counter.
-``` 
 
+``` 
