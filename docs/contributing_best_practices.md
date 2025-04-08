@@ -272,7 +272,7 @@ Using a bool argument in a function call can make the code less readable and har
 
 ### Example
 
-<!---This example is Metal Specific. Many of the suggestions throughout this document look like they could apply across repos. Let me know if that's the case, and also if we have an example we can insert here for 
+<!---This example is Metal Specific. Many of the suggestions throughout this document look like they could apply across repos. Let me know if that's the case, and also if we have an example we can insert here for
 tt-forge instead.--->
 Avoid:
 ```cpp
