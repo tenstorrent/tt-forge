@@ -19,7 +19,7 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 -----
 # Quick Links
 - [How to run a model](demos/tt-forge-fe/README.md)
-- [Interactive Tenstorrent Software Diagram](#interactive-architecture-diagram)
+- [Interactive Tenstorrent Software Diagram](#interactive-tenstorrent-sofware-architecture-diagram)
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
 - [tt-torch](https://github.com/tenstorrent/tt-torch)
 - [tt-xla](https://github.com/tenstorrent/tt-xla)
