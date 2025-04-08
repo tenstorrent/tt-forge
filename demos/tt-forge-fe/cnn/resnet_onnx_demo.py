@@ -61,8 +61,7 @@ def run_resnet_onnx(variant="microsoft/resnet-50", batch_size=1, opset_version=1
         torch_model,
         batch_input,
         onnx_path,
-        opset_version=opset_version,
-        input_names=["input"],
+        opset_version=opset_version
     )
 
     # Load ONNX model
