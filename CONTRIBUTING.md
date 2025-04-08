@@ -1,6 +1,6 @@
 # Contributing Guidelines for TT-Forge
 
-Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-forge) project, we appreciate your support. TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. The TT-Forge repository is the central hub for the various sub-projects that create the TT-Forge product. Sub-project repositories include:
+Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-forge) project, we appreciate your support. TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. The TT-Forge repository is the central hub for the various sub-projects that create the TT-Forge product. Sub-project repositories include: 
 
 * [tt-mlir](https://github.com/tenstorrent/tt-mlir)
 * [tt-xla](https://github.com/tenstorrent/tt-xla)
@@ -9,11 +9,12 @@ Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-
 * [tt-torch](https://github.com/tenstorrent/tt-torch)
 * [tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe)
 
-This document covers how to contribute to TT-Forge repositories.
+
+This document covers how to contribute to TT-Forge repositories. 
 
 If you need to file a bug, ask for support, or make a feature request, please use the appropriate issue template:
 * File a Bug
-* Support
+* Support 
 * Request a Feature
 
 If you are ready to make a contribution, each repository follows this process:
@@ -21,7 +22,7 @@ If you are ready to make a contribution, each repository follows this process:
 1. Fork the repository.
 2. Clone the repository.
 3. Set up the environment and build the project.
-4. Make changes using the style guidelines for the repository.
+4. Make changes using the style guidelines for the repository. 
   * [Coding Guidelines](#coding-guidelines)
   * [Guidelines for Writing Effective Error Messages](#guidelines-for-writing-effective-error-messages)
   * [File Structure and Format for Legal](#file-structure-and-format-for-legal)
@@ -32,7 +33,7 @@ If you are ready to make a contribution, each repository follows this process:
     * [Pre-commit](#pre-commit)
     * [Post-commit](#post-commit)
     * [CI/CD Principles](#cicd-principles)
-6. Create a Pull Request
+6. Create a Pull Request 
   * [Pull Request Notes](#pull-request-notes)
 
 ## Coding Guidelines
@@ -120,11 +121,12 @@ TT_FATAL(head_size % TILE_WIDTH == 0,
 * Avoid the word "please." It can make required actions sound optional.
 * Start your message with the most important words that relate to the issue.
 
-## File Structure and Format for Legal
+## File Structure and Format for Legal 
 
-Every source file must have the appropriate Software Package Data Exchange (SPDX) header at the top.
+Every source file must have the appropriate Software Package Data Exchange (SPDX) header at the top. 
 
-C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux/v6.5.1/source/Documentation/process/license-rules.rst#L71) for C++ source files, RST files, ASM files, and scripts. C++ header files should be treated as C++ source files and use this convention:
+C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux/v6.5.1/source/Documentation/process/license-rules.rst#L71) for C++ source files, RST files, ASM files, and scripts. C++ header files should be treated as C++ source files and use this convention: 
+
 
 ```
 // SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
@@ -132,7 +134,8 @@ C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux
 // SPDX-License-Identifier: Apache-2.0
 ```
 
-Python files should use this convention:
+Python files should use this convention: 
+
 
 ```
 # SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
@@ -140,7 +143,9 @@ Python files should use this convention:
 # SPDX-License-Identifier: Apache-2.0
 ```
 
-## Git, Branch Naming, and Pull Request Guidelines
+
+## Git, Branch Naming, and Pull Request Guidelines 
+
 
 * Filing an issue is encouraged for any item that needs alignment or long term tracking.
 
@@ -380,10 +385,12 @@ After that, the UI will usually delete your branch.
 
 You should include documentation if you are:
 * Making a significant change that requires explanation for how to work with your change.
-* Adding a new feature.
+
+* Adding a new feature. 
 
 ## Commit Changes
-This section goes over how to properly commit your contribution.
+This section goes over how to properly commit your contribution. 
+
 
 ### Pre-commit
 
@@ -391,11 +398,11 @@ As part of maintaining consistent codeformatting across the project, we integrat
 
 * Formatting code (for example, fixing trailing whitespace, enforcing end-of-file newlines)
 * Running linters (for example, `clang-format`, `black`, `flake8`)
-* Checking for merge conflicts or other common issues.
+* Checking for merge conflicts or other common issues. 
 
 For more details pre-commit, you can visit the [official documentation](https://pre-commit.com/).
 
-For details about setting up pre-commit, refer to the pre-commit documentation for your repository:
+For details about setting up pre-commit, refer to the pre-commit documentation for your repository: 
 
 * tt-mlir
 * tt-xla
@@ -434,7 +441,7 @@ Non-post-commit pipelines will not necessarily mean we have to revert the breaki
 In the case of the model performance test pipeline, there are codeowners for such tests. However, it is the collective responsibility of all developers to ensure that we do not regress this pipeline.
 
 
-## Pull Request Notes
+## Pull Request Notes 
 
 For all your Pull Requests (PRs), Tenstorrent has an internal policy which your PR goes through after an initial review. For additional details about pull requests, see the [Saving the Commit to Origin and Creating a Pull Request](#saving-the-commit-to-origin-and-creating-a-pull-request) section.
 
@@ -452,4 +459,5 @@ In addition to the 24 hour rule, the following prerequisites for landing a PR ex
 ```
 > [!NOTE]
 > Rebasing or further changes to the PR do not reset the 24 hour counter.
-```
+
+``` 
