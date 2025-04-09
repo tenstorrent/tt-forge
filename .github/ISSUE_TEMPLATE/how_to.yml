@@ -1,7 +1,7 @@
 name: How do I
 description: Ask for help with something or how to do something
 labels: ["how to"]
-body: 
+body:
   - type: markdown
     attributes:
       value: |
@@ -26,6 +26,4 @@ body:
     attributes:
       label: What is your goal?
       description: |
-        What outcome are you hoping to achieve?  
-
-  
+        What outcome are you hoping to achieve?

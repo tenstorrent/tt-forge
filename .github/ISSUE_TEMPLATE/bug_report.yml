@@ -11,7 +11,7 @@ body:
     id: describe-bug
     attributes:
        label: Describe the bug
-       description: | 
+       description: |
          A clear and concise description of what the bug is and how to reproduce it.
 
   - type: textarea
@@ -19,8 +19,8 @@ body:
     attributes:
        label: Steps to reproduce the behavior
        description: |
-         When possible/applicable, include the commands that you ran. 
-       value: | 
+         When possible/applicable, include the commands that you ran.
+       value: |
          1. Go to '...'
          2. Click on '....'
          3. Scroll down to '....'
@@ -31,7 +31,7 @@ body:
     attributes:
       label: Expected behavior
       description: |
-        A clear and concise description of what you expected to happen. 
+        A clear and concise description of what you expected to happen.
 
   - type: textarea
     id: screenshot
@@ -44,15 +44,14 @@ body:
     id: environment-info
     attributes:
       label: Please complete the following environment information
-      value: 
+      value:
         - OS`:` [e.g. Ubunto 22.04]
-        - Python version 
-        - Version of software (e.g. release wheel or commit ID if you built from source) 
+        - Python version
+        - Version of software (e.g. release wheel or commit ID if you built from source)
 
   - type: textarea
     id: additional
     attributes:
-      label: Additional context 
+      label: Additional context
       description: |
         Add any other context about the problem here.
-       

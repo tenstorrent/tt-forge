@@ -18,7 +18,7 @@ body:
     id: describe-doc
     attributes:
       label: Describe the documentation solution you want to see
-      description: | 
+      description: |
         If you have suggestions for what to write up, or how to present the documentation, include it here.
 
   - type: textarea
