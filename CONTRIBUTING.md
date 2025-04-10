@@ -13,9 +13,11 @@ Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-
 This document covers how to contribute to TT-Forge repositories.
 
 If you need to file a bug, ask for support, or make a feature request, please use the appropriate issue template:
-* File a Bug
-* Support
-* Request a Feature
+* Bug report
+* Documentation request
+* Propose a feature
+* How do I
+
 
 If you are ready to make a contribution, each repository follows this process:
 
