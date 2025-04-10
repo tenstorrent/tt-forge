@@ -45,7 +45,7 @@ body:
     attributes:
       label: Please complete the following environment information
       value:
-        - OS`:` (e.g. Ubunto 22.04)
+        - OS`:` (e.g. Ubuntu 22.04)
         - Python version
         - Version of software (e.g. release wheel or commit ID if you built from source)
 
