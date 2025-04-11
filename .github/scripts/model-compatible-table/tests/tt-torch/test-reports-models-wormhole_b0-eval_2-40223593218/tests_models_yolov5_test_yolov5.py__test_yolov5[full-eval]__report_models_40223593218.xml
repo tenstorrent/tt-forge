@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="13.417" timestamp="2025-04-09T04:48:32.527765+00:00" hostname="53c1c8caec0c"><testcase classname="tests.models.yolov5.test_yolov5" name="test_yolov5[full-eval]" time="10.205"><properties><property name="start_timestamp" value="2025-04-09T04:48:34.526141+00:00" /><property name="end_timestamp" value="2025-04-09T04:48:45.479514+00:00" /></properties><failure message="AttributeError: module 'numpy' has no attribute '_no_nep50_warning'">record_property = &lt;function record_property.&lt;locals&gt;._original_record_property at 0x7fe0661344a0&gt;
+mode = 'eval', op_by_op = None
+
+    @pytest.mark.parametrize(
+        "mode",
+        ["eval"],
+    )
+    @pytest.mark.parametrize(
+        "op_by_op",
+        [OpByOpBackend.STABLEHLO, OpByOpBackend.TORCH, None],
+        ids=["op_by_op_stablehlo", "op_by_op_torch", "full"],
+    )
+    def test_yolov5(record_property, mode, op_by_op):
+        model_name = "YOLOv5"
+
+        cc = CompilerConfig()
+        cc.enable_consteval = True
+        cc.consteval_parameters = True
+        if op_by_op:
+            cc.compile_depth = CompileDepth.EXECUTE_OP_BY_OP
+            if op_by_op == OpByOpBackend.STABLEHLO:
+                cc.op_by_op_backend = OpByOpBackend.STABLEHLO
+
+&gt;       tester = ThisTester(
+            model_name,
+            mode,
+            compiler_config=cc,
+            required_atol=12,
+            record_property_handle=record_property,
+            # TODO Enable checking - https://github.com/tenstorrent/tt-torch/issues/490
+            assert_pcc=False,
+            assert_atol=False,
+        )
+
+tests/models/yolov5/test_yolov5.py:127:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/utils.py:42: in __init__
+    self.framework_model = self._load_model()
+tests/models/yolov5/test_yolov5.py:59: in _load_model
+    model = torch.hub.load(
+env/venv/lib/python3.11/site-packages/torch/hub.py:647: in load
+    model = _load_local(repo_or_dir, model, *args, **kwargs)
+env/venv/lib/python3.11/site-packages/torch/hub.py:676: in _load_local
+    model = entry(*args, **kwargs)
+/mnt/dockercache/torch/hub/ultralytics_yolov5_master/hubconf.py:215: in yolov5s
+    return _create("yolov5s", pretrained, channels, classes, autoshape, _verbose, device)
+/mnt/dockercache/torch/hub/ultralytics_yolov5_master/hubconf.py:56: in _create
+    from models.yolo import ClassificationModel, DetectionModel, SegmentationModel
+/mnt/dockercache/torch/hub/ultralytics_yolov5_master/models/yolo.py:55: in &lt;module&gt;
+    from utils.plots import feature_visualization
+/mnt/dockercache/torch/hub/ultralytics_yolov5_master/utils/plots.py:15: in &lt;module&gt;
+    import seaborn as sn
+env/venv/lib/python3.11/site-packages/seaborn/__init__.py:5: in &lt;module&gt;
+    from .relational import *  # noqa: F401,F403
+env/venv/lib/python3.11/site-packages/seaborn/relational.py:21: in &lt;module&gt;
+    from ._statistics import EstimateAggregator, WeightedAggregator
+env/venv/lib/python3.11/site-packages/seaborn/_statistics.py:32: in &lt;module&gt;
+    from scipy.stats import gaussian_kde
+env/venv/lib/python3.11/site-packages/scipy/stats/__init__.py:624: in &lt;module&gt;
+    from ._stats_py import *
+env/venv/lib/python3.11/site-packages/scipy/stats/_stats_py.py:38: in &lt;module&gt;
+    from scipy import sparse
+env/venv/lib/python3.11/site-packages/scipy/sparse/__init__.py:300: in &lt;module&gt;
+    from ._base import *
+env/venv/lib/python3.11/site-packages/scipy/sparse/_base.py:5: in &lt;module&gt;
+    from ._sputils import (asmatrix, check_reshape_kwargs, check_shape,
+env/venv/lib/python3.11/site-packages/scipy/sparse/_sputils.py:10: in &lt;module&gt;
+    from scipy._lib._util import np_long, np_ulong
+env/venv/lib/python3.11/site-packages/scipy/_lib/_util.py:13: in &lt;module&gt;
+    from scipy._lib._array_api import array_namespace, is_numpy, xp_size
+env/venv/lib/python3.11/site-packages/scipy/_lib/_array_api.py:18: in &lt;module&gt;
+    from scipy._lib.array_api_compat import (
+env/venv/lib/python3.11/site-packages/scipy/_lib/array_api_compat/numpy/__init__.py:1: in &lt;module&gt;
+    from numpy import * # noqa: F403
+env/venv/lib/python3.11/site-packages/numpy/testing/__init__.py:11: in &lt;module&gt;
+    from ._private.utils import *
+env/venv/lib/python3.11/site-packages/numpy/testing/_private/utils.py:469: in &lt;module&gt;
+    @np._no_nep50_warning()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+attr = '_no_nep50_warning'
+
+    def __getattr__(attr):
+        # Warn for expired attributes
+        import warnings
+
+        if attr == "linalg":
+            import numpy.linalg as linalg
+            return linalg
+        elif attr == "fft":
+            import numpy.fft as fft
+            return fft
+        elif attr == "dtypes":
+            import numpy.dtypes as dtypes
+            return dtypes
+        elif attr == "random":
+            import numpy.random as random
+            return random
+        elif attr == "polynomial":
+            import numpy.polynomial as polynomial
+            return polynomial
+        elif attr == "ma":
+            import numpy.ma as ma
+            return ma
+        elif attr == "ctypeslib":
+            import numpy.ctypeslib as ctypeslib
+            return ctypeslib
+        elif attr == "exceptions":
+            import numpy.exceptions as exceptions
+            return exceptions
+        elif attr == "testing":
+            import numpy.testing as testing
+            return testing
+        elif attr == "matlib":
+            import numpy.matlib as matlib
+            return matlib
+        elif attr == "f2py":
+            import numpy.f2py as f2py
+            return f2py
+        elif attr == "typing":
+            import numpy.typing as typing
+            return typing
+        elif attr == "rec":
+            import numpy.rec as rec
+            return rec
+        elif attr == "char":
+            import numpy.char as char
+            return char
+        elif attr == "array_api":
+            raise AttributeError("`numpy.array_api` is not available from "
+                                 "numpy 2.0 onwards", name=None)
+        elif attr == "core":
+            import numpy.core as core
+            return core
+        elif attr == "strings":
+            import numpy.strings as strings
+            return strings
+        elif attr == "distutils":
+            if 'distutils' in __numpy_submodules__:
+                import numpy.distutils as distutils
+                return distutils
+            else:
+                raise AttributeError("`numpy.distutils` is not available from "
+                                     "Python 3.12 onwards", name=None)
+
+        if attr in __future_scalars__:
+            # And future warnings for those that will change, but also give
+            # the AttributeError
+            warnings.warn(
+                f"In the future `np.{attr}` will be defined as the "
+                "corresponding NumPy scalar.", FutureWarning, stacklevel=2)
+
+        if attr in __former_attrs__:
+            raise AttributeError(__former_attrs__[attr], name=None)
+
+        if attr in __expired_attributes__:
+            raise AttributeError(
+                f"`np.{attr}` was removed in the NumPy 2.0 release. "
+                f"{__expired_attributes__[attr]}",
+                name=None
+            )
+
+        if attr == "chararray":
+            warnings.warn(
+                "`np.chararray` is deprecated and will be removed from "
+                "the main namespace in the future. Use an array with a string "
+                "or bytes dtype instead.", DeprecationWarning, stacklevel=2)
+            import numpy.char as char
+            return char.chararray
+
+&gt;       raise AttributeError("module {!r} has no attribute "
+                             "{!r}".format(__name__, attr))
+E       AttributeError: module 'numpy' has no attribute '_no_nep50_warning'
+
+env/venv/lib/python3.11/site-packages/numpy/__init__.py:414: AttributeError</failure></testcase></testsuite></testsuites>

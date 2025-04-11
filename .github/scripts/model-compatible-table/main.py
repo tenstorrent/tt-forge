@@ -107,6 +107,8 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
         for case in test_cases:
             if not case.xpath("skipped"):
                 tag_attrs: Dict = get_property(case, "tags")
+                if not tag_attrs:
+                    continue
                 model_name = tag_attrs.get("model_name")
                 if model_name is None:
                     continue
