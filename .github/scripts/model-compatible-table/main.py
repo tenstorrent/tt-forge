@@ -82,14 +82,14 @@ def get_card_arch(file_path: pathlib.PosixPath) -> str:
     return "N/A"
 
 
-def get_test_file_name(case: lxml.etree.ElementTree) -> str:
-    """Get the test file name from the test case
+def get_test_file_path(case: lxml.etree.ElementTree) -> str:
+    """Get the test file path from the test case
 
     Args:
         case (lxml.etree.ElementTree): Test case
 
     Returns:
-        str: Test file name"""
+        str: Test file path"""
     return case.get("classname").replace(".", "/") + ".py"
 
 
@@ -102,6 +102,8 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
     """
 
     xml_root: str = os.environ.get("XML_ROOT")
+    
+    test_file_path_exemptions_regex: re.Pattern = re.compile(r"models_ops")
 
     if not xml_root:
         print("XML_ROOT ENV is not definded")
@@ -120,6 +122,10 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
         test_cases = v.xpath("/testsuites/testsuite/testcase")
         for case in test_cases:
             if not case.xpath("skipped"):
+                test_file_path = get_test_file_path(case)
+                if test_file_path_exemptions_regex.findall(test_file_path):
+                    continue
+                
                 tag_attrs: Dict = get_property(case, "tags")
                 if not tag_attrs:
                     continue
@@ -150,7 +156,7 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                             "card": card,
                             "frontend": frontend,
                             "status": status,
-                            "file_path": get_test_file_name(case),
+                            "file_path": test_file_path,
                         }
 
                         if model_tests.get(x):
@@ -167,7 +173,7 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                         "card": card,
                         "frontend": frontend,
                         "status": status,
-                        "file_path": get_test_file_name(case),
+                        "file_path": test_file_path,
                     }
 
                     if model_tests.get(model_name):
