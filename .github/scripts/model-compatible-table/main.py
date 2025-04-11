@@ -102,7 +102,7 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
     """
 
     xml_root: str = os.environ.get("XML_ROOT")
-    
+
     test_file_path_exemptions_regex: re.Pattern = re.compile(r"models_ops")
 
     if not xml_root:
@@ -125,7 +125,7 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                 test_file_path = get_test_file_path(case)
                 if test_file_path_exemptions_regex.findall(test_file_path):
                     continue
-                
+
                 tag_attrs: Dict = get_property(case, "tags")
                 if not tag_attrs:
                     continue
