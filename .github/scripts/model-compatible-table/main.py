@@ -7,9 +7,20 @@ import ast
 from typing import List, Dict, Union, Set
 from tabulate import tabulate
 import os
-import copy
 import re
 import json
+import logging
+import sys
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger('model-compatibility')
 
 
 """
@@ -24,8 +35,8 @@ url_path_prefixes: Dict[str, str] = {
     "tt-torch": "https://github.com/tenstorrent/tt-torch/tree",
 }
 
-wormhole_cards: List[str] = ["n150", "n300", "wormhole"]
-blackhole_cards: List[str] = ["p150", "p300", "blackhole"]
+wormhole_cards: Set[str] = {"n150", "n300", "wormhole"}
+blackhole_cards: Set[str] = {"p150", "p300", "blackhole"}
 
 
 def get_property(case: lxml.etree.ElementTree, property_name: str) -> Dict[str, str]:
@@ -48,7 +59,12 @@ def get_property(case: lxml.etree.ElementTree, property_name: str) -> Dict[str, 
             return ast.literal_eval(value)
         return value
     except Exception as e:
-        print(e)
+        classname = case.get('classname')
+        exmeptioned_classes = ['forge.test.operators.pytorch.test_all']
+        if classname in exmeptioned_classes:
+            return None
+        logger.warning(f"Error getting property {property_name}: {e} classname: {classname}, file_path: {case.base}")
+        return None
 
 
 def get_card_arch(file_path: pathlib.PosixPath) -> str:
@@ -113,6 +129,8 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                 if model_name is None:
                     continue
                 frontend = get_property(case, "owner")
+                if not frontend:
+                    continue
                 card = get_card_arch(file_path=k)
                 ## Don't process the same model twice
                 if skip_process.get(f"{model_name}-{frontend}-{card}"):
@@ -127,26 +145,46 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                 if status != "PASSED":
                     continue
 
-                temp_dict: Dict[str, str] = {
-                    "model_name": model_name,
-                    "card": card,
-                    "frontend": frontend,
-                    "status": status,
-                    "file_path": get_test_file_name(case),
-                }
+                if isinstance(model_name, list):
+                    for x in model_name:
+                        temp_dict: Dict[str, str] = {
+                            "model_name": x,
+                            "card": card,
+                            "frontend": frontend,
+                            "status": status,
+                            "file_path": get_test_file_name(case),
+                        }
+                        
+                        if model_tests.get(x):
+                            model_tests[x].append(temp_dict)
+                            continue
+                        model_tests[x] = [temp_dict]
 
-                card_archs.add(card)
-                skip_process[f"{model_name}-{frontend}-{card}"] = True
+                        skip_process[f"{x}-{frontend}-{card}"] = True
+                        card_archs.add(card)
 
-                if model_tests.get(model_name):
-                    model_tests[model_name].append(temp_dict)
-                    continue
-                model_tests[tag_attrs.get("model_name")] = [temp_dict]
+
+                else:
+                    temp_dict: Dict[str, str] = {
+                        "model_name": model_name,
+                        "card": card,
+                        "frontend": frontend,
+                        "status": status,
+                        "file_path": get_test_file_name(case),
+                        }
+                    
+                    if model_tests.get(model_name):
+                        model_tests[model_name].append(temp_dict)
+                        continue
+                    model_tests[model_name] = [temp_dict]
+                    
+                    skip_process[f"{model_name}-{frontend}-{card}"] = True
+                    card_archs.add(card)
 
     return model_tests, card_archs
 
 
-def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[str]) -> None:
+def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[str]) ->  List[List[str]]:
     """Create a table from the model tests and card archs
 
     Args:
@@ -154,7 +192,7 @@ def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[s
         card_archs (Set[str]): Set of card archs
 
     Returns:
-        None
+        List[List[str]]: Table data
     """
 
     url_shas: str = os.environ.get("URL_SHAS")
@@ -199,7 +237,7 @@ def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[s
         file1.close()
     # Print the table
     print(print_builder)
-
+    return table_data
 
 if __name__ == "__main__":
     model_tests, card_archs = parse_xml()
