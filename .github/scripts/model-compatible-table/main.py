@@ -15,12 +15,10 @@ import sys
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
-logger = logging.getLogger('model-compatibility')
+logger = logging.getLogger("model-compatibility")
 
 
 """
@@ -59,8 +57,8 @@ def get_property(case: lxml.etree.ElementTree, property_name: str) -> Dict[str, 
             return ast.literal_eval(value)
         return value
     except Exception as e:
-        classname = case.get('classname')
-        exmeptioned_classes = ['forge.test.operators.pytorch.test_all']
+        classname = case.get("classname")
+        exmeptioned_classes = ["forge.test.operators.pytorch.test_all"]
         if classname in exmeptioned_classes:
             return None
         logger.warning(f"Error getting property {property_name}: {e} classname: {classname}, file_path: {case.base}")
@@ -154,7 +152,7 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                             "status": status,
                             "file_path": get_test_file_name(case),
                         }
-                        
+
                         if model_tests.get(x):
                             model_tests[x].append(temp_dict)
                             continue
@@ -163,7 +161,6 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                         skip_process[f"{x}-{frontend}-{card}"] = True
                         card_archs.add(card)
 
-
                 else:
                     temp_dict: Dict[str, str] = {
                         "model_name": model_name,
@@ -171,20 +168,20 @@ def parse_xml() -> Union[Dict[str, List[Dict[str, str]]], Set[str]]:
                         "frontend": frontend,
                         "status": status,
                         "file_path": get_test_file_name(case),
-                        }
-                    
+                    }
+
                     if model_tests.get(model_name):
                         model_tests[model_name].append(temp_dict)
                         continue
                     model_tests[model_name] = [temp_dict]
-                    
+
                     skip_process[f"{model_name}-{frontend}-{card}"] = True
                     card_archs.add(card)
 
     return model_tests, card_archs
 
 
-def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[str]) ->  List[List[str]]:
+def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[str]) -> List[List[str]]:
     """Create a table from the model tests and card archs
 
     Args:
@@ -238,6 +235,7 @@ def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[s
     # Print the table
     print(print_builder)
     return table_data
+
 
 if __name__ == "__main__":
     model_tests, card_archs = parse_xml()
