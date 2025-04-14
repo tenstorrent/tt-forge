@@ -97,7 +97,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Wheels
-        path: ${{ github.workspace }}/release/artifacts/*.whl
+        path: ${{ github.workspace }}/release/artifacts/**/*.whl
     - name: Prune Nightly releases
       if: ${{ !github.event.inputs.draft || true }}
       shell: bash
