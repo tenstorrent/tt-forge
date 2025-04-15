@@ -2,12 +2,6 @@ name: Performance benchmark
 
 on:
   workflow_dispatch:
-    inputs:
-      rebuild:
-        description: 'Rebuild the Forge'
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   set-inputs:
@@ -109,6 +103,8 @@ jobs:
       if: ${{ matrix.build.project }} == 'forge-fe'
       shell: bash
       run: |
+        python -m venv forge-fe-venv
+        source forge-fe-venv/bin/activate
         pip install tvm*.whl --force-reinstall
         pip install forge*.whl --force-reinstall
 
@@ -122,8 +118,8 @@ jobs:
       if: ${{ matrix.build.project }} == 'torch'
       shell: bash
       run: |
-        python -m venv torch-fe-venv
-        source torch-fe-venv/bin/activate
+        python -m venv torch-venv
+        source torch-venv/bin/activate
         pip install tt_torch*.whl --force-reinstall
 
     - name: Run Perf Benchmark
