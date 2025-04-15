@@ -65,7 +65,6 @@ jobs:
 
     - name: Untar ttmlir install directory
       shell: bash
-      working-directory: install
       run: |
         mv install-artifacts-tracy/artifact.tar .
         tar xvf artifact.tar
