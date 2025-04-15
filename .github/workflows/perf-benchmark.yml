@@ -73,11 +73,9 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
-        cache: 'pipenv'
+        python-version: '3.11'
 
-    - name: Download Forge-FE project release
-      if: ${{ matrix.build.project == 'forge-fe' }}
+    - name: Download project releases
       uses: robinraju/release-downloader@v1
       with:
         latest: true
@@ -85,46 +83,24 @@ jobs:
         tarBall: false
         zipBall: false
         extract: true
-        fileName: forge*.whl
+        fileName: '*.whl'
 
-    - name: Download TVM (for Forge-FE) release
-      if: ${{ matrix.build.project }} == 'forge-fe'
-      uses: robinraju/release-downloader@v1
-      with:
-        latest: true
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        extract: true
-        fileName: tvm*.whl
-
-    - name: Install TT-Forge-FE wheels
-      if: matrix.build.project == 'forge-fe'
+    - name: Install wheels
       shell: bash
       run: |
-        python -m venv forge-fe-venv
-        source forge-fe-venv/bin/activate
-        pip install tvm*.whl --force-reinstall
-        pip install forge*.whl --force-reinstall
-
-    - name: Download TT-Torch project release
-      if: matrix.build.project == 'torch'
-      uses: robinraju/release-downloader@v1
-      with:
-        latest: true
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        extract: true
-        fileName: tt_torch*.whl
-
-    - name: Install Torch wheels
-      if: matrix.build.project == 'torch'
-      shell: bash
-      run: |
-        python -m venv torch-venv
-        source torch-venv/bin/activate
-        pip install tt_torch*.whl --force-reinstall
+        if [ "${{ matrix.build.project }}" == "forge-fe" ]; then
+          python -m venv forge-fe-venv
+          source forge-fe-venv/bin/activate
+          pip install tvm*.whl --force-reinstall
+          pip install forge*.whl --force-reinstall
+        elif [ "${{ matrix.build.project }}" == "torch" ]; then
+          python -m venv torch-venv
+          source torch-venv/bin/activate
+          pip install tt_torch*.whl --force-reinstall
+        else
+          echo "Unknown project: ${{ matrix.build.project }}"
+          exit 1
+        fi
 
     - name: Run Perf Benchmark
       shell: bash
