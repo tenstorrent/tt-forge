@@ -49,7 +49,8 @@ def run_benchmark(project: str, test: str, config: Dict[str, Any]) -> Dict[str, 
         The result dictionary from the benchmark function
     """
     # Add the project directory to sys.path so imports within the module work
-    project_dir = os.path.abspath(project)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_dir = os.path.abspath(os.path.join(script_dir, project))
     if project_dir not in sys.path:
         sys.path.insert(0, project_dir)
 
