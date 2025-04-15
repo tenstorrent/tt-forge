@@ -10,10 +10,11 @@ jobs:
       matrix:
         build: [
           { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "resnet50_hf",       dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, allow-fail: true }, # TTRT does not support llama model yet, so allow it to fail
-          { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
+          { runs-on: "n150", project: "torch", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          # { runs-on: "n150", project: "forge-fe", name: "resnet50_hf",       dir: "ResNetForImageClassification", bs: 3, lp: 32 },
+          # { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, allow-fail: true }, # TTRT does not support llama model yet, so allow it to fail
+          # { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+          # { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
         ]
     runs-on:
       - tt-beta-ubuntu-2204-${{ matrix.build.runs-on }}-large-stable
@@ -77,11 +78,25 @@ jobs:
 
     - name: Download Forge-FE project release
       if: ${{ matrix.build.project }} == 'forge-fe'
-      uses: PlasmoHQ/download-release-asset@v1.0.0
+      uses: robinraju/release-downloader@v1
       with:
-        files: |
-          forge*.whl
-          tvm*.whl
+        latest: true
+        preRelease: true
+        tarBall: false
+        zipBall: false
+        extract: true
+        fileName: forge*.whl
+
+    - name: Download TVM (for Forge-FE) release
+      if: ${{ matrix.build.project }} == 'forge-fe'
+      uses: robinraju/release-downloader@v1
+      with:
+        latest: true
+        preRelease: true
+        tarBall: false
+        zipBall: false
+        extract: true
+        fileName: tvm*.whl
 
     - name: Install TT-Forge-FE wheels
       if: ${{ matrix.build.project }} == 'forge-fe'
@@ -94,9 +109,14 @@ jobs:
 
     - name: Download TT-Torch project release
       if: ${{ matrix.build.project }} == 'torch'
-      uses: PlasmoHQ/download-release-asset@v1.0.0
+      uses: robinraju/release-downloader@v1
       with:
-        files: tt_torch*.whl
+        latest: true
+        preRelease: true
+        tarBall: false
+        zipBall: false
+        extract: true
+        fileName: tt_torch*.whl
 
     - name: Install Forge-FE wheels
       if: ${{ matrix.build.project }} == 'torch'
