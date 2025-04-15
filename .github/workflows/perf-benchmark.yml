@@ -106,7 +106,7 @@ jobs:
       shell: bash
       run: |
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
-        source ${{ matrix.build.project}}/bin/activate
+        source ${{ matrix.build.project}}-venv/bin/activate
         python benchmark/benchmark.py -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
         python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
 
