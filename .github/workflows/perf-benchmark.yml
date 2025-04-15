@@ -1,0 +1,156 @@
+name: Performance benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      rebuild:
+        description: 'Rebuild the Forge'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  set-inputs:
+    runs-on: ubuntu-latest
+    outputs:
+      buildtype: ${{ steps.set-inputs.outputs.buildtype }}
+      run-id: ${{ steps.set-inputs.outputs.runid }}
+    steps:
+      - name: Set Inputs
+        id: set-inputs
+        run: |
+          if [ ${{ inputs.rebuild }} == 'true' ]; then
+            echo "buildtype=Release" >> $GITHUB_OUTPUT
+            echo "runid=${{ github.run_id }}" >> $GITHUB_OUTPUT
+          else
+            echo "buildtype=None" >> $GITHUB_OUTPUT
+          fi
+
+  run-perf-benchmarks:
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [
+          { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          { runs-on: "n150", project: "forge-fe", name: "resnet50_hf",       dir: "ResNetForImageClassification", bs: 3, lp: 32 },
+          { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, allow-fail: true }, # TTRT does not support llama model yet, so allow it to fail
+          { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+          { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
+        ]
+    runs-on:
+      - tt-beta-ubuntu-2204-${{ matrix.build.runs-on }}-large-stable
+
+    name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+    steps:
+
+    - name: Fetch job id
+      id: fetch-job-id
+      uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
+      with:
+        job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      env:
+        JOB_ID: ${{ steps.fetch-job-id.outputs.job_id }}
+      run: |
+        echo "work-dir=$(pwd)" >> "$GITHUB_OUTPUT"
+        echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
+        echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
+
+    - name: Git safe dir
+      run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
+
+    - uses: actions/checkout@v4
+      with:
+          sparse-checkout: |
+            benchmark/
+            pytest.ini
+            conftest.py
+            .test_durations
+          fetch-depth: 0 # Fetch all history and tags
+
+    # ttrt version (sha) should be taken from release metadata or something
+    - name: Download ttrt wheel
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        github_token: ${{secrets.GITHUB_TOKEN}}
+        workflow_conclusion: success
+        workflow: on-push.yml
+        branch: main
+        name: "(ttrt|install)-.*-tracy"
+        name_is_regexp: true
+        repo: tenstorrent/tt-mlir
+        check_artifacts: true
+
+    - name: 'Untar install directory'
+      shell: bash
+      working-directory: install
+      run: |
+        mv ../artifact.tar .
+        tar xvf artifact.tar
+
+    # - name: Set up Python
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: '3.10'
+    #     cache: 'pipenv'
+
+    - name: Download Forge-FE project release
+      if: ${{ matrix.build.project }} == 'forge-fe'
+      uses: PlasmoHQ/download-release-asset@v1.0.0
+      with:
+        files: |
+          forge*.whl
+          tvm*.whl
+
+    - name: Install TT-Forge-FE wheels
+      if: ${{ matrix.build.project }} == 'forge-fe'
+      shell: bash
+      run: |
+        pip install tvm*.whl --force-reinstall
+        pip install forge*.whl --force-reinstall
+
+    - name: Download TT-Torch project release
+      if: ${{ matrix.build.project }} == 'torch'
+      uses: PlasmoHQ/download-release-asset@v1.0.0
+      with:
+        files: tt_torch*.whl
+
+    - name: Install Forge-FE wheels
+      if: ${{ matrix.build.project }} == 'torch'
+      shell: bash
+      run: |
+        python -m venv torch-fe-venv
+        source torch-fe-venv/bin/activate
+        pip install tt_torch*.whl --force-reinstall
+
+    - name: Run Perf Benchmark
+      shell: bash
+      run: |
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}
+        source ${{ matrix.build.project}}/bin/activate
+        python benchmark/benchmark.py -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
+
+    - name: Install and run TTRT
+      shell: bash
+      run: |
+        python -m venv ttrt-venv
+        source ttrt-venv/bin/activate
+        pip install ttrt*.whl --force-reinstall
+        echo "save artifacts"
+        ttrt query --save-artifacts
+        if [ -z "${{ matrix.build.allow-fail }}" ]; then
+          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        else
+          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+        fi
+
+    - name: Upload Perf Report
+      uses: actions/upload-artifact@v4
+      if: success() || failure()
+      with:
+        name: perf-reports-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}
