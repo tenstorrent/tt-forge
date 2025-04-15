@@ -7,9 +7,9 @@ Common functions for the forge-fe benchmarks.
 Provides pre_test and post_test functions that can modify configurations and results.
 """
 
-import time
 from typing import Dict, Any
 
+import random
 import numpy as np
 import torch
 import paddle
