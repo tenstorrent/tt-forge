@@ -10,7 +10,6 @@ jobs:
       matrix:
         build: [
           { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "torch", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
           # { runs-on: "n150", project: "forge-fe", name: "resnet50_hf",       dir: "ResNetForImageClassification", bs: 3, lp: 32 },
           # { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, allow-fail: true }, # TTRT does not support llama model yet, so allow it to fail
           # { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
