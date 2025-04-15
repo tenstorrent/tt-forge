@@ -200,6 +200,7 @@ def test_mnist_linear(
 
 
 def benchmark(config: dict):
+    print("Running MNIST Linear benchmark.")
 
     training = config["training"]
     batch_size = config["batch_size"]

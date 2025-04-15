@@ -35,6 +35,7 @@ def pre_test(config: Dict[str, Any], test_name: str) -> Dict[str, Any]:
     torch.manual_seed(0)
     tf.random.set_seed(0)
 
+    print(f"Pre-test processing for {test_name} - done")
     return config
 
 
