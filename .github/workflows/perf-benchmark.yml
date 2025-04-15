@@ -61,12 +61,13 @@ jobs:
         name_is_regexp: true
         repo: tenstorrent/tt-mlir
         check_artifacts: true
-        path: install
+        path: ./
 
     - name: Untar ttmlir install directory
       shell: bash
       working-directory: install
       run: |
+        mv install-artifacts-tracy/artifact.tar .
         tar xvf artifact.tar
 
     # - name: Set up Python
@@ -87,6 +88,8 @@ jobs:
       if: ${{ matrix.build.project }} == 'forge-fe'
       shell: bash
       run: |
+        python -m venv forge-fe-venv
+        source forge-fe-venv/bin/activate
         pip install tvm*.whl --force-reinstall
         pip install forge*.whl --force-reinstall
 
@@ -100,8 +103,8 @@ jobs:
       if: ${{ matrix.build.project }} == 'torch'
       shell: bash
       run: |
-        python -m venv torch-fe-venv
-        source torch-fe-venv/bin/activate
+        python -m venv torch-venv
+        source torch-venv/bin/activate
         pip install tt_torch*.whl --force-reinstall
 
     - name: Run Perf Benchmark
@@ -117,7 +120,7 @@ jobs:
       run: |
         python -m venv ttrt-venv
         source ttrt-venv/bin/activate
-        pip install ttrt*.whl --force-reinstall
+        pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
         echo "save artifacts"
         ttrt query --save-artifacts
         if [ -z "${{ matrix.build.allow-fail }}" ]; then
