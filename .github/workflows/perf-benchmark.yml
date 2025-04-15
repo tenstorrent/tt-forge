@@ -2,30 +2,8 @@ name: Performance benchmark
 
 on:
   workflow_dispatch:
-    inputs:
-      rebuild:
-        description: 'Rebuild the Forge'
-        required: false
-        default: false
-        type: boolean
 
 jobs:
-  set-inputs:
-    runs-on: ubuntu-latest
-    outputs:
-      buildtype: ${{ steps.set-inputs.outputs.buildtype }}
-      run-id: ${{ steps.set-inputs.outputs.runid }}
-    steps:
-      - name: Set Inputs
-        id: set-inputs
-        run: |
-          if [ ${{ inputs.rebuild }} == 'true' ]; then
-            echo "buildtype=Release" >> $GITHUB_OUTPUT
-            echo "runid=${{ github.run_id }}" >> $GITHUB_OUTPUT
-          else
-            echo "buildtype=None" >> $GITHUB_OUTPUT
-          fi
-
   run-perf-benchmarks:
     strategy:
       fail-fast: false
@@ -79,16 +57,16 @@ jobs:
         workflow_conclusion: success
         workflow: on-push.yml
         branch: main
-        name: "(ttrt|install)-.*-tracy"
+        name: "(ttrt-whl|install-artifacts)-tracy"
         name_is_regexp: true
         repo: tenstorrent/tt-mlir
         check_artifacts: true
+        path: install
 
-    - name: 'Untar install directory'
+    - name: Untar ttmlir install directory
       shell: bash
       working-directory: install
       run: |
-        mv ../artifact.tar .
         tar xvf artifact.tar
 
     # - name: Set up Python
