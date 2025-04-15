@@ -70,14 +70,14 @@ jobs:
         mv install-artifacts-tracy/artifact.tar .
         tar xvf artifact.tar
 
-    # - name: Set up Python
-    #   uses: actions/setup-python@v5
-    #   with:
-    #     python-version: '3.10'
-    #     cache: 'pipenv'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pipenv'
 
     - name: Download Forge-FE project release
-      if: ${{ matrix.build.project }} == 'forge-fe'
+      if: ${{ matrix.build.project == 'forge-fe' }}
       uses: robinraju/release-downloader@v1
       with:
         latest: true
@@ -99,7 +99,7 @@ jobs:
         fileName: tvm*.whl
 
     - name: Install TT-Forge-FE wheels
-      if: ${{ matrix.build.project }} == 'forge-fe'
+      if: matrix.build.project == 'forge-fe'
       shell: bash
       run: |
         python -m venv forge-fe-venv
@@ -108,7 +108,7 @@ jobs:
         pip install forge*.whl --force-reinstall
 
     - name: Download TT-Torch project release
-      if: ${{ matrix.build.project }} == 'torch'
+      if: matrix.build.project == 'torch'
       uses: robinraju/release-downloader@v1
       with:
         latest: true
@@ -118,8 +118,8 @@ jobs:
         extract: true
         fileName: tt_torch*.whl
 
-    - name: Install Forge-FE wheels
-      if: ${{ matrix.build.project }} == 'torch'
+    - name: Install Torch wheels
+      if: matrix.build.project == 'torch'
       shell: bash
       run: |
         python -m venv torch-venv
