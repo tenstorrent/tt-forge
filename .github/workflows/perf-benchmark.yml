@@ -127,6 +127,7 @@ jobs:
         python -m venv ttrt-venv
         source ttrt-venv/bin/activate
         pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
+        pip install torch
         echo "save artifacts"
         ttrt query --save-artifacts
         if [ -z "${{ matrix.build.allow-fail }}" ]; then
