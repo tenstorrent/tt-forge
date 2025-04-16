@@ -163,7 +163,7 @@ def main():
         results["model_rawname"] = args.model
 
         # Save the results
-        save_results(results, args.project, args.model)
+        save_results(config, results, args.project, args.model)
 
     except Exception as e:
         print(f"Error running benchmark: {str(e)}", file=sys.stderr)
