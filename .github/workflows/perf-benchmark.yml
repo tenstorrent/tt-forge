@@ -8,6 +8,12 @@ jobs:
     container:
       image: "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
       options: "--device /dev/tenstorrent/0"
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
     strategy:
       fail-fast: false
