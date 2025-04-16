@@ -94,7 +94,6 @@ jobs:
         preRelease: true
         tarBall: false
         zipBall: false
-        extract: true
         fileName: '*.whl'
 
     - name: Install wheels
