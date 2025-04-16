@@ -19,7 +19,6 @@ from transformers import LlamaTokenizer
 # Forge modules
 import forge
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
-from test.mlir.llama.utils.utils import load_model
 from forge.verify.compare import compare_with_golden
 
 
