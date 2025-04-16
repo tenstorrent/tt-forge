@@ -20,10 +20,10 @@ jobs:
       matrix:
         build: [
           { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          # { runs-on: "n150", project: "forge-fe", name: "resnet50_hf",       dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          # { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, allow-fail: true }, # TTRT does not support llama model yet, so allow it to fail
-          # { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
-          # { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
+          { runs-on: "n150", project: "forge-fe", name: "resnet50_hf",       dir: "ResNetForImageClassification", bs: 3, lp: 32 },
+          { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, allow-fail: true }, # TTRT does not support llama model yet, so allow it to fail
+          { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+          { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
         ]
     runs-on:
       - ${{ matrix.build.runs-on }}
@@ -46,7 +46,6 @@ jobs:
         echo "work-dir=$(pwd)" >> "$GITHUB_OUTPUT"
         echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
         echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
-        echo $USER
 
     - name: Git safe dir
       run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
