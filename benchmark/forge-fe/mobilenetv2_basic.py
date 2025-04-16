@@ -18,7 +18,7 @@ import forge
 from forge.verify.verify import verify
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 
-from test.utils import download_model
+from utils import download_model
 
 
 # Common constants
