@@ -26,7 +26,7 @@ jobs:
           # { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
         ]
     runs-on:
-      - tt-beta-ubuntu-2204-${{ matrix.build.runs-on }}-large-stable
+      - ${{ matrix.build.runs-on }}
 
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
