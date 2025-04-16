@@ -44,6 +44,15 @@ jobs:
         artifact_download_glob: '*{install-artifacts,test-reports-models-}*'
         artifact_cleanup_glob: 'torchvision*'
         workflow_allow_failed: true
+    - name: Uplift tenstorrent/tt-mlir artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: tt-mlir-artifacts
+      with:
+        repo: tenstorrent/tt-mlir
+        branch: "main"
+        workflow: Build tt-mlir
+        artifact_download_glob: '*ttmlir-whl*'
+        workflow_allow_failed: true
     - name: Update Wheel versions
       env:
         WHEEL_VERSION: ${{ steps.version-tag.outputs.tag }}
