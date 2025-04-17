@@ -21,7 +21,6 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 
 from utils import download_model
 
-
 # Common constants
 
 # Batch size configurations
