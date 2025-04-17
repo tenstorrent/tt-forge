@@ -1,17 +1,14 @@
 # Contributing Guidelines for TT-Forge
 
-Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-forge) project, we appreciate your support. TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. The TT-Forge repository is the central hub for the various sub-projects that create the TT-Forge product. Sub-project repositories include:
-Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-forge) project, we appreciate your support. TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. The TT-Forge repository is the central hub for the various sub-projects that create the TT-Forge product. Sub-project repositories include:
+Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-forge) project, we appreciate your support. TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and custom kernel generation. The TT-Forge repository is the central hub for the various sub-projects that create the TT-Forge product. Sub-project repositories include:
 
-* [tt-mlir](https://github.com/tenstorrent/tt-mlir)
-* [tt-xla](https://github.com/tenstorrent/tt-xla)
-* [tt-npe](https://github.com/tenstorrent/tt-npe)
-* [tt-thomas](https://github.com/tenstorrent/tt-thomas)
-* [tt-torch](https://github.com/tenstorrent/tt-torch)
-* [tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe)
+* [TT-MLIR](https://github.com/tenstorrent/tt-mlir)
+* [TT-XLA](https://github.com/tenstorrent/tt-xla)
+* [TT-NPE](https://github.com/tenstorrent/tt-npe)
+* [TT-Blacksmith](https://github.com/tenstorrent/tt-blacksmith)
+* [TT-Torch](https://github.com/tenstorrent/tt-torch)
+* [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
 
-
-This document covers how to contribute to TT-Forge repositories.
 This document covers how to contribute to TT-Forge repositories.
 
 If you need to file a bug, ask for support, or make a feature request, please use the appropriate issue template:
@@ -20,12 +17,19 @@ If you need to file a bug, ask for support, or make a feature request, please us
 * Propose a feature
 * How do I
 
+>[!NOTE] Some repos have additional issue templates besides the main four listed here.
+
+Templates can be found on the **Issues** page per repo. To use a template, do the following:
+
+1. Navigate to the **Issues** page for the repo you want to file an issue for.
+2. Click the **New issue** button.
+3. Choose the appropriate template from the list of choices. If you don't see something that addresses your issue, you can also use a blank template.
+
 If you are ready to make a contribution, each repository follows this process:
 
 1. Fork the repository.
 2. Clone the repository.
 3. Set up the environment and build the project.
-4. Make changes using the style guidelines for the repository.
 4. Make changes using the style guidelines for the repository.
   * [Coding Guidelines](#coding-guidelines)
   * [Guidelines for Writing Effective Error Messages](#guidelines-for-writing-effective-error-messages)
@@ -37,20 +41,19 @@ If you are ready to make a contribution, each repository follows this process:
     * [Pre-commit](#pre-commit)
     * [Post-commit](#post-commit)
     * [CI/CD Principles](#cicd-principles)
-6. Create a Pull Request
-6. Create a Pull Request
+6. Create a pull request.
   * [Pull Request Notes](#pull-request-notes)
 
 ## Coding Guidelines
 
 Coding guidelines differ slightly by repo. Review the guidelines that are appropriate for the sub-project you're working with:
 
-* [tt-mlir coding-guidelines.md](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md)
-* tt-xla
-* tt-npe
-* tt-thomas
-* tt-torch
-* tt-forge-fe
+* [TT-MLIR Coding Guidelines](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md)
+* [TT-XLA Coding Guidelines](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md) - TT-XLA uses the same coding guidelines as TT-MLIR.
+* TT-NPE
+* TT-Blacksmith
+* [TT-Torch](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md) - TT-Torch uses the same coding guidelines as TT-MLIR, when using C++.
+* TT-Forge-FE
 
 ## Guidelines for Writing Effective Error Messages
 Clear and informative error messages are crucial for debugging and maintenance. A well-crafted error message can save hours of troubleshooting and make our codebase more user-friendly, especially for those less familiar with the system.
@@ -127,9 +130,6 @@ TT_FATAL(head_size % TILE_WIDTH == 0,
 * Start your message with the most important words that relate to the issue.
 
 ## File Structure and Format for Legal
-## File Structure and Format for Legal
-
-Every source file must have the appropriate Software Package Data Exchange (SPDX) header at the top.
 Every source file must have the appropriate Software Package Data Exchange (SPDX) header at the top.
 
 C++ header files follow the [Linux conventions](https://elixir.bootlin.com/linux/v6.5.1/source/Documentation/process/license-rules.rst#L71) for C++ source files, RST files, ASM files, and scripts. C++ header files should be treated as C++ source files and use this convention:
@@ -168,7 +168,7 @@ Python files should use this convention:
 
 Include the user, the issue number, and optionally a description of the change.
 / and - are used as separators between user and issue number. And - and _
-between issue number and description. E.g.
+between issue number and description. For example:
 
 ```
 git checkout -b user-123
@@ -180,7 +180,7 @@ git checkout -b user/123-add-x-unit-test
 ### Saving Your Changes
 
 Edit the files that you want, making sure relevant unit tests pass. Then add
-them in. E.g.
+them in. For example:
 
 ```
 git add abc.py
@@ -189,7 +189,7 @@ git add "*.py"
 
 Please avoid using `git add -A`, which is fairly error prone.
 
-You can restore files if you need to get the original. E.g.
+You can restore files if you need to get the original. For example:
 
 ```
 git restore abc.py
@@ -216,7 +216,7 @@ git commit -m "Rename method x"
 You will need to push the change to origin. The command will provide a url that
 you should use to create pull request. This should be done the first time you
 push a change. After that you may need to set upstream to be able to push
-changes in the future. E.g.
+changes in the future. For example:
 
 ```
 git push origin user-123:user-123
@@ -241,10 +241,10 @@ git push -u branch_name
 Once you have a pull request, in the UI you can run actions against the branch.
 Go to Actions (https://github.com/tenstorrent/tt-metal/actions) and run the
 workflows that you want against your branch. At the very least, you should run
-All post-commit tests.
+all post-commit tests.
 
 You can make more changes, commit them, and then if everything is set up and you
-don't need to rebase, then you can just do
+don't need to rebase, then you can use the command:
 
 ```
 git push
@@ -323,7 +323,7 @@ git rebase --continue
 ```
 
 If something is wrong enough that you want to abort the rebase and undo all the
-changes, then you can start over. Do
+changes, then you can start over. Do:
 
 ```
 git rebase --abort # go to before the rebase
@@ -374,8 +374,8 @@ You will probably need to iterate several times in terms of pushing changes and
 rebasing your branch.
 
 Once you have all of your changes working locally, your pull request (PR)
-approved, and all the workflows that you want passing after a final rebase, It
-is time to merge in your branch into main. This should be done in the Github UI.
+approved, and all the workflows that you want passing after a final rebase, it
+is time to merge your branch into main. This should be done in the Github UI.
 
 Go to your PR and press the `Squash and merge` button. That will automatically
 squash all of your commits, which is very useful. The button has an alternate
@@ -395,37 +395,28 @@ This section goes over how to properly commit your contribution.
 
 ### Pre-commit
 
-As part of maintaining consistent codeformatting across the project, we integrated the [pre-commit](https://pre-commit.com/) framework into our workflow. Pre-commit is a framework for managing and maintaining multi-language pre-commit hooks. It helps catch common issues early by running a set of hooks before code is committed, automating tasks like:
+As part of maintaining consistent code formatting across the project, we integrated the [pre-commit](https://pre-commit.com/) framework into our workflow. Pre-commit is a framework for managing and maintaining multi-language pre-commit hooks. It helps catch common issues early by running a set of hooks before code is committed, automating tasks like:
 
-* Formatting code (for example, fixing trailing whitespace, enforcing end-of-file newlines)
-* Running linters (for example, `clang-format`, `black`, `flake8`)
+* Formatting code (for example, fixing trailing whitespace, enforcing end-of-file newlines).
+* Running linters (for example, `clang-format`, `black`, `flake8`).
 * Checking for merge conflicts or other common issues.
-* Checking for merge conflicts or other common issues.
 
-For more details pre-commit, you can visit the [official documentation](https://pre-commit.com/).
+For more details about pre-commit, you can visit the [official documentation](https://pre-commit.com/).
 
-For details about setting up pre-commit, refer to the pre-commit documentation for your repository:
-For details about setting up pre-commit, refer to the pre-commit documentation for your repository:
+To install pre-commit, do the following:
 
-* tt-mlir
-* tt-xla
-* tt-npe
-* tt-thomas
-* tt-torch
-* tt-forge-fe
+1. Open a terminal and navigate to your repo.
+2. Inside the repo, install pre-commit by running the following command: ```pip install pre-commit```
+3. Install the hooks by running: ```pre-commit install```
+4. After installing the hooks, whenever you run ```git commit``` the pre-commit hooks execute. You can also run pre-commit yourself with ```pre-commit run --all-files``` or on an individual file with ```pre-commit run <hook_id>```
+
+> [!NOTE] After you install pre-commit once, if you work with more than one repo, pre-commit will be available for use in each repo. It
+> will run with the configuration listed for the repo you are in. Pre-commit configurations vary somewhat from repo to repo. If you want
+> instances of pre-commit kept separate, then install pre-commit inside an environment.
 
 ### Post-commit
 
 All developers are responsible for ensuring that post-commit regressions pass upon any submission to the project. Failure to ensure these tests pass will constitute a major regression and will likely mean reverting your commits.
-
-For details on how post-commit is handled, refer to the post-commit documentation for your repository:
-
-* tt-mlir
-* tt-xla
-* tt-npe
-* tt-thomas
-* tt-torch
-* tt-forge-fe
 
 ### CI/CD Principles
 
@@ -443,11 +434,9 @@ Non-post-commit pipelines will not necessarily mean we have to revert the breaki
 
 In the case of the model performance test pipeline, there are codeowners for such tests. However, it is the collective responsibility of all developers to ensure that we do not regress this pipeline.
 
-
-## Pull Request Notes
 ## Pull Request Notes
 
-For all your Pull Requests (PRs), Tenstorrent has an internal policy which your PR goes through after an initial review. For additional details about pull requests, see the [Saving the Commit to Origin and Creating a Pull Request](#saving-the-commit-to-origin-and-creating-a-pull-request) section.
+For all your pull requests (PRs), Tenstorrent has an internal policy which your PR goes through after an initial review. For additional details about pull requests, see the [Saving the Commit to Origin and Creating a Pull Request](#saving-the-commit-to-origin-and-creating-a-pull-request) section.
 
 The initial review encompasses the following:
 * Reviewing the PR for CI/CD readiness, making sure that the code and PR at a high level make sense for the project.
@@ -455,12 +444,10 @@ The initial review encompasses the following:
 * A 24 hour merge rule exists. Wait at least 24 hours after the PR was initially opened for review. This gives members of Tenstorrent teams that span the globe the opportunity to provide feedback on PRs.
 
 In addition to the 24 hour rule, the following prerequisites for landing a PR exist:
-* At least 1 reviewer signs off on the change
-* Component owners must sign-off (GitHub will tell you if this hasn't been met)
-* Green CI
-* Wait at least 24 hours after opening the PR to give all tagged reviewers a chance to take a look, or at least comment on the issue that they need more time to review
+* At least 1 reviewer signs off on the change.
+* Component owners must sign-off (GitHub will tell you if this hasn't been met).
+* Green CI.
+* Wait at least 24 hours after opening the PR to give all tagged reviewers a chance to take a look, or at least comment on the issue that they need more time to review.
 
-```
 > [!NOTE]
 > Rebasing or further changes to the PR do not reset the 24 hour counter.
-```
