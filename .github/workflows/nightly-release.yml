@@ -53,6 +53,11 @@ jobs:
         workflow: On push
         artifact_download_glob: '*ttmlir-wheel*'
         workflow_allow_failed: true
+    - name: Store Unedited wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: Wheels-Unedited
+        path: ${{ github.workspace }}/release/artifacts/**/*.whl
     - name: Update Wheel versions
       env:
         WHEEL_VERSION: ${{ steps.version-tag.outputs.tag }}
@@ -132,10 +137,10 @@ jobs:
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     steps:
-    - name: Download all the wheels
+    - name: Download all the raw wheels
       uses: actions/download-artifact@v4
       with:
-        name: Wheels
+        name: Wheels-Unedited
         path: ${{ github.workspace }}/release/artifacts
     - name: Unzip wheels artifact
       shell: bash
@@ -147,10 +152,11 @@ jobs:
         find ${{ github.workspace }}/release/artifacts -type d -empty -delete
     - name: Only keep ttmlir wheel
       shell: bash
+      working-directory: ${{ github.workspace }}/release/artifacts
       run: |
-        ls -l ${{ github.workspace }}/release/artifacts
-        ls -1 ${{ github.workspace }}/release/artifacts | grep -v 'ttmlir' | xargs rm -f
-        ls -l ${{ github.workspace }}/release/artifacts
+        ls -l .
+        ls -1 . | grep -v 'ttmlir' | xargs rm -f
+        ls -l .
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
