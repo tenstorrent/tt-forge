@@ -44,6 +44,15 @@ jobs:
         artifact_download_glob: '*{install-artifacts,test-reports-models-}*'
         artifact_cleanup_glob: 'torchvision*'
         workflow_allow_failed: true
+    - name: Uplift tenstorrent/tt-mlir artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: tt-mlir-artifacts
+      with:
+        repo: tenstorrent/tt-mlir
+        branch: "main"
+        workflow: On push
+        artifact_download_glob: '*ttmlir-wheel*'
+        workflow_allow_failed: true
     - name: Update Wheel versions
       env:
         WHEEL_VERSION: ${{ steps.version-tag.outputs.tag }}
@@ -77,6 +86,13 @@ jobs:
         owner: tenstorrent
         repo: tt-torch
         artifact_job_json: "${{ toJSON(steps.tt-torch-artifacts.outputs) }}"
+        release_type: 'nightly'
+    - name: tt-mlir-docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: tt-mlir
+        artifact_job_json: "${{ toJSON(steps.tt-mlir-artifacts.outputs) }}"
         release_type: 'nightly'
     - name: cat readme
       run: |

@@ -1,0 +1,54 @@
+name: PyPI Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tt_mlir_branch:
+        description: 'Branch/Tag/Commit SHA from tenstorrent/tt-mlir to pull wheel from'
+        required: true
+        default: 'main'
+      tt_mlir_workflow:
+        description: 'Workflow name in tenstorrent/tt-mlir that built the wheel'
+        required: true
+        default: 'On push' # Assuming 'On push' is the workflow that builds the wheel
+
+jobs:
+  pypi-publish:
+    name: Upload ttmlir wheel to TestPyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi # Changed environment name
+      url: https://test.pypi.org/p/ttmlir # Changed URL to TestPyPI
+    permissions:
+      id-token: write # Required for trusted publishing
+
+    steps:
+    - name: Checkout tt-forge repo
+      uses: actions/checkout@v4
+      # This checkout is needed to access the local custom action below
+
+    - name: Download ttmlir wheel artifact
+      uses: ./.github/actions/uplift-artifacts # Using the same custom action as nightly
+      id: tt-mlir-artifacts
+      with:
+        repo: tenstorrent/tt-mlir
+        branch: ${{ github.event.inputs.tt_mlir_branch }}
+        workflow: ${{ github.event.inputs.tt_mlir_workflow }}
+        artifact_download_glob: '*ttmlir-wheel*' # Glob pattern for the wheel artifact
+        # Ensure the source workflow succeeded for a release
+        workflow_allow_failed: false
+        # Assuming artifacts are placed in release/artifacts based on nightly workflow
+        # If not, adjust the path below or add a step to move the file
+
+    - name: List downloaded files # Optional: Verify the wheel is downloaded
+      run: ls -R ${{ github.workspace }}/release/artifacts
+
+    - name: Publish package distributions to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/ # Added TestPyPI repository URL
+        # Uses PyPI trusted publisher feature (preferred)
+        # Ensure TestPyPI project is configured for trusted publishing from this repo/workflow/environment
+        packages-dir: ${{ github.workspace }}/release/artifacts # Directory containing the wheel(s)
+        # You might need to adjust 'packages-dir' if uplift-artifacts places files differently
+        # Or add a step to move/find the specific .whl file if needed
