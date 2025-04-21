@@ -119,35 +119,34 @@ jobs:
       shell: bash
       run: .github/scripts/prune-nightly-releases.sh
 
-
-  forge-fe-publish-to-pypi:
-      name: >-
-        Publish Python 🐍 distribution 📦 to PyPI
-      needs:
-      - nightly-release
-      runs-on: ubuntu-latest
-      environment:
-        name: pypi
-        url: https://test.pypi.org/p/tt-forge-fe
-      permissions:
-        id-token: write  # IMPORTANT: mandatory for trusted publishing
-      steps:
-      - name: Download all the wheels
-        uses: actions/download-artifact@v4
-        with:
-          name: Wheels
-          path: ${{ github.workspace }}/release/artifacts
-      - name: Only keep 
-        shell: bash
-        run: |
-          ls -l ${{ github.workspace }}/release/artifacts
-          ls -1 ${{ github.workspace }}/release/artifacts | grep -v 'forge' | xargs rm -f
-          ls -l ${{ github.workspace }}/release/artifacts
-      - name: Publish distribution 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: ${{ github.workspace }}/release/artifacts
-
+  # Refactor action to work and publish ttmlir wheel.
+  ttmlir-publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    needs:
+    - nightly-release
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://test.pypi.org/p/ttmlir
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+    - name: Download all the wheels
+      uses: actions/download-artifact@v4
+      with:
+        name: Wheels
+        path: ${{ github.workspace }}/release/artifacts
+    - name: Only keep ttmlir wheel
+      shell: bash
+      run: |
+        ls -l ${{ github.workspace }}/release/artifacts
+        ls -1 ${{ github.workspace }}/release/artifacts | grep -v 'ttmlir' | xargs rm -f
+        ls -l ${{ github.workspace }}/release/artifacts
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        packages-dir: ${{ github.workspace }}/release/artifacts
 
   fail-notify:
     if: always()
