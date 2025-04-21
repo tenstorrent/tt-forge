@@ -162,6 +162,7 @@ jobs:
       with:
         repository-url: https://test.pypi.org/legacy/
         packages-dir: ${{ github.workspace }}/release/artifacts
+        verbose: 'true'
 
   fail-notify:
     if: always()
