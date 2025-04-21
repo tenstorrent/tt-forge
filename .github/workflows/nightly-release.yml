@@ -50,7 +50,7 @@ jobs:
       with:
         repo: tenstorrent/tt-mlir
         branch: "main"
-        workflow: Build tt-mlir
+        workflow: Build ttmlir Wheel
         artifact_download_glob: '*ttmlir-whl*'
         workflow_allow_failed: true
     - name: Update Wheel versions
@@ -86,6 +86,13 @@ jobs:
         owner: tenstorrent
         repo: tt-torch
         artifact_job_json: "${{ toJSON(steps.tt-torch-artifacts.outputs) }}"
+        release_type: 'nightly'
+    - name: tt-mlir-docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: tt-mlir
+        artifact_job_json: "${{ toJSON(steps.tt-mlir-artifacts.outputs) }}"
         release_type: 'nightly'
     - name: cat readme
       run: |
