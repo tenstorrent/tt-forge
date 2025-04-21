@@ -137,6 +137,14 @@ jobs:
       with:
         name: Wheels
         path: ${{ github.workspace }}/release/artifacts
+    - name: Unzip wheels artifact
+      shell: bash
+      run: |
+        find ${{ github.workspace }}/release/artifacts -type f -name "*.zip" -exec unzip -o {} -d ${{ github.workspace }}/release/artifacts \; -exec rm {} \;
+        # Flatten directory structure if needed
+        find ${{ github.workspace }}/release/artifacts -mindepth 2 -type f -name "*.whl" -exec mv {} ${{ github.workspace }}/release/artifacts \; || true
+        # Remove any empty directories
+        find ${{ github.workspace }}/release/artifacts -type d -empty -delete
     - name: Only keep ttmlir wheel
       shell: bash
       run: |
