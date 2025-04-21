@@ -51,7 +51,7 @@ jobs:
         repo: tenstorrent/tt-mlir
         branch: "main"
         workflow: On push
-        artifact_download_glob: '*ttmlir-whl*'
+        artifact_download_glob: '*ttmlir-wheel*'
         workflow_allow_failed: true
     - name: Update Wheel versions
       env:
