@@ -21,7 +21,8 @@ jobs:
     - name: version tag
       id: version-tag
       run: |
-        tag="$(date +"%Y%m%d%H%M%S").nightly"
+        source .version
+        tag="${VERSION}.dev$(date +"%Y%m%d%H%M%S")"
         echo "tag=$tag" >> $GITHUB_OUTPUT
     - name: Uplift tenstorrent/tt-forge-fe nightly artifacts
       uses: ./.github/actions/uplift-artifacts
