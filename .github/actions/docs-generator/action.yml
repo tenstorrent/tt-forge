@@ -105,7 +105,7 @@ runs:
         cat <<- EOF >> "$readme_path/readme"
 
         ### ${{ inputs.repo }}
-        :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo }}/getting-started.html)
+        :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo }})
         :bug: [Bugs](${{ steps.all_changes.outputs.bug_fixes }})
         :leftwards_arrow_with_hook: [All Merged Changes](${{ steps.all_changes.outputs.merged_changes }})
         #### Test status: ${{fromJson(inputs.artifact_job_json).run-status-symbol }}
