@@ -21,7 +21,7 @@ jobs:
     - name: version tag
       id: version-tag
       run: |
-        tag="$(date +"%Y%m%d%H%M%S").nightly"
+        tag="$(date +"%Y%m%d%H%M%S")+nightly"
         echo "tag=$tag" >> $GITHUB_OUTPUT
     - name: Uplift tenstorrent/tt-forge-fe nightly artifacts
       uses: ./.github/actions/uplift-artifacts
@@ -58,14 +58,11 @@ jobs:
       with:
         name: Wheels-Unedited
         path: ${{ github.workspace }}/release/artifacts/**/*.whl
-    
-    # Ignore the Wheel Updating Task
-    # - name: Update Wheel versions
-    #   env:
-    #     WHEEL_VERSION: ${{ steps.version-tag.outputs.tag }}
-    #     WHEEL_ROOT_PATH: ${{ github.workspace }}/release/artifacts
-    #   run: ./.github/scripts/wheel-version-updater.sh
-    
+    - name: Update Wheel versions
+      env:
+          WHEEL_VERSION: ${{ steps.version-tag.outputs.tag }}
+          WHEEL_ROOT_PATH: ${{ github.workspace }}/release/artifacts
+      run: ./.github/scripts/wheel-version-updater.sh
     - name: Create model compatible table
       working-directory: ./.github/scripts/model-compatible-table
       env:
