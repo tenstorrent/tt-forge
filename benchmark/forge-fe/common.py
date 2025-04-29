@@ -7,13 +7,14 @@ Common functions for the forge-fe benchmarks.
 Provides pre_test and post_test functions that can modify configurations and results.
 """
 
-import time
 from typing import Dict, Any
 
+import random
 import numpy as np
 import torch
 import paddle
 import tensorflow as tf
+from utils import reset_seeds
 
 
 def pre_test(config: Dict[str, Any], test_name: str) -> Dict[str, Any]:
@@ -29,12 +30,9 @@ def pre_test(config: Dict[str, Any], test_name: str) -> Dict[str, Any]:
     """
     print(f"Pre-test processing for {test_name} - initialize random seeds")
 
-    random.seed(0)
-    paddle.seed(0)
-    np.random.seed(0)
-    torch.manual_seed(0)
-    tf.random.set_seed(0)
+    reset_seeds()
 
+    print(f"Pre-test processing for {test_name} - done")
     return config
 
 

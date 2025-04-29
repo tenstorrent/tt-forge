@@ -21,7 +21,8 @@ jobs:
     - name: version tag
       id: version-tag
       run: |
-        tag="$(date +"%Y%m%d%H%M%S")+nightly"
+        source .version
+        tag="${VERSION}.dev$(date +"%Y%m%d%H%M%S")"
         echo "tag=$tag" >> $GITHUB_OUTPUT
     - name: Uplift tenstorrent/tt-forge-fe nightly artifacts
       uses: ./.github/actions/uplift-artifacts
@@ -31,7 +32,7 @@ jobs:
         branch: "main"
         workflow: On nightly
         artifact_download_glob: '*{wheel,test-reports}*'
-        artifact_cleanup_glob: '*{.json,benchmark_}*'
+        artifact_cleanup_file_glob: '*{.json,benchmark_}*'
         workflow_allow_failed: true
         workflow_result_in_job: "fail-notify"
     - name: Uplift tenstorrent/tt-torch nightly artifacts
@@ -42,7 +43,8 @@ jobs:
         branch: "main"
         workflow: Nightly Tests
         artifact_download_glob: '*{install-artifacts,test-reports-models-}*'
-        artifact_cleanup_glob: 'torchvision*'
+        artifact_cleanup_file_glob: '*torchvision*'
+        artifact_cleanup_folder_glob: '*install-artifacts-debug*'
         workflow_allow_failed: true
     - name: Uplift tenstorrent/tt-mlir artifacts
       uses: ./.github/actions/uplift-artifacts
@@ -107,8 +109,8 @@ jobs:
       with:
         body_path: "${{ github.workspace }}/release/docs/readme"
         token: ${{ github.token }}
-        name: ${{ steps.version-tag.outputs.tag }}
-        tag_name: ${{ steps.version-tag.outputs.tag }}
+        name: Nightly ${{ steps.version-tag.outputs.tag }}
+        tag_name: nightly-${{ steps.version-tag.outputs.tag }}
         draft: ${{ github.event.inputs.draft  || false }}
         prerelease: true
         fail_on_unmatched_files: true

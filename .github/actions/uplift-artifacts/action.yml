@@ -18,8 +18,12 @@ inputs:
     description: "Glob to use for download artifacts"
     type: string
     required: true
-  artifact_cleanup_glob:
+  artifact_cleanup_file_glob:
     description: "Glob to use for deleting extra files after a artifact is downloaded or exploded"
+    type: string
+    required: false
+  artifact_cleanup_folder_glob:
+    description: "Glob to use for deleting extra folders after a artifact is downloaded or exploded"
     type: string
     required: false
   workflow_allow_failed:
@@ -132,10 +136,21 @@ runs:
       id: files
       shell: bash
       run: |
+        pushd ${{ steps.artifacts.outputs.download-path }}
+        clean_up="${{ inputs.artifact_cleanup_glob }}"
         sudo apt-get install unzip
-        tree ${{ steps.artifacts.outputs.download-path }}
-        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar" -print0 -execdir tar xf {} \; -delete
-        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.tar.gz" -print0 -execdir tar xf {} \; -delete
-        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "*.zip" -print0 -execdir unzip {} \; -delete
-        find ${{ steps.artifacts.outputs.download-path }} -type f -iname "${{ inputs.artifact_cleanup_glob }}" -delete
-        tree ${{ steps.artifacts.outputs.download-path }}
+
+        # Explode artifacts
+        find . -type f -iname "*.tar" -print0 -execdir tar xf {} \; -delete
+        find . -type f -iname "*.tar.gz" -print0 -execdir tar xf {} \; -delete
+        find . -type f -iname "*.zip" -print0 -execdir unzip {} \; -delete
+
+        printf "\nRemoving extra files and folders based on glob $clean_up\n"
+        set -x
+        set -e
+        find . -type d -iname "${{ inputs.artifact_cleanup_folder_glob }}" -depth -exec rm -r "{}" \;
+        find . -type f -iname "${{ inputs.artifact_cleanup_file_glob }}" -delete -depth
+        set +x
+        set +e
+        tree .
+        popd
