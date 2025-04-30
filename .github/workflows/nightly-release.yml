@@ -52,7 +52,7 @@ jobs:
       with:
         repo: tenstorrent/tt-mlir
         branch: "main"
-        workflow: Build ttmlir Wheel
+        workflow: On push
         artifact_download_glob: '*ttmlir-wheel*'
         workflow_allow_failed: true
     - name: Store Unedited wheels
