@@ -51,7 +51,7 @@ jobs:
       id: tt-mlir-artifacts
       with:
         repo: tenstorrent/tt-mlir
-        branch: "vprajapati/whl-workflow-integration"
+        branch: "main"
         workflow: Build ttmlir Wheel
         artifact_download_glob: '*ttmlir-wheel*'
         workflow_allow_failed: true
