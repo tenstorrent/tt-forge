@@ -20,7 +20,7 @@ from datasets import load_dataset
 import forge
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.verify.compare import compare_with_golden
-from test.utils import download_model
+from utils import download_model
 
 
 # Common constants

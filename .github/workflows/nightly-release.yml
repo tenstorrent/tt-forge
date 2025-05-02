@@ -21,7 +21,8 @@ jobs:
     - name: version tag
       id: version-tag
       run: |
-        tag="$(date +"%Y%m%d%H%M%S").nightly"
+        source .version
+        tag="${VERSION}.dev$(date +"%Y%m%d%H%M%S")"
         echo "tag=$tag" >> $GITHUB_OUTPUT
     - name: Uplift tenstorrent/tt-forge-fe nightly artifacts
       uses: ./.github/actions/uplift-artifacts
@@ -31,7 +32,7 @@ jobs:
         branch: "main"
         workflow: On nightly
         artifact_download_glob: '*{wheel,test-reports}*'
-        artifact_cleanup_glob: '*{.json,benchmark_}*'
+        artifact_cleanup_file_glob: '*{.json,benchmark_}*'
         workflow_allow_failed: true
         workflow_result_in_job: "fail-notify"
     - name: Uplift tenstorrent/tt-torch nightly artifacts
@@ -42,7 +43,17 @@ jobs:
         branch: "main"
         workflow: Nightly Tests
         artifact_download_glob: '*{install-artifacts,test-reports-models-}*'
-        artifact_cleanup_glob: 'torchvision*'
+        artifact_cleanup_file_glob: '*torchvision*'
+        artifact_cleanup_folder_glob: '*install-artifacts-debug*'
+        workflow_allow_failed: true
+    - name: Uplift tenstorrent/tt-mlir artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: tt-mlir-artifacts
+      with:
+        repo: tenstorrent/tt-mlir
+        branch: "main"
+        workflow: On push
+        artifact_download_glob: '*ttmlir-wheel*'
         workflow_allow_failed: true
     - name: Update Wheel versions
       env:
@@ -78,6 +89,13 @@ jobs:
         repo: tt-torch
         artifact_job_json: "${{ toJSON(steps.tt-torch-artifacts.outputs) }}"
         release_type: 'nightly'
+    - name: tt-mlir-docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: tt-mlir
+        artifact_job_json: "${{ toJSON(steps.tt-mlir-artifacts.outputs) }}"
+        release_type: 'nightly'
     - name: cat readme
       run: |
         cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
@@ -86,18 +104,62 @@ jobs:
       with:
         body_path: "${{ github.workspace }}/release/docs/readme"
         token: ${{ github.token }}
-        name: ${{ steps.version-tag.outputs.tag }}
-        tag_name: ${{ steps.version-tag.outputs.tag }}
+        name: Nightly ${{ steps.version-tag.outputs.tag }}
+        tag_name: nightly-${{ steps.version-tag.outputs.tag }}
         draft: ${{ github.event.inputs.draft  || false }}
         prerelease: true
         fail_on_unmatched_files: true
         files: |
           ${{ github.workspace }}/release/artifacts/**
+    - name: Store wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: Wheels
+        path: ${{ github.workspace }}/release/artifacts/**/*.whl
     - name: Prune Nightly releases
       if: ${{ !github.event.inputs.draft || true }}
       shell: bash
       run: .github/scripts/prune-nightly-releases.sh
 
+  # Refactor action to work and publish ttmlir wheel.
+  ttmlir-publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    needs:
+    - nightly-release
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://test.pypi.org/p/ttmlir
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+    - name: Download all the wheels
+      uses: actions/download-artifact@v4
+      with:
+        name: Wheels
+        path: ${{ github.workspace }}/release/artifacts
+    - name: Unzip wheels artifact
+      shell: bash
+      run: |
+        find ${{ github.workspace }}/release/artifacts -type f -name "*.zip" -exec unzip -o {} -d ${{ github.workspace }}/release/artifacts \; -exec rm {} \;
+        # Flatten directory structure if needed
+        find ${{ github.workspace }}/release/artifacts -mindepth 2 -type f -name "*.whl" -exec mv {} ${{ github.workspace }}/release/artifacts \; || true
+        # Remove any empty directories
+        find ${{ github.workspace }}/release/artifacts -type d -empty -delete
+    - name: Only keep ttmlir wheel
+      shell: bash
+      working-directory: ${{ github.workspace }}/release/artifacts
+      run: |
+        ls -l .
+        ls -1 . | grep -v 'ttmlir' | xargs rm -f
+        ls -l .
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        packages-dir: ${{ github.workspace }}/release/artifacts
+        verbose: 'true'
 
   fail-notify:
     if: always()

@@ -4,35 +4,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  set-inputs:
-    runs-on: ubuntu-latest
-    outputs:
-      buildtype: ${{ steps.set-inputs.outputs.buildtype }}
-      run-id: ${{ steps.set-inputs.outputs.runid }}
-    steps:
-      - name: Set Inputs
-        id: set-inputs
-        run: |
-          if [ ${{ inputs.rebuild }} == 'true' ]; then
-            echo "buildtype=Release" >> $GITHUB_OUTPUT
-            echo "runid=${{ github.run_id }}" >> $GITHUB_OUTPUT
-          else
-            echo "buildtype=None" >> $GITHUB_OUTPUT
-          fi
-
   run-perf-benchmarks:
+    container:
+      image: "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
+      options: "--device /dev/tenstorrent/0"
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+        - /mnt/dockercache:/mnt/dockercache
+
     strategy:
       fail-fast: false
       matrix:
         build: [
+          { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
           { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "resnet50_hf",       dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, allow-fail: true }, # TTRT does not support llama model yet, so allow it to fail
+          { runs-on: "n150", project: "forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
           { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
           { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
         ]
     runs-on:
-      - tt-beta-ubuntu-2204-${{ matrix.build.runs-on }}-large-stable
+      - ${{ matrix.build.runs-on }}
 
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
@@ -73,61 +68,61 @@ jobs:
         workflow_conclusion: success
         workflow: on-push.yml
         branch: main
-        name: "(ttrt|install)-.*-tracy"
+        name: "(ttrt-whl|install-artifacts)-tracy"
         name_is_regexp: true
         repo: tenstorrent/tt-mlir
         check_artifacts: true
+        path: ./
 
-    - name: 'Untar install directory'
+    - name: Untar ttmlir install directory
       shell: bash
-      working-directory: install
       run: |
-        mv ../artifact.tar .
+        mv install-artifacts-tracy/ install/
+        cd install
         tar xvf artifact.tar
+        cd ..
 
-    # - name: Set up Python
-    #   uses: actions/setup-python@v5
-    #   with:
-    #     python-version: '3.10'
-    #     cache: 'pipenv'
-
-    - name: Download Forge-FE project release
-      if: ${{ matrix.build.project }} == 'forge-fe'
-      uses: PlasmoHQ/download-release-asset@v1.0.0
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        files: |
-          forge*.whl
-          tvm*.whl
+        python-version: '3.10'
 
-    - name: Install TT-Forge-FE wheels
-      if: ${{ matrix.build.project }} == 'forge-fe'
+    - name: Download project releases
+      uses: robinraju/release-downloader@v1
+      with:
+        latest: true
+        preRelease: true
+        tarBall: false
+        zipBall: false
+        fileName: '*.whl'
+
+    - name: Install wheels
       shell: bash
       run: |
-        python -m venv forge-fe-venv
-        source forge-fe-venv/bin/activate
-        pip install tvm*.whl --force-reinstall
-        pip install forge*.whl --force-reinstall
-
-    - name: Download TT-Torch project release
-      if: ${{ matrix.build.project }} == 'torch'
-      uses: PlasmoHQ/download-release-asset@v1.0.0
-      with:
-        files: tt_torch*.whl
-
-    - name: Install Forge-FE wheels
-      if: ${{ matrix.build.project }} == 'torch'
-      shell: bash
-      run: |
-        python -m venv torch-venv
-        source torch-venv/bin/activate
-        pip install tt_torch*.whl --force-reinstall
+        if [ "${{ matrix.build.project }}" == "forge-fe" ]; then
+          python -m venv forge-fe-venv
+          source forge-fe-venv/bin/activate
+          pip install tvm*.whl --force-reinstall
+          pip install forge*.whl --force-reinstall
+        elif [ "${{ matrix.build.project }}" == "torch" ]; then
+          python -m venv torch-venv
+          source torch-venv/bin/activate
+          pip install tt_torch*.whl --force-reinstall
+        else
+          echo "Unknown project: ${{ matrix.build.project }}"
+          exit 1
+        fi
 
     - name: Run Perf Benchmark
       shell: bash
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        HF_HOME: /mnt/dockercache/huggingface
+        HF_HUB_DISABLE_PROGRESS_BARS: 1
       run: |
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
-        source ${{ matrix.build.project}}/bin/activate
-        python benchmark/benchmark.py -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        source ${{ matrix.build.project }}-venv/bin/activate
+        python benchmark/benchmark.py ${{ matrix.build.project}} ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
         python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
 
     - name: Install and run TTRT
@@ -135,7 +130,8 @@ jobs:
       run: |
         python -m venv ttrt-venv
         source ttrt-venv/bin/activate
-        pip install ttrt*.whl --force-reinstall
+        pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
+        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
         echo "save artifacts"
         ttrt query --save-artifacts
         if [ -z "${{ matrix.build.allow-fail }}" ]; then

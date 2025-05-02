@@ -6,9 +6,7 @@
 
 </h1>
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/public/images/tt_refresh_forge_w_logo_gray.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/public/images/tt_refresh_forge_w_logo.png">
-  <img alt="Logo" src="docs/public/images/tt_refresh_forge_w_logo_purple.png" height="250">
+  <img alt="Logo" src="docs/public/images/tt_refresh_forge_w_icon-01.png" height="250">
 </picture>
 
 </div>
