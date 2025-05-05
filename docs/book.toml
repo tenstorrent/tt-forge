@@ -1,0 +1,13 @@
+[book]
+authors = ["Erikka Innes"]
+language = "en"
+multilingual = false
+src = "src"
+title = "tt-forge Documentation"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "light"
+no-section-label = false
