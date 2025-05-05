@@ -2,19 +2,6 @@
 
 This directory contains example implementations of popular deep learning models using TT-Forge-FE. These demos showcase how to use TT-Forge-FE to run inference on various computer vision and natural language processing models.
 
-## Installation
-
-Before running the demos, make sure you have TT-Forge-FE installed. You can install it using wheels from our latest release:
-
-1. Download the latest TT-Forge-FE release (includes both TVM and tt-Forge-fe wheels):
-   - Visit [TT-Forge Releases](https://github.com/tenstorrent/tt-forge/releases)
-
-2. Install the wheels:
-   ```bash
-   pip install *.whl
-   ```
-   Note: Run this command from the directory where you downloaded the wheels.
-
 ## Available Demos
 
 | Model | Model Type | Description | Demo Code |
@@ -26,11 +13,7 @@ Before running the demos, make sure you have TT-Forge-FE installed. You can inst
 
 ## Running the Demos
 
-Each demo can be run directly using Python. Navigate to the specific model directory and run the demo script:
-
-```bash
-python cnn/resnet_50_demo.py
-```
+For details about how to set up an environment and run a demo, please see the [tt-forge Getting Started](../../docs/src/getting-started.md) page.
 
 If you encounter any issues or have questions, please file them at [github.com/tenstorrent/tt-forge/issues](https://github.com/tenstorrent/tt-forge/issues).
 

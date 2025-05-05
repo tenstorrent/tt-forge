@@ -6,7 +6,13 @@ This document walks you through how to set up to run models using tt-forge. The 
 * [Installing a Wheel](#installing-a-wheel)
 * [Running a Demo](#running-a-demo)
 
-If you encounter issues with anything, please request assistance on the [tt-forge Issues](https://github.com/tenstorrent/tt-forge/issues) page.
+
+> **NOTE:** If you encounter issues with anything, please request assistance on the
+>[tt-forge Issues](https://github.com/tenstorrent/tt-forge/issues) page.
+
+> **NOTE:** If you plan to do development work in the tt-forge repo, please see the
+> [build instructions for tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe/
+> blob/main/docs/src/build.md).
 
 ## Setting up the Docker Container
 
@@ -102,8 +108,9 @@ pip install https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.dev2
 > **NOTE:** The commands are examples, for the latest install link, go to the
 > [Tenstorrent Nightly Releases](https://github.com/tenstorrent/tt-forge/releases)
 > page. The generic download will be:
-> ```https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.devDATE/
-> NAMEOFWHEEL```
+> `https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.devDATE/
+> NAMEOFWHEEL`
+>
 > If you plan to work with wheels from different repositories, make a separate
 > environment for each one. Some wheels have conflicting dependencies.
 
@@ -111,7 +118,7 @@ pip install https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.dev2
 
 To run a demo, do the following:
 
-1. Clone the tt-forge repo:
+1. Clone the tt-forge repo (alternatively, you can download the script for the model you want to try):
 
 ```bash
 git clone https://github.com/tenstorrent/tt-forge.git
@@ -128,8 +135,10 @@ git clone https://github.com/tenstorrent/tt-forge.git
 | ResNet-50 (ONNX) | CNN | Deep residual network for image classification using ONNX format | [`cnn/resnet_onnx_demo.py`](cnn/resnet_onnx_demo.py) |
 | BERT | NLP | Bidirectional Encoder Representations from Transformers for natural language understanding tasks | [`nlp/bert_demo.py`](nlp/bert_demo.py) |
 
-4. Run the selected script. In this walkthrough, the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script is used. It will load the model, convert it to ONNX format, load and process an input image, then predict what the image is in the terminal along with how confident it is in the prediction.
+4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Run the following command:
 
 ```bash
 python3 resnet_50_demo.py
 ```
+
+If all goes well, you should see an image of a tiger, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
