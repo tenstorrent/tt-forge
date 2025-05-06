@@ -61,7 +61,7 @@ jobs:
       - name: Build the docs
         shell: bash
         run: |
-          mdbook build docs
+          ./mdbook build docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
