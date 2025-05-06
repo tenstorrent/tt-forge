@@ -1,0 +1,29 @@
+name: How do I
+description: Ask for help with something or how to do something
+labels: ["how to"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        :star2: Thanks for taking the time to ask your question! :star2:
+
+  - type: textarea
+    id: help-topic
+    attributes:
+      label: What do you need help with?
+      description: |
+        Describe the issue you need help with. Be as specific as possible, so it's easier for others to help with the answer to your question.
+
+  - type: textarea
+    id: already
+    attributes:
+      label: What have you tried already?
+      description: |
+        Describe what you've tried already.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: What is your goal?
+      description: |
+        What outcome are you hoping to achieve?

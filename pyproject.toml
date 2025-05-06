@@ -1,0 +1,17 @@
+[project]
+name = "forge"
+description = "AI/ML framework for Tenstorrent devices"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Tenstorrent", email = "info@tenstorrent.com" }
+]
+requires-python = ">=3.8"
+keywords = ["forge", "machine learning", "tenstorrent"]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
