@@ -4,7 +4,7 @@ from setuptools import setup
 
 
 setup(
-    name="forge-fe",
+    name="forge-pypi",
     version="0.1",
     author="Aleks Knezevic",
     author_email="aknezevic@tenstorrent.com",
