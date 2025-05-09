@@ -1,0 +1,112 @@
+name: Download Artifact
+
+description: |
+  Download an artifact from a GitHub workflow run and extract it to a specified (relative) path.
+  Automatically untars tar files. If download fails, it retries the specified number of times with a wait time in between.
+
+inputs:
+  name:
+    description: 'Name of the artifact to download'
+    required: true
+  path:
+    description: 'Relative path where to download the artifact'
+    required: true
+  repository:
+    description: 'Repository from which to download the artifact (format: owner/repo)'
+    required: false
+    default: ${{ github.repository }}
+  run_id:
+    description: 'Run ID of the workflow run from which to download the artifact'
+    required: false
+    default: ${{ github.run_id }}
+  retry_count:
+    description: 'Number of times to retry download if it fails'
+    required: false
+    default: '3'
+  retry_wait:
+    description: 'Time to wait between retries in seconds'
+    required: false
+    default: '10'
+  github_token:
+    description: 'GitHub token used for authentication'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download and extract artifact
+      shell: bash
+      env:
+        ARTIFACT_NAME: ${{ inputs.name }}
+        DOWNLOAD_PATH: ${{ inputs.path }}
+        REPOSITORY: ${{ inputs.repository }}
+        RETRY_COUNT: ${{ inputs.retry_count }}
+        RETRY_WAIT: ${{ inputs.retry_wait }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        RUN_ID: ${{ inputs.run_id }}
+      run: |
+        set -e
+
+        path=$(realpath "${GITHUB_WORKSPACE}/${DOWNLOAD_PATH}")
+        # Check if download path is not malicious
+        if [[ "$path" != "${GITHUB_WORKSPACE}"* || "$path" == "${GITHUB_WORKSPACE}" ]]; then
+          echo "Error: Download path must be within ${GITHUB_WORKSPACE} but not ${GITHUB_WORKSPACE} itself."
+          exit 1
+        fi
+        # Make sure download dir is empty and exists
+        rm -rf "$path"
+        mkdir -p "$path"
+
+        # Function to download artifact
+        download_artifact() {
+          echo "Downloading artifact ${ARTIFACT_NAME} from ${REPOSITORY}..."
+
+          curl -H "Authorization: token ${GITHUB_TOKEN}" -L \
+          "https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/artifacts" | \
+          jq -r ".artifacts[] | select(.name==\"${ARTIFACT_NAME}\") | .archive_download_url" | \
+          xargs -I {} curl -H "Authorization: token ${GITHUB_TOKEN}" -L {} --output "$path/${ARTIFACT_NAME}.zip"
+
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to download artifact."
+            return 1
+          fi
+
+          unzip -o "$path/${ARTIFACT_NAME}.zip" -d "$path"
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to unzip artifact."
+            return 1
+          fi
+          rm "$path/${ARTIFACT_NAME}.zip"
+
+          # Check if we need to untar
+          for file in "$path"/*.tar*; do
+            if [ -f "$file" ]; then
+              echo "Extracting tar file: $file"
+              tar -xf "$file" -C "$path"
+              rm "$file"
+            fi
+          done
+
+          return 0
+        }
+
+        # Retry logic
+        success=false
+        for attempt in $(seq 1 ${RETRY_COUNT}); do
+          echo "Attempt $attempt of ${RETRY_COUNT}..."
+
+          if download_artifact; then
+            success=true
+            break
+          else
+            echo "Download failed. Retrying in ${RETRY_WAIT} seconds..."
+            sleep ${RETRY_WAIT}
+          fi
+        done
+
+        if [ "$success" = false ]; then
+          echo "Failed to download artifact after ${RETRY_COUNT} attempts."
+          exit 1
+        fi
+
+        echo "Artifact downloaded and extracted successfully to ${DOWNLOAD_PATH}"
