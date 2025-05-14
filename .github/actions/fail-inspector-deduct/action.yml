@@ -1,0 +1,110 @@
+name: Fail Inspector - Deduct
+
+description: |
+  Fail inspector bisect nightly workflows searching for the first commit that broke the nightly build.
+  This action will download the test log artifacts from the matrix built by Inspect action and will make decisions based on the results of matrix test run.
+
+inputs:
+  repo:
+    description: 'Repository name'
+    required: false
+    default: ${{ github.repository }}
+  token:
+    description: 'GitHub token'
+    required: true
+  slack_webhook_url:
+    description: 'Slack webhook URL'
+    required: true
+  nightly_workflow_id:
+    description: 'Nightly run workflow ID inspected'
+    required: false
+  nightly_attempt:
+    description: 'Nightly run attempt inspected'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Find all test runs
+      id: do-deduct
+      env:
+        GH_TOKEN: ${{ input.token }}
+      run: |
+        workflow_id="${{ github.run_id }}"
+        repo="${{ input.repo }}"
+        rm -f report.txt
+        rm -f short_report.txt
+        rm -f pytest.log
+        rm -rf mach
+        gh run download $workflow_id --name "tests-to-run" -R $repo -D mach
+        cat mach/* >pytest.log
+        rm -rf mach
+        gh run view -R $repo $workflow_id --json jobs -q '.jobs[] | select(.name | startswith("Test")) | .name' >test_jobs.txt
+        sed -i 's/^Test //' test_jobs.txt
+        echo "Extracted test jobs: $(cat test_jobs.txt)"
+        set +e
+          while read -r test; do
+          rm -f a.log
+          rm -rf log
+          touch a.log
+          echo "Processing test job $test"
+          gh run download $workflow_id --pattern "test-log-${test}*" -R $repo -D log
+          if [ $? -ne 0 ]; then
+            echo "Could not download log for test job $test."
+            continue
+          fi
+          for dir in log/test-log-*/; do
+            grep '^FAILED ' "$dir/pytest.log" | sed 's/^FAILED //' >>a.log
+          done
+          # Remove all of tests that doesn't exist in initial list of tests (failed in previous jobs)
+          grep -Fx -f pytest.log a.log >f_a.log
+          mv f_a.log a.log
+          if [ ! -s a.log ]; then
+            echo "No failed tests found for test job $test."
+            continue
+          fi
+          echo "Failed tests for test job $test:"
+          cat a.log
+          # Remove all of failed tests from initial list of tests
+          grep -Fxv -f a.log pytest.log >filtered_pytest.log
+          mv filtered_pytest.log pytest.log
+
+          # Get commit
+          no_failed_tests=$(wc -l <a.log)
+          commit=$(echo "$test" | sed 's/.*-//')
+
+          # get commit image link
+          html=$(curl -s "https://github.com/$repo/commit/$commit")
+          commitimg=$(echo "$html" | grep -oP '(?<=<meta name="twitter:image" content=")[^"]*')
+
+          # create commit/summary message
+          echo "* $no_failed_tests test(s) failed in $commit." >>short_report.txt
+          echo "  <https://github.com/$repo/commit/$commit>" >>short_report.txt
+          echo "- In commit [$commit](<https://github.com/$repo/commit/$commit>) $no_failed_tests test(s) failed: <img src=\"$commitimg\" width=\"25%\" align=\"right\"/>" >>report.txt
+          sed 's/^/> /' a.log >>report.txt
+        done <test_jobs.txt
+
+        if [ ! -s report.txt ]; then
+          echo "No failed tests to report."
+          echo "send_msg=" >>$GITHUB_OUTPUT
+          exit 0
+        else
+          echo "Report: $(cat report.txt)"
+          nightly=""
+          if[ ! -z "${{ inputs.nightly_workflow_id }}" ]; then
+            nightly="for [Nightly](<https://github.com/$repo/actions/runs/$${{ inputs.nightly_workflow_id }}/attempts/${{ inputs.nightly_attempt }})>]")
+          fi
+          echo "## Inspection report :rocket: $nightly" >> $GITHUB_STEP_SUMMARY
+          cat report.txt >> $GITHUB_STEP_SUMMARY
+          # Escape special characters in the short report for JSON compatibility
+          escaped_report=$(cat short_report.txt | jq -Rs .)
+          echo "send_msg={\"text\": $escaped_report, \"job_link\": \"https://github.com/$repo/actions/runs/$workflow_id\", \"unfurl_links\": false, \"unfurl_media\": false }" >>$GITHUB_OUTPUT
+        fi
+
+    - name: Send Fail Notification
+      if: ${{ steps.do-deduct.outputs.send_msg }}
+      uses: slackapi/slack-github-action@v1.26.0
+      with:
+        payload: ${{ steps.do-deduct.outputs.send_msg }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
