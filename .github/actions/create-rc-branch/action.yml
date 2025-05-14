@@ -1,0 +1,49 @@
+
+
+name: "Create RC branch"
+description: "Create RC branch"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+  branch:
+    description: "Branch name"
+    default: "main"
+    required: false
+  workflow:
+    description: "Workflow name"
+    required: true
+  workflow_result_in_job:
+    description: "Set that workflow result is job result"
+    default: ""
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Find workflow candidate
+      id: fetch_run_id
+      uses: ./.github/actions/find-workflow
+      with:
+        repo: ${{ inputs.repo }}
+        branch: ${{ inputs.branch }}
+        workflow: ${{ inputs.workflow }}
+        workflow_allow_failed: false
+        workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
+
+    - name: Checkout target repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repo }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ steps.fetch_run_id.outputs.run_commit_sha }}
+
+
+    - name: Create new branch and push
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        new-branch-name="${{ inputs.branch }}-rc"
+        git checkout -b new-branch-name
+        git push origin new-branch-name
