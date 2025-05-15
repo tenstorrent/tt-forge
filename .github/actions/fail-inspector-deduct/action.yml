@@ -41,7 +41,7 @@ runs:
         gh run download $workflow_id --name "tests-to-run" -R $repo -D mach
         cat mach/* >pytest.log
         rm -rf mach
-        gh run view -R $repo $workflow_id --json jobs -q '.jobs[] | select(.name | startswith("Test")) | .name' >test_jobs.txt
+        gh run view -R $repo $workflow_id --paginate --json jobs -q '.jobs[] | select(.name | startswith("Test")) | .name' >test_jobs.txt
         sed -i 's/^Test //' test_jobs.txt
         echo "Extracted test jobs: $(cat test_jobs.txt)"
         set +e
