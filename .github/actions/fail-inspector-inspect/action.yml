@@ -114,12 +114,10 @@ runs:
           for dir in log-a/test-log-"$machine"-*/; do
             sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
             grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>a-"$machine".log || true
-            echo "----Tests for machine $machine: $(cat a-"$machine".log)"
           done
           for dir in log-b/test-log-"$machine"-*/; do
             sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
             grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>b-"$machine".log || true
-            echo "----Tests for machine $machine: $(cat b-"$machine".log)"
           done
           # get only the lines that are in b.log but not in a.log
           if [ ! -s a-"$machine".log ]; then
@@ -128,7 +126,7 @@ runs:
           if [ ! -s b-"$machine".log ]; then
             echo "List of failed tests for machine '$machine' is empty, nothing to do."
           else
-            grep -Fxv -f a-"$machine".log b-"$machine".log >tests-"$machine".log
+            grep -Fxv -f a-"$machine".log b-"$machine".log >tests-"$machine".log || true
             echo "----Tests for machine $machine: $(cat tests-"$machine".log)"
           fi
         done <machines.log
