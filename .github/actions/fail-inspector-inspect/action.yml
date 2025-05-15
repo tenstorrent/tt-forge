@@ -113,10 +113,12 @@ runs:
         while read -r machine; do
           for dir in log-a/test-log-"$machine"-*/; do
             sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
+            echo "Processing machine $machine, tests: $(cat temp.log)"
             grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>a-"$machine".log || true
           done
           for dir in log-b/test-log-"$machine"-*/; do
             sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
+            echo "Processing machine $machine, tests: $(cat temp.log)"
             grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>b-"$machine".log || true
           done
           # get only the lines that are in b.log but not in a.log
@@ -186,14 +188,12 @@ runs:
         if ! echo '${{ inputs.test_job_names }}' | jq empty; then
           test_job_names=("${{ inputs.test_job_names }}")
         else
-          echo "--- Test job names parsed: $(echo '${{ inputs.test_job_names }}' | jq -r '.[]' | sed 's/^/"/; s/$/"/')"
-          test_job_names=($(echo '${{ inputs.test_job_names }}' | jq -r '.[]' | sed 's/^/"/; s/$/"/'))
+          mapfile -t test_job_names < <(echo '${{ inputs.test_job_names }}' | jq -r '.[]')
         fi
         if ! echo '${{ inputs.test_job_names }}' | jq empty; then
           test_step_names=("${{ inputs.test_step_names }}")
         else
-          echo "--- Test step names parsed: $(echo '${{ inputs.test_step_names }}' | jq -r '.[]' | sed 's/^/"/; s/$/"/')"
-          test_step_names=($(echo '${{ inputs.test_step_names }}' | jq -r '.[]' | sed 's/^/"/; s/$/"/'))
+          mapfile -t test_step_names < <(echo '${{ inputs.test_step_names }}' | jq -r '.[]')
         fi
 
         echo "Test job names: ${test_job_names[@]}"
@@ -216,6 +216,7 @@ runs:
 
           is_job_test=0
           for test_job_name in "${test_job_names[@]}"; do
+            echo "Job $i: $job_name == $test_job_name"
             if [[ "$job_name" == *"$test_job_name"* ]]; then
               is_job_test=1
               break
