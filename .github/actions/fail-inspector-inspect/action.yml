@@ -181,7 +181,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
       run: |
-        repo="${{ input.repo }}"
+        repo="${{ inputs.repo }}"
         test_job_names=("${{ inputs.test_job_names }}")
         test_step_names=("${{ inputs.test_step_names }}")
 
