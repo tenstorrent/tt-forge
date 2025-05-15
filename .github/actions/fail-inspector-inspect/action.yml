@@ -28,21 +28,27 @@ inputs:
     required: true
 
 outputs:
-  matrix: ${{ steps.success-failed.outputs.matrix }}
-  nightly_workflow_id: ${{ steps.success-failed.outputs.curr_wf_id }}
-  nightly_attempt: ${{ steps.success-failed.outputs.curr_wf_attempt }}
+  matrix:
+    description: 'Matrix of tests to run'
+    value: ${{ steps.success-failed.outputs.matrix }}
+  nightly_workflow_id:
+    description: 'Nightly workflow ID inspected'
+    value: ${{ steps.success-failed.outputs.curr_wf_id }}
+  nightly_attempt:
+    description: 'Nightly workflow attempt inspected'
+    value: ${{ steps.success-failed.outputs.curr_wf_attempt }}
 
 runs:
   using: 'composite'
   steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
         submodules: recursive
 
     - name: Get success-failed workflow
       id: success-failed
+      shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
       run: |
@@ -162,8 +168,7 @@ runs:
         echo "matrix=[$(cat matrix.log)]" >>$GITHUB_OUTPUT
         rm -f matrix.log
 
-    - name: Upload tests.log as artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: tests-to-run
         path: tests-*.log
@@ -172,6 +177,7 @@ runs:
     # Test sanity of last failed nightly, eg. if tests are run
     - name: Nightly sanity check
       id: sanity-check
+      shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
       run: |
@@ -231,15 +237,16 @@ runs:
           echo "send_msg={\"text\": \"Nightly failure caused by machine failures. Test inspection skipped.\", \"job_link\": \"https://github.com/$repo/actions/runs/$curr_wf_id/attempts/$curr_wf_attempt\", \"unfurl_links\": false, \"unfurl_media\": false }" >>$GITHUB_OUTPUT
         fi
 
-    - name: Send Fail Notification
+    - uses: slackapi/slack-github-action@v1.26.0
       if: ${{ steps.sanity-check.outputs.send_msg }}
-      uses: slackapi/slack-github-action@v1.26.0
       with:
         payload: ${{ steps.sanity-check.outputs.send_msg }}
       env:
         SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
+
     - name: Bad Nightly run detected
       if: ${{ steps.sanity-check.outputs.send_msg }}
+      shell: bash
       run: |
         echo "Bad nightly run detected. Exiting."
         exit 1
