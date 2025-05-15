@@ -112,13 +112,13 @@ runs:
         echo "Machines: $(cat machines.log)"
         while read -r machine; do
           for dir in log-a/test-log-"$machine"-*/; do
-            sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log
-            grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>a-"$machine".log
+            sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
+            grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>a-"$machine".log || true
             echo "----Tests for machine $machine: $(cat a-"$machine".log)"
           done
           for dir in log-b/test-log-"$machine"-*/; do
-            sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log
-            grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>b-"$machine".log
+            sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
+            grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>b-"$machine".log || true
             echo "----Tests for machine $machine: $(cat b-"$machine".log)"
           done
           # get only the lines that are in b.log but not in a.log
