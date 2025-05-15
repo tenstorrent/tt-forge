@@ -119,8 +119,8 @@ runs:
             sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
             grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>b-"$machine".log || true
           done
-          echo "----B Tests for machine $machine: $(cat b-"$machine".log)"
-          echo "----A Tests for machine $machine: $(cat b-"$machine".log)"
+          echo "----Current  Tests for machine $machine: $(cat b-"$machine".log)"
+          echo "----Previous Tests for machine $machine: $(cat b-"$machine".log)"
           # get only the lines that are in b.log but not in a.log
           if [ ! -s a-"$machine".log ]; then
             cp b-"$machine".log tests-"$machine".log
