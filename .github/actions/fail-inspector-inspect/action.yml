@@ -201,7 +201,7 @@ runs:
         curr_wf_attempt="${{ steps.success-failed.outputs.curr_wf_attempt }}"
         rm -f report.txt
 
-        gh run view $curr_wf_id --attempt $curr_wf_attempt --paginate --json jobs >workflow_jobs.json
+        gh run view $curr_wf_id --attempt $curr_wf_attempt --json jobs >workflow_jobs.json
 
         # Iterate through jobs using index
         job_count=$(jq '.jobs | length' workflow_jobs.json)
