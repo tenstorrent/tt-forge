@@ -114,10 +114,12 @@ runs:
           for dir in log-a/test-log-"$machine"-*/; do
             sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log
             grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>a-"$machine".log
+            echo "----Tests for machine $machine: $(cat a-"$machine".log)"
           done
           for dir in log-b/test-log-"$machine"-*/; do
             sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log
             grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>b-"$machine".log
+            echo "----Tests for machine $machine: $(cat b-"$machine".log)"
           done
           # get only the lines that are in b.log but not in a.log
           if [ ! -s a-"$machine".log ]; then
@@ -193,6 +195,9 @@ runs:
         else
           test_step_names=($(echo '${{ inputs.test_step_names }}' | jq -r '.[]'))
         fi
+
+        echo "Test job names: ${test_job_names[@]}"
+        echo "Test step names: ${test_step_names[@]}"
 
         curr_wf_id="${{ steps.success-failed.outputs.curr_wf_id }}"
         curr_wf_attempt="${{ steps.success-failed.outputs.curr_wf_attempt }}"
