@@ -2,7 +2,8 @@ name: Fail Inspector - Deduct
 
 description: |
   Fail inspector bisect nightly workflows searching for the first commit that broke the nightly build.
-  This action will download the test log artifacts from the matrix built by Inspect action and will make decisions based on the results of matrix test run.
+  This action will download the test log artifacts from the matrix built by Inspect action, run by Fail inspector Test action,
+  and will make decisions based on the results of matrix test run.
 
 inputs:
   repo:
