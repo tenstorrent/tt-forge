@@ -182,8 +182,17 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
       run: |
         repo="${{ inputs.repo }}"
-        test_job_names=("${{ inputs.test_job_names }}")
-        test_step_names=("${{ inputs.test_step_names }}")
+
+        if ! echo '${{ inputs.test_job_names }}' | jq empty; then
+          test_job_names=("${{ inputs.test_job_names }}")
+        else
+          test_job_names=($(echo '${{ inputs.test_job_names }}' | jq -r '.[]'))
+        fi
+        if ! echo '${{ inputs.test_job_names }}' | jq empty; then
+          test_step_names=("${{ inputs.test_step_names }}")
+        else
+          test_step_names=($(echo '${{ inputs.test_step_names }}' | jq -r '.[]'))
+        fi
 
         curr_wf_id="${{ steps.success-failed.outputs.curr_wf_id }}"
         curr_wf_attempt="${{ steps.success-failed.outputs.curr_wf_attempt }}"
