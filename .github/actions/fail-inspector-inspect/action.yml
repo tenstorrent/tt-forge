@@ -194,8 +194,8 @@ runs:
           test_step_names=($(echo '${{ inputs.test_step_names }}' | jq -r '.[]'))
         fi
 
-        echo "Test job names: $test_job_names"
-        echo "Test step names: ${test_step_names}"
+        echo "Test job names: ${test_job_names[@]}"
+        echo "Test step names: ${test_step_names[@]}"
 
         curr_wf_id="${{ steps.success-failed.outputs.curr_wf_id }}"
         curr_wf_attempt="${{ steps.success-failed.outputs.curr_wf_attempt }}"
@@ -226,6 +226,7 @@ runs:
               step_name=$(jq -r ".jobs[$i].steps[$j].name" workflow_jobs.json)
               step_conclusion=$(jq -r ".jobs[$i].steps[$j].conclusion" workflow_jobs.json)
               for test_step_name in "${test_step_names[@]}"; do
+                echo "Step $j: $step_name == $test_step_name"
                 if [[ "$step_name" == *"$test_step_name"* ]]; then
                   break 2
                 fi
