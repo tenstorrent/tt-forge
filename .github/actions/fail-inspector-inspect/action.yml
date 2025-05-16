@@ -196,13 +196,19 @@ runs:
           mapfile -t test_step_names < <(echo '${{ inputs.test_step_names }}' | jq -r '.[]')
         fi
 
-        echo "----Workflow run JSON: $(cat workflow_jobs.json)"
-
         curr_wf_id="${{ steps.success-failed.outputs.curr_wf_id }}"
         curr_wf_attempt="${{ steps.success-failed.outputs.curr_wf_attempt }}"
         rm -f report.txt
 
-        gh run view $curr_wf_id --attempt $curr_wf_attempt --json jobs >workflow_jobs.json
+        if ! gh run view -R "$repo" $curr_wf_id --attempt $curr_wf_attempt --json jobs >workflow_jobs.json; then
+          echo "ERROR: Failed to fetch workflow jobs."
+          exit 1
+        fi
+
+        if ! jq empty workflow_jobs.json >/dev/null 2>&1; then
+          echo "ERROR: workflow_jobs.json is not valid JSON."
+          exit 1
+        fi
 
         # Iterate through jobs using index
         job_count=$(jq '.jobs | length' workflow_jobs.json)
