@@ -190,11 +190,13 @@ runs:
         else
           mapfile -t test_job_names < <(echo '${{ inputs.test_job_names }}' | jq -r '.[]')
         fi
-        if ! echo '${{ inputs.test_job_names }}' | jq empty; then
+        if ! echo '${{ inputs.test_step_names }}' | jq empty; then
           test_step_names=("${{ inputs.test_step_names }}")
         else
           mapfile -t test_step_names < <(echo '${{ inputs.test_step_names }}' | jq -r '.[]')
         fi
+
+        echo "----Workflow run JSON: $(cat workflow_jobs.json)"
 
         curr_wf_id="${{ steps.success-failed.outputs.curr_wf_id }}"
         curr_wf_attempt="${{ steps.success-failed.outputs.curr_wf_attempt }}"
