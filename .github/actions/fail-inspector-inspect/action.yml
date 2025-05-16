@@ -4,7 +4,7 @@ description: |
   Fail inspector bisect nightly workflows searching for the first commit that broke the nightly build.
   This action will download the test log artifacts from the nightly workflow and run the inspector on them.
   Output is the matrix that runs tests.
-  Fail Inspector - Inspect is accompanied by Deduct action that will make decisions based on the results of matrix test run.
+  Fail Inspector - Inspect is accompanied by Test and Deduct actions that will perform tests and make decisions based on the results of matrix test run.
 
 inputs:
   repo:
@@ -21,10 +21,10 @@ inputs:
     description: 'Slack webhook URL'
     required: true
   test_job_names:
-    description: 'Test job names (space separated)'
+    description: 'Test job name or job names in json format eg. ["job1", "job2"]'
     required: true
   test_step_names:
-    description: 'Test step names (space separated)'
+    description: 'Test step name or step names in json format eg. ["step1", "step2"]'
     required: true
 
 outputs:
