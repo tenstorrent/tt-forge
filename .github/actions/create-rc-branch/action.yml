@@ -23,9 +23,6 @@ inputs:
   MINOR:
     description: "Minor version"
     required: true
-  PATCH:
-    description: "Patch version"
-    required: true
 runs:
   using: "composite"
   steps:
@@ -59,15 +56,15 @@ runs:
         # Get the latest release branch
         latest_release_branch_version=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+\.\d+' | tail -n 1 || echo "")
         if [ -z "$latest_release_branch_version" ]; then
-            new_release_branch_name="release-${{ inputs.MAJOR }}.${{ inputs.MINOR }}.${{ inputs.PATCH }}"
+            new_release_branch_name="release-${{ inputs.MAJOR }}.${{ inputs.MINOR }}"
         else
             echo "Current Release Branch is $latest_release_branch_version"
-            IFS='.' read -r major minor patch <<< "$latest_release_branch_version"
+            IFS='.' read -r major minor <<< "$latest_release_branch_version"
             if [ "$major" -eq "${{ inputs.MAJOR }}" ] ; then
-                new_release_branch_name="release-${major}.$((minor+1)).${patch}"
+                new_release_branch_name="release-${major}.$((minor+1))"
             else
                 # Create new major release branch
-                new_release_branch_name="release-${{ inputs.MAJOR }}.0.0"
+                new_release_branch_name="release-${{ inputs.MAJOR }}.0"
             fi
         fi
         

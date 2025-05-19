@@ -23,12 +23,8 @@ jobs:
       id: version-tag
       run: |
         source .version
-        MAJOR="${MAJOR}"
-        MINOR="${MINOR}"
-        PATCH="${PATCH}"
         echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
         echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
-        echo "PATCH=$PATCH" >> $GITHUB_OUTPUT
     - name: Create RC branch - tenstorrent/tt-forge-fe
       uses: ./.github/actions/create-rc-branch
       id: Create-RC-branch
@@ -37,5 +33,3 @@ jobs:
         workflow: On nightly
         MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
         MINOR: ${{ steps.version-tag.outputs.MINOR }}
-        PATCH: ${{ steps.version-tag.outputs.PATCH }}
-
