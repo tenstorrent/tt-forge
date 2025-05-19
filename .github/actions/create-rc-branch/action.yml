@@ -40,7 +40,7 @@ runs:
       with:
         repository: ${{ inputs.repo }}
         token: ${{ github.token }}
-        ref: ${{ needs.fetch_run_id.outputs.run_commit_sha }}
+        ref: ${{ steps.fetch_run_id.outputs.run_commit_sha }}
 
 # TODO: need to do a git look up to see if release branch already exist
 
