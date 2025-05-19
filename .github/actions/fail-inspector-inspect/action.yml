@@ -41,6 +41,16 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Check if nightly failed
+      shell: bash
+      run: |
+        if [ -n "${{ github.event.workflow_run.id }}" ]; then
+          if [ "${{ github.event.workflow_run.conclusion }}" != "failure" ]; then
+            echo "Current Nightly has not failed. Exiting."
+            exit 1
+          fi
+        fi
+
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -57,6 +67,17 @@ runs:
 
         # get json of the last 10 workflow runs
         gh run list --workflow $wf_name -R $repo -b main -L 10 --status completed --json attempt,conclusion,databaseId,headSha >runs.json
+
+        curr_wf_id=$(jq -r '.[0].databaseId' runs.json)
+        # check if current workflow ID is the one form workflow_run context (if workflow_run context is available)
+        if [ -n "${{ github.event.workflow_run.id }}" ]; then
+          if [ "${{ github.event.workflow_run.id }}" -ne "$curr_wf_id" ]; then
+            echo "Current workflow ID does not match the workflow_run context ID. Exiting."
+            exit 1
+          fi
+        fi
+
+        # check if the latest workflow run failed
         if [ "$(jq -r '.[0].conclusion' runs.json)" != "failure" ]; then
           echo "The latest workflow run did not fail. Exiting."
           exit 1
@@ -69,6 +90,14 @@ runs:
         curr_head_sha=$(jq -r '.[0].headSha' runs.json)
         prev_wf_id=$(jq -r '.[1].databaseId' runs.json)
         prev_head_sha=$(jq -r '.[1].headSha' runs.json)
+
+        # check if commits are the same
+        if [ "$curr_head_sha" == "$prev_head_sha" ]; then
+          echo "No commits between last 2 nightly runs. Exiting."
+          exit 1
+        fi
+
+        # save current nightly workflow ID and attempt
         echo "curr_wf_id=$curr_wf_id" >> $GITHUB_OUTPUT
         echo "curr_wf_attempt=$(jq -r '.[0].attempt' runs.json)" >> $GITHUB_OUTPUT
 
@@ -86,7 +115,7 @@ runs:
         fi
         # Remove all lines after $curr_head_sha in commits.txt
         if ! grep -q "$curr_head_sha" commits.txt; then
-          echo "WARNING: $curr_head_sha not found in commits: $(cat commits.txt)"
+          echo "ERROR: $curr_head_sha not found in commits: $(cat commits.txt)"
           exit 1
         else
           echo "$curr_head_sha found in commits, setting as last commit"
