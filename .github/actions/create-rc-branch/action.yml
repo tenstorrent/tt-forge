@@ -48,6 +48,8 @@ runs:
       shell: bash
       run: |
         set -xe
+        
+        git log -n 2
         git for-each-ref refs/remotes/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release.*' | xargs
 
 
