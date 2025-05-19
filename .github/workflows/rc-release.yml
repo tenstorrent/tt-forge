@@ -1,14 +1,13 @@
-name: Rc Release
+name: RC Release Branches
 
 on:
   schedule:
   - cron: '0 6 24 * *'
   workflow_dispatch:
     inputs:
-      draft:
-        type: boolean
-        default: true
-        description: Put PR in draft mode for testing
+      only-repos:
+        default: 'tt-forge-fe,tt-torch'
+        description: 'comma separated list of repos to create RC branch for e.g tt-forge-fe,tt-torch,tt-mlir'
   push:
 
 
@@ -25,11 +24,19 @@ jobs:
         source .version
         echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
         echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
-    - name: Create RC branch - tenstorrent/tt-forge-fe
+    - name: Create Version branch - tt-forge-fe
+      if: contains(steps.version-tag.outputs.only-repos, 'tt-forge-fe')
       uses: ./.github/actions/create-rc-branch
-      id: Create-RC-branch
       with:
         repo: tenstorrent/tt-forge-fe
         workflow: On nightly
+        MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
+        MINOR: ${{ steps.version-tag.outputs.MINOR }}
+    - name: Create Version branch - tt-torch
+      if: contains(steps.version-tag.outputs.only-repos, 'tt-torch')
+      uses: ./.github/actions/create-rc-branch
+      with:
+        repo: tenstorrent/tt-torch
+        workflow: Nightly Tests
         MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
         MINOR: ${{ steps.version-tag.outputs.MINOR }}
