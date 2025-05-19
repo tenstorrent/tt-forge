@@ -1,4 +1,4 @@
-name: RC Release Branches
+name: RC Version Branches
 
 on:
   schedule:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       only-repos:
-        default: 'tt-forge-fe,tt-torch'
         description: 'comma separated list of repos to create RC branch for e.g tt-forge-fe,tt-torch,tt-mlir'
+        required: true
   push:
 
 
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        ONLY_REPOS: ${{ inputs.only-repos }}
+        ONLY_REPOS: ${{ inputs.only-repos || 'tt-forge-fe,tt-torch' }}
     steps:
     - name: echo env
       run: echo $ONLY_REPOS
