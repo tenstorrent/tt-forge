@@ -47,14 +47,26 @@ runs:
     - name: Create new branch and push
       shell: bash
       run: |
-        set -xe
+        set -x
+        source .version
         
-        git log -n 2
+        # Get the latest release branch
+        latest_release_branch_version=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+\.\d+' | tail -n 1 || echo "")
+        if [ -z "$latest_release_branch_version" ]; then
+            new_release_branch_name="release-${VERSION}"
+        else
+            echo "Current Release Branch is $latest_release_branch_version"
+            IFS='.' read -r major minor patch <<< "$latest_release_branch_version"
+            if [ "$major" -eq "$MAJOR" ] ; then
+                new_release_branch_name="release-${major}.$((minor+1)).${patch}"
+            else
+                # Create new major release branch
+                new_release_branch_name="release-${MAJOR}.0.0"
+            fi
+
+        fi
         
-        git for-each-ref refs/remotes/ --format='%(refname:short)'
-        #git for-each-ref refs/remotes/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release.*' | xargs
+        echo "New Release Branch is $new_release_branch_name"
 
-
-        #new-branch-name="${{ inputs.branch }}"
-        git checkout -b test-jm-branch
-        git push origin test-jm-branch
+        git checkout -b $new_release_branch_name
+        git push origin $new_release_branch_name
