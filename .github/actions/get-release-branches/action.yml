@@ -1,16 +1,32 @@
 
-name: "Get Release Branches"
-description: "Get Release Branches"
-
-
+name: "Check Release Branches"
+description: "Check Release Branches"
 
 runs:
   using: "composite"
   steps:
+    - name: Checkout target repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repo }}
+        token: ${{ env.GH_TOKEN }}
+        fetch-depth: 0
     - name: Get Release Branches
       id: get-release-branches
       shell: bash
       run: |
         # Get the latest release branches sorted by date in ascending order
-        git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tac
+        release_branches=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tac | xargs)
+        for branch in $release_branches; do
+          current_release_tag=$(git tag --sort=-creatordate --contains $branch | head -n 1)
+          latest_tag_commit=$(git rev-list $current_release_tag --max-count=1)
+          latest_branch_commit=$(git rev-list $branch --max-count=1)
+          if [[ "$latest_tag_commit" != "$latest_branch_commit" ]]; then
+            # TODO: Branch is outdated
+            echo "outdated-release-branches=$branch" >> $GITHUB_OUTPUT
+          fi
+        done
+
+
+
       

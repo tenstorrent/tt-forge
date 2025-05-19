@@ -8,7 +8,6 @@ on:
       only-repos:
         description: 'comma separated list of repos to create RC branch for e.g tt-forge-fe,tt-torch,tt-mlir'
         required: true
-  push:
 
 
 jobs:
