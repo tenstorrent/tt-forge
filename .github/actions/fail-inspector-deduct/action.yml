@@ -84,6 +84,9 @@ runs:
           echo "  <https://github.com/$repo/commit/$commit>" >>short_report.txt
           echo "- In commit [$commit](<https://github.com/$repo/commit/$commit>) $no_failed_tests test(s) failed: <img src=\"$commitimg\" width=\"25%\" align=\"right\"/>" >>report.txt
           sed 's/^/> /' a.log >>report.txt
+          echo "" >>report.txt
+          echo "---" >>report.txt
+          echo "" >>report.txt
         done <test_jobs.txt
 
         if [ ! -s report.txt ]; then
