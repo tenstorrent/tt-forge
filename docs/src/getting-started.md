@@ -1,3 +1,5 @@
+# Getting Started with Forge Demos
+
 This document walks you through how to set up to run demo models using tt-forge. The following topics are covered:
 
 * [Configuring Hardware](#configuring-hardware)
@@ -20,12 +22,8 @@ This document walks you through how to set up to run demo models using tt-forge.
 Configure your hardware with tt-installer: 
 
 ```bash
-SKIP_INSTALL_METALIUM_CONTAINER=0 SKIP_UPDATE_FIRMWARE=0 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/tenstorrent/tt-installer/refs/heads/main/install.sh)"
+TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
 ```
-NOTE NOTE NOTE MUST CONFIGURE 1G PAGES - NOT WORKING 
-
-TRY WITH FLAGS OFF AGAIN 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/tenstorrent/tt-installer/refs/heads/main/install.sh)"
 
 ## Setting up the Docker Container
 
@@ -69,24 +67,6 @@ sudo docker run \
   -v /dev/hugepages-1G:/dev/hugepages-1G \
   --mount type=bind,source=/sys/devices/system/node,target=/sys/devices/system/node \
   ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
-```
-
-REPLACEMENT COMMAND: 
-
-```bash
-docker run   --rm   -it   --privileged   --device /dev/tenstorrent/0   -v /dev/hugepages-1G:/dev/hugepages-1G   --mount type=bind,source=/sys/devices/system/node,target=/sys/devices/system/node   ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
-```
-
-5. If you want to check that it's running, open a new tab with the **Same Command** option and run the following:
-
-```bash
-docker ps
-```
-
-6. After the docker container is running, make sure you finish configuring HugePages: 
-
-```bash 
-sudo mount -t hugetlbfs -o pagesize=1G none /dev/hugepages-1G
 ```
 
 ## Creating a Virtual Environment
@@ -137,7 +117,7 @@ To run a demo, do the following:
 git clone https://github.com/tenstorrent/tt-forge.git
 ```
 
-2. Navigate to tt-forge/demos/tt-forge-fe.
+2. Navigate to **tt-forge/demos/tt-forge-fe**.
 
 3. Choose one of the available demos. At this time, you can try:
 
@@ -148,6 +128,8 @@ git clone https://github.com/tenstorrent/tt-forge.git
 | ResNet-50 (ONNX) | CNN | Deep residual network for image classification using ONNX format | [`cnn/resnet_onnx_demo.py`](cnn/resnet_onnx_demo.py) |
 | BERT | NLP | Bidirectional Encoder Representations from Transformers for natural language understanding tasks | [`nlp/bert_demo.py`](nlp/bert_demo.py) |
 
+In this walkthrough, **resnet_50_demo.py** is used. 
+
 4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Navigate into the **/cnn folder** and run the following command:
 
 ```bash
@@ -156,5 +138,5 @@ python3 resnet_50_demo.py
 
 If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
 
-## Troubleshooting 
+
 
