@@ -56,7 +56,7 @@ runs:
             continue
           fi
           for dir in log/test-log-*/; do
-            grep '^FAILED ' "$dir/pytest.log" | sed 's/^FAILED //' >>a.log
+            grep '^FAILED ' "$dir/pytest.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>a.log
           done
           # Remove all of tests that doesn't exist in initial list of tests (failed in previous jobs)
           grep -Fx -f pytest.log a.log >f_a.log
@@ -84,6 +84,9 @@ runs:
           echo "  <https://github.com/$repo/commit/$commit>" >>short_report.txt
           echo "- In commit [$commit](<https://github.com/$repo/commit/$commit>) $no_failed_tests test(s) failed: <img src=\"$commitimg\" width=\"25%\" align=\"right\"/>" >>report.txt
           sed 's/^/> /' a.log >>report.txt
+          echo "" >>report.txt
+          echo "---" >>report.txt
+          echo "" >>report.txt
         done <test_jobs.txt
 
         if [ ! -s report.txt ]; then
@@ -94,7 +97,7 @@ runs:
           echo "Report: $(cat report.txt)"
           nightly=""
           if [ ! -z "${{ inputs.nightly_workflow_id }}" ]; then
-            nightly="for [Nightly](<https://github.com/$repo/actions/runs/$${{ inputs.nightly_workflow_id }}/attempts/${{ inputs.nightly_attempt }}>)"
+            nightly="for [Nightly](<https://github.com/$repo/actions/runs/${{ inputs.nightly_workflow_id }}/attempts/${{ inputs.nightly_attempt }}>)"
           fi
           echo "## Inspection report :rocket: $nightly" >> $GITHUB_STEP_SUMMARY
           cat report.txt >> $GITHUB_STEP_SUMMARY

@@ -41,6 +41,17 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Check if nightly failed
+      shell: bash
+      run: |
+        if [ -n "${{ github.event.workflow_run.id }}" ]; then
+          echo "Workflow run, nightly ID: ${{ github.event.workflow_run.id }}"
+          if [ "${{ github.event.workflow_run.conclusion }}" != "failure" ]; then
+            echo "Current Nightly has not failed. Exiting."
+            exit 1
+          fi
+        fi
+
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -57,6 +68,17 @@ runs:
 
         # get json of the last 10 workflow runs
         gh run list --workflow $wf_name -R $repo -b main -L 10 --status completed --json attempt,conclusion,databaseId,headSha >runs.json
+
+        curr_wf_id=$(jq -r '.[0].databaseId' runs.json)
+        # check if current workflow ID is the one form workflow_run context (if workflow_run context is available)
+        if [ -n "${{ github.event.workflow_run.id }}" ]; then
+          if [ "${{ github.event.workflow_run.id }}" -ne "$curr_wf_id" ]; then
+            echo "Current workflow ID does not match the workflow_run context ID. Exiting."
+            exit 1
+          fi
+        fi
+
+        # check if the latest workflow run failed
         if [ "$(jq -r '.[0].conclusion' runs.json)" != "failure" ]; then
           echo "The latest workflow run did not fail. Exiting."
           exit 1
@@ -69,6 +91,14 @@ runs:
         curr_head_sha=$(jq -r '.[0].headSha' runs.json)
         prev_wf_id=$(jq -r '.[1].databaseId' runs.json)
         prev_head_sha=$(jq -r '.[1].headSha' runs.json)
+
+        # check if commits are the same
+        if [ "$curr_head_sha" == "$prev_head_sha" ]; then
+          echo "No commits between last 2 nightly runs. Exiting."
+          exit 1
+        fi
+
+        # save current nightly workflow ID and attempt
         echo "curr_wf_id=$curr_wf_id" >> $GITHUB_OUTPUT
         echo "curr_wf_attempt=$(jq -r '.[0].attempt' runs.json)" >> $GITHUB_OUTPUT
 
@@ -79,32 +109,20 @@ runs:
         git checkout $prev_head_sha
         git submodule update --init --recursive
         if git show-ref --verify --quiet refs/remotes/origin/main; then
-          git rev-list --reverse HEAD..origin/main >commits.txt
+          git rev-list --reverse $prev_head_sha..$curr_head_sha >commits.txt
         else
           echo "ERROR: The main branch is not available in the repository."
           exit 1
         fi
-        # Remove all lines after $curr_head_sha in commits.txt
-        if ! grep -q "$curr_head_sha" commits.txt; then
-          echo "WARNING: $curr_head_sha not found in commits"
-          exit 1
-        else
-          echo "$curr_head_sha found in commits, setting as last commit"
-          sed -n "/$curr_head_sha/ {p;q;}; p" commits.txt >filtered_commits.txt
-          mv filtered_commits.txt commits.txt
-          echo "Commits: $(cat commits.txt)"
-        fi
-        if [ ! -s commits.txt ]; then
-          echo "No commits found between the last two workflow runs."
-          echo "matrix=\"[]\"" >>$GITHUB_OUTPUT
-          exit 0
-        fi
+
         # cleanup before processing
         rm -rf log-a
         rm -rf log-b
+
         # get list of failed tests from the last two workflow runs
         gh run download $prev_wf_id --pattern "test-log*" -R $repo -D log-a || true
         gh run download $curr_wf_id --pattern "test-log*" -R $repo -D log-b
+
         # get machine names
         find log-a -type d -name 'test-log-*' | sed -E 's|.*/test-log-([^/-]+)-.*|\1|' | sort -u >machines-a.log
         find log-b -type d -name 'test-log-*' | sed -E 's|.*/test-log-([^/-]+)-.*|\1|' | sort -u >machines-b.log
@@ -132,6 +150,7 @@ runs:
             echo "----Tests for machine $machine: $(cat tests-"$machine".log)"
           fi
         done <machines.log
+
         # Filter out machines with empty test logs
         cp machines.log filtered_machines.log
         while read -r machine; do
@@ -145,6 +164,7 @@ runs:
           echo "No new failed tests found."
           exit 0
         fi
+
         # cleanup
         rm -rf log-a
         rm -rf log-b
@@ -152,6 +172,7 @@ runs:
         rm -f b-*.log
         rm -f machines-*.log
         mv filtered_machines.log machines.log
+
         # prepare build-test matrix
         rm -rf matrix.log
         c=1
