@@ -1,0 +1,37 @@
+name: Fail Inspector - Test
+
+description: |
+  Fail inspector Test action runs tests acquired by Inspect action and upload results as an artifact.
+  Test will be run in a matrix, prepared by Inspect action.
+
+inputs:
+  runs-on:
+    description: 'Machine label which run the tests'
+    required: true
+  c:
+    description: 'Number of test run inside the matrix'
+    required: true
+  commit:
+    description: 'Commit SHA of the nightly run'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: tests-to-run
+        path: ${{ github.workspace }}
+
+    - name: Run Test
+      shell: bash
+      run: |
+        source env/activate
+        cd ${GITHUB_WORKSPACE}
+        python ${GITHUB_ACTION_PATH}/run_tests.py tests-${{inputs.runs-on}}.log 2>&1 | tee pytest.log
+
+    - uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: test-log-${{ inputs.runs-on }}-${{ inputs.c }}-${{ inputs.commit }}
+        path: pytest.log

@@ -1,0 +1,292 @@
+name: Fail Inspector - Inspect
+
+description: |
+  Fail inspector bisect nightly workflows searching for the first commit that broke the nightly build.
+  This action will download the test log artifacts from the nightly workflow and run the inspector on them.
+  Output is the matrix that runs tests.
+  Fail Inspector - Inspect is accompanied by Test and Deduct actions that will perform tests and make decisions based on the results of matrix test run.
+
+inputs:
+  repo:
+    description: 'Repository name'
+    required: false
+    default: ${{ github.repository }}
+  workflow:
+    description: 'Workflow name'
+    required: true
+  token:
+    description: 'GitHub token'
+    required: true
+  slack_webhook_url:
+    description: 'Slack webhook URL'
+    required: true
+  test_job_names:
+    description: 'Test job name or job names in json format eg. ["job1", "job2"]'
+    required: true
+  test_step_names:
+    description: 'Test step name or step names in json format eg. ["step1", "step2"]'
+    required: true
+
+outputs:
+  matrix:
+    description: 'Matrix of tests to run'
+    value: ${{ steps.success-failed.outputs.matrix }}
+  nightly_workflow_id:
+    description: 'Nightly workflow ID inspected'
+    value: ${{ steps.success-failed.outputs.curr_wf_id }}
+  nightly_attempt:
+    description: 'Nightly workflow attempt inspected'
+    value: ${{ steps.success-failed.outputs.curr_wf_attempt }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check if nightly failed
+      shell: bash
+      run: |
+        if [ -n "${{ github.event.workflow_run.id }}" ]; then
+          echo "Workflow run, nightly ID: ${{ github.event.workflow_run.id }}"
+          if [ "${{ github.event.workflow_run.conclusion }}" != "failure" ]; then
+            echo "Current Nightly has not failed. Exiting."
+            exit 1
+          fi
+        fi
+
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Get success-failed workflow
+      id: success-failed
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        repo="${{ inputs.repo }}"
+        wf_name="${{ inputs.workflow }}"
+
+        # get json of the last 10 workflow runs
+        gh run list --workflow $wf_name -R $repo -b main -L 10 --status completed --json attempt,conclusion,databaseId,headSha >runs.json
+
+        curr_wf_id=$(jq -r '.[0].databaseId' runs.json)
+        # check if current workflow ID is the one form workflow_run context (if workflow_run context is available)
+        if [ -n "${{ github.event.workflow_run.id }}" ]; then
+          if [ "${{ github.event.workflow_run.id }}" -ne "$curr_wf_id" ]; then
+            echo "Current workflow ID does not match the workflow_run context ID. Exiting."
+            exit 1
+          fi
+        fi
+
+        # check if the latest workflow run failed
+        if [ "$(jq -r '.[0].conclusion' runs.json)" != "failure" ]; then
+          echo "The latest workflow run did not fail. Exiting."
+          exit 1
+        fi
+        # Filter runs.json to include only entries where "conclusion" is "failure" or "success"
+        jq '[.[] | select(.conclusion == "failure" or .conclusion == "success")]' runs.json >filtered_runs.json
+        mv filtered_runs.json runs.json
+        echo "Extracted runs: $(cat runs.json)"
+        curr_wf_id=$(jq -r '.[0].databaseId' runs.json)
+        curr_head_sha=$(jq -r '.[0].headSha' runs.json)
+        prev_wf_id=$(jq -r '.[1].databaseId' runs.json)
+        prev_head_sha=$(jq -r '.[1].headSha' runs.json)
+
+        # check if commits are the same
+        if [ "$curr_head_sha" == "$prev_head_sha" ]; then
+          echo "No commits between last 2 nightly runs. Exiting."
+          exit 1
+        fi
+
+        # save current nightly workflow ID and attempt
+        echo "curr_wf_id=$curr_wf_id" >> $GITHUB_OUTPUT
+        echo "curr_wf_attempt=$(jq -r '.[0].attempt' runs.json)" >> $GITHUB_OUTPUT
+
+        # get list of commits between last 2 workflow runs
+        echo "Get list of commits between last $prev_wf_id and $curr_wf_id workflow runs"
+        git fetch --all
+        git switch main
+        git checkout $prev_head_sha
+        git submodule update --init --recursive
+        if git show-ref --verify --quiet refs/remotes/origin/main; then
+          git rev-list --reverse $prev_head_sha..$curr_head_sha >commits.txt
+        else
+          echo "ERROR: The main branch is not available in the repository."
+          exit 1
+        fi
+
+        # cleanup before processing
+        rm -rf log-a
+        rm -rf log-b
+
+        # get list of failed tests from the last two workflow runs
+        gh run download $prev_wf_id --pattern "test-log*" -R $repo -D log-a || true
+        gh run download $curr_wf_id --pattern "test-log*" -R $repo -D log-b
+
+        # get machine names
+        find log-a -type d -name 'test-log-*' | sed -E 's|.*/test-log-([^/-]+)-.*|\1|' | sort -u >machines-a.log
+        find log-b -type d -name 'test-log-*' | sed -E 's|.*/test-log-([^/-]+)-.*|\1|' | sort -u >machines-b.log
+        cat machines-a.log machines-b.log | sort -u >machines.log
+        echo "Machines: $(cat machines.log)"
+        while read -r machine; do
+          for dir in log-a/test-log-"$machine"-*/; do
+            sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
+            grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>a-"$machine".log || true
+          done
+          for dir in log-b/test-log-"$machine"-*/; do
+            sed -n '/=========================== short test summary info ============================/,$p' "$dir/pytest.log" >temp.log || true
+            grep '^FAILED ' "temp.log" | sed 's/^FAILED //; s/^\(.*\) - .*/\1/; s/^\(.*\]\).*/\1/' >>b-"$machine".log || true
+          done
+          echo "----Current  Tests for machine $machine: $(cat b-"$machine".log)"
+          echo "----Previous Tests for machine $machine: $(cat b-"$machine".log)"
+          # get only the lines that are in b.log but not in a.log
+          if [ ! -s a-"$machine".log ]; then
+            cp b-"$machine".log tests-"$machine".log
+          fi
+          if [ ! -s b-"$machine".log ]; then
+            echo "List of failed tests for machine '$machine' is empty, nothing to do."
+          else
+            grep -Fxv -f a-"$machine".log b-"$machine".log >tests-"$machine".log || true
+            echo "----Tests for machine $machine: $(cat tests-"$machine".log)"
+          fi
+        done <machines.log
+
+        # Filter out machines with empty test logs
+        cp machines.log filtered_machines.log
+        while read -r machine; do
+          if [ ! -s tests-"$machine".log ]; then
+            echo "No failed tests for machine $machine, removing from list."
+            sed -i "/^$machine$/d" filtered_machines.log
+            rm -f tests-"$machine".log
+          fi
+        done <machines.log
+        if [ ! -s filtered_machines.log ]; then
+          echo "No new failed tests found."
+          exit 0
+        fi
+
+        # cleanup
+        rm -rf log-a
+        rm -rf log-b
+        rm -f a-*.log
+        rm -f b-*.log
+        rm -f machines-*.log
+        mv filtered_machines.log machines.log
+
+        # prepare build-test matrix
+        rm -rf matrix.log
+        c=1
+        while read -r commit; do
+          while read -r machine; do
+            echo "{\"runs-on\": \"$machine\", \"commit\": \"$commit\", \"c\": \"$c\"}," >>matrix.log
+          done <machines.log
+          c=$((c+1))
+        done <commits.txt
+        # Remove trailing comma on the last line of matrix.log
+        sed -i '$ s/,$//' matrix.log
+        # Combine all lines in matrix.log into a single line
+        tr -d '\n' <matrix.log >matrix_single_line.log
+        mv matrix_single_line.log matrix.log
+        echo "Extracted matrix: $(cat matrix.log)"
+        echo "matrix=[$(cat matrix.log)]" >>$GITHUB_OUTPUT
+        rm -f matrix.log
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: tests-to-run
+        path: tests-*.log
+        if-no-files-found: ignore
+
+    # Test sanity of last failed nightly, eg. if tests are run
+    - name: Nightly sanity check
+      id: sanity-check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        repo="${{ inputs.repo }}"
+
+        if ! echo '${{ inputs.test_job_names }}' | jq empty; then
+          test_job_names=("${{ inputs.test_job_names }}")
+        else
+          mapfile -t test_job_names < <(echo '${{ inputs.test_job_names }}' | jq -r '.[]')
+        fi
+        if ! echo '${{ inputs.test_step_names }}' | jq empty; then
+          test_step_names=("${{ inputs.test_step_names }}")
+        else
+          mapfile -t test_step_names < <(echo '${{ inputs.test_step_names }}' | jq -r '.[]')
+        fi
+
+        curr_wf_id="${{ steps.success-failed.outputs.curr_wf_id }}"
+        curr_wf_attempt="${{ steps.success-failed.outputs.curr_wf_attempt }}"
+        rm -f report.txt
+
+        if ! gh run view -R "$repo" $curr_wf_id --attempt $curr_wf_attempt --json jobs >workflow_jobs.json; then
+          echo "ERROR: Failed to fetch workflow jobs."
+          exit 1
+        fi
+
+        if ! jq empty workflow_jobs.json >/dev/null 2>&1; then
+          echo "ERROR: workflow_jobs.json is not valid JSON."
+          exit 1
+        fi
+
+        # Iterate through jobs using index
+        job_count=$(jq '.jobs | length' workflow_jobs.json)
+        for ((i=0; i<job_count; i++)); do
+          job_name=$(jq -r ".jobs[$i].name" workflow_jobs.json)
+          job_conclusion=$(jq -r ".jobs[$i].conclusion" workflow_jobs.json)
+          if [[ "$job_conclusion" == "success" ]]; then
+              continue
+          fi
+
+          is_job_test=0
+          for test_job_name in "${test_job_names[@]}"; do
+            if [[ "$job_name" == *"$test_job_name"* ]]; then
+              is_job_test=1
+              break
+            fi
+          done
+          if [[ "$is_job_test" -eq 1 ]]; then
+            echo "Job $i: $job_name"
+            steps_count=$(jq ".jobs[$i].steps | length" workflow_jobs.json)
+            for ((j=0; j<steps_count; j++)); do
+              step_name=$(jq -r ".jobs[$i].steps[$j].name" workflow_jobs.json)
+              step_conclusion=$(jq -r ".jobs[$i].steps[$j].conclusion" workflow_jobs.json)
+              for test_step_name in "${test_step_names[@]}"; do
+                if [[ "$step_name" == *"$test_step_name"* ]]; then
+                  break 2
+                fi
+              done
+              if [[ "$step_conclusion" == "failure" ]]; then
+                job_id=$(jq -r ".jobs[$i].databaseId" workflow_jobs.json)
+                echo "- Failure detected in step '$step_name' before tests are run in job: [$job_name](<https://github.com/$repo/actions/runs/$curr_wf_id/job/$job_id>)" >>report.txt
+              fi
+            done
+          fi
+        done
+
+        if [ ! -s report.txt ]; then
+          echo "No failed tests to report."
+          echo "send_msg=" >>$GITHUB_OUTPUT
+          exit 0
+        else
+          echo "Report: $(cat report.txt)"
+          echo "## Inspection report :rocket: for [Nightly](<https://github.com/$repo/actions/runs/$curr_wf_id/attempts/$curr_wf_attempt>)" >> $GITHUB_STEP_SUMMARY
+          cat report.txt >> $GITHUB_STEP_SUMMARY
+          echo "send_msg={\"text\": \"Nightly failure caused by machine failures. Test inspection skipped.\", \"job_link\": \"https://github.com/$repo/actions/runs/$curr_wf_id/attempts/$curr_wf_attempt\", \"unfurl_links\": false, \"unfurl_media\": false }" >>$GITHUB_OUTPUT
+        fi
+
+    - uses: slackapi/slack-github-action@v1.26.0
+      if: ${{ steps.sanity-check.outputs.send_msg }}
+      with:
+        payload: ${{ steps.sanity-check.outputs.send_msg }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
+
+    - name: Bad Nightly run detected
+      if: ${{ steps.sanity-check.outputs.send_msg }}
+      shell: bash
+      run: |
+        echo "Bad nightly run detected. Exiting."
+        exit 1
