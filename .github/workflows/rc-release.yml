@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        ONLY_REPOS: ${{ github.event.inputs.only-repos }}
+        ONLY_REPOS: ${{ inputs.only-repos }}
     steps:
     - name: echo env
       run: echo $ONLY_REPOS
