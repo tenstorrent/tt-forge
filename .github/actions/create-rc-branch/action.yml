@@ -50,8 +50,9 @@ runs:
         set -xe
         
         git log -n 2
-        git fetch -a
-        git for-each-ref refs/remotes/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release.*' | xargs
+        
+        git for-each-ref refs/remotes/ --format='%(refname:short)'
+        #git for-each-ref refs/remotes/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release.*' | xargs
 
 
         #new-branch-name="${{ inputs.branch }}"
