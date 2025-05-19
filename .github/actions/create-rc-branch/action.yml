@@ -43,8 +43,6 @@ runs:
     - name: Create new branch and push
       shell: bash
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
         git for-each-ref refs/remotes/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release.*' | xargs
 
         #new-branch-name="${{ inputs.branch }}"
