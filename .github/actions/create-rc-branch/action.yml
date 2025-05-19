@@ -36,9 +36,6 @@ runs:
         workflow_allow_failed: false
         workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
 
-    - name: echo sha
-      shell: bash
-      run: echo ${{ steps.find_workflow.outputs.run-commit-sha }}
 
     - name: Checkout target repo
       uses: actions/checkout@v4
@@ -72,3 +69,6 @@ runs:
 
         git checkout -b $new_release_branch_name
         git push origin $new_release_branch_name
+
+    # Recheckout forge repo to fix side effects of from clean up job
+    - uses: actions/checkout@v4
