@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        ONLY_REPOS: ${{ github.event.inputs.only-repos }}
     steps:
     - uses: actions/checkout@v4
     - name: version tag
@@ -25,7 +26,7 @@ jobs:
         echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
         echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
     - name: Create Version branch - tt-forge-fe
-      if: contains(steps.version-tag.outputs.only-repos, 'tt-forge-fe')
+      if: contains(env.ONLY_REPOS, 'tt-forge-fe')
       uses: ./.github/actions/create-rc-branch
       with:
         repo: tenstorrent/tt-forge-fe
@@ -33,7 +34,7 @@ jobs:
         MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
         MINOR: ${{ steps.version-tag.outputs.MINOR }}
     - name: Create Version branch - tt-torch
-      if: contains(steps.version-tag.outputs.only-repos, 'tt-torch')
+      if: contains(env.ONLY_REPOS, 'tt-torch')
       uses: ./.github/actions/create-rc-branch
       with:
         repo: tenstorrent/tt-torch
