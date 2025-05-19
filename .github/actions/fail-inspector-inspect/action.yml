@@ -45,6 +45,7 @@ runs:
       shell: bash
       run: |
         if [ -n "${{ github.event.workflow_run.id }}" ]; then
+          echo "Workflow run, nightly ID: ${{ github.event.workflow_run.id }}"
           if [ "${{ github.event.workflow_run.conclusion }}" != "failure" ]; then
             echo "Current Nightly has not failed. Exiting."
             exit 1
