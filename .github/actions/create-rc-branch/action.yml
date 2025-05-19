@@ -45,6 +45,7 @@ runs:
       run: |
         git for-each-ref refs/remotes/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release.*' | xargs
 
+
         #new-branch-name="${{ inputs.branch }}"
         git checkout -b test-jm-branch
         git push origin test-jm-branch
