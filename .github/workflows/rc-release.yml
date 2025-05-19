@@ -18,7 +18,7 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
-    #- uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     #- name: version tag
     #  id: version-tag
     #  run: |
