@@ -17,7 +17,15 @@ inputs:
     description: "Set that workflow result is job result"
     default: ""
     required: false
-
+  MAJOR:
+    description: "Major version"
+    required: true
+  MINOR:
+    description: "Minor version"
+    required: true
+  PATCH:
+    description: "Patch version"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -48,22 +56,20 @@ runs:
       shell: bash
       run: |
         set -x
-        source .version
         
         # Get the latest release branch
         latest_release_branch_version=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+\.\d+' | tail -n 1 || echo "")
         if [ -z "$latest_release_branch_version" ]; then
-            new_release_branch_name="release-${VERSION}"
+            new_release_branch_name="release-${inputs.MAJOR}.${inputs.MINOR}.${inputs.PATCH}"
         else
             echo "Current Release Branch is $latest_release_branch_version"
             IFS='.' read -r major minor patch <<< "$latest_release_branch_version"
-            if [ "$major" -eq "$MAJOR" ] ; then
+            if [ "$major" -eq "$inputs.MAJOR" ] ; then
                 new_release_branch_name="release-${major}.$((minor+1)).${patch}"
             else
                 # Create new major release branch
-                new_release_branch_name="release-${MAJOR}.0.0"
+                new_release_branch_name="release-${inputs.MAJOR}.0.0"
             fi
-
         fi
         
         echo "New Release Branch is $new_release_branch_name"

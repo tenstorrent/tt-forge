@@ -19,16 +19,23 @@ jobs:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v4
-    #- name: version tag
-    #  id: version-tag
-    #  run: |
-    #    source .version
-    #    tag="${VERSION}.dev$(date +"%Y%m%d%H%M%S")"
-    #    echo "tag=$tag" >> $GITHUB_OUTPUT
+    - name: version tag
+      id: version-tag
+      run: |
+        source .version
+        MAJOR="${MAJOR}"
+        MINOR="${MINOR}"
+        PATCH="${PATCH}"
+        echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
+        echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
+        echo "PATCH=$PATCH" >> $GITHUB_OUTPUT
     - name: Create RC branch - tenstorrent/tt-forge-fe
       uses: ./.github/actions/create-rc-branch
       id: Create-RC-branch
       with:
         repo: tenstorrent/tt-forge-fe
-        workflow: On nightly 
+        workflow: On nightly
+        MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
+        MINOR: ${{ steps.version-tag.outputs.MINOR }}
+        PATCH: ${{ steps.version-tag.outputs.PATCH }}
 
