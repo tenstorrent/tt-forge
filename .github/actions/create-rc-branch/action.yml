@@ -39,7 +39,7 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.repo }}
-        token: ${{ github.token }}
+        token: ${{ env.GH_TOKEN }}
         ref: ${{ steps.find_workflow.outputs.run-commit-sha }}
 
 # TODO: need to do a git look up to see if release branch already exist

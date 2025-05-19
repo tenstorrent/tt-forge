@@ -16,7 +16,7 @@ jobs:
   rc-release:
     runs-on: ubuntu-latest
     env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v4
     #- name: version tag
