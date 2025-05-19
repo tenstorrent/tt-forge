@@ -22,7 +22,7 @@ runs:
   using: "composite"
   steps:
     - name: Find workflow candidate
-      id: fetch_run_id
+      id: find_workflow
       uses: ./.github/actions/find-workflow
       with:
         repo: ${{ inputs.repo }}
@@ -33,14 +33,14 @@ runs:
 
     - name: echo sha
       shell: bash
-      run: echo ${{ steps.fetch_run_id.outputs.run_commit_sha }}
+      run: echo ${{ steps.find_workflow.outputs.run-commit-sha }}
 
     - name: Checkout target repo
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.repo }}
         token: ${{ github.token }}
-        ref: ${{ steps.fetch_run_id.outputs.run_commit_sha }}
+        ref: ${{ steps.find_workflow.outputs.run-commit-sha }}
 
 # TODO: need to do a git look up to see if release branch already exist
 
