@@ -19,7 +19,7 @@ This document walks you through how to set up to run demo models using tt-forge.
 
 ## Configuring Hardware
 
-Configure your hardware with tt-installer: 
+Configure your hardware with tt-installer:
 
 ```bash
 TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
@@ -27,7 +27,7 @@ TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(cu
 
 ## Setting up the Docker Container
 
-The simplest way to run models is to use the Docker image. You should have 50G free for the container. 
+The simplest way to run models is to use the Docker image. You should have 50G free for the container.
 
 **Docker Image**: This image includes all the necessary dependencies.
     * ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-base-ird-ubuntu-22-04
@@ -128,7 +128,7 @@ git clone https://github.com/tenstorrent/tt-forge.git
 | ResNet-50 (ONNX) | CNN | Deep residual network for image classification using ONNX format | [`cnn/resnet_onnx_demo.py`](cnn/resnet_onnx_demo.py) |
 | BERT | NLP | Bidirectional Encoder Representations from Transformers for natural language understanding tasks | [`nlp/bert_demo.py`](nlp/bert_demo.py) |
 
-In this walkthrough, **resnet_50_demo.py** is used. 
+In this walkthrough, **resnet_50_demo.py** is used.
 
 4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Navigate into the **/cnn folder** and run the following command:
 
@@ -137,6 +137,3 @@ python3 resnet_50_demo.py
 ```
 
 If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
-
-
-
