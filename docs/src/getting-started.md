@@ -1,5 +1,8 @@
-This document walks you through how to set up to run models using tt-forge. The following topics are covered:
+# Getting Started with Forge Demos
 
+This document walks you through how to set up to run demo models using tt-forge. The following topics are covered:
+
+* [Configuring Hardware](#configuring-hardware)
 * [Setting up the Docker Container](#setting-up-the-docker-container)
 * [Installing Dependencies](#installing-depencencies)
 * [Creating a Virtual Environment](#creating-a-virtual-environment)
@@ -14,14 +17,20 @@ This document walks you through how to set up to run models using tt-forge. The 
 > [build instructions for tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe/
 > blob/main/docs/src/build.md).
 
+## Configuring Hardware
+
+Configure your hardware with tt-installer:
+
+```bash
+TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
+```
+
 ## Setting up the Docker Container
 
-The simplest way to run models is to use one of the Docker images. There are two Docker images you can use to set up your environment:
+The simplest way to run models is to use the Docker image. You should have 50G free for the container.
 
-* **Base Image**: This image includes all the necessary dependencies.
+**Docker Image**: This image includes all the necessary dependencies.
     * ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-base-ird-ubuntu-22-04
-* **Prebuilt Environment Image**: This image contains all necessary dependencies and a prebuilt environment.
-    * ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
 
 To install, do the following:
 
@@ -47,43 +56,27 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-4. Run the container (the prebuilt image is used here):
+4. Run the container using the docker image:
 
 ```bash
-docker run -it ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
-```
-
-5. If you want to check that it's running, open a new tab with the **Same Command** option and run the following:
-
-```bash
-docker ps
-```
-
-## Installing Depencencies
-
-Inside the running Docker container, install the required dependencies:
-
-```bash
-sudo apt-get update && apt-get install -y \
-    python3-dev \
-    python3-venv \
-    python3-pip \
-    libhwloc-dev \
-    libtbb-dev \
-    libcapstone-dev \
-    graphviz \
-    libgl1 \
-    libglx-mesa0
+sudo docker run \
+  --rm \
+  -it \
+  --privileged \
+  --device /dev/tenstorrent/0 \
+  -v /dev/hugepages-1G:/dev/hugepages-1G \
+  --mount type=bind,source=/sys/devices/system/node,target=/sys/devices/system/node \
+  ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
 ```
 
 ## Creating a Virtual Environment
 It is recommended that you install a virtual environment for the wheel you want to work with. Wheels from different repos may have conflicting dependencies.
 
-Create a virtual environment:
+Create a virtual environment (the environment name in the command is an example for the command, it's not required to use the same name listed):
 
 ```bash
-python3s -m venv name-of-environment-venv
-source name-of-environment/bin/activate
+python3 -m venv forge-venv
+source forge-venv/bin/activate
 ```
 
 ## Installing a Wheel
@@ -98,17 +91,17 @@ This section walks you through downloading and installing a wheel. You can insta
 For this walkthrough, tt-forge-fe is used. You need to install two wheels for set up:
 
 ```bash
-pip install https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.dev20250422214451/forge-0.1.0.dev20250422214451-cp310-cp310-linux_x86_64.whl
+pip install https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.dev20250514060212/forge-0.1.0.dev20250514060212-cp310-cp310-linux_x86_64.whl
 ```
 
 ```bash
-pip install https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.dev20250422214451/tvm-0.1.0.dev20250422214451-cp310-cp310-linux_x86_64.whl
+pip install https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.dev20250514060212/tvm-0.1.0.dev20250514060212-cp310-cp310-linux_x86_64.whl
 ```
 
 > **NOTE:** The commands are examples, for the latest install link, go to the
 > [Tenstorrent Nightly Releases](https://github.com/tenstorrent/tt-forge/releases)
 > page. The generic download will be:
-> `https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.devDATE/
+> `https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.devDATE/
 > NAMEOFWHEEL`
 >
 > If you plan to work with wheels from different repositories, make a separate
@@ -124,7 +117,7 @@ To run a demo, do the following:
 git clone https://github.com/tenstorrent/tt-forge.git
 ```
 
-2. Navigate to tt-forge/demos/tt-forge-fe.
+2. Navigate to **tt-forge/demos/tt-forge-fe**.
 
 3. Choose one of the available demos. At this time, you can try:
 
@@ -135,10 +128,12 @@ git clone https://github.com/tenstorrent/tt-forge.git
 | ResNet-50 (ONNX) | CNN | Deep residual network for image classification using ONNX format | [`cnn/resnet_onnx_demo.py`](cnn/resnet_onnx_demo.py) |
 | BERT | NLP | Bidirectional Encoder Representations from Transformers for natural language understanding tasks | [`nlp/bert_demo.py`](nlp/bert_demo.py) |
 
-4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Run the following command:
+In this walkthrough, **resnet_50_demo.py** is used.
+
+4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Navigate into the **/cnn folder** and run the following command:
 
 ```bash
 python3 resnet_50_demo.py
 ```
 
-If all goes well, you should see an image of a tiger, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
+If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
