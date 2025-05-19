@@ -43,6 +43,7 @@ runs:
         repository: ${{ inputs.repo }}
         token: ${{ env.GH_TOKEN }}
         ref: ${{ steps.find_workflow.outputs.run-commit-sha }}
+        fetch-depth: 0
 
 
     - name: Create new branch and push
@@ -51,7 +52,7 @@ runs:
         set -x
         
         # Get the latest release branch
-        latest_release_branch_version=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+\.\d+' | tail -n 1 || echo "")
+        latest_release_branch_version=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tail -n 1 || echo "")
         if [ -z "$latest_release_branch_version" ]; then
             new_release_branch_name="release-${{ inputs.MAJOR }}.${{ inputs.MINOR }}"
         else
