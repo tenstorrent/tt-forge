@@ -35,7 +35,7 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.repo }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ github.token }}
         ref: ${{ steps.fetch_run_id.outputs.run_commit_sha }}
 
 # TODO: need to do a git look up to see if release branch already exist
