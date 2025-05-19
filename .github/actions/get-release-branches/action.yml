@@ -1,0 +1,16 @@
+
+name: "Get Release Branches"
+description: "Get Release Branches"
+
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Release Branches
+      id: get-release-branches
+      shell: bash
+      run: |
+        # Get the latest release branches sorted by date in ascending order
+        git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tac
+      

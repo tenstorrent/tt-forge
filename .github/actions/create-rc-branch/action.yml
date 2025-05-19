@@ -49,8 +49,6 @@ runs:
     - name: Create new branch and push
       shell: bash
       run: |
-        set -x
-        
         # Get the latest release branch
         latest_release_branch_version=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tail -n 1 || echo "")
         if [ -z "$latest_release_branch_version" ]; then
@@ -69,7 +67,8 @@ runs:
         echo "New Release Branch is $new_release_branch_name"
 
         git checkout -b $new_release_branch_name
-        git push origin $new_release_branch_name
+        git tag "${new_release_branch_name}.rc.0"
+        git push origin $new_release_branch_name --tags
 
     # Recheckout forge repo to fix side effects of from clean up job
     - uses: actions/checkout@v4

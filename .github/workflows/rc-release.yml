@@ -1,45 +1,23 @@
-name: RC Version Branches
+name: Watch Release Branches
 
 on:
   schedule:
-  - cron: '0 6 24 * *'
+  - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
-      only-repos:
-        description: 'comma separated list of repos to create RC branch for e.g tt-forge-fe,tt-torch,tt-mlir'
-        required: true
-  push:
-
+      draft:
+        type: boolean
+        default: true
+        description: Put PR in draft mode for testing
 
 jobs:
   rc-release:
     runs-on: ubuntu-latest
     env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        ONLY_REPOS: ${{ inputs.only-repos || 'tt-forge-fe,tt-torch' }}
+        GH_TOKEN: ${{ github.token }}
     steps:
-    - name: echo env
-      run: echo $ONLY_REPOS
     - uses: actions/checkout@v4
-    - name: version tag
-      id: version-tag
+    - name: Collect releases branches
       run: |
-        source .version
-        echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
-        echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
-    - name: Create Version branch - tt-forge-fe
-      if: contains(env.ONLY_REPOS, 'tt-forge-fe')
-      uses: ./.github/actions/create-rc-branch
-      with:
-        repo: tenstorrent/tt-forge-fe
-        workflow: On nightly
-        MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
-        MINOR: ${{ steps.version-tag.outputs.MINOR }}
-    - name: Create Version branch - tt-torch
-      if: contains(env.ONLY_REPOS, 'tt-torch')
-      uses: ./.github/actions/create-rc-branch
-      with:
-        repo: tenstorrent/tt-torch
-        workflow: Nightly Tests
-        MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
-        MINOR: ${{ steps.version-tag.outputs.MINOR }}
+        git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$'
+      
