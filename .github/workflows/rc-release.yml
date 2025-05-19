@@ -18,6 +18,8 @@ jobs:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         ONLY_REPOS: ${{ github.event.inputs.only-repos }}
     steps:
+    - name: echo env
+      run: echo $ONLY_REPOS
     - uses: actions/checkout@v4
     - name: version tag
       id: version-tag
