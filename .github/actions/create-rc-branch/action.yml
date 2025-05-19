@@ -47,6 +47,7 @@ runs:
     - name: Create new branch and push
       shell: bash
       run: |
+        set -xe
         git for-each-ref refs/remotes/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release.*' | xargs
 
 
