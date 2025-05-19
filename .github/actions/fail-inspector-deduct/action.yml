@@ -94,7 +94,7 @@ runs:
           echo "Report: $(cat report.txt)"
           nightly=""
           if [ ! -z "${{ inputs.nightly_workflow_id }}" ]; then
-            nightly="for [Nightly](<https://github.com/$repo/actions/runs/$${{ inputs.nightly_workflow_id }}/attempts/${{ inputs.nightly_attempt }}>)"
+            nightly="for [Nightly](<https://github.com/$repo/actions/runs/${{ inputs.nightly_workflow_id }}/attempts/${{ inputs.nightly_attempt }}>)"
           fi
           echo "## Inspection report :rocket: $nightly" >> $GITHUB_STEP_SUMMARY
           cat report.txt >> $GITHUB_STEP_SUMMARY

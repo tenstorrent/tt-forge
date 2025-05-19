@@ -86,7 +86,7 @@ runs:
         fi
         # Remove all lines after $curr_head_sha in commits.txt
         if ! grep -q "$curr_head_sha" commits.txt; then
-          echo "WARNING: $curr_head_sha not found in commits"
+          echo "WARNING: $curr_head_sha not found in commits: $(cat commits.txt)"
           exit 1
         else
           echo "$curr_head_sha found in commits, setting as last commit"
