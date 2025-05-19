@@ -31,12 +31,16 @@ runs:
         workflow_allow_failed: false
         workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
 
+    - name: echo sha
+      shell: bash
+      run: echo ${{ steps.fetch_run_id.outputs.run_commit_sha }}
+
     - name: Checkout target repo
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.repo }}
         token: ${{ github.token }}
-        ref: ${{ steps.fetch_run_id.outputs.run_commit_sha }}
+        ref: ${{ needs.fetch_run_id.outputs.run_commit_sha }}
 
 # TODO: need to do a git look up to see if release branch already exist
 
