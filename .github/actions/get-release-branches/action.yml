@@ -26,7 +26,7 @@ runs:
       run: |
         set -x
         # Get the latest release branches sorted by date in ascending order
-        release_branches=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tac | xargs)
+        release_branches=$(git for-each-ref refs/remotes/origin/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release-\d+\.\d+$' | xargs)
         json_results="[]"
         for branch in $release_branches; do
           current_release_tag=$(git tag --sort=-creatordate --contains $branch | head -n 1)
