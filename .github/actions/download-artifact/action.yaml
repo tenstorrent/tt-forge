@@ -55,7 +55,7 @@ runs:
         fi
 
         # Check if download path is not malicious
-        if [[ "$path" != "${GITHUB_WORKSPACE}"* || "$path" == "${GITHUB_WORKSPACE}" ]]; then
+        if [[ "$path" != "${GITHUB_WORKSPACE}"* ]]; then
           echo "Error: Download path must be within ${GITHUB_WORKSPACE} but not ${GITHUB_WORKSPACE} itself."
           exit 1
         fi
