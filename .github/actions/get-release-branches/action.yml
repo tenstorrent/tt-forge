@@ -32,7 +32,7 @@ runs:
           latest_tag_commit=$(git rev-list $current_release_tag --max-count=1)
           latest_branch_commit=$(git rev-list $branch --max-count=1)
           if [[ "$latest_tag_commit" != "$latest_branch_commit" ]]; then
-            if [[ -z $current_release_tag =~ rc ]]; then
+            if [[ "$current_release_tag" =~ rc ]]; then
              # Bump RC version for release candidate branch
              IFS='.' read -r major minor rc rc_version <<< "$current_release_tag"
              new_version_tag="${major}.${minor}.${rc}.$((rc_version+1))"
