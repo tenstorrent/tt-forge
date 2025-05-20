@@ -80,7 +80,7 @@ jobs:
 
       - name: Verify tar archive
         run: |
-          diff -r tar-content/ downloaded-archive/
+          diff -r tar-content/ downloaded-archive/tar-content/
           if [ $? -eq 0 ]; then echo "✅ Archive test passed"; else echo "❌ Archive test failed"; exit 1; fi
 
       # Test 4: Attempt to download to restricted filesystem location
