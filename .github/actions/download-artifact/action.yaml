@@ -62,7 +62,7 @@ runs:
 
         # Make sure download dir is empty and exists
         if [[ "$path" != "${GITHUB_WORKSPACE}" ]]; then
-          echo "Removeing existing directory: $path"
+          echo "Removing existing directory: $path"
           rm -rf "$path"
           mkdir -p "$path"
         fi
