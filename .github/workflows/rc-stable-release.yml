@@ -21,6 +21,6 @@ jobs:
     - uses: ./.github/actions/get-release-branches
       id: get-release-branches
       with:
-        repo: tenstorrent/tt-forge 
+        repo: tenstorrent/tt-forge-fe
     - name: echo json
       run: echo ${{ steps.get-release-branches.outputs.json_results }}
