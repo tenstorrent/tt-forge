@@ -1,7 +1,7 @@
 name: Download Artifact
 
 description: |
-  Download an artifact from a GitHub workflow run and extract it to a specified (relative) path.
+  Download an artifact from a GitHub workflow run and extract it to a specified path.
   Automatically untars tar files. If download fails, it retries the specified number of times with a wait time in between.
 
 inputs:
@@ -9,8 +9,8 @@ inputs:
     description: 'Name of the artifact to download'
     required: true
   path:
-    description: 'Relative path where to download the artifact'
-    required: true
+    description: 'Path where to download the artifact (must be within the workspace)'
+    required: false
   repository:
     description: 'Repository from which to download the artifact (format: owner/repo)'
     required: false
@@ -47,15 +47,24 @@ runs:
       run: |
         set -e
 
-        path=$(realpath "${GITHUB_WORKSPACE}/${DOWNLOAD_PATH}")
+        if [ -z "${DOWNLOAD_PATH}" ]; then
+          path="${GITHUB_WORKSPACE}"
+        else
+          path=$(realpath "${DOWNLOAD_PATH}")
+        fi
+
         # Check if download path is not malicious
         if [[ "$path" != "${GITHUB_WORKSPACE}"* || "$path" == "${GITHUB_WORKSPACE}" ]]; then
           echo "Error: Download path must be within ${GITHUB_WORKSPACE} but not ${GITHUB_WORKSPACE} itself."
           exit 1
         fi
+
         # Make sure download dir is empty and exists
-        rm -rf "$path"
-        mkdir -p "$path"
+        if [[ "$path" != "${GITHUB_WORKSPACE}" ]]; then
+          echo "Removeing existing directory: $path"
+          rm -rf "$path"
+          mkdir -p "$path"
+        fi
 
         # Function to download artifact
         download_artifact() {
