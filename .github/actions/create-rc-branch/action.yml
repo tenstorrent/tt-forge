@@ -70,5 +70,5 @@ runs:
         git tag "${new_release_branch_name}.rc.0"
         git push origin $new_release_branch_name --tags
 
-    # Recheckout forge repo to fix side effects of from clean up job
+    # Recheckout forge repo to fix side effects for clean up job
     - uses: actions/checkout@v4

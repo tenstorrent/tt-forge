@@ -24,7 +24,6 @@ runs:
       id: get-release-branches
       shell: bash
       run: |
-        set -x
         # Get the latest release branches sorted by date in ascending order
         release_branches=$(git for-each-ref refs/remotes/origin/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release-\d+\.\d+$' | xargs)
         json_results="[]"
@@ -36,7 +35,7 @@ runs:
           echo "Current Release Tag is $current_release_tag"
           echo "Current Tag Commit is $current_tag_commit"
           echo "Latest Branch Commit is $latest_branch_commit"
-          if [[ "$current_tag_commit" == "$latest_branch_commit" ]]; then
+          if [[ "$current_tag_commit" != "$latest_branch_commit" ]]; then
             echo "Branch $branch has no new commits"
             continue
           fi
@@ -56,3 +55,6 @@ runs:
           }]')
         done
         echo "json_results=$json_results" >> $GITHUB_OUTPUT
+
+    # Recheckout forge repo to fix side effects for clean up job
+    - uses: actions/checkout@v4
