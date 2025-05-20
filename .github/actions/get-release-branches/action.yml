@@ -54,7 +54,3 @@ runs:
           fi
         done
         echo "json_results=$json_results" >> $GITHUB_OUTPUT
-
-
-
-      
