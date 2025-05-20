@@ -29,10 +29,11 @@ runs:
           latest_branch_commit=$(git rev-list $branch --max-count=1)
           if [[ "$latest_tag_commit" != "$latest_branch_commit" ]]; then
             if [[ -z $current_release_tag =~ rc ]]; then
-             # Bump RC version
+             # Bump RC version for release candidate branch
              IFS='.' read -r major minor rc rc_version <<< "$current_release_tag"
              new_version_tag="${major}.${minor}.${rc}.$((rc_version+1))"
             else
+              # Bump Patch version for stable branch
               IFS='.' read -r major minor patch <<< "$current_release_tag"
               new_version_tag="${major}.${minor}.$((patch+1))"
             fi

@@ -9,6 +9,7 @@ on:
         type: boolean
         default: true
         description: Put PR in draft mode for testing
+  push:
 
 jobs:
   rc-release:
@@ -17,7 +18,9 @@ jobs:
         GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v4
-    - name: Collect releases branches
-      run: |
-        git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$'
-      
+    - uses: ./.github/actions/get-release-branches
+      id: get-release-branches
+      with:
+        repo: tenstorrent/tt-forge 
+    - name: echo json
+      run: echo ${{ steps.get-release-branches.outputs.json_results }}

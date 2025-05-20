@@ -1,4 +1,4 @@
-name: RC Version Branches
+name: Create Version Branches
 
 on:
   schedule:
@@ -11,14 +11,12 @@ on:
 
 
 jobs:
-  rc-release:
+  create-version-branches:
     runs-on: ubuntu-latest
     env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         ONLY_REPOS: ${{ inputs.only-repos || 'tt-forge-fe,tt-torch' }}
     steps:
-    - name: echo env
-      run: echo $ONLY_REPOS
     - uses: actions/checkout@v4
     - name: version tag
       id: version-tag
