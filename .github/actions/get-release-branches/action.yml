@@ -24,6 +24,7 @@ runs:
       id: get-release-branches
       shell: bash
       run: |
+        set -x
         # Get the latest release branches sorted by date in ascending order
         release_branches=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tac | xargs)
         json_results="[]"
@@ -31,6 +32,10 @@ runs:
           current_release_tag=$(git tag --sort=-creatordate --contains $branch | head -n 1)
           latest_tag_commit=$(git rev-list $current_release_tag --max-count=1)
           latest_branch_commit=$(git rev-list $branch --max-count=1)
+          echo "Branch is $branch"
+          echo "Current Release Tag is $current_release_tag"
+          echo "Latest Tag Commit is $latest_tag_commit"
+          echo "Latest Branch Commit is $latest_branch_commit"
           if [[ "$latest_tag_commit" != "$latest_branch_commit" ]]; then
             if [[ "$current_release_tag" =~ rc ]]; then
              # Bump RC version for release candidate branch
