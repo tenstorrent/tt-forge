@@ -100,3 +100,17 @@ jobs:
             echo "❌ Restricted path test failed - Action should have failed"
             exit 1
           fi
+
+      # Test 5: Download a single file without specifying a path
+      - name: Save uploaded single file
+        run: mv test-file.txt test-file-orig.txt
+
+      - name: Download single file
+        uses: ./.github/actions/download-artifact
+        with:
+          name: single-file
+
+      - name: Verify single file
+        run: |
+          diff test-file-orig.txt test-file.txt
+          if [ $? -eq 0 ]; then echo "✅ Single file download without path test passed"; else echo "❌ Single file download without path test failed"; exit 1; fi
