@@ -1,4 +1,4 @@
-name: Watch Release Branches
+name: Release RC and Stable Branches
 
 on:
   schedule:
