@@ -29,7 +29,8 @@ inputs:
     default: '10'
   github_token:
     description: 'GitHub token used for authentication'
-    required: true
+    required: false
+    default: ${{ secrets.GITHUB_TOKEN }}
 
 runs:
   using: 'composite'
