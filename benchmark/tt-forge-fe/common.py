@@ -21,11 +21,13 @@ def pre_test(config: Dict[str, Any], test_name: str) -> Dict[str, Any]:
     """
     Function run before any benchmark test in the forge-fe project.
 
-    Args:
+    Parameters:
+    -----------
         config: The original configuration dictionary
         test_name: The name of the test being run
 
     Returns:
+    -------
         Modified configuration dictionary
     """
     print(f"Pre-test processing for {test_name} - initialize random seeds")
@@ -40,12 +42,14 @@ def post_test(results: Dict[str, Any], config: Dict[str, Any], test_name: str) -
     """
     Function run after any benchmark test in the forge-fe project.
 
-    Args:
+    Parameters:
+    -----------
         results: The original results from the benchmark
         config: The configuration used for the benchmark
         test_name: The name of the test that was run
 
     Returns:
+    -------
         Modified results dictionary
     """
     print(f"Post-test processing for {test_name}")

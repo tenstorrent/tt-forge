@@ -12,7 +12,22 @@ from typing import Dict, Any
 
 
 def load_module(module_path: str, module_name: str):
-    """Dynamically load a Python module from a file path."""
+    """
+    Dynamically load a Python module from a file path.
+
+    Parameters:
+    ----------
+        module_path: The path to the module file
+        module_name: The name to assign to the loaded module
+
+    Returns:
+    -------
+        module: The loaded module
+
+    Raises:
+    ------
+        ImportError: If the module cannot be loaded
+    """
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not load module from {module_path}")
@@ -26,7 +41,14 @@ def load_module(module_path: str, module_name: str):
 def load_common_module(project_dir: str):
     """
     Attempt to load the common.py module from the project directory.
-    Returns None if the module doesn't exist.
+
+    Parameters:
+    ----------
+        project_dir: The directory of the project
+
+    Returns:
+    -------
+        common_module: The loaded common module or None if it doesn't exist
     """
     common_file = os.path.join(project_dir, "common.py")
     if not os.path.exists(common_file):
@@ -36,18 +58,24 @@ def load_common_module(project_dir: str):
     return load_module(common_file, module_name)
 
 
-def run_benchmark(project: str, test: str, config: Dict[str, Any]) -> Dict[str, Any]:
+# def run_benchmark(project: str, test: str, config: Dict[str, Any]) -> Dict[str, Any]:
+def run_benchmark(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Run a benchmark function from the specified project and test.
 
-    Args:
-        project: The name of the project directory
-        test: The name of the test file (without .py extension)
+    Parameters:
+    ----------
         config: Configuration dictionary to pass to the benchmark function
 
     Returns:
+    -------
         The result dictionary from the benchmark function
     """
+
+    # Extract project and test from the config
+    project = config["project"]
+    test = config["model"]
+
     # Add the project directory to sys.path so imports within the module work
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.abspath(os.path.join(script_dir, project))
@@ -88,6 +116,24 @@ def run_benchmark(project: str, test: str, config: Dict[str, Any]) -> Dict[str, 
 
 
 def save_results(config: Dict[str, Any], results: Dict[str, Any], project: str, model: str):
+    """
+    Save the benchmark results to a JSON file.
+
+    Parameters:
+    ----------
+    config: dict
+        The configuration used for the benchmark.
+    results: dict
+        The results of the benchmark.
+    project: str
+        The name of the project.
+    model: str
+        The name of the model.
+
+    Returns:
+    -------
+    None
+    """
     if config["output"]:
         output_file = config["output"]
     else:
@@ -99,11 +145,26 @@ def save_results(config: Dict[str, Any], results: Dict[str, Any], project: str, 
     print(f"Benchmark completed successfully. Results saved to {output_file}")
 
 
-def main():
+def read_args():
+    """
+    Read the arguments from the command line.
+
+    Parameters:
+    ----------
+    None
+
+    Returns:
+    -------
+    parsed_args: dict
+        The parsed arguments from the command line.
+    """
+
+    # Create the argument parser
     parser = argparse.ArgumentParser(description="Run benchmark functions from projects")
-    parser.add_argument("project", help="The project directory containing the model file")
+
+    parser.add_argument("-p", "--project", help="The project directory containing the model file")
     parser.add_argument(
-        "model", help="Model to benchmark (i.e. bert, mnist_linear). The test file name (without .py extension)"
+        "-m", "--model", help="Model to benchmark (i.e. bert, mnist_linear). The test file name (without .py extension)"
     )
     parser.add_argument(
         "-c", "--config", default=None, help="Model configuration to benchmark (i.e. tiny, base, large)."
@@ -148,6 +209,8 @@ def main():
         print(parser.print_help())
         exit(1)
 
+    config["project"] = args.project
+    config["model"] = args.model
     config["config"] = args.config
     config["training"] = args.training
     config["loop_count"] = args.loop_count
@@ -156,14 +219,34 @@ def main():
     config["hidden_size"] = args.hidden_size
     config["output"] = args.output
 
+    return config
+
+
+def main():
+    """
+    Main function for running the benchmark tests.
+
+    Parameters:
+    ----------
+    None
+
+    Returns:
+    -------
+    None
+    """
+
+    print("Read the arguments from the command line.")
+    config = read_args()
+
     try:
+
         # Run the benchmark
-        results = run_benchmark(args.project, args.model, config)
-        results["project"] = "tt-" + args.project
-        results["model_rawname"] = args.model
+        results = run_benchmark(config)
+        results["project"] = config["project"]
+        results["model_rawname"] = config["model"]
 
         # Save the results
-        save_results(config, results, args.project, args.model)
+        save_results(config, results, config["project"], config["model"])
 
     except Exception as e:
         print(f"Error running benchmark: {str(e)}", file=sys.stderr)
