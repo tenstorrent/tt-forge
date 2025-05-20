@@ -2,6 +2,11 @@
 name: "Check Release Branches"
 description: "Check Release Branches"
 
+outputs:
+  json_results:
+    description: 'JSON results'
+    value: ${{ steps.get-release-branches.outputs.json_results }}
+
 runs:
   using: "composite"
   steps:
@@ -17,15 +22,28 @@ runs:
       run: |
         # Get the latest release branches sorted by date in ascending order
         release_branches=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP '(?<=origin\/release-)\d+\.\d+$' | tac | xargs)
+        json_results="[]"
         for branch in $release_branches; do
           current_release_tag=$(git tag --sort=-creatordate --contains $branch | head -n 1)
           latest_tag_commit=$(git rev-list $current_release_tag --max-count=1)
           latest_branch_commit=$(git rev-list $branch --max-count=1)
           if [[ "$latest_tag_commit" != "$latest_branch_commit" ]]; then
-            # TODO: Branch is outdated
-            echo "outdated-release-branches=$branch" >> $GITHUB_OUTPUT
+            if [[ -z $current_release_tag =~ rc ]]; then
+             # Bump RC version
+             IFS='.' read -r major minor rc rc_version <<< "$current_release_tag"
+             new_version_tag="${major}.${minor}.${rc}.$((rc_version+1))"
+            else
+              IFS='.' read -r major minor patch <<< "$current_release_tag"
+              new_version_tag="${major}.${minor}.$((patch+1))"
+            fi
+            json_results=$(echo $json_results | jq -r --args branch $branch --arg new_version_tag $new_version_tag --arg latest_branch_commit $latest_branch_commit '. += [{
+                "branch": "$branch",
+                "new_version_tag": "$new_version_tag",
+                "latest_branch_commit": "$latest_branch_commit"
+            }]')
           fi
         done
+        echo "json_results=$json_results" >> $GITHUB_OUTPUT
 
 
 
