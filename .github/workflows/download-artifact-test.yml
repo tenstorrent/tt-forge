@@ -37,7 +37,7 @@ jobs:
           path: test-file.txt
 
       - name: Download single file
-        uses: ./github/actions/download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: single-file
           path: downloaded-single-file
@@ -55,7 +55,7 @@ jobs:
           path: test-directory/
 
       - name: Download directory
-        uses: ./github/actions/download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: directory
           path: downloaded-directory
@@ -73,7 +73,7 @@ jobs:
           path: test-archive.tar.gz
 
       - name: Download tar archive
-        uses: ./github/actions/download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: archive
           path: downloaded-archive
@@ -86,7 +86,7 @@ jobs:
       # Test 4: Attempt to download to restricted filesystem location
       - name: Try download to restricted path
         id: restricted-path
-        uses: ./github/actions/download-artifact
+        uses: ./.github/actions/download-artifact
         continue-on-error: true
         with:
           name: single-file
