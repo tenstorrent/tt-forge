@@ -58,7 +58,6 @@ def load_common_module(project_dir: str):
     return load_module(common_file, module_name)
 
 
-# def run_benchmark(project: str, test: str, config: Dict[str, Any]) -> Dict[str, Any]:
 def run_benchmark(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Run a benchmark function from the specified project and test.
@@ -235,7 +234,7 @@ def main():
     None
     """
 
-    print("Read the arguments from the command line.")
+    # Read the arguments from the command line.
     config = read_args()
 
     try:
