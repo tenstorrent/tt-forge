@@ -29,7 +29,6 @@ runs:
         release_branches=$(git for-each-ref refs/remotes/origin/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release-\d+\.\d+$' | xargs)
         json_results="[]"
         for branch in $release_branches; do
-          git tag --sort=-creatordate --contains $branch
           current_release_tag=$(git describe --tags $(git rev-list --branches=$branch --tags --max-count=1)
           latest_tag_commit=$(git rev-list $current_release_tag --max-count=1)
           latest_branch_commit=$(git rev-list $branch --max-count=1)
