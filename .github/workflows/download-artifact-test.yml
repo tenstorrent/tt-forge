@@ -3,7 +3,7 @@ name: Download Artifact Test
 on:
   pull_request:
     paths:
-      - '.github/artifacts/download-artifact**/**'
+      - '.github/actions/download-artifact**'
 
 jobs:
   test-artifact-methods:
