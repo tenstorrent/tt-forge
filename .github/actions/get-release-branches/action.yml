@@ -31,7 +31,7 @@ runs:
         for branch in $release_branches; do
           current_release_tag=$(git describe --tags $(git rev-list --branches=$branch --tags --max-count=1))
           latest_tag_commit=$(git rev-list $current_release_tag --max-count=1)
-          latest_branch_commit=$(git rev-list --branches=$branch --max-count=1)
+          latest_branch_commit=$(git rev-parse --verify $branch)
           echo "Branch is $branch"
           echo "Current Release Tag is $current_release_tag"
           echo "Latest Tag Commit is $latest_tag_commit"
