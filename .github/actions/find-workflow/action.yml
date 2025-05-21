@@ -114,7 +114,7 @@ runs:
           exit 1
         fi
 
-        echo "Using Workflow Run: $run_url on branch: $run_branch with commit: $run_commit_sha"
+        echo "Using Workflow Run: $run_url on branch: $run_branch with commit: $run_commit_sha with run_id: $run_id"
         echo "run_id=$run_id" >> $GITHUB_OUTPUT
         echo "run_url=$run_url" >> $GITHUB_OUTPUT
         echo "run_status_symbol=$run_status_symbol" >> $GITHUB_OUTPUT
