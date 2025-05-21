@@ -62,7 +62,9 @@ runs:
         repo: ${{ inputs.repo }}
         branch: ${{ inputs.branch }}
         workflow: ${{ steps.set-meta.outputs.workflow }}
-        workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
+        # TODO: Change before merging. Only for testing
+        workflow_allow_failed: true
+        #workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ steps.set-meta.outputs.workflow_result_in_job }}
         commit: ${{ inputs.latest_branch_commit }}
     
