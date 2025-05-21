@@ -31,8 +31,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set Releaser Meta
-      id: set-meta
+    - name: Set Releaser manifest
+      id: set-manifest
       shell: bash
       run: |
         # Select nightly workflow to confirm test pass and for wheel pick up
@@ -50,6 +50,18 @@ runs:
             echo "Unknown repo: ${{ inputs.repo }}"
             exit 1
         fi
+        
+        echo "Using workflow: $workflow"
+        echo "Using artifact_download_glob: $artifact_download_glob"
+        echo "Using artifact_cleanup_file_glob: $artifact_cleanup_file_glob"
+        echo "Using workflow_result_in_job: $workflow_result_in_job"
+        echo "Using artifact_cleanup_folder_glob: $artifact_cleanup_folder_glob"
+        echo "Using workflow_allow_failed: $workflow_allow_failed"
+        echo "Using latest_branch_commit: $latest_branch_commit"
+        echo "Using new_version_tag: $new_version_tag"
+        echo "Using release_type: $release_type"
+
+        # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
         echo "artifact_download_glob=$artifact_download_glob" >> $GITHUB_OUTPUT
         echo "artifact_cleanup_file_glob=$artifact_cleanup_file_glob" >> $GITHUB_OUTPUT
@@ -61,11 +73,11 @@ runs:
       with:
         repo: ${{ inputs.repo }}
         branch: ${{ inputs.branch }}
-        workflow: ${{ steps.set-meta.outputs.workflow }}
+        workflow: ${{ steps.set-manifest.outputs.workflow }}
         # TODO: Change before merging. Only for testing
         workflow_allow_failed: true
         #workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
-        workflow_result_in_job: ${{ steps.set-meta.outputs.workflow_result_in_job }}
+        workflow_result_in_job: ${{ steps.set-manifest.outputs.workflow_result_in_job }}
         commit: ${{ inputs.latest_branch_commit }}
     
     - name: Update Wheel version to ${{ inputs.new_version_tag }}
