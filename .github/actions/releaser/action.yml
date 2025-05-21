@@ -24,16 +24,83 @@ inputs:
   latest_branch_commit:
     description: "Latest branch commit"
     required: false
+  new_version_tag:
+    description: "New version tag for wheel"
+    required: false
+
 runs:
   using: "composite"
   steps:
-    - name: Find workflow candidate
-      id: find_workflow
-      uses: ./.github/actions/find-workflow
+    - name: Set Releaser Meta
+      id: set-meta
+      shell: bash
+      run: |
+        # Select nightly workflow to confirm test pass and for wheel pick up
+        if [[ "${{ inputs.repo }}" =~ "tt-forge-fe" ]]; then
+            workflow="On nightly"
+            artifact_download_glob='*{wheel,test-reports}*'
+            artifact_cleanup_file_glob='*{.json,benchmark_}*'
+        elif [[ "${{ inputs.repo }}" =~ "tt-torch" ]]; then
+            workflow="Nightly Tests"
+            workflow_result_in_job="fail-notify"
+            artifact_download_glob='*{install-artifacts,test-reports-models-}*'
+            artifact_cleanup_file_glob='*torchvision*'
+            artifact_cleanup_folder_glob='*install-artifacts-debug*'
+        else
+            echo "Unknown repo: ${{ inputs.repo }}"
+            exit 1
+        fi
+        echo "workflow=$workflow" >> $GITHUB_OUTPUT
+        echo "artifact_download_glob=$artifact_download_glob" >> $GITHUB_OUTPUT
+        echo "artifact_cleanup_file_glob=$artifact_cleanup_file_glob" >> $GITHUB_OUTPUT
+        echo "workflow_result_in_job=$workflow_result_in_job" >> $GITHUB_OUTPUT
+
+    - name: Uplift ${{ inputs.repo }} artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: artifacts
       with:
         repo: ${{ inputs.repo }}
         branch: ${{ inputs.branch }}
-        workflow: ${{ inputs.workflow }}
+        workflow: ${{ steps.set-meta.outputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
-        workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
+        workflow_result_in_job: ${{ steps.set-meta.outputs.workflow_result_in_job }}
         commit: ${{ inputs.latest_branch_commit }}
+    
+    - name: Update Wheel version to ${{ inputs.new_version_tag }}
+      env:
+        WHEEL_VERSION: ${{ inputs.new_version_tag }}
+        WHEEL_ROOT_PATH: ${{ github.workspace }}/release/artifacts
+      run: ./.github/scripts/wheel-version-updater.sh
+      shell: bash
+
+    - name: Create model compatible table
+      working-directory: ./.github/scripts/model-compatible-table
+      env:
+        XML_ROOT: ${{ github.workspace }}/release/artifacts
+        FILE_OUTPUT: ${{ github.workspace }}/release/docs/readme_hardware_table.md
+        URL_SHAS: '{"${{ inputs.repo }}": "${{ steps.artifacts.outputs.run-commit-sha }}"}'
+      shell: bash
+      run: |
+        readme_path="${{ github.workspace }}/release/docs"
+        mkdir -p $readme_path
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        python main.py
+        # Clean up XML files
+        find ${{ github.workspace }}/release/artifacts -type f -iname "*.xml" -delete
+    
+    - name: Generate docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: ${{ inputs.repo }}
+        artifact_job_json: "${{ toJSON(steps.artifacts.outputs) }}"
+        release_type: ${{ inputs.release_type }}
+    
+    - name: Store wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: Wheels
+        path: ${{ github.workspace }}/release/artifacts/**/*.whl
+    

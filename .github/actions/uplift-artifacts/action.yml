@@ -36,6 +36,10 @@ inputs:
     type: string
     default: ""
     required: false
+  commit:
+    description: "Branch commit sha"
+    type: string
+    required: false
 
 outputs:
   download-path:
@@ -51,7 +55,6 @@ outputs:
     description: 'Workflow Branch commit sha'
     value: ${{ steps.fetch_run_id.outputs.run_commit_sha }}
 
-
 runs:
   using: "composite"
   steps:
@@ -64,6 +67,7 @@ runs:
         workflow: ${{ inputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
+        commit: ${{ inputs.commit }}
 
     - name: Download artifacts
       id: artifacts
