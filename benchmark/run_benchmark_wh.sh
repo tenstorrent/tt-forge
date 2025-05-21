@@ -42,7 +42,7 @@ python benchmark/benchmark.py -p tt-forge-fe -m mobilenetv2_basic -bs 1 -lp 32 -
 # TT-Torch Compiler
 # ------------------------------------------------------- #
 # Resnet
-python benchmark/benchmark.py -p tt-torch -m resnet_hf -bs 8 -lp 32 -o forge-benchmark-e2e-tt-torch-resnet50_hf.json
+python benchmark/benchmark.py -p tt-torch -m resnet -bs 8 -lp 32 -o forge-benchmark-e2e-tt-torch-resnet50.json
 
 
 
