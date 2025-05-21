@@ -12,15 +12,36 @@ on:
   push:
 
 jobs:
-  rc-release:
+  get-release-branches:
+    outputs:
+      json_results: ${{ steps.branches.outputs.json_results }}
     runs-on: ubuntu-latest
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v4
+    # TODO: skip on nightly
     - uses: ./.github/actions/get-release-branches
-      id: get-release-branches
+      id: branches
       with:
         repo: tenstorrent/tt-forge-fe
     - name: echo json
-      run: echo ${{ steps.get-release-branches.outputs.json_results }}
+      run: echo ${{ steps.branches.outputs.json_results }}
+
+  releaser:
+    runs-on: ubuntu-latest
+    needs: get-release-branches
+    strategy:
+      matrix: ${{fromJson(needs.get-release-branches.outputs.json_results)}}
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+    - name: Releaser
+      uses: ./.github/actions/releaser
+      with:
+        repo: ${{ matrix.repo }}
+        branch: ${{ matrix.branch }}
+        workflow: ${{ matrix.workflow }}
+        workflow_allow_failed: ${{ matrix.workflow_allow_failed }}
+        workflow_result_in_job: ${{ matrix.workflow_result_in_job }}
+      
