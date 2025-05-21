@@ -45,7 +45,7 @@ runs:
       id: fetch_run_id
       run: |
         loop_count=20
-        echo "Search the lastest $loop_count workflow runs to find artifact candidate"
+        echo "Search the lastest $loop_count workflow runs on branch: ${{ inputs.branch }} to find artifact candidate"
         runs=$(gh run list -R "${{ inputs.repo }}" -b "${{ inputs.branch }}" -w '${{ inputs.workflow }}' -L $loop_count --json status,databaseId,conclusion,url,headBranch,headSha)
 
         array_ptr=0
