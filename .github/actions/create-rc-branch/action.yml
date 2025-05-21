@@ -67,7 +67,7 @@ runs:
         echo "New Release Branch is $new_release_branch_name"
 
         git checkout -b $new_release_branch_name
-        git tag "${new_release_branch_name}.rc.0"
+        git tag "${new_release_branch_name}.0.rc.0"
         git push origin $new_release_branch_name --tags
 
     # Recheckout forge repo to fix side effects for clean up job
