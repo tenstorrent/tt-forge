@@ -43,29 +43,28 @@ jobs:
       shell: bash
       run: |
         # Select nightly workflow to confirm test pass and for wheel pick up
-        if [[ "${{ fromJson(matrix).repo }}" =~ "tt-forge-fe" ]]; then
+        if [[ "${{ matrix.repo }}" =~ "tt-forge-fe" ]]; then
             workflow="On nightly"
-            workflow_result_in_job="fail-notify"
             artifact_download_glob='*{wheel,test-reports}*'
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
-        elif [[ "${{ fromJson(matrix).repo }}" =~ "tt-torch" ]]; then
+        elif [[ "${{ matrix.repo }}" =~ "tt-torch" ]]; then
             workflow="Nightly Tests"
             workflow_result_in_job="fail-notify"
             artifact_download_glob='*{install-artifacts,test-reports-models-}*'
             artifact_cleanup_file_glob='*torchvision*'
             artifact_cleanup_folder_glob='*install-artifacts-debug*'
         else
-            echo "Unknown repo: ${{ fromJson(matrix).repo }}"
+            echo "Unknown repo: ${{ matrix.repo }}"
             exit 1
         fi
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
       
-    - name: Releaser ${{ fromJson(matrix).repo }} ${{ fromJson(matrix).new_version_tag }}
+    - name: Releaser
       uses: ./.github/actions/releaser
       with:
-        repo: ${{ fromJson(matrix).repo }}
-        branch: ${{ fromJson(matrix).branch }}
-        release_type: ${{ fromJson(matrix).release_type }}
+        repo: ${{ matrix.repo }}
+        branch: ${{ matrix.branch }}
+        release_type: ${{ matrix.release_type }}
         workflow: ${{ steps.set-meta.outputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed || false }}
         workflow_result_in_job: ${{ steps.set-meta.outputs.workflow_result_in_job }}
