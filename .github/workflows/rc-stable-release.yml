@@ -68,4 +68,5 @@ jobs:
         workflow: ${{ steps.set-meta.outputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed || false }}
         workflow_result_in_job: ${{ steps.set-meta.outputs.workflow_result_in_job }}
+        latest_branch_commit: ${{ matrix.latest_branch_commit || '' }}
       

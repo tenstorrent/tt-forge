@@ -35,6 +35,7 @@ runs:
           echo "Current Release Tag is $current_release_tag"
           echo "Current Tag Commit is $current_tag_commit"
           echo "Latest Branch Commit is $latest_branch_commit"
+          # TODO: change this back to == before merging
           if [[ "$current_tag_commit" != "$latest_branch_commit" ]]; then
             echo "Branch $branch has no new commits"
             continue
@@ -55,7 +56,7 @@ runs:
               "new_version_tag": $new_version_tag,
               "latest_branch_commit": $latest_branch_commit,
               "repo": "${{ inputs.repo }}",
-              "release_type": "$release_type"
+              "release_type": $release_type
           }]')
         done
         echo "json_results=$json_results" >> $GITHUB_OUTPUT

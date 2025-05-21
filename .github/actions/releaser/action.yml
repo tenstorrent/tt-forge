@@ -18,6 +18,12 @@ inputs:
     description: "Set that workflow result is job result"
     default: ""
     required: false
+  release_type:
+    description: "Release type"
+    required: true
+  latest_branch_commit:
+    description: "Latest branch commit"
+    required: false
 runs:
   using: "composite"
   steps:
@@ -30,3 +36,4 @@ runs:
         workflow: ${{ inputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
+        latest_branch_commit: ${{ inputs.latest_branch_commit }}
