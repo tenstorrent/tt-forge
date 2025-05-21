@@ -59,6 +59,11 @@ runs:
           run_commit_sha=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].headSha')
           databaseId=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].databaseId')
 
+          if [[ -z "$run_url" ]]; then
+            echo "No workflows run found on branch: ${{ inputs.branch }}"
+            exit 1
+          fi
+
           if [[ -n "${{ inputs.commit }}" ]]; then
             if [[ "$run_commit_sha" != "${{ inputs.commit }}" ]]; then
               echo "Skipping Workflow Run: $run_url due to commit mismatch"
