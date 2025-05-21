@@ -75,7 +75,7 @@ runs:
       with:
         repository: ${{ inputs.repo }}
         pattern: ${{ inputs.artifact_download_glob }}
-        run-id: ${{ steps.fetch_run_id.outputs.run_id }}
+        run-id: ${{ steps.fetch_run_id.outputs.run-id }}
         github-token: ${{ github.token }}
         path: ${{ github.workspace }}/release/artifacts/${{ inputs.repo }}
     - name: Explode and clean up artifact path
