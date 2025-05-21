@@ -75,6 +75,8 @@ def run_benchmark(config: Dict[str, Any]) -> Dict[str, Any]:
     project = config["project"]
     test = config["model"]
 
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
     # Add the project directory to sys.path so imports within the module work
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.abspath(os.path.join(script_dir, project))
