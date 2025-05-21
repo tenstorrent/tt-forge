@@ -28,5 +28,5 @@ runs:
         repo: ${{ inputs.repo }}
         branch: ${{ inputs.branch }}
         workflow: ${{ inputs.workflow }}
-        workflow_allow_failed: ${{ inputs.workflow_allow_failed || false }}
-        workflow_result_in_job: ${{ inputs.workflow_result_in_job || "" }}
+        workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
+        workflow_result_in_job: ${{ inputs.workflow_result_in_job }}

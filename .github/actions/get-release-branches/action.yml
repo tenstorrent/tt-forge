@@ -43,16 +43,19 @@ runs:
             # Bump RC version for release candidate branch
             IFS='.' read -r major minor rc rc_version <<< "$current_release_tag"
             new_version_tag="${major}.${minor}.${rc}.$((rc_version+1))"
+            release_type="rc"
           else
             # Bump Patch version for stable branch
             IFS='.' read -r major minor patch <<< "$current_release_tag"
             new_version_tag="${major}.${minor}.$((patch+1))"
+            release_type="stable"
           fi
           json_results=$(echo $json_results | jq -r -c --arg branch "$branch" --arg new_version_tag "$new_version_tag" --arg latest_branch_commit "$latest_branch_commit" '. += [{
               "branch": $branch,
               "new_version_tag": $new_version_tag,
               "latest_branch_commit": $latest_branch_commit,
               "repo": "${{ inputs.repo }}",
+              "release_type": "$release_type"
           }]')
         done
         echo "json_results=$json_results" >> $GITHUB_OUTPUT

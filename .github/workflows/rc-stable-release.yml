@@ -37,12 +37,36 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
-    - name: Releaser
+    - uses: actions/checkout@v4
+    - name: Set workflow
+      id: set-meta
+      shell: bash
+      run: |
+        # Select nightly workflow to confirm test pass and for wheel pick up
+        if [[ "${{ fromJson(matrix.include).repo }}" =~ "tt-forge-fe" ]]; then
+            workflow="On nightly"
+            workflow_result_in_job="fail-notify"
+            artifact_download_glob='*{wheel,test-reports}*'
+            artifact_cleanup_file_glob='*{.json,benchmark_}*'
+        elif [[ "${{ fromJson(matrix.include).repo }}" =~ "tt-torch" ]]; then
+            workflow="Nightly Tests"
+            workflow_result_in_job="fail-notify"
+            artifact_download_glob='*{install-artifacts,test-reports-models-}*'
+            artifact_cleanup_file_glob='*torchvision*'
+            artifact_cleanup_folder_glob='*install-artifacts-debug*'
+        else
+            echo "Unknown repo: ${{ fromJson(matrix.include).repo }}"
+            exit 1
+        fi
+        echo "workflow=$workflow" >> $GITHUB_OUTPUT
+      
+    - name: Releaser ${{ fromJson(matrix.include).repo }} ${{ fromJson(matrix.include).new_version_tag }}
       uses: ./.github/actions/releaser
       with:
         repo: ${{ fromJson(matrix.include).repo }}
         branch: ${{ fromJson(matrix.include).branch }}
-        workflow: ${{ fromJson(matrix.include).workflow }}
-        workflow_allow_failed: ${{ fromJson(matrix.include).workflow_allow_failed }}
-        workflow_result_in_job: ${{ fromJson(matrix.include).workflow_result_in_job }}
+        release_type: ${{ fromJson(matrix.include).release_type }}
+        workflow: ${{ steps.set-meta.outputs.workflow }}
+        workflow_allow_failed: ${{ inputs.workflow_allow_failed || false }}
+        workflow_result_in_job: ${{ steps.set-meta.outputs.workflow_result_in_job }}
       
