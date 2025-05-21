@@ -59,7 +59,7 @@ runs:
           run_commit_sha=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].headSha')
           databaseId=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].databaseId')
 
-          if [[ -z "$run_url" ]]; then
+          if [[ "$run_url" == "null" ]]; then
             echo "No workflows run found on branch: ${{ inputs.branch }}"
             exit 1
           fi
