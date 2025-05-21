@@ -36,4 +36,4 @@ runs:
         workflow: ${{ inputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
-        latest_branch_commit: ${{ inputs.latest_branch_commit }}
+        commit: ${{ inputs.latest_branch_commit }}
