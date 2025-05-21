@@ -56,7 +56,7 @@ runs:
               "new_version_tag": $new_version_tag,
               "latest_branch_commit": $latest_branch_commit,
               "repo": "${{ inputs.repo }}",
-              "release_type": $release_type
+              "release_type": $release_type,
           }]')
         done
         echo "json_results=$json_results" >> $GITHUB_OUTPUT
