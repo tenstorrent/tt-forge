@@ -100,6 +100,6 @@ jobs:
                 # Install test dependencies
                 pip install onnx onnxruntime 
                 # Fix for missing torch_mlir. The wheel torch-mlir isnt installed in the site-packages, its put in venv/lib so need to add that to PYTHONPATH
-                export PYTHONPATH=$PYTHONPATH:$(pwd)/$VENV_DIR:$(pwd)/$VENV_DIR/lib 
+                export PYTHONPATH=$PYTHONPATH:${{ env.venv_dir }}:${{ env.venv_dir }}/lib 
                 pytest -svv test_basic.py
             fi
