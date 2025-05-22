@@ -82,6 +82,8 @@ def run_benchmark(config: Dict[str, Any]) -> Dict[str, Any]:
     project_dir = os.path.abspath(os.path.join(script_dir, project))
     if project_dir not in sys.path:
         sys.path.insert(0, project_dir)
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
 
     # Construct the path to the test file
     test_file = os.path.join(project_dir, f"{test}.py")
