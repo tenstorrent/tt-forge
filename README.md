@@ -2,7 +2,7 @@
 
 <h1>
 
-[Buy Hardware](https://tenstorrent.com/cards/) | [Discord](https://discord.gg/tenstorrent)
+[Bounty $](https://github.com/tenstorrent/tt-forge/issues?q=is%3Aissue%20state%3Aopen%20label%3Abounty) | [Buy](https://tenstorrent.com/cards/) | [Install](./INSTALLING.md) | [Discord](https://discord.gg/tenstorrent) | [Join Us](https://boards.greenhouse.io/tenstorrent/jobs/4155609007)
 
 </h1>
 <picture>
@@ -12,7 +12,7 @@
 </div>
 <br>
 
-TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. We are currently still in developer preview for early adopters to check out what Tenstorrent has built and give it a try.
+TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation. 
 
 -----
 # Quick Links
@@ -27,10 +27,10 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 
 -----
 # What is this Repo?
-This repository is the central hub for the tt-forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Currently in early developer preview, we’ll be providing frequent updates to keep you informed on the latest developments. Please file any issues with questions or feedback you may have.
+This repository is the central hub for the tt-forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Please file any issues with questions or feedback you may have [here](https://github.com/tenstorrent/tt-forge/issues).
 
 # Getting Started Guide
-See our individual front end documentations in the [Front end](#current-ai-framework-front-end-projects) section to get started running some tests.
+See the documentation available for individual front ends in the [Front End](#current-ai-framework-front-end-projects) section to get started running some tests. You can also try running a demo using the [tt-forge Getting Started](https://docs.tenstorrent.com/tt-forge/) page.
 
 # Project Goals
 - Provide abstraction of many different frontend frameworks
@@ -39,8 +39,7 @@ See our individual front end documentations in the [Front end](#current-ai-frame
 
 # Project Overview
 
-tt-forge is composed of various projects ranging from Frontends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project.
-tt-forge lowers to our tt-metalium project providing additional functionality to our AI Sofware ecosystem.
+tt-forge is composed of various projects ranging from front ends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project. tt-forge lowers to our tt-metalium project, providing additional functionality to our AI Sofware ecosystem.
 
 ![Tenstorrent Software Overview](docs/public/images/tt-sw-overview.png)
 
@@ -266,7 +265,7 @@ flowchart TD
 
 ### Current AI Framework Front End Projects
 - [tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe)
-  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([`tt-tvm`](https://github.com/tenstorrent/tt-tvm)).
+  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([tt-tvm](https://github.com/tenstorrent/tt-tvm)).
   - See [docs pages](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html) for an overview and getting started guide.
 
 - [tt-torch](https://github.com/tenstorrent/tt-torch)
@@ -274,16 +273,16 @@ flowchart TD
   - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to `tt-mlir`. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
   - See [docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide.
 
-- [`tt-xla`](https://github.com/tenstorrent/tt-xla)
+- [tt-xla](https://github.com/tenstorrent/tt-xla)
   - Leverages a PJRT interface to integrate JAX (and in the future other frameworks), `tt-mlir` and Tenstorrent hardware. Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to `tt-mlir` compiler
   - See [README](https://github.com/tenstorrent/tt-xla/blob/main/README.md) for an overview and getting started guide.
 
 
 ## [tt-mlir](https://github.com/tenstorrent/tt-mlir) Project
 
-At it's core `tt-mlir` is our compiler that is interfacing with tt-metalium our opens source low level AI Hardware SDK. `tt-mlir` provides a solution for optimizing machine learning and other compute workloads for all tenstorrent hardware. `tt-mlir` bridges the gap between all different ML Frameworks and Tenstorrent Hardware. `tt-mlir` is broken into different dialects:
+At its core `tt-mlir` is our compiler that is interfacing with tt-metalium our opens source low level AI Hardware SDK. `tt-mlir` provides a solution for optimizing machine learning and other compute workloads for all tenstorrent hardware. `tt-mlir` bridges the gap between all different ML Frameworks and Tenstorrent Hardware. `tt-mlir` is broken into different dialects:
 
-- TTIR Dialect - Our common IR that can then be lowered into multiple different backends
+- TTIR Dialect: Our common IR that can then be lowered into multiple different backends
 
 - TTNN Dialect: Our entry point into the TTNN Library of Ops
 
@@ -291,7 +290,7 @@ At it's core `tt-mlir` is our compiler that is interfacing with tt-metalium our 
 
 The compiler employs various optimization passes, including layout transformation, operation fusing, decomposition, and sharding, ensuring the efficient lowering to the target dialect.​
 
-### `tt-mlir` tools and capabilities
+### `tt-mlir` Tools and Capabilities
 
 - ttmlir-opt – tool is used to run the `tt-mlir` compiler passes on a .mlir source files and is central to developing and testing the compiler.​
 
@@ -306,11 +305,11 @@ The compiler employs various optimization passes, including layout transformatio
 
 -----
 # Related Tenstorrent Projects
-- [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
+- [tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe)
 - [tt-xla](https://github.com/tenstorrent/tt-xla)
 - [tt-torch](https://github.com/tenstorrent/tt-torch)
 - [tt-mlir](https://github.com/tenstorrent/tt-mlir)
-- [tt-Metalium](https://github.com/tenstorrent/tt-metal)
+- [tt-metalium](https://github.com/tenstorrent/tt-metal)
 - [tt-tvm](https://github.com/tenstorrent/tt-tvm)
 
 

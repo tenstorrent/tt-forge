@@ -1,5 +1,6 @@
 This document walks you through how to set up to run models using tt-forge. The following topics are covered:
 
+* [Configuring Hardware](#configuring-hardware)
 * [Setting up the Docker Container](#setting-up-the-docker-container)
 * [Installing Dependencies](#installing-depencencies)
 * [Creating a Virtual Environment](#creating-a-virtual-environment)
@@ -7,21 +8,28 @@ This document walks you through how to set up to run models using tt-forge. The 
 * [Running a Demo](#running-a-demo)
 
 
-> **NOTE:** If you encounter issues with anything, please request assistance on the
+> **NOTE:** If you encounter issues, please request assistance on the
 >[tt-forge Issues](https://github.com/tenstorrent/tt-forge/issues) page.
 
-> **NOTE:** If you plan to do development work in the tt-forge repo, please see the
-> [build instructions for tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe/
-> blob/main/docs/src/build.md).
+> **NOTE:** If you plan to do development work, please see the
+> build instructions for the repo you want to work with.
+
+## Configuring Hardware 
+
+Configure your hardware with tt-installer: 
+
+```bash
+TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
+```
+
+>**NOTE:** This walkthrough assumes that you use the [Quick Installation](https://docs.tenstorrent.com/getting-started/README.html#quick-installation) instructions. If you want to use the tools installed by this script, you must activate the virtual environment it sets up - ```source ~/.tenstorrent-venv/bin/activate```.
 
 ## Setting up the Docker Container
 
-The simplest way to run models is to use one of the Docker images. There are two Docker images you can use to set up your environment:
+The simplest way to run models is to use a Docker image: 
 
 * **Base Image**: This image includes all the necessary dependencies.
     * ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-base-ird-ubuntu-22-04
-* **Prebuilt Environment Image**: This image contains all necessary dependencies and a prebuilt environment.
-    * ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
 
 To install, do the following:
 
@@ -34,20 +42,20 @@ sudo systemctl start docker
 sudo systemctl enable docker
 ```
 
-2. Test that docker is installed:
+2. Test that Docker is installed:
 
 ```bash
 docker --version
 ```
 
-3. Add your user to the docker group:
+3. Add your user to the Docker group:
 
 ```bash
 sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-4. Run the container (the prebuilt image is used here):
+4. Run the container:
 
 ```bash
 docker run -it ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
@@ -59,31 +67,14 @@ docker run -it ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
 docker ps
 ```
 
-## Installing Depencencies
-
-Inside the running Docker container, install the required dependencies:
-
-```bash
-sudo apt-get update && apt-get install -y \
-    python3-dev \
-    python3-venv \
-    python3-pip \
-    libhwloc-dev \
-    libtbb-dev \
-    libcapstone-dev \
-    graphviz \
-    libgl1 \
-    libglx-mesa0
-```
-
 ## Creating a Virtual Environment
 It is recommended that you install a virtual environment for the wheel you want to work with. Wheels from different repos may have conflicting dependencies.
 
 Create a virtual environment:
 
 ```bash
-python3s -m venv name-of-environment-venv
-source name-of-environment/bin/activate
+python3 -m venv forge-venv
+source forge-venv/bin/activate
 ```
 
 ## Installing a Wheel
@@ -98,17 +89,17 @@ This section walks you through downloading and installing a wheel. You can insta
 For this walkthrough, tt-forge-fe is used. You need to install two wheels for set up:
 
 ```bash
-pip install https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.dev20250422214451/forge-0.1.0.dev20250422214451-cp310-cp310-linux_x86_64.whl
+pip install https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.dev20250514060212/forge-0.1.0.dev20250514060212-cp310-cp310-linux_x86_64.whl
 ```
 
 ```bash
-pip install https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.dev20250422214451/tvm-0.1.0.dev20250422214451-cp310-cp310-linux_x86_64.whl
+pip install  https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.dev20250509060216//tvm-0.1.0.dev20250509060216-cp310-cp310-linux_x86_64.whl
 ```
 
 > **NOTE:** The commands are examples, for the latest install link, go to the
 > [Tenstorrent Nightly Releases](https://github.com/tenstorrent/tt-forge/releases)
 > page. The generic download will be:
-> `https://github.com/tenstorrent/tt-forge/releases/download/0.1.0.devDATE/
+> `https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.devDATE/
 > NAMEOFWHEEL`
 >
 > If you plan to work with wheels from different repositories, make a separate
@@ -124,7 +115,7 @@ To run a demo, do the following:
 git clone https://github.com/tenstorrent/tt-forge.git
 ```
 
-2. Navigate to tt-forge/demos/tt-forge-fe.
+2. Navigate to **tt-forge/demos/tt-forge-fe**.
 
 3. Choose one of the available demos. At this time, you can try:
 
