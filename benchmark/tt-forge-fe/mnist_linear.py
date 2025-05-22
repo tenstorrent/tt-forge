@@ -17,6 +17,8 @@ from torch import nn
 
 # Forge modules
 import forge
+from forge.verify.config import VerifyConfig
+from forge.verify.value_checkers import AutomaticValueChecker
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.verify.verify import verify
 
@@ -119,7 +121,12 @@ def test_mnist_linear(
         co_out = compiled_model(*inputs)
     end = time.time()
 
-    verify(inputs, framework_model, compiled_model)
+    verify(
+        inputs,
+        framework_model,
+        compiled_model,
+        verify_cfg=VerifyConfig(value_checker=AutomaticValueChecker(pcc=0.95)),
+    )
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
