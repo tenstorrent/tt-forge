@@ -45,6 +45,7 @@ jobs:
           apt-get update -qq >/dev/null 2>&1
           # Install dependencies from file
           xargs apt-get install -y -qq --no-install-recommends < common/dependencies.txt
+          xargs apt-get install -y -qq --no-install-recommends < common/tools.txt
           
           GH_CLI_VERSION="2.67.0"
           echo "Current gh version:"
@@ -96,6 +97,6 @@ jobs:
             if [ "${{ matrix.project }}" == "tt-torch" ]; then
                 curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/tests/torch/test_basic.py -o test_basic.py            
                 echo "Running test file"
-                pip install onnx onnxruntime # TODO: workaround, we need to fix this
+                pip install onnx onnxruntime torch_mlir # TODO: workaround, we need to fix this in installer
                 pytest -svv test_basic.py
             fi

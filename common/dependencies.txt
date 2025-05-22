@@ -9,8 +9,3 @@ libhwloc-dev
 libnuma-dev
 libopenmpi-dev
 openmpi-bin
-git
-curl
-wget
-gh
-jq

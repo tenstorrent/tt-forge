@@ -1,0 +1,5 @@
+git
+curl
+wget
+gh
+jq
