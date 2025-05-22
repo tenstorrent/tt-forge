@@ -1,0 +1,79 @@
+
+name: Test Released Installers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-installers:
+    name: Test ${{ matrix.project }} Installer
+    runs-on: tt-beta-ubuntu-2204-n150-large-stable
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [tt-torch, tt-xla, tt-forge-fe]
+        include:
+          - project: tt-torch
+            test_script: tests/test_basic.py
+          - project: tt-xla
+            test_script: tests/test_basic.py
+          - project: tt-forge-fe
+            test_script: tests/test_basic.py
+
+    container:
+      image: ubuntu:22.04
+
+    steps:
+      - name: Install Dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            software-properties-common \
+            build-essential \
+            linux-tools-generic \
+            xz-utils \
+            python3.10 \
+            python3.10-venv \
+            python3.10-dev \
+            libhwloc-dev \
+            libnuma-dev \
+            git \
+            curl \
+            wget \
+            gh \
+            jq
+
+            GH_CLI_VERSION="2.67.0"
+            if ! gh --version | grep -q "gh version ${GH_CLI_VERSION}"; then
+                wget -q https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.tar.gz
+                tar -xvf gh_${GH_CLI_VERSION}_linux_amd64.tar.gz >/dev/null
+                cd gh_${GH_CLI_VERSION}_linux_amd64
+                sudo install -m 755 bin/gh /usr/local/bin
+                cd ..
+            fi
+
+      - name: Set up Python virtual environment
+        run: |
+          VENV_DIR=/tmp/venv_${{ matrix.project }}
+          echo "venv_dir=$VENV_DIR" >> $GITHUB_ENV
+          python3 -m venv $VENV_DIR
+          echo "source $VENV_DIR/bin/activate" >> $GITHUB_ENV
+
+      - name: Download and install latest ${{ matrix.project }} installer
+        run: |
+            GH_REPO=tenstorrent/tt-forge
+            echo "Download latest release..."
+            LATEST_RELEASE=$(gh release list -R $GH_REPO --limit 1 --json tagName -q ".[0].tagName")
+            if [ "${{ matrix.project }}" == "forge-fe" ]; then
+                gh release download $LATEST_RELEASE -R $GH_REPO --pattern "forge*.whl"
+                gh release download $LATEST_RELEASE -R $GH_REPO --pattern "tvm*.whl"
+            fi
+            if [ "${{ matrix.project }}" == "tt-torch" ]; then
+                gh release download $LATEST_RELEASE -R $GH_REPO --pattern "tt_torch*.whl"
+            fi
+            if [ "${{ matrix.project }}" == "tt-mlir" ]; then
+                gh release download $LATEST_RELEASE -R $GH_REPO --pattern "ttmlir*.whl"
+            fi
+
+            source ${{ env.venv_dir }}/bin/activate
+            pip install *.whl
