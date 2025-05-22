@@ -4,145 +4,149 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-perf-benchmarks:
-    container:
-      image: "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
-      options: "--device /dev/tenstorrent/0"
-      volumes:
-        - /dev/hugepages:/dev/hugepages
-        - /dev/hugepages-1G:/dev/hugepages-1G
-        - /etc/udev/rules.d:/etc/udev/rules.d
-        - /lib/modules:/lib/modules
-        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
-        - /mnt/dockercache:/mnt/dockercache
+  test-installers:
+    uses: ./.github/workflows/test_installers.yml
 
-    strategy:
-      fail-fast: false
-      matrix:
-        build: [
-          { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
-        ]
-    runs-on:
-      - ${{ matrix.build.runs-on }}
 
-    name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
-    steps:
+  # run-perf-benchmarks:
+  #   container:
+  #     image: "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
+  #     options: "--device /dev/tenstorrent/0"
+  #     volumes:
+  #       - /dev/hugepages:/dev/hugepages
+  #       - /dev/hugepages-1G:/dev/hugepages-1G
+  #       - /etc/udev/rules.d:/etc/udev/rules.d
+  #       - /lib/modules:/lib/modules
+  #       - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+  #       - /mnt/dockercache:/mnt/dockercache
 
-    - name: Fetch job id
-      id: fetch-job-id
-      uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
-      with:
-        job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       build: [
+  #         { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
+  #         { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+  #         { runs-on: "n150", project: "forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
+  #         { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+  #         { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
+  #       ]
+  #   runs-on:
+  #     - ${{ matrix.build.runs-on }}
 
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      env:
-        JOB_ID: ${{ steps.fetch-job-id.outputs.job_id }}
-      run: |
-        echo "work-dir=$(pwd)" >> "$GITHUB_OUTPUT"
-        echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
-        echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
+  #   name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+  #   steps:
 
-    - name: Git safe dir
-      run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
+  #   - name: Fetch job id
+  #     id: fetch-job-id
+  #     uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
+  #     with:
+  #       job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
 
-    - uses: actions/checkout@v4
-      with:
-          sparse-checkout: |
-            benchmark/
-            pytest.ini
-            conftest.py
-            .test_durations
-          fetch-depth: 0 # Fetch all history and tags
+  #   - name: Set reusable strings
+  #     id: strings
+  #     shell: bash
+  #     env:
+  #       JOB_ID: ${{ steps.fetch-job-id.outputs.job_id }}
+  #     run: |
+  #       echo "work-dir=$(pwd)" >> "$GITHUB_OUTPUT"
+  #       echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
+  #       echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
 
-    # ttrt version (sha) should be taken from release metadata or something
-    - name: Download ttrt wheel
-      uses: dawidd6/action-download-artifact@v6
-      with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
-        workflow_conclusion: success
-        workflow: on-push.yml
-        branch: main
-        name: "(ttrt-whl|install-artifacts)-tracy"
-        name_is_regexp: true
-        repo: tenstorrent/tt-mlir
-        check_artifacts: true
-        path: ./
+  #   - name: Git safe dir
+  #     run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
 
-    - name: Untar ttmlir install directory
-      shell: bash
-      run: |
-        mv install-artifacts-tracy/ install/
-        cd install
-        tar xvf artifact.tar
-        cd ..
+  #   - uses: actions/checkout@v4
+  #     with:
+  #         sparse-checkout: |
+  #           benchmark/
+  #           pytest.ini
+  #           conftest.py
+  #           .test_durations
+  #         fetch-depth: 0 # Fetch all history and tags
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+  #   # ttrt version (sha) should be taken from release metadata or something
+  #   - name: Download ttrt wheel
+  #     uses: dawidd6/action-download-artifact@v6
+  #     with:
+  #       github_token: ${{secrets.GITHUB_TOKEN}}
+  #       workflow_conclusion: success
+  #       workflow: on-push.yml
+  #       branch: main
+  #       name: "(ttrt-whl|install-artifacts)-tracy"
+  #       name_is_regexp: true
+  #       repo: tenstorrent/tt-mlir
+  #       check_artifacts: true
+  #       path: ./
 
-    - name: Download project releases
-      uses: robinraju/release-downloader@v1
-      with:
-        latest: true
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        fileName: '*.whl'
+  #   - name: Untar ttmlir install directory
+  #     shell: bash
+  #     run: |
+  #       mv install-artifacts-tracy/ install/
+  #       cd install
+  #       tar xvf artifact.tar
+  #       cd ..
 
-    - name: Install wheels
-      shell: bash
-      run: |
-        if [ "${{ matrix.build.project }}" == "forge-fe" ]; then
-          python -m venv forge-fe-venv
-          source forge-fe-venv/bin/activate
-          pip install tvm*.whl --force-reinstall
-          pip install forge*.whl --force-reinstall
-        elif [ "${{ matrix.build.project }}" == "torch" ]; then
-          python -m venv torch-venv
-          source torch-venv/bin/activate
-          pip install tt_torch*.whl --force-reinstall
-        else
-          echo "Unknown project: ${{ matrix.build.project }}"
-          exit 1
-        fi
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v5
+  #     with:
+  #       python-version: '3.10'
 
-    - name: Run Perf Benchmark
-      shell: bash
-      env:
-        HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        HF_HOME: /mnt/dockercache/huggingface
-        HF_HUB_DISABLE_PROGRESS_BARS: 1
-      run: |
-        mkdir -p ${{ steps.strings.outputs.perf_report_path }}
-        source ${{ matrix.build.project }}-venv/bin/activate
-        python benchmark/benchmark.py ${{ matrix.build.project}} ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
+  #   - name: Download project releases
+  #     uses: robinraju/release-downloader@v1
+  #     with:
+  #       latest: true
+  #       preRelease: true
+  #       tarBall: false
+  #       zipBall: false
+  #       fileName: '*.whl'
 
-    - name: Install and run TTRT
-      shell: bash
-      run: |
-        python -m venv ttrt-venv
-        source ttrt-venv/bin/activate
-        pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
-        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-        echo "save artifacts"
-        ttrt query --save-artifacts
-        if [ -z "${{ matrix.build.allow-fail }}" ]; then
-          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        else
-          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
-        fi
+  #   - name: Install wheels
+  #     shell: bash
+  #     run: |
+  #       if [ "${{ matrix.build.project }}" == "forge-fe" ]; then
+  #         python -m venv forge-fe-venv
+  #         source forge-fe-venv/bin/activate
+  #         pip install tvm*.whl --force-reinstall
+  #         pip install forge*.whl --force-reinstall
+  #       elif [ "${{ matrix.build.project }}" == "torch" ]; then
+  #         python -m venv torch-venv
+  #         source torch-venv/bin/activate
+  #         pip install tt_torch*.whl --force-reinstall
+  #       else
+  #         echo "Unknown project: ${{ matrix.build.project }}"
+  #         exit 1
+  #       fi
 
-    - name: Upload Perf Report
-      uses: actions/upload-artifact@v4
-      if: success() || failure()
-      with:
-        name: perf-reports-${{ steps.fetch-job-id.outputs.job_id }}
-        path: ${{ steps.strings.outputs.perf_report_path }}
+  #   - name: Run Perf Benchmark
+  #     shell: bash
+  #     env:
+  #       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+  #       HF_HOME: /mnt/dockercache/huggingface
+  #       HF_HUB_DISABLE_PROGRESS_BARS: 1
+  #     run: |
+  #       mkdir -p ${{ steps.strings.outputs.perf_report_path }}
+  #       source ${{ matrix.build.project }}-venv/bin/activate
+  #       python benchmark/benchmark.py ${{ matrix.build.project}} ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+  #       python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
+
+  #   - name: Install and run TTRT
+  #     shell: bash
+  #     run: |
+  #       python -m venv ttrt-venv
+  #       source ttrt-venv/bin/activate
+  #       pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
+  #       pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+  #       echo "save artifacts"
+  #       ttrt query --save-artifacts
+  #       if [ -z "${{ matrix.build.allow-fail }}" ]; then
+  #         ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+  #       else
+  #         ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+  #       fi
+
+  #   - name: Upload Perf Report
+  #     uses: actions/upload-artifact@v4
+  #     if: success() || failure()
+  #     with:
+  #       name: perf-reports-${{ steps.fetch-job-id.outputs.job_id }}
+  #       path: ${{ steps.strings.outputs.perf_report_path }}
