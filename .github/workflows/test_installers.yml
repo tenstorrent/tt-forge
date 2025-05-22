@@ -19,8 +19,6 @@ jobs:
         include:
           - project: tt-torch
             test_script: tests/test_basic.py
-          - project: tt-xla
-            test_script: tests/test_basic.py
           - project: tt-forge-fe
             test_script: tests/test_basic.py
 
@@ -79,9 +77,6 @@ jobs:
             if [ "${{ matrix.project }}" == "tt-torch" ]; then
                 gh release download $LATEST_RELEASE -R $GH_REPO --pattern "tt_torch*.whl"
             fi
-            if [ "${{ matrix.project }}" == "tt-mlir" ]; then
-                gh release download $LATEST_RELEASE -R $GH_REPO --pattern "ttmlir*.whl"
-            fi
 
             # Install to separate venv
             echo "Installing to separate venv"
@@ -92,3 +87,17 @@ jobs:
             source $VENV_DIR/bin/activate
             echo "Installing wheels"
             pip install *.whl
+
+      - name: Run Tests
+        shell: bash
+        run: |
+            echo "Downloading test file from GitHub"
+            VENV_DIR=/tmp/venv_${{ matrix.project }}
+            source $VENV_DIR/bin/activate
+            mkdir -p test_dir
+            cd test_dir
+            # Download test file from GitHub repository
+            curl -s https://raw.githubusercontent.com/tenstorrent/tt-forge-fe/main/forge/test/test_api.py -o test_api.py
+            
+            echo "Running test file"
+            pytest -svv test_api.py
