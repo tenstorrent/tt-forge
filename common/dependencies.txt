@@ -1,0 +1,16 @@
+software-properties-common
+build-essential
+linux-tools-generic
+xz-utils
+python3.10
+python3.10-venv
+python3.10-dev
+libhwloc-dev
+libnuma-dev
+libopenmpi-dev
+openmpi-bin
+git
+curl
+wget
+gh
+jq

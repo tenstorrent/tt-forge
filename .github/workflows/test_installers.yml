@@ -33,38 +33,29 @@ jobs:
         - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: common/dependencies.txt
+          sparse-checkout-cone-mode: false
+
       - name: Install Dependencies
         shell: bash
         run: |
           apt-get update -qq >/dev/null 2>&1
-          apt-get install -y -qq --no-install-recommends \
-            software-properties-common \
-            build-essential \
-            linux-tools-generic \
-            xz-utils \
-            python3.10 \
-            python3.10-venv \
-            python3.10-dev \
-            libhwloc-dev \
-            libnuma-dev \
-            libopenmpi-dev \
-            openmpi-bin \
-            git \
-            curl \
-            wget \
-            gh \
-            jq
-
-            GH_CLI_VERSION="2.67.0"
-            echo "Current gh version:"
-            gh --version
-            if ! gh --version | grep -q "gh version ${GH_CLI_VERSION}"; then
-                wget -q https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.tar.gz
-                tar -xvf gh_${GH_CLI_VERSION}_linux_amd64.tar.gz >/dev/null
-                cd gh_${GH_CLI_VERSION}_linux_amd64
-                install -m 755 bin/gh /usr/local/bin
-                cd ..
-            fi
+          # Install dependencies from file
+          xargs apt-get install -y -qq --no-install-recommends < common/dependencies.txt
+          
+          GH_CLI_VERSION="2.67.0"
+          echo "Current gh version:"
+          gh --version
+          if ! gh --version | grep -q "gh version ${GH_CLI_VERSION}"; then
+              wget -q https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.tar.gz
+              tar -xvf gh_${GH_CLI_VERSION}_linux_amd64.tar.gz >/dev/null
+              cd gh_${GH_CLI_VERSION}_linux_amd64
+              install -m 755 bin/gh /usr/local/bin
+              cd ..
+          fi
 
       - name: Download and install latest ${{ matrix.project }} installer
         shell: bash
@@ -105,5 +96,6 @@ jobs:
             if [ "${{ matrix.project }}" == "tt-torch" ]; then
                 curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/tests/torch/test_basic.py -o test_basic.py            
                 echo "Running test file"
+                pip install onnx # workaround, we need to fix this
                 pytest -svv test_basic.py
             fi
