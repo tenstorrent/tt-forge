@@ -67,9 +67,9 @@ jobs:
 
       - name: Download and install latest ${{ matrix.project }} installer
         run: |
-            GH_REPO=tenstorrent/tt-forge
-            echo "Download latest release..."
+            GH_REPO=tenstorrent/tt-forge            
             LATEST_RELEASE=$(gh release list -R $GH_REPO --limit 1 --json tagName -q ".[0].tagName")
+            echo "Download latest release: $LATEST_RELEASE"
             if [ "${{ matrix.project }}" == "tt-forge-fe" ]; then
                 gh release download $LATEST_RELEASE -R $GH_REPO --pattern "forge*.whl"
                 gh release download $LATEST_RELEASE -R $GH_REPO --pattern "tvm*.whl"
