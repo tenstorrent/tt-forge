@@ -96,6 +96,6 @@ jobs:
             if [ "${{ matrix.project }}" == "tt-torch" ]; then
                 curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/tests/torch/test_basic.py -o test_basic.py            
                 echo "Running test file"
-                pip install onnx # workaround, we need to fix this
+                pip install onnx # TODO: workaround, we need to fix this
                 pytest -svv test_basic.py
             fi
