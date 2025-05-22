@@ -14,9 +14,9 @@ This document walks you through how to set up to run models using tt-forge. The 
 > **NOTE:** If you plan to do development work, please see the
 > build instructions for the repo you want to work with.
 
-## Configuring Hardware 
+## Configuring Hardware
 
-Configure your hardware with tt-installer: 
+Configure your hardware with tt-installer:
 
 ```bash
 TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
@@ -26,7 +26,7 @@ TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(cu
 
 ## Setting up the Docker Container
 
-The simplest way to run models is to use a Docker image: 
+The simplest way to run models is to use a Docker image:
 
 * **Base Image**: This image includes all the necessary dependencies.
     * ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-base-ird-ubuntu-22-04
