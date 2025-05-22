@@ -7,7 +7,7 @@ on:
 
 env:
   GH_TOKEN: ${{ github.token }}
-  
+
 jobs:
   test-installers:
     name: Test ${{ matrix.project }} Installer
@@ -70,7 +70,7 @@ jobs:
             GH_REPO=tenstorrent/tt-forge
             echo "Download latest release..."
             LATEST_RELEASE=$(gh release list -R $GH_REPO --limit 1 --json tagName -q ".[0].tagName")
-            if [ "${{ matrix.project }}" == "forge-fe" ]; then
+            if [ "${{ matrix.project }}" == "tt-forge-fe" ]; then
                 gh release download $LATEST_RELEASE -R $GH_REPO --pattern "forge*.whl"
                 gh release download $LATEST_RELEASE -R $GH_REPO --pattern "tvm*.whl"
             fi
@@ -82,8 +82,11 @@ jobs:
             fi
 
             # Install to separate venv
+            echo "Installing to separate venv"
             VENV_DIR=/tmp/venv_${{ matrix.project }}
             echo "venv_dir=$VENV_DIR" >> $GITHUB_ENV
+            echo "Creating venv"
             python3 -m venv $VENV_DIR
             source $VENV_DIR/bin/activate
+            echo "Installing wheels"
             pip install *.whl
