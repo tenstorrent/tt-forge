@@ -97,6 +97,9 @@ jobs:
             if [ "${{ matrix.project }}" == "tt-torch" ]; then
                 curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/tests/torch/test_basic.py -o test_basic.py            
                 echo "Running test file"
-                pip install onnx onnxruntime torch_mlir # TODO: workaround, we need to fix this in installer
+                # Install test dependencies
+                pip install onnx onnxruntime 
+                # Fix for missing torch_mlir. The wheel torch-mlir isnt installed in the site-packages, its put in venv/lib so need to add that to PYTHONPATH
+                export PYTHONPATH=$PYTHONPATH:$(pwd)/$VENV_DIR:$(pwd)/$VENV_DIR/lib 
                 pytest -svv test_basic.py
             fi
