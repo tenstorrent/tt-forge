@@ -23,6 +23,13 @@ jobs:
 
     container:
       image: ubuntu:22.04
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
     steps:
       - name: Install Dependencies
@@ -45,11 +52,13 @@ jobs:
             jq
 
             GH_CLI_VERSION="2.67.0"
+            echo "Current gh version:"
+            gh --version
             if ! gh --version | grep -q "gh version ${GH_CLI_VERSION}"; then
                 wget -q https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.tar.gz
                 tar -xvf gh_${GH_CLI_VERSION}_linux_amd64.tar.gz >/dev/null
                 cd gh_${GH_CLI_VERSION}_linux_amd64
-                sudo install -m 755 bin/gh /usr/local/bin
+                install -m 755 bin/gh /usr/local/bin
                 cd ..
             fi
 
