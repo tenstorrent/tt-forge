@@ -4,18 +4,26 @@ This document walks you through how to set up to run demo models using tt-forge.
 
 * [Configuring Hardware](#configuring-hardware)
 * [Setting up the Docker Container](#setting-up-the-docker-container)
-* [Installing Dependencies](#installing-depencencies)
 * [Creating a Virtual Environment](#creating-a-virtual-environment)
 * [Installing a Wheel](#installing-a-wheel)
 * [Running a Demo](#running-a-demo)
 
 
-> **NOTE:** If you encounter issues with anything, please request assistance on the
+> **NOTE:** If you encounter issues, please request assistance on the
 >[tt-forge Issues](https://github.com/tenstorrent/tt-forge/issues) page.
 
-> **NOTE:** If you plan to do development work in the tt-forge repo, please see the
-> [build instructions for tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe/
-> blob/main/docs/src/build.md).
+> **NOTE:** If you plan to do development work, please see the
+> build instructions for the repo you want to work with.
+
+## Configuring Hardware
+
+Configure your hardware with tt-installer:
+
+```bash
+TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
+```
+
+>**NOTE:** This walkthrough assumes that you use the [Quick Installation](https://docs.tenstorrent.com/getting-started/README.html#quick-installation) instructions. If you want to use the tools installed by this script, you must activate the virtual environment it sets up - ```source ~/.tenstorrent-venv/bin/activate```.
 
 ## Configuring Hardware
 
@@ -43,13 +51,13 @@ sudo systemctl start docker
 sudo systemctl enable docker
 ```
 
-2. Test that docker is installed:
+2. Test that Docker is installed:
 
 ```bash
 docker --version
 ```
 
-3. Add your user to the docker group:
+3. Add your user to the Docker group:
 
 ```bash
 sudo usermod -aG docker $USER
