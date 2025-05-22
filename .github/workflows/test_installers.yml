@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
   push:
 
+env:
+  GH_TOKEN: ${{ github.token }}
+  
 jobs:
   test-installers:
     name: Test ${{ matrix.project }} Installer
@@ -50,7 +53,7 @@ jobs:
             wget \
             gh \
             jq
-            
+
             GH_CLI_VERSION="2.67.0"
             echo "Current gh version:"
             gh --version
