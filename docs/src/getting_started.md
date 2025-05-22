@@ -4,7 +4,6 @@ This document walks you through how to set up to run demo models using tt-forge.
 
 * [Configuring Hardware](#configuring-hardware)
 * [Setting up the Docker Container](#setting-up-the-docker-container)
-* [Installing Dependencies](#installing-depencencies)
 * [Creating a Virtual Environment](#creating-a-virtual-environment)
 * [Installing a Wheel](#installing-a-wheel)
 * [Running a Demo](#running-a-demo)
