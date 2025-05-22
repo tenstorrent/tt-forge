@@ -16,46 +16,19 @@ from tt_torch.dynamo.backend import backend, BackendOptions
 # from PIL import Image
 import torch
 
-# from torchvision import transforms
-# import torchvision.models as models
-# import tabulate
-# import requests
-# from tt_torch.tools.device_manager import DeviceManager
-from benchmark.utils import download_model
+
+from utils import download_model
 from transformers import ResNetForImageClassification
 from loguru import logger
 import time
 
-# import shutil
-# import os
-# import urllib
+
 from datetime import datetime
 import socket
 
 # import random
 from tqdm import tqdm
 import pytest
-
-
-# def download_model(download_func, *args, num_retries=3, timeout=180, **kwargs):
-#     for _ in range(num_retries):
-#         try:
-#             return download_func(*args, **kwargs)
-#         except (
-#             requests.exceptions.HTTPError,
-#             urllib.error.HTTPError,
-#             requests.exceptions.ReadTimeout,
-#             urllib.error.URLError,
-#         ):
-#             logger.trace("HTTP error occurred. Retrying...")
-#             shutil.rmtree(os.path.expanduser("~") + "/.cache", ignore_errors=True)
-#             shutil.rmtree(os.path.expanduser("~") + "/.torch/models", ignore_errors=True)
-#             shutil.rmtree(os.path.expanduser("~") + "/.torchxrayvision/models_data", ignore_errors=True)
-#             os.mkdir(os.path.expanduser("~") + "/.cache")
-#         time.sleep(timeout)
-
-#     logger.error("Failed to download the model after multiple retries.")
-#     assert False, "Failed to download the model after multiple retries."
 
 
 # Common constants
