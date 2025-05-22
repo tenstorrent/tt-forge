@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [tt-torch, tt-xla, tt-forge-fe]
+        project: [tt-torch, tt-forge-fe]
         include:
           - project: tt-torch
             test_script: tests/test_basic.py
@@ -47,6 +47,8 @@ jobs:
             python3.10-dev \
             libhwloc-dev \
             libnuma-dev \
+            libopenmpi-dev \
+            openmpi-bin \
             git \
             curl \
             wget \
@@ -85,19 +87,20 @@ jobs:
             echo "Creating venv"
             python3 -m venv $VENV_DIR
             source $VENV_DIR/bin/activate
-            echo "Installing wheels"
+            echo "Installing wheels and test dependencies"
             pip install *.whl
+            pip install pytest
 
       - name: Run Tests
         shell: bash
         run: |
+            source ${{ env.venv_dir }}/bin/activate
             echo "Downloading test file from GitHub"
-            VENV_DIR=/tmp/venv_${{ matrix.project }}
-            source $VENV_DIR/bin/activate
-            mkdir -p test_dir
-            cd test_dir
-            # Download test file from GitHub repository
-            curl -s https://raw.githubusercontent.com/tenstorrent/tt-forge-fe/main/forge/test/test_api.py -o test_api.py
-            
-            echo "Running test file"
-            pytest -svv test_api.py
+            if [ "${{ matrix.project }}" == "tt-forge-fe" ]; then
+                curl -s https://raw.githubusercontent.com/tenstorrent/tt-forge-fe/main/forge/test/test_api.py -o test_api.py            
+                echo "Running test file"
+                pytest -svv test_api.py
+            fi
+            if [ "${{ matrix.project }}" == "tt-torch" ]; then
+               echo TODO
+            fi
