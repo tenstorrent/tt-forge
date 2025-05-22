@@ -36,6 +36,7 @@ jobs:
 
     steps:
       - name: Install Dependencies
+        shell: bash
         run: |
           apt-get update -qq >/dev/null 2>&1
           apt-get install -y -qq --no-install-recommends \
@@ -66,6 +67,7 @@ jobs:
             fi
 
       - name: Download and install latest ${{ matrix.project }} installer
+        shell: bash
         run: |
             GH_REPO=tenstorrent/tt-forge            
             LATEST_RELEASE=$(gh release list -R $GH_REPO --limit 1 --json tagName -q ".[0].tagName")
