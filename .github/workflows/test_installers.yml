@@ -34,8 +34,8 @@ jobs:
     steps:
       - name: Install Dependencies
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends \
+          apt-get update -qq >/dev/null 2>&1
+          apt-get install -y -qq --no-install-recommends \
             software-properties-common \
             build-essential \
             linux-tools-generic \
@@ -50,7 +50,7 @@ jobs:
             wget \
             gh \
             jq
-
+            
             GH_CLI_VERSION="2.67.0"
             echo "Current gh version:"
             gh --version
@@ -61,13 +61,6 @@ jobs:
                 install -m 755 bin/gh /usr/local/bin
                 cd ..
             fi
-
-      - name: Set up Python virtual environment
-        run: |
-          VENV_DIR=/tmp/venv_${{ matrix.project }}
-          echo "venv_dir=$VENV_DIR" >> $GITHUB_ENV
-          python3 -m venv $VENV_DIR
-          echo "source $VENV_DIR/bin/activate" >> $GITHUB_ENV
 
       - name: Download and install latest ${{ matrix.project }} installer
         run: |
@@ -85,5 +78,9 @@ jobs:
                 gh release download $LATEST_RELEASE -R $GH_REPO --pattern "ttmlir*.whl"
             fi
 
-            source ${{ env.venv_dir }}/bin/activate
+            # Install to separate venv
+            VENV_DIR=/tmp/venv_${{ matrix.project }}
+            echo "venv_dir=$VENV_DIR" >> $GITHUB_ENV
+            python3 -m venv $VENV_DIR
+            source $VENV_DIR/bin/activate
             pip install *.whl
