@@ -99,6 +99,8 @@ jobs:
                 echo "Running test file"
                 # Install test dependencies
                 pip install onnx onnxruntime 
+                # Workaround for missing requirement. TODO fix in whl installer
+                pip install stablehlo -f https://github.com/openxla/stablehlo/releases/expanded_assets/v1.0.0
                 # Fix for missing torch_mlir. The wheel torch-mlir isnt installed in the site-packages, its put in venv/lib so need to add that to PYTHONPATH
                 export PYTHONPATH=$PYTHONPATH:${{ env.venv_dir }}:${{ env.venv_dir }}/lib 
                 pytest -svv test_basic.py
