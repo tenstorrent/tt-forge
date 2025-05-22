@@ -3,7 +3,7 @@ name: Test Released Installers
 
 on:
   workflow_dispatch:
-  workflow_call:
+  push:
 
 jobs:
   test-installers:
