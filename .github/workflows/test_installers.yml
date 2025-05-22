@@ -95,13 +95,17 @@ jobs:
                 pytest -svv test_api.py
             fi
             if [ "${{ matrix.project }}" == "tt-torch" ]; then
-                curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/tests/torch/test_basic.py -o test_basic.py            
-                echo "Running test file"
-                # Install test dependencies
-                pip install onnx onnxruntime 
-                # Workaround for missing requirement. TODO fix in whl installer
+                # install test dependencies
+                curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/requirements.txt -o requirements.txt
+                pip install -r requirements.txt
+                # Workaround for missing requirement. TODO fix in torch
                 pip install stablehlo -f https://github.com/openxla/stablehlo/releases/expanded_assets/v1.0.0
+
                 # Fix for missing torch_mlir. The wheel torch-mlir isnt installed in the site-packages, its put in venv/lib so need to add that to PYTHONPATH
                 export PYTHONPATH=$PYTHONPATH:${{ env.venv_dir }}:${{ env.venv_dir }}/lib 
+
+                # Download and run test
+                curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/tests/torch/test_basic.py -o test_basic.py            
+                echo "Running test file"
                 pytest -svv test_basic.py
             fi
