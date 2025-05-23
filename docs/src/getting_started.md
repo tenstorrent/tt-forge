@@ -25,14 +25,6 @@ TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(cu
 
 >**NOTE:** This walkthrough assumes that you use the [Quick Installation](https://docs.tenstorrent.com/getting-started/README.html#quick-installation) instructions. If you want to use the tools installed by this script, you must activate the virtual environment it sets up - ```source ~/.tenstorrent-venv/bin/activate```.
 
-## Configuring Hardware
-
-Configure your hardware with tt-installer:
-
-```bash
-TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
-```
-
 ## Setting up the Docker Container
 
 The simplest way to run models is to use the Docker image. You should have 50G free for the container.
