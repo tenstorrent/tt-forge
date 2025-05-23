@@ -34,6 +34,20 @@ jobs:
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
+    - name: Install common tools and dependencies
+      shell: bash
+      run: |
+        apt-get update -qq >/dev/null 2>&1
+        apt-get install -y -qq --no-install-recommends \
+          git \
+          jq \
+          curl \
+          gh \
+          wget
+        if [ -n "${{ matrix.build.libreq }}" ]; then
+          apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+        fi
+
     - name: Fetch job id
       id: fetch-job-id
       uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
@@ -61,12 +75,6 @@ jobs:
             conftest.py
             .test_durations
           fetch-depth: 0 # Fetch all history and tags
-
-    - name: Install dependencies
-      if: ${{ matrix.build.libreq }}
-      shell: bash
-      run: |
-        sudo apt-get update && apt-get install -y "${{ matrix.build.libreq }}"
 
     # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
