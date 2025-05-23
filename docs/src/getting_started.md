@@ -29,8 +29,7 @@ TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(cu
 
 The simplest way to run models is to use the Docker image. You should have 50G free for the container.
 
-**Docker Image**: This image includes all the necessary dependencies.
-    * ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-base-ird-ubuntu-22-04
+**Docker Image**: ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-base-ird-ubuntu-22-04
 
 To install, do the following:
 
@@ -72,7 +71,7 @@ sudo docker run \
 ## Creating a Virtual Environment
 It is recommended that you install a virtual environment for the wheel you want to work with. Wheels from different repos may have conflicting dependencies.
 
-Create a virtual environment (the environment name in the command is an example for the command, it's not required to use the same name listed):
+Create a virtual environment:
 
 ```bash
 python3 -m venv forge-venv
@@ -82,7 +81,7 @@ source forge-venv/bin/activate
 ## Installing a Wheel
 This section walks you through downloading and installing a wheel. You can install the wheel wherever you would like if it's for running a model. If you want to do development work, you must clone the repo you want, navigate into it, and then set up the wheel.
 
-1. Make sure you are in an active virtual environment.
+1. Make sure you activate the virtual environment you created in the last step.
 
 > **NOTE**: If you plan to do development work, before continuing with these instructions, clone the repo you plan to use, then navigate into the repo. If you are just running models, this step is not necessary.
 
