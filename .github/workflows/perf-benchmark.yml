@@ -24,7 +24,7 @@ jobs:
           # { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
           # { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
           # { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx sqlite3 libopenmpi3 libatomic1" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx sqlite3 libopenmpi3 libatomic1 libglib2.0-0" },
           # { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, require: "onnx onnxruntime" }
         ]
     runs-on:
@@ -77,27 +77,27 @@ jobs:
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
         fi
 
-        # ttrt version (sha) should be taken from release metadata or something
-    - name: Download ttrt wheel
-      uses: dawidd6/action-download-artifact@v6
-      with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
-        workflow_conclusion: success
-        workflow: on-push.yml
-        branch: main
-        name: "(ttrt-whl|install-artifacts)-tracy"
-        name_is_regexp: true
-        repo: tenstorrent/tt-mlir
-        check_artifacts: true
-        path: ./
+    # ttrt version (sha) should be taken from release metadata or something
+    # - name: Download ttrt wheel
+    #   uses: dawidd6/action-download-artifact@v6
+    #   with:
+    #     github_token: ${{secrets.GITHUB_TOKEN}}
+    #     workflow_conclusion: success
+    #     workflow: on-push.yml
+    #     branch: main
+    #     name: "(ttrt-whl|install-artifacts)-tracy"
+    #     name_is_regexp: true
+    #     repo: tenstorrent/tt-mlir
+    #     check_artifacts: true
+    #     path: ./
 
-    - name: Untar ttmlir install directory
-      shell: bash
-      run: |
-        mv install-artifacts-tracy/ install/
-        cd install
-        tar xvf artifact.tar
-        cd ..
+    # - name: Untar ttmlir install directory
+    #   shell: bash
+    #   run: |
+    #     mv install-artifacts-tracy/ install/
+    #     cd install
+    #     tar xvf artifact.tar
+    #     cd ..
 
     - name: Set up Python
       uses: actions/setup-python@v5
