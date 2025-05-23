@@ -20,12 +20,12 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32 }
+          # { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 },
+          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, require: "onnx" }
         ]
     runs-on:
       - ${{ matrix.build.runs-on }}
@@ -104,15 +104,18 @@ jobs:
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           python -m venv tt-forge-fe-venv
           source tt-forge-fe-venv/bin/activate
-          pip install tvm*.whl --force-reinstall
-          pip install forge*.whl --force-reinstall
+          pip install tvm*.whl
+          pip install forge*.whl
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          pip install tt_torch*.whl --force-reinstall
+          pip install tt_torch*.whl
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
+        fi
+        if [ -n "${{ matrix.build.require }}" ]; then
+          pip install ${{ matrix.build.require }}
         fi
 
     - name: Run Perf Benchmark
