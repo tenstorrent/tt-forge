@@ -34,21 +34,6 @@ jobs:
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
-    - name: Install common tools and dependencies
-      shell: bash
-      run: |
-        apt-get update -qq >/dev/null 2>&1
-        apt-get install -y -qq --no-install-recommends \
-          git \
-          jq \
-          curl \
-          gh \
-          unzip \
-          wget
-        if [ -n "${{ matrix.build.libreq }}" ]; then
-          apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
-        fi
-
     # - name: Fetch job id
     #   id: fetch-job-id
     #   uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
@@ -77,7 +62,22 @@ jobs:
             .test_durations
           fetch-depth: 0 # Fetch all history and tags
 
-    # ttrt version (sha) should be taken from release metadata or something
+    - name: Install common tools and dependencies
+      shell: bash
+      run: |
+        apt-get update -qq >/dev/null 2>&1
+        apt-get install -y -qq --no-install-recommends \
+          git \
+          jq \
+          curl \
+          gh \
+          unzip \
+          wget
+        if [ -n "${{ matrix.build.libreq }}" ]; then
+          apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+        fi
+
+        # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
       uses: dawidd6/action-download-artifact@v6
       with:
