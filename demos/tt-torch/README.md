@@ -37,9 +37,9 @@ This causes the model to be compiled onto the default device present in the boar
 
 ## Benchmarking on 100 Images from ImageNet (resnet50_benchmark.py)
 
-The `resnet50_benchmark.py` script can also be used to stream 100 images from the ImageNet dataset and compute the classification accuracy. 
+The `resnet50_benchmark.py` script can also be used to stream 100 images from the ImageNet dataset and compute the classification accuracy.
 ```
-python demos/tt-torch/resnet50_benchmark.py 
+python demos/tt-torch/resnet50_benchmark.py
 ```
 
 The script will process the first 100 images, output the top-1 accuracy, and display a summary at the end. This demonstrates the model's performance on a larger, more diverse set of images.
