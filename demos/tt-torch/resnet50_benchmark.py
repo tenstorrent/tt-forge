@@ -36,7 +36,8 @@ output = tt_model(torch.zeros(1, 3, 224, 224).to(torch.bfloat16))
 print("Model converted successfully.")
 
 def get_imagenet_label_dict():
-    path = "imagenet_class_labels.txt"
+    dir_path = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(dir_path, "imagenet_class_labels.txt")
     with open(path, "r") as file:
         class_labels = ast.literal_eval(file.read())
     return class_labels
