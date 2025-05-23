@@ -101,9 +101,7 @@ def get_data_loader(input_loc, batch_size, iterations):
                 examples = []
 
     if len(files) == 0:
-        files_raw = iter(
-            load_dataset("imagenet-1k", split="validation", streaming=True)
-        )
+        files_raw = iter(load_dataset("imagenet-1k", split="validation", streaming=True))
         files = []
         sample_count = batch_size * iterations
         for _ in range(sample_count):
@@ -134,9 +132,7 @@ def get_batch(data_loader, image_processor):
 
 def download_and_preprocess_image(url):
     try:
-        image = Image.open(requests.get(url, stream=True, timeout=10).raw).convert(
-            "RGB"
-        )
+        image = Image.open(requests.get(url, stream=True, timeout=10).raw).convert("RGB")
         inputs = image_processor(image, return_tensors="pt")
         return inputs["pixel_values"][0]
     except Exception as e:
@@ -150,9 +146,7 @@ def main():
     class_names = get_imagenet_label_dict()
     correct = 0
     total = 0
-    print(
-        "Running Resnet50 ImageNet benchmark on 100 validation images (downloaded at runtime)..."
-    )
+    print("Running Resnet50 ImageNet benchmark on 100 validation images (downloaded at runtime)...")
     count = 0
     imagenet_label_dict = get_imagenet_label_dict()
     batch_size = 1
