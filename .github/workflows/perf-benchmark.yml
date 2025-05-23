@@ -50,8 +50,8 @@ jobs:
         echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
         echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
 
-    - name: Git safe dir
-      run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
+    # - name: Git safe dir
+    #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
 
     - uses: actions/checkout@v4
       with:
