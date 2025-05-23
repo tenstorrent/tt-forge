@@ -37,12 +37,13 @@ jobs:
     - name: Install common tools and dependencies
       shell: bash
       run: |
-        apt-get update -qq >/dev/null 2>&1
-        apt-get install -y -qq --no-install-recommends \
+        sudo apt-get update -qq >/dev/null 2>&1
+        sudo apt-get install -y -qq --no-install-recommends \
           git \
           jq \
           curl \
           gh \
+          unzip \
           wget
         if [ -n "${{ matrix.build.libreq }}" ]; then
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
