@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: (c) 2025 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
 import torch
 import requests
 from PIL import Image
@@ -17,6 +20,7 @@ from tt_torch.dynamo.backend import backend, BackendOptions
 from tt_torch.tools.device_manager import DeviceManager
 import ast
 import warnings
+
 warnings.filterwarnings("ignore")
 import time
 
@@ -35,12 +39,14 @@ tt_model = torch.compile(model, backend=backend, dynamic=False, options=options)
 output = tt_model(torch.zeros(1, 3, 224, 224).to(torch.bfloat16))
 print("Model converted successfully.")
 
+
 def get_imagenet_label_dict():
     dir_path = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(dir_path, "imagenet_class_labels.txt")
     with open(path, "r") as file:
         class_labels = ast.literal_eval(file.read())
     return class_labels
+
 
 class InputExample(object):
     def __init__(self, image, label=None):
@@ -59,6 +65,7 @@ def get_label(image_path):
     _, label_id = image_name_exact.rsplit("_", 1)
     label = list(IMAGENET2012_CLASSES).index(label_id)
     return label
+
 
 def get_data_loader(input_loc, batch_size, iterations):
     img_dir = input_loc + "/"
@@ -94,7 +101,9 @@ def get_data_loader(input_loc, batch_size, iterations):
                 examples = []
 
     if len(files) == 0:
-        files_raw = iter(load_dataset("imagenet-1k", split="validation", streaming=True))
+        files_raw = iter(
+            load_dataset("imagenet-1k", split="validation", streaming=True)
+        )
         files = []
         sample_count = batch_size * iterations
         for _ in range(sample_count):
@@ -103,6 +112,7 @@ def get_data_loader(input_loc, batch_size, iterations):
         return loader_hf()
 
     return loader()
+
 
 def get_batch(data_loader, image_processor):
     loaded_images = next(data_loader)
@@ -121,14 +131,18 @@ def get_batch(data_loader, image_processor):
             images = torch.cat((images, img), dim=0)
     return images, labels
 
+
 def download_and_preprocess_image(url):
     try:
-        image = Image.open(requests.get(url, stream=True, timeout=10).raw).convert("RGB")
+        image = Image.open(requests.get(url, stream=True, timeout=10).raw).convert(
+            "RGB"
+        )
         inputs = image_processor(image, return_tensors="pt")
         return inputs["pixel_values"][0]
     except Exception as e:
         print(f"Failed to download/process image: {url}. Error: {e}")
         return None
+
 
 def main():
     # Load validation set metadata (URLs and labels only)
@@ -136,7 +150,9 @@ def main():
     class_names = get_imagenet_label_dict()
     correct = 0
     total = 0
-    print("Running Resnet50 ImageNet benchmark on 100 validation images (downloaded at runtime)...")
+    print(
+        "Running Resnet50 ImageNet benchmark on 100 validation images (downloaded at runtime)..."
+    )
     count = 0
     imagenet_label_dict = get_imagenet_label_dict()
     batch_size = 1
@@ -163,9 +179,12 @@ def main():
             correct += int(is_correct)
             total += 1
             fps = 1 / inference_time if inference_time > 0 else 0
-            print(f"Image {total:03d}: Label = {label_name}, Prediction = {pred_name}, Correct = {is_correct}, Inference Time = {inference_time:.4f} seconds, FPS = {fps:.2f}")
+            print(
+                f"Image {total:03d}: Label = {label_name}, Prediction = {pred_name}, Correct = {is_correct}, Inference Time = {inference_time:.4f} seconds, FPS = {fps:.2f}"
+            )
     accuracy = correct / total * 100 if total > 0 else 0
     print(f"\nTop-1 Accuracy on {total} ImageNet val images: {accuracy:.2f}%")
+
 
 if __name__ == "__main__":
     main()
