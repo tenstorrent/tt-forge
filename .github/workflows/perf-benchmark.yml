@@ -20,10 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          # { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
-          # { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          # { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          # { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
           # { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, require: "onnx onnxruntime" }
         ]
@@ -147,21 +147,21 @@ jobs:
           python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
         fi
 
-    - name: Install and run TTRT
-      if: ${{ matrix.build.project != 'tt-torch' }}
-      shell: bash
-      run: |
-        python -m venv ttrt-venv
-        source ttrt-venv/bin/activate
-        pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
-        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-        echo "save artifacts"
-        ttrt query --save-artifacts
-        if [ -z "${{ matrix.build.allow-fail }}" ]; then
-          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}.json # _${{ steps.fetch-job-id.outputs.job_id }}.json
-        else
-          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_.json || true # ${{ steps.fetch-job-id.outputs.job_id }}.json || true
-        fi
+    # - name: Install and run TTRT
+    #   if: ${{ matrix.build.project != 'tt-torch' }}
+    #   shell: bash
+    #   run: |
+    #     python -m venv ttrt-venv
+    #     source ttrt-venv/bin/activate
+    #     pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
+    #     pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+    #     echo "save artifacts"
+    #     ttrt query --save-artifacts
+    #     if [ -z "${{ matrix.build.allow-fail }}" ]; then
+    #       ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}.json # _${{ steps.fetch-job-id.outputs.job_id }}.json
+    #     else
+    #       ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_.json || true # ${{ steps.fetch-job-id.outputs.job_id }}.json || true
+    #     fi
 
     # - name: Upload Perf Report
     #   uses: actions/upload-artifact@v4
