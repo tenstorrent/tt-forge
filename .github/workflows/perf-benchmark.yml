@@ -6,7 +6,7 @@ on:
 jobs:
   run-perf-benchmarks:
     container:
-      image: "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
+      image:  ubuntu:22.04 # "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
       options: "--device /dev/tenstorrent/0"
       volumes:
         - /dev/hugepages:/dev/hugepages
