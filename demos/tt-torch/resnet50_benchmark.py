@@ -44,7 +44,10 @@ def get_imagenet_label_dict():
     dir_path = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(dir_path, "imagenet_class_labels.txt")
     with open(path, "r") as file:
-        class_labels = ast.literal_eval(file.read())
+        lines = file.readlines()
+    class_labels = {}
+    for idx, line in enumerate(lines[3:]):  # Skip first 3 lines (license info)
+        class_labels[idx] = line.strip()
     return class_labels
 
 
@@ -148,7 +151,6 @@ def main():
     total = 0
     print("Running Resnet50 ImageNet benchmark on 100 validation images (downloaded at runtime)...")
     count = 0
-    imagenet_label_dict = get_imagenet_label_dict()
     batch_size = 1
     iterations = 100
     data_loader = get_data_loader("ImageNet_data", batch_size, iterations)
