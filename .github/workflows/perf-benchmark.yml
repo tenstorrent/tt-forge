@@ -20,12 +20,12 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx build-essential sqlite3 libopenmpi3 libglib2.0-0" },
-          # { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, require: "onnx onnxruntime" }
+          # { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 },
+          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, require: "onnx onnxruntime" }
         ]
     runs-on:
       - ${{ matrix.build.runs-on }}
@@ -33,12 +33,28 @@ jobs:
 
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
+    - name: Install common tools and dependencies
+      shell: bash
+      run: |
+        apt-get update -qq >/dev/null 2>&1
+        apt-get install -y -qq --no-install-recommends \
+          git \
+          jq \
+          curl \
+          gh \
+          unzip \
+          wget
 
-    # - name: Fetch job id
-    #   id: fetch-job-id
-    #   uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
-    #   with:
-    #     job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+        if [ -n "${{ matrix.build.libreq }}" ]; then
+          apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+        fi
+
+    - name: Fetch job id
+      id: fetch-job-id
+      uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
+      with:
+        gh_token: ${{ secrets.GITHUB_TOKEN }}
+        job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
 
     - name: Set reusable strings
       id: strings
@@ -73,6 +89,14 @@ jobs:
           gh \
           unzip \
           wget
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          apt-get install -y -qq --no-install-recommends \
+            build-essential \
+            libgl1-mesa-glx \
+            sqlite3 \
+            libopenmpi3 \
+            libglib2.0-0
+        fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
         fi
@@ -125,6 +149,7 @@ jobs:
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
           pip install tt_torch*.whl
+          pip install ttmlir*.whl
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
