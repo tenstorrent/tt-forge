@@ -74,6 +74,9 @@ jobs:
           gh \
           unzip \
           wget
+        # ttrt
+        apt-get install -y -qq --no-install-recommends \
+          libmpi3
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           apt-get install -y -qq --no-install-recommends \
             build-essential \
