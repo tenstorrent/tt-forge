@@ -51,7 +51,6 @@ jobs:
           git \
           jq \
           curl \
-          gh \
           unzip \
           wget
         # ttrt
