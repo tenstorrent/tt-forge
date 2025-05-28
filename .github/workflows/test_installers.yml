@@ -58,6 +58,12 @@ jobs:
               cd ..
           fi
 
+      - name: Fetch job id
+        id: fetch-job-id
+        uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
+        with:
+          job_name: "Test ${{ matrix.project }} Installer"
+
       - name: Download and install latest ${{ matrix.project }} installer
         shell: bash
         run: |
