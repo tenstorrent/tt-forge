@@ -52,7 +52,8 @@ jobs:
           jq \
           curl \
           unzip \
-          wget
+          wget \
+          ca-certificates
         # ttrt
         # apt-get install -y -qq --no-install-recommends \
         #   libmpich12
