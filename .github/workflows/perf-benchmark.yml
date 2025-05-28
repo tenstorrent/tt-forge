@@ -34,6 +34,15 @@ jobs:
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
+    - uses: actions/checkout@v4
+      with:
+          sparse-checkout: |
+            benchmark/
+            pytest.ini
+            conftest.py
+            .test_durations
+          fetch-depth: 1 # Fetch all history and tags
+
     - name: Install common tools and dependencies
       shell: bash
       run: |
@@ -79,15 +88,6 @@ jobs:
 
     # - name: Git safe dir
     #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
-
-    - uses: actions/checkout@v4
-      with:
-          sparse-checkout: |
-            benchmark/
-            pytest.ini
-            conftest.py
-            .test_durations
-          fetch-depth: 0 # Fetch all history and tags
 
     # ttrt version (sha) should be taken from release metadata or something
     # - name: Download ttrt wheel
