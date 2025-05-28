@@ -84,7 +84,7 @@ jobs:
 
         set +e
         while true; do
-            response=$(curl -s -H "Authorization: token ***" \
+            response=$(curl -s -H "Authorization: token ${{github.token}}" \
                 "https://api.github.com/repos/$repo/actions/runs/$workflow_id/jobs?per_page=$per_page&page=$page")
             res=$?
             if [ $res -ne 0 ]; then
