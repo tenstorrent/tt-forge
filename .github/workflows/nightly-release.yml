@@ -100,9 +100,9 @@ jobs:
         repo: tt-mlir
         artifact_job_json: "${{ toJSON(steps.tt-mlir-artifacts.outputs) }}"
         release_type: 'nightly'
-    - name: cat readme
-      run: |
-        cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
+    #- name: cat readme
+    #  run: |
+    #    cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
