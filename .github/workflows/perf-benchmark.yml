@@ -76,7 +76,7 @@ jobs:
       shell: bash
       run: |
         JOB_NAME="run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
-        workflow_id="${{{ github.run_id }}"
+        workflow_id="${{ github.run_id }}"
         repo="tenstorrent/tt-forge"
         page=1
         per_page=90
