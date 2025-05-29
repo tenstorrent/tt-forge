@@ -2,7 +2,7 @@
 
 <h1>
 
-[Bounty $](https://github.com/tenstorrent/tt-forge/issues?q=is%3Aissue%20state%3Aopen%20label%3Abounty) | [Buy](https://tenstorrent.com/cards/) | [Install](./INSTALLING.md) | [Discord](https://discord.gg/tenstorrent) | [Join Us](https://boards.greenhouse.io/tenstorrent/jobs/4155609007)
+ [Hardware](https://tenstorrent.com/cards/) | [Documentation](https://docs.tenstorrent.com/tt-forge/) | [Discord](https://discord.gg/tenstorrent) | [Join Us](https://job-boards.greenhouse.io/tenstorrent?gh_src=22e462047us) | [Bounty $](https://github.com/tenstorrent/tt-forge/issues?q=is%3Aissue%20state%3Aopen%20label%3Abounty)
 
 </h1>
 <picture>
@@ -16,7 +16,7 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 
 -----
 # Quick Links
-- [Getting Started / How to Run a Model](docs/src/getting-started.md)
+- [Getting Started / How to Run a Model](docs/src/getting_started.md)
 - [Interactive Tenstorrent Software Diagram](#interactive-tenstorrent-sofware-architecture-diagram)
 - [tt-forge-fe](https://github.com/tenstorrent/tt-forge-fe)
 - [tt-torch](https://github.com/tenstorrent/tt-torch)
@@ -292,16 +292,15 @@ The compiler employs various optimization passes, including layout transformatio
 
 ### `tt-mlir` Tools and Capabilities
 
-- ttmlir-opt – tool is used to run the `tt-mlir` compiler passes on a .mlir source files and is central to developing and testing the compiler.​
+- ttmlir-opt: This tool is used to run the `tt-mlir` compiler passes on a .mlir source files and is central to developing and testing the cmpiler.​
 
-- ttmlir-translate - ttmlir-translate allows us to ingest something (e.g., code) into MLIR compiler, and produce something (e.g., executable binary, or even code again) from MLIR compiler.​
+- ttmlir-translate: ttmlir-translate allows us to ingest something (e.g., code) into MLIR compiler, and produce something (e.g., executable binary, or even code again) from MLIR compiler.​
 
-- ttrt – is a standalone runtime tool that can inspect and run compiler executable files without front-end.​
+- ttrt: It is a standalone runtime tool that can inspect and run compiler executable files without front-end.​
 
-- tt-explorer - It provides a “Human-In-Loop” interface such that the compiler results can be actively tuned and understood by the person compiling the model.​
+- tt-explorer: It provides a “Human-In-Loop” interface such that the compiler results can be actively tuned and understood by the person compiling the model.​
 
-- ttnn-standalone - post-compile tuning/debugging tool for C++ TTNN generated code.
-
+- ttnn-standalone: This is a post-compile tuning/debugging tool for C++ TTNN generated code.
 
 -----
 # Related Tenstorrent Projects
@@ -312,6 +311,5 @@ The compiler employs various optimization passes, including layout transformatio
 - [tt-metalium](https://github.com/tenstorrent/tt-metal)
 - [tt-tvm](https://github.com/tenstorrent/tt-tvm)
 
-
-### Tenstorrent Bounty Program Terms and Conditions
+# Tenstorrent Bounty Program Terms and Conditions
 This repo is a part of Tenstorrent’s bounty program. If you are interested in helping to improve tt-forge, please make sure to read the [Tenstorrent Bounty Program Terms and Conditions](https://docs.tenstorrent.com/bounty_terms.html) before heading to the issues tab. Look for the issues that are tagged with both “bounty” and difficulty level!
