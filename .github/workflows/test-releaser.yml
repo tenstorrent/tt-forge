@@ -1,0 +1,31 @@
+name: Test Releaser
+
+on:
+    push:
+      paths:
+        - '.github/scripts/**'
+        - '.github/workflows/**'
+        - '.github/actions/**'
+    pull_request:
+      paths:
+        - '.github/scripts/**'
+        - '.github/workflows/**'
+        - '.github/actions/**'
+    workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+
+jobs:
+#  test-create-version-branches:
+#    uses: ./.github/workflows/create-version-branches.yml
+#    with:
+#      draft: true
+  test-daily-releaser:
+    #needs: test-create-version-branches
+    uses: ./.github/workflows/daily-releaser.yml
+    with:
+      draft: true
+      delete-drafts: true

@@ -27,12 +27,6 @@ Main script for hardware-compatible
 
 inf_regex: re.Pattern = re.compile(r"inf(?=\,)")
 
-url_path_prefixes: Dict[str, str] = {
-    "tt-xla": "https://github.com/tenstorrent/tt-xla/tree",
-    "tt-forge-fe": "https://github.com/tenstorrent/tt-forge-fe/tree",
-    "tt-torch": "https://github.com/tenstorrent/tt-torch/tree",
-}
-
 wormhole_cards: Set[str] = {"n150", "n300", "wormhole"}
 blackhole_cards: Set[str] = {"p150", "p300", "blackhole"}
 
@@ -214,7 +208,7 @@ def create_table(model_tests: Dict[str, List[Dict[str, str]]], card_archs: Set[s
     for model_name, list_attrs in model_tests.items():
         for attrs in list_attrs:
             frontend = attrs.pop("frontend")
-            url = f'{url_path_prefixes[frontend]}/{url_shas.get(frontend)}/{attrs.get("file_path")}'
+            url = f'"https://github.com/{frontend}/tree/{url_shas.get(frontend)}/{attrs.get("file_path")}'
             temp_row = [frontend, f"[{model_name}]({url})"]
             for card_arch in card_archs:
                 if not attrs.get("card") == card_arch:
