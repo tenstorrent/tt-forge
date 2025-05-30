@@ -1,0 +1,94 @@
+name: Create Version Branch releaser
+
+on:
+  schedule:
+  - cron: '0 6 24 * *'
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'Put PR in draft mode for testing'
+        type: string
+        default: 'true'
+        required: false
+      only_repos:
+        type: string
+        description: 'comma separated list of repos to release RC branch for e.g tt-forge-fe,tt-torch'
+        required: true
+        default: ''
+  workflow_call:
+    inputs:
+      draft:
+        description: 'Put PR in draft mode for testing'
+        type: string
+        default: 'true'
+        required: false
+      only_repos:
+        type: string
+        description: 'comma separated list of repos to release RC branch for e.g tt-forge-fe,tt-torch'
+        required: false
+        default: ''
+
+jobs:
+  get-repos:
+    outputs:
+      json_results: ${{ steps.get-repos.outputs.json_results }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Get Repos
+      id: get-repos
+      uses: ./.github/actions/get-repos
+      with:
+        repos: ${{ inputs.only_repos }}
+    - name: echo json repos
+      run: echo ${{ steps.get-repos.outputs.repos }}
+
+  create-version-branches:
+    needs: get-repos
+    strategy:
+      fail-fast: false
+      matrix:
+        build: ${{fromJson(needs.get-repos.outputs.json_results)}}
+    env:
+        GH_TOKEN: ${{ github.token }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: version tag
+      id: version-tag
+      run: |
+        source .version
+        echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
+        #TODO: Minor will be reset by the stable releaser when create a new release branch
+        echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
+
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ matrix.build.repo }}
+        release_type: 'rc'
+
+    #TODO: Need to check on if we want to create rc branch for stable release (idempotent)
+    - name: Create Version branch - ${{ matrix.build.repo }}
+      id: create-rc-branch
+      uses: ./.github/actions/create-rc-branch
+      with:
+        repo: ${{ matrix.build.repo }}
+        workflow: ${{ steps.set-release-facts.outputs.workflow }}
+        MAJOR: ${{ steps.version-tag.outputs.MAJOR }}
+        MINOR: ${{ steps.version-tag.outputs.MINOR }}
+        draft: ${{ inputs.draft }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    - name: Releaser - ${{ matrix.build.repo }} - ${{ steps.create-rc-branch.outputs.branch_name }} - ${{ steps.create-rc-branch.outputs.tag_name }}
+      uses: ./.github/actions/releaser
+      with:
+        repo: ${{ matrix.build.repo }}
+        branch: ${{ steps.create-rc-branch.outputs.branch_name }}
+        release_type: 'rc'
+        # TODO: empty latest_branch_commit will be used for nightly releases
+        new_version_tag: ${{ steps.create-rc-branch.outputs.tag_name }}
+        draft: ${{ inputs.draft }}
