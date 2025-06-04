@@ -62,7 +62,7 @@ jobs:
         tag: "${{needs.get-version.outputs.repo_short }}-${{ needs.get-version.outputs.tag }}"
 
     - name: Build Release Artifacts
-      if: steps.check-tag.outputs.exists == 'false'
+      if: ${{ inputs.draft || steps.check-tag.outputs.exists == 'false' }}
       id: build-release
       uses: ./.github/actions/build-release
       with:
@@ -95,7 +95,7 @@ jobs:
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
 
   publish-release:
-    if: ${{ needs.build-release.outputs.check-tag == 'false' }}
+    if: ${{ inputs.draft || needs.build-release.outputs.check-tag == 'false' }}
     needs:
       - build-release
       - get-version
