@@ -155,14 +155,41 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Download project releases
+    - name: Download XLA project releases
+      if: ${{ matrix.build.project == 'tt-xla' }}
       uses: robinraju/release-downloader@v1
       with:
-        latest: true
         preRelease: true
         tarBall: false
         zipBall: false
-        fileName: '*.whl'
+        fileName: 'pjrt_*.whl'
+
+    - name: Download Torch project releases
+      if: ${{ matrix.build.project == 'tt-torch' }}
+      uses: robinraju/release-downloader@v1
+      with:
+        preRelease: true
+        tarBall: false
+        zipBall: false
+        fileName: 'tt_torch*.whl'
+
+    - name: Download Forge-FE project releases
+      if: ${{ matrix.build.project == 'tt-forge-fe' }}
+      uses: robinraju/release-downloader@v1
+      with:
+        preRelease: true
+        tarBall: false
+        zipBall: false
+        fileName: 'forge*.whl'
+
+    - name: Download XLA project releases
+      if: ${{ matrix.build.project == 'tt-forge-fe' }}
+      uses: robinraju/release-downloader@v1
+      with:
+        preRelease: true
+        tarBall: false
+        zipBall: false
+        fileName: 'tvm*.whl'
 
     - name: Install wheels
       shell: bash
