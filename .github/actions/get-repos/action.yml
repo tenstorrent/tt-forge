@@ -1,0 +1,54 @@
+name: Get Repos
+
+description: Get Repos
+
+inputs:
+  repo:
+    description: 'Name of repo eg. tt-forge-fe'
+    required: false
+
+outputs:
+  json_results:
+    description: 'JSON results of repos that are allowed to release'
+    value: ${{ steps.get-repos.outputs.json_results }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Repos
+      shell: bash
+      id: get-repos
+      run: |
+        # Get all repos that are allowed to release
+        # NOTE: make sure to update .github/actions/set-release-facts/action.yaml when adding new repos
+        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-mlir tenstorrent/tt-xla'
+
+        # Initialize empty results array
+        json_results='[]'
+
+        add_repo() {
+          local repo="$1"
+          local repo_short="${repo#tenstorrent/}"
+          echo "Adding repo: $repo"
+          json_results=$(echo "$json_results" | jq -r -c --arg repo "$repo" --arg repo_short "$repo_short" '. + [{"repo": $repo, "repo_short": $repo_short}]')
+        }
+
+        # Add all repos if input is empty
+        if [[ -z "${{ inputs.repo }}" ]]; then
+          echo "No specific repo filter, adding all repos"
+          for repo in $all_repos; do
+            add_repo "$repo"
+          done
+        else
+          echo "Filtering for repo: ${{ inputs.repo }}"
+          # Get all repos by filter
+          for repo in $all_repos; do
+            if [[ "$repo" =~ "${{ inputs.repo }}" ]]; then
+              add_repo "$repo"
+            fi
+          done
+        fi
+
+        # Output the results
+        echo "Final JSON: $json_results"
+        echo "json_results=$json_results" >> $GITHUB_OUTPUT

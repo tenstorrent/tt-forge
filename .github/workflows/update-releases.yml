@@ -1,0 +1,88 @@
+name: Update RC and Stable Branches/Version
+
+on:
+  workflow_call:
+    inputs:
+      draft:
+        type: boolean
+        default: true
+        description: Put PR in draft mode for testing
+      repo:
+        type: string
+        description: 'Repo to release e.g tt-forge-fe'
+        required: true
+        default: ''
+      prerelease:
+        type: boolean
+        default: true
+        description: Put PR in prerelease mode for testing
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+
+jobs:
+  get-release-branches:
+    outputs:
+      json_results: ${{ steps.branches.outputs.json_results }}
+      is_empty: ${{ steps.branches.outputs.is_empty }}
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/get-release-branches
+      id: branches
+      with:
+        repo: ${{ inputs.repo }}
+
+  build-release:
+    if: ${{ needs.get-release-branches.outputs.is_empty == 'false' }}
+    name: Build Release ${{ matrix.new_version_tag }}
+    runs-on: ubuntu-latest
+    needs: get-release-branches
+    strategy:
+      matrix:
+        include: ${{fromJson(needs.get-release-branches.outputs.json_results)}}
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: mukunku/tag-exists-action@v1.6.0
+      id: check-tag
+      with:
+        tag: ${{ matrix.new_version_tag }}
+        repo: ${{ inputs.repo }}
+
+    - name: Build Release
+      if: steps.check-tag.outputs.exists == 'false'
+      uses: ./.github/actions/build-release
+      with:
+        repo: ${{ matrix.repo }}
+        branch: ${{ matrix.branch }}
+        release_type: ${{ matrix.release_type }}
+        latest_branch_commit: ${{ matrix.latest_branch_commit  }}
+        new_version_tag: ${{ matrix.new_version_tag }}
+        latest_branch_commit_date: ${{ matrix.latest_branch_commit_date  }}
+        second_latest_branch_commit_date: ${{ matrix.second_latest_branch_commit_date  }}
+        draft: ${{ inputs.draft }}
+
+
+    - name: Checkout Release Branch for tagging
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repo }}
+        token: ${{ env.GH_TOKEN }}
+        ref: ${{ matrix.branch }}
+
+    - name: Push Release Version tag to Release Branch
+      if: steps.check-tag.outputs.exists == 'false'
+      shell: bash
+      run: |
+        git tag ${{ matrix.new_version_tag }}
+        git push origin ${{ matrix.branch }} --tags
+
+    # Recheckout forge repo to fix side effects for clean up job
+    - uses: actions/checkout@v4

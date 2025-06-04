@@ -1,0 +1,77 @@
+name: Test Releaser
+
+on:
+    push:
+      branches:
+        - main
+      paths:
+        - '.github/scripts/model-compatible-table/**'
+        - '.github/scripts/wheel-version-updater.sh'
+        - '.github/scripts/prune-nightly-branches.sh'
+        - '.github/workflows/update-release.yml'
+        - '.github/workflows/daily-releaser.yml'
+        - '.github/workflows/nightly-releaser.yml'
+        - '.github/workflows/create-version-branches.yml'
+        - '.github/actions/create-rc-branch/**'
+        - '.github/actions/docs-generator/**'
+        - '.github/actions/find-workflow/**'
+        - '.github/actions/get-release-branches/**'
+        - '.github/actions/get-repos/**'
+        - '.github/actions/build-release/**'
+        - '.github/actions/uplift-artifacts/**'
+        - '.github/actions/set-release-facts/**'
+        - '.github/actions/install-verification/**'
+        - '.github/actions/publish-release/**'
+    pull_request:
+      paths:
+        - '.github/scripts/model-compatible-table/**'
+        - '.github/scripts/wheel-version-updater.sh'
+        - '.github/scripts/prune-nightly-branches.sh'
+        - '.github/workflows/update-release.yml'
+        - '.github/workflows/daily-releaser.yml'
+        - '.github/workflows/nightly-releaser.yml'
+        - '.github/workflows/create-version-branches.yml'
+        - '.github/actions/create-rc-branch/**'
+        - '.github/actions/docs-generator/**'
+        - '.github/actions/find-workflow/**'
+        - '.github/actions/get-release-branches/**'
+        - '.github/actions/get-repos/**'
+        - '.github/actions/build-release/**'
+        - '.github/actions/uplift-artifacts/**'
+        - '.github/actions/set-release-facts/**'
+        - '.github/actions/install-verification/**'
+        - '.github/actions/publish-release/**'
+    workflow_dispatch:
+      inputs:
+        repo:
+          description: 'Name of repo eg. tt-forge-fe'
+          required: false
+          default: ''
+        draft:
+          type: boolean
+          default: true
+          description: Put PR in draft mode for testing
+        delete-drafts:
+          type: boolean
+          default: true
+          description: Delete drafts
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+
+jobs:
+#  test-create-version-branches:
+#    uses: ./.github/workflows/create-version-branches.yml
+#    with:
+#      draft: true
+#      repo: ${{ inputs.repo }}
+  test-daily-releaser:
+    #needs: test-create-version-branches
+    uses: ./.github/workflows/daily-releaser.yml
+    with:
+      draft: ${{ inputs.draft || true}}
+      delete-drafts: ${{ inputs.delete-drafts || true}}
+      prerelease: true
+      repo: ${{ inputs.repo || '' }}
