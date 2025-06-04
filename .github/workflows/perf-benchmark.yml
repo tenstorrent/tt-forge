@@ -203,7 +203,11 @@ jobs:
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
           pip install tt_torch*.whl
-          pip install ttmlir*.whl
+          # pip install ttmlir*.whl
+        elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          python -m venv tt-xla-venv
+          source tt-xla-venv/bin/activate
+          pip install pjrt*.whl
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
