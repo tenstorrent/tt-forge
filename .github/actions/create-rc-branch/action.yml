@@ -1,0 +1,125 @@
+
+
+name: "Create RC branch"
+description: "Create RC branch"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+  branch:
+    description: "Branch name"
+    default: "main"
+    required: false
+  workflow:
+    description: "Workflow name"
+    required: true
+  workflow_result_in_job:
+    description: "Set that workflow result is job result"
+    default: ""
+    required: false
+  MAJOR:
+    description: "Major version"
+    required: true
+  MINOR:
+    description: "Minor version"
+    required: true
+  draft:
+    description: "Draft release"
+    required: false
+  GH_TOKEN:
+    description: "GitHub token"
+    required: true
+
+outputs:
+  branch_name:
+    description: "Branch name"
+    value: ${{ steps.create-rc-branch.outputs.branch_name }}
+  tag_name:
+    description: "Tag name"
+    value: ${{ steps.create-rc-branch.outputs.tag_name }}
+runs:
+  using: "composite"
+  steps:
+    - name: Find workflow candidate
+      id: find_workflow
+      uses: ./.github/actions/find-workflow
+      with:
+        repo: ${{ inputs.repo }}
+        workflow: ${{ inputs.workflow }}
+        workflow_allow_failed: false
+        workflow_result_in_job: ${{ inputs.workflow_result_in_job }}
+
+
+    - name: Checkout target repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repo }}
+        token: ${{ env.GH_TOKEN }}
+        ref: ${{ steps.find_workflow.outputs.run-commit-sha }}
+        fetch-depth: 0
+
+
+    - name: Create new branch and push
+      id: create-rc-branch
+      shell: bash
+      run: |
+        # Get the latest release branch and create a new semver bumped release branch in frontend repos
+
+        release_prefix="release"
+
+        if [ "${{ inputs.draft }}" == "true" ]; then
+            release_prefix="draft-release"
+            echo "Creating draft release branch"
+        fi
+
+        # broken up so release prefix can be variable
+        regex="(?<=origin\\/"
+        regex+="${release_prefix}"
+        regex+="-)\\d+\\.\\d+$"
+
+        echo "regex: $regex"
+
+        latest_release_branch_version=$(git for-each-ref refs/remotes/origin/ --sort=authordate --format='%(refname:short)' | grep -oP "${regex}" | tail -n 1 || echo "Could not find latest release branch")
+        if [ -z "$latest_release_branch_version" ]; then
+            new_release_tag="${{ inputs.MAJOR }}.${{ inputs.MINOR }}"
+            new_release_branch_name="${release_prefix}-${new_release_tag}"
+        else
+            echo "Current Release Branch is $latest_release_branch_version"
+            IFS='.' read -r major minor <<< "$latest_release_branch_version"
+
+            if [ "$major" -eq "${{ inputs.MAJOR }}" ] ; then
+                # Update existing stable branch with minor version
+                new_release_tag="${major}.$((minor+1))"
+                new_release_branch_name="${release_prefix}-${new_release_tag}"
+            else
+                # Create new major release branch
+                new_release_tag="${{ inputs.MAJOR }}.0"
+                new_release_branch_name="${release_prefix}-${new_release_tag}"
+            fi
+        fi
+
+        echo "New Release Branch is $new_release_branch_name"
+
+        echo "branch_name=$new_release_branch_name" >> $GITHUB_OUTPUT
+        echo "tag_name=$new_release_tag" >> $GITHUB_OUTPUT
+
+    - uses: mukunku/tag-exists-action@v1.6.0
+      id: check-tag
+      with:
+        tag: ${{ steps.check-tag.outputs.tag_name }}
+        repo: ${{ inputs.repo }}
+
+    - name: Create Release Branch
+      if: steps.check-tag.outputs.exists == 'false'
+      shell: bash
+      run: |
+        new_release_tag="${{ steps.create-rc-branch.outputs.tag_name }}"
+        new_release_branch_name="${{ steps.create-rc-branch.outputs.branch_name }}"
+
+        git checkout -b $new_release_branch_name
+        git tag "${new_release_tag}.rc.0"
+        git push origin $new_release_branch_name --tags
+
+
+    # Recheckout forge repo to fix side effects for clean up job
+    - uses: actions/checkout@v4

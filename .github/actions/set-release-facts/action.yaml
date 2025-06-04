@@ -1,0 +1,82 @@
+
+name: "Set Release Facts"
+description: "Set Release Facts"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+  release_type:
+    description: "Release type"
+    required: true
+
+outputs:
+  workflow:
+    description: "Workflow name"
+    value: ${{ steps.set-manifest.outputs.workflow }}
+  artifact_download_glob:
+    description: "Artifact download glob"
+    value: ${{ steps.set-manifest.outputs.artifact_download_glob }}
+  artifact_cleanup_file_glob:
+    description: "Artifact cleanup file glob"
+    value: ${{ steps.set-manifest.outputs.artifact_cleanup_file_glob }}
+  artifact_cleanup_folder_glob:
+    description: "Artifact cleanup folder glob"
+    value: ${{ steps.set-manifest.outputs.artifact_cleanup_folder_glob }}
+  workflow_result_in_job:
+    description: "Workflow result in job"
+    value: ${{ steps.set-manifest.outputs.workflow_result_in_job }}
+  repo_short:
+    description: "Repo short name without owner"
+    value: ${{ steps.set-manifest.outputs.repo_short }}
+runs:
+  using: "composite"
+  steps:
+    - name: Set Releaser manifest
+      id: set-manifest
+      shell: bash
+      run: |
+        # Set release facts based on repo
+        if [[ "${{ inputs.repo }}" =~ "tt-forge-fe" ]]; then
+            workflow="On nightly"
+            artifact_download_glob='*{wheel,test-reports}*'
+            artifact_cleanup_file_glob='*{.json,benchmark_}*'
+            workflow_result_in_job="fail-notify"
+        elif [[ "${{ inputs.repo }}" =~ "tt-torch" ]]; then
+            workflow="Nightly Tests"
+            artifact_download_glob='*{install-artifacts,test-reports-models-}*'
+            artifact_cleanup_file_glob='*torchvision*'
+            artifact_cleanup_folder_glob='*install-artifacts-debug*'
+        elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
+            workflow="On push"
+            artifact_download_glob='*ttmlir-wheel*'
+        elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
+            workflow="On nightly"
+            artifact_download_glob='*{xla-whl-release,test-reports}*'
+        else
+            echo "Unknown repo: ${{ inputs.repo }}"
+            exit 1
+        fi
+
+        repo_short="${{ inputs.repo }}"
+        repo_short="${repo_short#tenstorrent/}"
+
+        echo "Using workflow: $workflow"
+        echo "Using artifact_download_glob: $artifact_download_glob"
+        echo "Using artifact_cleanup_file_glob: $artifact_cleanup_file_glob"
+        echo "Using workflow_result_in_job: $workflow_result_in_job"
+        echo "Using artifact_cleanup_folder_glob: $artifact_cleanup_folder_glob"
+        echo "Using workflow_allow_failed: $workflow_allow_failed"
+        echo "Using latest_branch_commit: $latest_branch_commit"
+        echo "Using new_version_tag: $new_version_tag"
+        echo "Using release_type: ${{ inputs.release_type }}"
+        echo "Using latest_branch_commit_date: $latest_branch_commit_date"
+        echo "Using second_latest_branch_commit_date: $second_latest_branch_commit_date"
+        echo "Using repo_short: $repo_short"
+
+        # Set outputs
+        echo "workflow=$workflow" >> $GITHUB_OUTPUT
+        echo "artifact_download_glob=$artifact_download_glob" >> $GITHUB_OUTPUT
+        echo "artifact_cleanup_file_glob=$artifact_cleanup_file_glob" >> $GITHUB_OUTPUT
+        echo "artifact_cleanup_folder_glob=$artifact_cleanup_folder_glob" >> $GITHUB_OUTPUT
+        echo "workflow_result_in_job=$workflow_result_in_job" >> $GITHUB_OUTPUT
+        echo "repo_short=$repo_short" >> $GITHUB_OUTPUT

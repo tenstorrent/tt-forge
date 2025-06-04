@@ -1,0 +1,127 @@
+name: "Build Release"
+description: "Build Release"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+  branch:
+    description: "Branch name"
+    default: "main"
+    required: false
+  workflow:
+    description: "Workflow name"
+    required: true
+  workflow_allow_failed:
+    description: "Return run even if workflow has failed"
+    required: false
+  workflow_result_in_job:
+    description: "Set that workflow result is job result"
+    default: ""
+    required: false
+  release_type:
+    description: "Release type"
+    required: true
+  latest_branch_commit:
+    description: "Latest branch commit"
+    required: false
+  new_version_tag:
+    description: "New version tag for wheel"
+    required: false
+  latest_branch_commit_date:
+    description: "Latest branch commit date"
+    required: false
+  second_latest_branch_commit_date:
+    description: "Second latest branch commit date"
+    required: false
+  draft:
+    description: "Draft release"
+    required: true
+
+outputs:
+  release-artifacts-id:
+    description: "release artifacts"
+    value: ${{ steps.release-artifacts.outputs.artifact-id }}
+  run-conclusion:
+    description: 'Workflow run conclusion'
+    value: ${{ steps.find_workflow.outputs.run_conclusion }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        release_type: ${{ inputs.release_type }}
+
+    - name: Find workflow artifact candidate
+      id: find_workflow
+      uses: ./.github/actions/find-workflow
+      with:
+        repo: ${{ inputs.repo }}
+        branch: ${{ inputs.branch }}
+        workflow: ${{ steps.set-release-facts.outputs.workflow }}
+        workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
+        workflow_result_in_job: ${{ steps.set-release-facts.outputs.workflow_result_in_job }}
+        commit: ${{ inputs.latest_branch_commit }}
+
+    - name: Uplift ${{ inputs.repo }} artifacts
+      uses: ./.github/actions/uplift-artifacts
+      id: uplift-artifacts
+      with:
+        repo: ${{ inputs.repo }}
+        run-id: ${{ steps.find_workflow.outputs.run-id }}
+        artifact_download_glob: ${{ steps.set-release-facts.outputs.artifact_download_glob }}
+        artifact_cleanup_file_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_file_glob }}
+        artifact_cleanup_folder_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_folder_glob }}
+
+
+    - name: Update Wheel version to ${{ inputs.new_version_tag }}
+      env:
+        WHEEL_VERSION: ${{ inputs.new_version_tag }}
+        WHEEL_ROOT_PATH: ${{ github.workspace }}/release/artifacts
+      run: ./.github/scripts/wheel-version-updater.sh
+      shell: bash
+
+    - name: Create model compatible table
+      working-directory: ./.github/scripts/model-compatible-table
+      env:
+        XML_ROOT: ${{ github.workspace }}/release/artifacts
+        FILE_OUTPUT: ${{ github.workspace }}/release/docs/readme_hardware_table.md
+        URL_SHAS: '{"${{ inputs.repo }}": "${{ steps.find_workflow.outputs.run-commit-sha }}"}'
+      shell: bash
+      run: |
+        readme_path="${{ github.workspace }}/release/docs"
+        mkdir -p $readme_path
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        python main.py
+        # Clean up XML files
+        find ${{ github.workspace }}/release/artifacts -type f -iname "*.xml" -delete
+
+    - name: Generate docs
+      uses: ./.github/actions/docs-generator
+      with:
+        owner: tenstorrent
+        repo: ${{ inputs.repo }}
+        artifact_job_json: "${{ toJSON(steps.uplift-artifacts.outputs) }}"
+        workflow_job_json: "${{ toJSON(steps.find_workflow.outputs) }}"
+        release_type: ${{ inputs.release_type }}
+        latest_branch_commit_date: ${{ inputs.latest_branch_commit_date }}
+        second_latest_branch_commit_date: ${{ inputs.second_latest_branch_commit_date }}
+
+    - name: doc helper
+      shell: bash
+      id: doc_helper
+      run: |
+        # Used to add model compatible table to readme at the bottom of the document
+        cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
+
+    - name: Store release artifacts
+      uses: actions/upload-artifact@v4
+      id: release-artifacts
+      with:
+        name: build-release-${{ steps.set-release-facts.outputs.repo_short }}
+        path: ${{ github.workspace }}/release/**
