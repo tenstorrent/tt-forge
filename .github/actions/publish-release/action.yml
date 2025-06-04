@@ -1,0 +1,51 @@
+name: "Publish Release"
+description: "Publish Release"
+
+inputs:
+  release-artifacts-id:
+    description: "Release artifacts"
+    required: true
+  repo:
+    description: "Repo name"
+    required: true
+  release_type:
+    description: "Release type"
+    required: true
+  new_version_tag:
+    description: "New version tag for wheel"
+    required: false
+  draft:
+    description: "Draft release"
+    required: true
+  prerelease:
+    description: "Prerelease release"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        release_type: ${{ inputs.release_type }}
+    - uses: actions/download-artifact@v4
+      with:
+        artifact-ids: ${{ inputs.release-artifacts-id }}
+        path: ${{ github.workspace }}/release
+    - name: Display structure of downloaded files
+      run: ls -R ${{ github.workspace }}/release
+      shell: bash
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body_path: "${{ github.workspace }}/release/build-release-${{ steps.set-release-facts.outputs.repo_short }}/docs/readme"
+        token: ${{ github.token }}
+        name: ${{ steps.set-release-facts.outputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag }}
+        tag_name: ${{ steps.set-release-facts.outputs.repo_short }}-${{ inputs.new_version_tag }}
+        draft: ${{ inputs.draft }}
+        prerelease: ${{ inputs.prerelease }}
+        fail_on_unmatched_files: true
+        files: |
+          ${{ github.workspace }}/release/build-release-${{ steps.set-release-facts.outputs.repo_short }}/artifacts/**

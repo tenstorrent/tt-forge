@@ -1,0 +1,93 @@
+
+name: "Check Release Branches"
+description: "Check Release Branches"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+
+outputs:
+  json_results:
+    description: 'JSON results'
+    value: ${{ steps.get-release-branches.outputs.json_results }}
+  is_empty:
+    description: 'True if no release branches were found'
+    value: ${{ steps.get-release-branches.outputs.is_empty }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout target repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repo }}
+        token: ${{ env.GH_TOKEN }}
+        fetch-depth: 0
+    - name: Get Release Branches
+      id: get-release-branches
+      shell: bash
+      run: |
+        # Get the latest release branches sorted by date in ascending order
+        json_results="[]"
+        set +e
+        release_branches=$(git for-each-ref refs/remotes/origin/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release-\d+\.\d+$' | xargs)
+        set -e
+        if [ -z "$release_branches" ]; then
+          echo "No release branches found"
+          exit 0
+        fi
+
+        for branch in $release_branches; do
+          current_tag_commit=$(git rev-list --branches=$branch --tags --max-count=1)
+          current_release_tag=$(git describe --tags $current_tag_commit)
+          latest_branch_commit=$(git rev-parse origin/$branch)
+          latest_branch_commit_date=$(git show --no-patch --format=%ct $latest_branch_commit)
+          second_latest_branch_commit=$(git rev-list --branches=$branch --tags --max-count=2 | tail -n 1)
+          second_latest_branch_commit_date=$(git show --no-patch --format=%ct $second_latest_branch_commit)
+          echo "Branch is $branch"
+          echo "Current Release Tag is $current_release_tag"
+          echo "Current Tag Commit is $current_tag_commit"
+          echo "Latest Branch Commit is $latest_branch_commit"
+
+          if [[ "$current_tag_commit" == "$latest_branch_commit" ]]; then
+            echo "Branch $branch has no new commits"
+            continue
+          elif [[ "$current_release_tag" =~ rc ]]; then
+            # Bump RC version for release candidate branch
+            IFS='.' read -r major minor rc rc_version <<< "$current_release_tag"
+            new_version_tag="${major}.${minor}.${rc}.$((rc_version+1))"
+            release_type="rc"
+          else
+            # Bump Patch version for stable branch
+            IFS='.' read -r major minor patch <<< "$current_release_tag"
+            new_version_tag="${major}.${minor}.$((patch+1))"
+            release_type="stable"
+          fi
+
+          # Append results to json_results
+          json_results=$(echo $json_results | jq -r -c --arg branch "$branch" --arg new_version_tag "$new_version_tag" --arg latest_branch_commit "$latest_branch_commit" --arg release_type "$release_type" --arg latest_branch_commit_date "$latest_branch_commit_date" --arg second_latest_branch_commit_date "$second_latest_branch_commit_date" --arg second_latest_branch_commit "$second_latest_branch_commit" '. += [{
+              "branch": $branch,
+              "new_version_tag": $new_version_tag,
+              "latest_branch_commit": $latest_branch_commit,
+              "latest_branch_commit_date": $latest_branch_commit_date,
+              "second_latest_branch_commit": $second_latest_branch_commit,
+              "second_latest_branch_commit_date": $second_latest_branch_commit_date,
+              "repo": "${{ inputs.repo }}",
+              "release_type": $release_type,
+          }]')
+        done
+
+        echo "json_results=$json_results"
+        echo "json_results=$json_results" >> $GITHUB_OUTPUT
+
+        # Check if json_results is empty (only contains an empty array [])
+        if [ "$json_results" = "[]" ]; then
+          echo "No release branches found with new commits"
+          echo "is_empty=true" >> $GITHUB_OUTPUT
+        else
+          echo "Found release branches with new commits"
+          echo "is_empty=false" >> $GITHUB_OUTPUT
+        fi
+
+    # Recheckout forge repo to fix side effects for clean up job
+    - uses: actions/checkout@v4

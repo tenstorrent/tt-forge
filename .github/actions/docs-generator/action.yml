@@ -2,10 +2,6 @@
 name: "Create docs"
 description: "Creates a release doc for all frontend and cats them to one single file"
 inputs:
-  owner:
-    description: "Repo's owner name"
-    required: true
-    type: string
   repo:
     description: "Repo's name"
     required: true
@@ -14,19 +10,32 @@ inputs:
     description: ""
     required: true
     type: string
+  workflow_job_json:
+    description: ""
+    required: true
+    type: string
+  latest_branch_commit_date:
+    description: ""
+    required: false
+    type: string
+  second_latest_branch_commit_date:
+    description: ""
+    required: false
+    type: string
   release_type:
         type: choice
         description: select release type
         options:
         - nightly
-        - beta
         - stable
+        - rc
 
 runs:
   using: "composite"
   steps:
-    - name: Get last release
+    - name: Get last release nightly
       shell: bash
+      if: ${{ inputs.release_type == 'nightly' }}
       id: last_release
       run: |
         loop_count=50
@@ -48,6 +57,8 @@ runs:
             continue
           fi
 
+
+          # TODO: Need to fix this once merge since we need tag history
           if [[ "$tagName" =~ ${{ inputs.release_type }} ]]; then
             echo "Selected release name: $name tag: $tagName publishedAt: $publishedAt"
             echo "publishedAt=$publishedAt" >> $GITHUB_OUTPUT
@@ -67,13 +78,18 @@ runs:
       shell: bash
       id: all_changes
       run: |
-        start=${{ steps.last_release.outputs.publishedAt }}
-        end=$(date +'%FT%T'Z)
+        if [[ ${{ inputs.release_type }} == 'nightly' ]]; then
+          start=${{ steps.last_release.outputs.publishedAt }}
+          end=$(date +'%FT%T'Z)
+        else
+          start=$(date -d @${{ inputs.second_latest_branch_commit_date }} +'%FT%T'Z)
+          end=$(date -d @${{ inputs.latest_branch_commit_date }} +'%FT%T'Z)
+        fi
 
         function store_encoded_url() {
           local url_parms=$1
           local store_var=$2
-          local base_url="https://github.com/${{ inputs.owner }}/${{ inputs.repo }}/issues?q="
+          local base_url="https://github.com/${{ inputs.repo }}/issues?q="
           local encoded_params
           local url
 
@@ -98,18 +114,17 @@ runs:
         readme_path="${{ github.workspace }}/release/docs"
         mkdir -p $readme_path
 
+        repo=$(echo "${{ inputs.repo }}"  | awk -F'[/]' ' { print $2 }')
         found_files=$(find ${{ fromJson(inputs.artifact_job_json).download-path }} -type f -exec basename {} \;)
         download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
         echo ""
 
         cat <<- EOF >> "$readme_path/readme"
-
-        ### ${{ inputs.repo }}
-        :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo }})
+        :green_book: [Getting started](https://docs.tenstorrent.com/$repo)
         :bug: [Bugs](${{ steps.all_changes.outputs.bug_fixes }})
         :leftwards_arrow_with_hook: [All Merged Changes](${{ steps.all_changes.outputs.merged_changes }})
-        #### Test status: ${{fromJson(inputs.artifact_job_json).run-status-symbol }}
-        #### Workflow run: ${{fromJson(inputs.artifact_job_json).run-url }}
+        #### Test status: ${{fromJson(inputs.workflow_job_json).run-status-symbol }}
+        #### Workflow run: ${{fromJson(inputs.workflow_job_json).run-url }}
         #### Files:
           $download_list_files
         EOF
