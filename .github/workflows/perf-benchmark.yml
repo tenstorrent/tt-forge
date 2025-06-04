@@ -155,7 +155,7 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Download XLA project releases
+    - name: Download XLA project release
       if: ${{ matrix.build.project == 'tt-xla' }}
       uses: robinraju/release-downloader@v1
       with:
@@ -164,7 +164,7 @@ jobs:
         zipBall: false
         fileName: 'pjrt_*.whl'
 
-    - name: Download Torch project releases
+    - name: Download Torch project release
       if: ${{ matrix.build.project == 'tt-torch' }}
       uses: robinraju/release-downloader@v1
       with:
@@ -173,16 +173,17 @@ jobs:
         zipBall: false
         fileName: 'tt_torch*.whl'
 
-    - name: Download Forge-FE project releases
+    - name: Download Forge-FE project release
       if: ${{ matrix.build.project == 'tt-forge-fe' }}
       uses: robinraju/release-downloader@v1
       with:
+        tag: 'tt-forge*'
         preRelease: true
         tarBall: false
         zipBall: false
         fileName: 'forge*.whl'
 
-    - name: Download XLA project releases
+    - name: Download Forge-FE TVM project release
       if: ${{ matrix.build.project == 'tt-forge-fe' }}
       uses: robinraju/release-downloader@v1
       with:
