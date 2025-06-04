@@ -245,7 +245,7 @@ def main():
 
         # Run the benchmark
         results = run_benchmark(config)
-        results["project"] = config["project"]
+        results["project"] = "tt-forge/" + config["project"]
         results["model_rawname"] = config["model"]
 
         # Save the results
