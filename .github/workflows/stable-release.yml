@@ -1,0 +1,85 @@
+name: Stable Releaser
+
+on:
+  schedule:
+  - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      draft:
+        type: boolean
+        default: true
+        description: Put PR in draft mode for testing
+      delete-drafts:
+        type: boolean
+        default: false
+        description: Delete drafts
+      repo:
+        type: string
+        description: 'Repo to release e.g tt-forge-fe'
+        required: false
+        default: ''
+      prerelease:
+        type: boolean
+        default: true
+        required: false
+        description: Put PR in prerelease
+  workflow_call:
+    inputs:
+      draft:
+        type: boolean
+        default: true
+        description: Put PR in draft mode for testing
+      delete-drafts:
+        type: boolean
+        default: false
+        description: Delete drafts
+      repo:
+        type: string
+        description: 'Repo to release e.g tt-forge-fe'
+        required: false
+        default: ''
+      prerelease:
+        type: boolean
+        required: false
+        default: true
+        description: Put PR in prerelease
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+
+jobs:
+
+  get-repos:
+    outputs:
+      json_results: ${{ steps.get-repos.outputs.json_results }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Get Repos
+      id: get-repos
+      uses: ./.github/actions/get-repos
+      with:
+        repo: ${{ inputs.repo }}
+
+
+get-version:
+    outputs:
+        tag: ${{ steps.version-tag.outputs.tag }}
+        repo_short: ${{ steps.version-tag.outputs.repo_short }}
+
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: version tag
+        id: version-tag
+        run: |
+        source .version
+        repo="${{ inputs.repo }}"
+        repo_short="${repo#tenstorrent/}" >> $GITHUB_OUTPUT
+        tag="${VERSION}.dev$(date +"%Y%m%d")"
+        echo "tag=$tag" >> $GITHUB_OUTPUT
+        echo "repo_short=$repo_short" >> $GITHUB_OUTPUT
