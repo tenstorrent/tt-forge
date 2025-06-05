@@ -8,7 +8,12 @@ inputs:
   release_type:
     description: "Release type"
     required: true
-
+  draft:
+    description: "Draft release"
+    required: false
+  new_version_tag:
+    description: "New version tag for wheel"
+    required: false
 outputs:
   workflow:
     description: "Workflow name"
@@ -28,6 +33,9 @@ outputs:
   repo_short:
     description: "Repo short name without owner"
     value: ${{ steps.set-manifest.outputs.repo_short }}
+  new_version_tag:
+    description: "New version tag for wheel"
+    value: ${{ steps.set-manifest.outputs.new_version_tag }}
 runs:
   using: "composite"
   steps:
@@ -59,6 +67,10 @@ runs:
 
         repo_short="${{ inputs.repo }}"
         repo_short="${repo_short#tenstorrent/}"
+        new_version_tag="${repo_short}-${{ inputs.new_version_tag }}"
+        if [[ "${{ inputs.draft }}" == "true" ]]; then
+            new_version_tag="draft-${new_version_tag}"
+        fi
 
         echo "Using workflow: $workflow"
         echo "Using artifact_download_glob: $artifact_download_glob"
@@ -80,3 +92,4 @@ runs:
         echo "artifact_cleanup_folder_glob=$artifact_cleanup_folder_glob" >> $GITHUB_OUTPUT
         echo "workflow_result_in_job=$workflow_result_in_job" >> $GITHUB_OUTPUT
         echo "repo_short=$repo_short" >> $GITHUB_OUTPUT
+        echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
