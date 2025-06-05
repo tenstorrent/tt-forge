@@ -30,20 +30,19 @@ runs:
       with:
         repo: ${{ inputs.repo }}
         release_type: ${{ inputs.release_type }}
+        draft: ${{ inputs.draft }}
+        new_version_tag: ${{ inputs.new_version_tag }}
     - uses: actions/download-artifact@v4
       with:
         artifact-ids: ${{ inputs.release-artifacts-id }}
         path: ${{ github.workspace }}/release
-    - name: Display structure of downloaded files
-      run: ls -R ${{ github.workspace }}/release
-      shell: bash
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
         body_path: "${{ github.workspace }}/release/build-release-${{ steps.set-release-facts.outputs.repo_short }}/docs/readme"
         token: ${{ github.token }}
-        name: ${{ steps.set-release-facts.outputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag }}
-        tag_name: ${{ steps.set-release-facts.outputs.repo_short }}-${{ inputs.new_version_tag }}
+        name: ${{ steps.set-release-facts.outputs.repo_short }} ${{ inputs.release_type }} ${{ steps.set-release-facts.outputs.new_version_tag }}
+        tag_name: ${{ steps.set-release-facts.outputs.new_version_tag }}
         draft: ${{ inputs.draft }}
         prerelease: ${{ inputs.prerelease }}
         fail_on_unmatched_files: true
