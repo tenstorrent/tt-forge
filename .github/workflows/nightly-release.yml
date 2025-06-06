@@ -102,7 +102,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/publish-release
+      - uses: ./.github/actions/publish-tenstorrent-pypi
+        with:
+          release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
+          release-artifacts-name: build-release-${{ needs.get-version.outputs.repo_short }}
+          release-artifacts-wheel-path: /artifacts/**.whl
+          role-to-assume: ${{ secrets.PYPI_ROLE }}
+          region: ${{ secrets.PYPI_REGION }}
+          bucket: ${{ secrets.PYPI_BUCKET }}
+      - uses: ./.github/actions/publish-github-release
         with:
           draft: ${{ inputs.draft }}
           repo: ${{ inputs.repo }}
