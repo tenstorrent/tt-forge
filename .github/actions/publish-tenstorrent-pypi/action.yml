@@ -10,10 +10,6 @@ inputs:
     required: true
   release-artifacts-wheel-path:
     description: "Release artifacts wheel path"
-    default: /artifacts/**
-    required: true
-  repo:
-    description: "Repo name"
     required: true
   role-to-assume:
     description: "Role to assume"
