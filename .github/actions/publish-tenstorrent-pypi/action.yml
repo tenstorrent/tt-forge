@@ -45,9 +45,11 @@ runs:
         aws-region: ${{ inputs.region }}
     
     - name: Install dependencies
+      shell: bash
       run: |
         pip install build s3pypi
     
     - name: Publish package
+      shell: bash
       run: |
         s3pypi upload ${{ github.workspace }}/release/${{ inputs.release-artifacts-name }}/${{ inputs.release-artifacts-wheel-path }} --bucket ${{ inputs.bucket }}
