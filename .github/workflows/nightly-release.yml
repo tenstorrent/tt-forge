@@ -99,7 +99,6 @@ jobs:
     needs:
       - build-release
       - get-version
-    secrets: inherit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
