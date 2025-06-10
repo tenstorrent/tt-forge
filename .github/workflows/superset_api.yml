@@ -37,37 +37,12 @@ jobs:
           # URL encode the precision parameter (replace [ with %5B and ] with %5D)
           PRECISION=$(echo "$PRECISION_RAW" | sed 's/\[/%5B/g' | sed 's/\]/%5D/g')
 
-          # echo attempt 1
-          # TOKEN=$(aws sigv4-sign-request --region us-east-2 --service execute-api)
-          # echo $TOKEN
-          # echo $TOKEN | base64
-
-          # # Make API call with variables and print response
-          # RESPONSE=$(curl -X GET \
-          #   -H "Authorization: Bearer $TOKEN" \
-          #   "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
-          
-          # # Print the response
-          # echo "API Response:"
-          # echo "$RESPONSE"
-
-          echo attempt 2
-          RESPONSE=$(aws execute-api invoke --region us-east-2 \
-            --path-template "/api/v1/data_db_main/last_measurement" \
-            --query-string "project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION" \
-            --endpoint-url "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com" \
-            /dev/null | jq -r '.authorization')
+          pip install awscurl
+          RESPONSE=$(awscurl \
+            --region us-east-2 \
+            --service execute-api \
+            "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
           
           # Print the response
           echo "API Response:"
           echo "$RESPONSE"
-
-          echo attempt 3
-          SIGNED_URL=$(aws execute-api get-presigned-url \
-            --region us-east-2 \
-            --http-method GET \
-            --service-name execute-api \
-            --endpoint-url "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com" \
-            --path "/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
-
-          RESPONSE=$(curl "$SIGNED_URL")
