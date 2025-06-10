@@ -22,11 +22,11 @@ jobs:
         shell: bash
         run: |
           # Debug
-          echo $AWS_DEFAULT_REGION | base64 -d  
-          echo $AWS_REGION | base64 -d
-          echo $AWS_ACCESS_KEY_ID | base64 -d
-          echo $AWS_SECRET_ACCESS_KEY | base64 -d
-          echo $AWS_SESSION_TOKEN | base64 -d
+          echo $AWS_DEFAULT_REGION | base64
+          echo $AWS_REGION | base64
+          echo $AWS_ACCESS_KEY_ID | base64
+          echo $AWS_SECRET_ACCESS_KEY | base64
+          echo $AWS_SESSION_TOKEN | base64
 
           # Define variables for query parameters
           PROJECT="tenstorrent/tt-metal"
@@ -40,7 +40,7 @@ jobs:
           echo attempt 1
           TOKEN=$(aws sigv4-sign-request --region us-east-2 --service execute-api)
           echo $TOKEN
-          echo $TOKEN | base64 -d
+          echo $TOKEN | base64
 
           # Make API call with variables and print response
           RESPONSE=$(curl -X GET \
@@ -63,4 +63,11 @@ jobs:
           echo "$RESPONSE"
 
           echo attempt 3
-          
+          SIGNED_URL=$(aws execute-api get-presigned-url \
+            --region us-east-2 \
+            --http-method GET \
+            --service-name execute-api \
+            --endpoint-url "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com" \
+            --path "/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
+
+          RESPONSE=$(curl "$SIGNED_URL")
