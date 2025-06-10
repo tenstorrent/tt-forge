@@ -23,6 +23,7 @@ on:
         - '.github/actions/install-verification/**'
         - '.github/actions/publish-release/**'
     pull_request:
+      types: [synchronize, opened, reopened, ready_for_review]
       paths:
         - '.github/scripts/model-compatible-table/**'
         - '.github/scripts/wheel-version-updater.sh'
@@ -69,6 +70,7 @@ jobs:
 #      repo: ${{ inputs.repo }}
   test-daily-releaser:
     #needs: test-create-version-branches
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/daily-releaser.yml
     with:
       draft: ${{ inputs.draft || true}}

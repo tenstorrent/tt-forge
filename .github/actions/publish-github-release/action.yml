@@ -1,5 +1,5 @@
-name: "Publish Release"
-description: "Publish Release"
+name: "Publish GitHub Release"
+description: "Publish GitHub Release"
 
 inputs:
   release-artifacts-id:
@@ -36,8 +36,8 @@ runs:
       with:
         artifact-ids: ${{ inputs.release-artifacts-id }}
         path: ${{ github.workspace }}/release
-    - name: Release
-      uses: softprops/action-gh-release@v2
+    - name: Publish GitHub Release
+      uses: softprops/action-gh-release@v2.2.2
       with:
         body_path: "${{ github.workspace }}/release/build-release-${{ steps.set-release-facts.outputs.repo_short }}/docs/readme"
         token: ${{ github.token }}

@@ -102,7 +102,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/publish-release
+      - uses: ./.github/actions/publish-tenstorrent-pypi
+        # Skip Wheel PyPI upload in workflow test
+        if: ${{ !inputs.draft }}
+        with:
+          release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
+          release-artifacts-name: build-release-${{ needs.get-version.outputs.repo_short }}
+          release-artifacts-wheel-path: artifacts
+          role-to-assume: ${{ secrets.PYPI_ROLE }}
+          region: ${{ secrets.PYPI_REGION }}
+          bucket: ${{ secrets.PYPI_BUCKET }}
+          new_version_tag: ${{ needs.get-version.outputs.tag }}
+          repo: ${{ inputs.repo }}
+
+      - uses: ./.github/actions/publish-github-release
         with:
           draft: ${{ inputs.draft }}
           repo: ${{ inputs.repo }}
