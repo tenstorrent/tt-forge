@@ -37,19 +37,19 @@ jobs:
           # URL encode the precision parameter (replace [ with %5B and ] with %5D)
           PRECISION=$(echo "$PRECISION_RAW" | sed 's/\[/%5B/g' | sed 's/\]/%5D/g')
 
-          echo attempt 1
-          TOKEN=$(aws sigv4-sign-request --region us-east-2 --service execute-api)
-          echo $TOKEN
-          echo $TOKEN | base64
+          # echo attempt 1
+          # TOKEN=$(aws sigv4-sign-request --region us-east-2 --service execute-api)
+          # echo $TOKEN
+          # echo $TOKEN | base64
 
-          # Make API call with variables and print response
-          RESPONSE=$(curl -X GET \
-            -H "Authorization: Bearer $TOKEN" \
-            "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
+          # # Make API call with variables and print response
+          # RESPONSE=$(curl -X GET \
+          #   -H "Authorization: Bearer $TOKEN" \
+          #   "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
           
-          # Print the response
-          echo "API Response:"
-          echo "$RESPONSE"
+          # # Print the response
+          # echo "API Response:"
+          # echo "$RESPONSE"
 
           echo attempt 2
           RESPONSE=$(aws execute-api invoke --region us-east-2 \
