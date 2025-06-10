@@ -70,6 +70,7 @@ jobs:
       matrix:
         include: ${{fromJson(needs.get-repos.outputs.json_results)}}
     uses: ./.github/workflows/update-releases.yml
+    secrets: inherit
     name: ${{ matrix.repo_short }} Update RC and Stable
     with:
       draft: ${{ inputs.draft || false}}
@@ -84,6 +85,7 @@ jobs:
         include: ${{fromJson(needs.get-repos.outputs.json_results)}}
     name: ${{ matrix.repo_short }} Nightly
     uses: ./.github/workflows/nightly-release.yml
+    secrets: inherit
     with:
       draft: ${{ inputs.draft || false}}
       repo: ${{ matrix.repo }}

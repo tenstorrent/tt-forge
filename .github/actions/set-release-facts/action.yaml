@@ -7,7 +7,7 @@ inputs:
     required: true
   release_type:
     description: "Release type"
-    required: true
+    required: false
   draft:
     description: "Draft release"
     required: false
@@ -36,6 +36,9 @@ outputs:
   new_version_tag:
     description: "New version tag for wheel"
     value: ${{ steps.set-manifest.outputs.new_version_tag }}
+  pip_wheel_names:
+    description: "Names of pip wheels"
+    value: ${{ steps.set-manifest.outputs.pip_wheel_names }}
 runs:
   using: "composite"
   steps:
@@ -49,17 +52,21 @@ runs:
             artifact_download_glob='*{wheel,test-reports}*'
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
             workflow_result_in_job="fail-notify"
+            pip_wheel_names="forge tvm"
         elif [[ "${{ inputs.repo }}" =~ "tt-torch" ]]; then
             workflow="Nightly Tests"
             artifact_download_glob='*{install-artifacts,test-reports-models-}*'
             artifact_cleanup_file_glob='*torchvision*'
             artifact_cleanup_folder_glob='*install-artifacts-debug*'
+            pip_wheel_names="tt-torch"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
             workflow="On push"
             artifact_download_glob='*ttmlir-wheel*'
+            pip_wheel_names="ttmlir"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             artifact_download_glob='*{xla-whl-release,test-reports}*'
+            pip_wheel_names="pjrt-plugin-tt"
         else
             echo "Unknown repo: ${{ inputs.repo }}"
             exit 1
@@ -84,6 +91,7 @@ runs:
         echo "Using latest_branch_commit_date: $latest_branch_commit_date"
         echo "Using second_latest_branch_commit_date: $second_latest_branch_commit_date"
         echo "Using repo_short: $repo_short"
+        echo "Using pip_wheel_names: $pip_wheel_names"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -93,3 +101,4 @@ runs:
         echo "workflow_result_in_job=$workflow_result_in_job" >> $GITHUB_OUTPUT
         echo "repo_short=$repo_short" >> $GITHUB_OUTPUT
         echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
+        echo "pip_wheel_names=$pip_wheel_names" >> $GITHUB_OUTPUT
