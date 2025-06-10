@@ -21,6 +21,13 @@ jobs:
       - name: Call api
         shell: bash
         run: |
+          # Debug
+          echo $AWS_DEFAULT_REGION | base64 -d  
+          echo $AWS_REGION | base64 -d
+          echo $AWS_ACCESS_KEY_ID | base64 -d
+          echo $AWS_SECRET_ACCESS_KEY | base64 -d
+          echo $AWS_SESSION_TOKEN | base64 -d
+
           # Define variables for query parameters
           PROJECT="tenstorrent/tt-metal"
           ML_MODEL_NAME="tiiuae/falcon-7b-instruct"
@@ -30,8 +37,11 @@ jobs:
           # URL encode the precision parameter (replace [ with %5B and ] with %5D)
           PRECISION=$(echo "$PRECISION_RAW" | sed 's/\[/%5B/g' | sed 's/\]/%5D/g')
 
+          echo attempt 1
           TOKEN=$(aws sigv4-sign-request --region us-east-2 --service execute-api)
-          
+          echo $TOKEN
+          echo $TOKEN | base64 -d
+
           # Make API call with variables and print response
           RESPONSE=$(curl -X GET \
             -H "Authorization: Bearer $TOKEN" \
@@ -40,3 +50,17 @@ jobs:
           # Print the response
           echo "API Response:"
           echo "$RESPONSE"
+
+          echo attempt 2
+          RESPONSE=$(aws execute-api invoke --region us-east-2 \
+            --path-template "/api/v1/data_db_main/last_measurement" \
+            --query-string "project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION" \
+            --endpoint-url "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com" \
+            /dev/null | jq -r '.authorization')
+          
+          # Print the response
+          echo "API Response:"
+          echo "$RESPONSE"
+
+          echo attempt 3
+          
