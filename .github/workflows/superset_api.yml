@@ -7,6 +7,9 @@ permissions:
   id-token: write   # Required for OIDC
   contents: read    # Required for checking out code
 
+env:
+  AWS_REGION: us-east-2
+
 jobs:
   api_call:
     runs-on: ubuntu-latest
@@ -16,32 +19,24 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::533267429815:role/github-actions-api-gateway-role
-          aws-region: us-east-2
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Call api
         shell: bash
+        env:
+          PROJECT: "tenstorrent/tt-metal"
+          ML_MODEL_NAME: "tiiuae/falcon-7b-instruct"
+          BATCH_SIZE: "32"
+          PRECISION_RAW: "prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"
         run: |
-          # Debug
-          echo $AWS_DEFAULT_REGION | base64
-          echo $AWS_REGION | base64
-          echo $AWS_ACCESS_KEY_ID | base64
-          echo $AWS_SECRET_ACCESS_KEY | base64
-          echo $AWS_SESSION_TOKEN | base64
-
-          # Define variables for query parameters
-          PROJECT="tenstorrent/tt-metal"
-          ML_MODEL_NAME="tiiuae/falcon-7b-instruct"
-          BATCH_SIZE="32"
-          PRECISION_RAW="prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"
-          
           # URL encode the precision parameter (replace [ with %5B and ] with %5D)
           PRECISION=$(echo "$PRECISION_RAW" | sed 's/\[/%5B/g' | sed 's/\]/%5D/g')
 
           pip install awscurl
           RESPONSE=$(awscurl \
-            --region us-east-2 \
+            --region ${{ env.AWS_REGION }} \
             --service execute-api \
-            "https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
+            "https://ftuxhxqka0.execute-api.${{ env.AWS_REGION }}.amazonaws.com/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
           
           # Print the response
           echo "API Response:"
