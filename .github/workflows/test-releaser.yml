@@ -21,9 +21,12 @@ on:
         - '.github/actions/uplift-artifacts/**'
         - '.github/actions/set-release-facts/**'
         - '.github/actions/install-verification/**'
-        - '.github/actions/publish-release/**'
+        - '.github/actions/publish-tenstorrent-pypi/**'
+        - '.github/actions/publish-github-release/**'
+        - '.github/workflows/test-releaser.yml'
     pull_request:
-      types: [synchronize, opened, reopened, ready_for_review]
+      types: [opened, synchronize, reopened, ready_for_review]
+      branches: [ "main" ]
       paths:
         - '.github/scripts/model-compatible-table/**'
         - '.github/scripts/wheel-version-updater.sh'
@@ -41,7 +44,9 @@ on:
         - '.github/actions/uplift-artifacts/**'
         - '.github/actions/set-release-facts/**'
         - '.github/actions/install-verification/**'
-        - '.github/actions/publish-release/**'
+        - '.github/actions/publish-tenstorrent-pypi/**'
+        - '.github/actions/publish-github-release/**'
+        - '.github/workflows/test-releaser.yml'
     workflow_dispatch:
       inputs:
         repo:
@@ -74,6 +79,6 @@ jobs:
     uses: ./.github/workflows/daily-releaser.yml
     with:
       draft: ${{ inputs.draft || true}}
-      delete-drafts: ${{ inputs.delete-drafts || true}}
-      prerelease: true
+      delete-drafts: ${{ inputs.delete-drafts || true }}
+      overwrite_releases: false
       repo: ${{ inputs.repo || '' }}

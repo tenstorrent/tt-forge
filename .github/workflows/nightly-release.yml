@@ -12,10 +12,10 @@ on:
         description: 'Repo to release e.g tt-forge-fe'
         required: true
         default: ''
-      prerelease:
+      overwrite_releases:
         type: boolean
-        default: true
-        description: Put PR in prerelease mode for testing
+        default: false
+        description: Overwrite releases
 
 
 permissions:
@@ -73,29 +73,8 @@ jobs:
         new_version_tag: ${{ needs.get-version.outputs.tag }}
         workflow_allow_failed: true
 
-  test-release:
-    # Only run if build-release was successful for nightly
-    if: ${{ needs.build-release.outputs.run-conclusion == 'success' }}
-    needs: build-release
-    strategy:
-      fail-fast: false
-      matrix:
-        build: [
-          { runs-on: n150, container: 'harbor.ci.tenstorrent.net/docker.io/ubuntu:24.04' },
-          { runs-on: n300, container: 'harbor.ci.tenstorrent.net/docker.io/ubuntu:24.04' }
-        ]
-    runs-on: ${{ format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.build.runs-on) }}
-    container:
-      image: ${{ matrix.build.container }}
-      options: ${{ matrix.build.container-options || '--device /dev/tenstorrent' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/install-verification
-        with:
-          release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
-
   publish-release:
-    if: ${{ inputs.draft || needs.build-release.outputs.check-tag == 'false' }}
+    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
     needs:
       - build-release
       - get-version
@@ -114,6 +93,7 @@ jobs:
           bucket: ${{ secrets.PYPI_BUCKET }}
           new_version_tag: ${{ needs.get-version.outputs.tag }}
           repo: ${{ inputs.repo }}
+          overwrite_releases: ${{ inputs.overwrite_releases }}
 
       - uses: ./.github/actions/publish-github-release
         with:
@@ -121,5 +101,5 @@ jobs:
           repo: ${{ inputs.repo }}
           release_type: 'nightly'
           new_version_tag: ${{ needs.get-version.outputs.tag }}
-          prerelease: ${{ inputs.prerelease || true }}
+          prerelease: true
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
