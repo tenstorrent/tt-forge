@@ -36,7 +36,7 @@ jobs:
           RESPONSE=$(awscurl \
             --region ${{ env.AWS_REGION }} \
             --service execute-api \
-            "https://ftuxhxqka0.execute-api.${{ env.AWS_REGION }}.amazonaws.com/api/v1/data_db_main/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
+            "https://ftuxhxqka0.execute-api.${{ env.AWS_REGION }}.amazonaws.com/api/v1/data_db_main/benchmarks/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
           
           # Print the response
           echo "API Response:"
