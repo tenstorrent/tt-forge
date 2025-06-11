@@ -155,60 +155,23 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Download XLA project release
-      if: ${{ matrix.build.project == 'tt-xla' }}
-      uses: robinraju/release-downloader@v1
-      with:
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        fileName: 'pjrt_*.whl'
-
-    - name: Download Torch project release
-      if: ${{ matrix.build.project == 'tt-torch' }}
-      uses: robinraju/release-downloader@v1
-      with:
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        fileName: 'tt_torch*.whl'
-
-    - name: Download Forge-FE project release
-      if: ${{ matrix.build.project == 'tt-forge-fe' }}
-      uses: robinraju/release-downloader@v1
-      with:
-        tag: 'tt-forge*'
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        fileName: 'forge*.whl'
-
-    - name: Download Forge-FE TVM project release
-      if: ${{ matrix.build.project == 'tt-forge-fe' }}
-      uses: robinraju/release-downloader@v1
-      with:
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        fileName: 'tvm*.whl'
-
     - name: Install wheels
       shell: bash
       run: |
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           python -m venv tt-forge-fe-venv
           source tt-forge-fe-venv/bin/activate
-          pip install tvm*.whl
-          pip install forge*.whl
+          pip install tvm --pre --index-url https://pypi.eng.aws.tenstorrent.com/
+          pip install forge --pre --index-url https://pypi.eng.aws.tenstorrent.com/
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          pip install tt_torch*.whl
-          # pip install ttmlir*.whl
+          pip install tt_torch --pre --index-url https://pypi.eng.aws.tenstorrent.com/
+          # pip install ttmlir --pre --index-url https://pypi.eng.aws.tenstorrent.com/
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
           source tt-xla-venv/bin/activate
-          pip install pjrt*.whl
+          pip install pjrt_plugin_tt --pre --index-url https://pypi.eng.aws.tenstorrent.com/
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
