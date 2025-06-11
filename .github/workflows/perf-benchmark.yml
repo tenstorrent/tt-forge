@@ -125,12 +125,12 @@ jobs:
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          pip install tt_torch --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
-          # pip install ttmlir --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
+          pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
+          # pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
           source tt-xla-venv/bin/activate
-          pip install pjrt_plugin_tt --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
+          pip install pjrt_plugin_tt --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install pjrt_plugin_tt
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
