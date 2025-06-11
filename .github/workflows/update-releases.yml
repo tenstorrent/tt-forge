@@ -12,10 +12,10 @@ on:
         description: 'Repo to release e.g tt-forge-fe'
         required: true
         default: ''
-      prerelease:
+      overwrite_releases:
         type: boolean
-        default: true
-        description: Put PR in prerelease mode for testing
+        default: false
+        description: Overwrite releases
 
 permissions:
   pages: write

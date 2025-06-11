@@ -18,11 +18,11 @@ on:
         description: 'Repo to release e.g tt-forge-fe'
         required: false
         default: ''
-      prerelease:
+      overwrite_releases:
         type: boolean
-        default: true
-        required: false
-        description: Put PR in prerelease
+        default: false
+        description: Overwrite releases
+
   workflow_call:
     inputs:
       draft:
@@ -38,11 +38,10 @@ on:
         description: 'Repo to release e.g tt-forge-fe'
         required: false
         default: ''
-      prerelease:
+      overwrite_releases:
         type: boolean
-        required: false
-        default: true
-        description: Put PR in prerelease
+        default: false
+        description: Overwrite releases
 
 permissions:
   pages: write
@@ -75,7 +74,7 @@ jobs:
     with:
       draft: ${{ inputs.draft || false}}
       repo: ${{ matrix.repo }}
-      prerelease: ${{ inputs.prerelease || true}}
+      overwrite_releases: ${{ inputs.overwrite_releases }}
 
   release-nightly:
     needs: get-repos
@@ -89,7 +88,7 @@ jobs:
     with:
       draft: ${{ inputs.draft || false}}
       repo: ${{ matrix.repo }}
-      prerelease: ${{ inputs.prerelease || true}}
+      overwrite_releases: ${{ inputs.overwrite_releases }}
 
   fail-notify:
     if: always()

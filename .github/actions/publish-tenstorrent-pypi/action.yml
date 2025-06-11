@@ -26,6 +26,9 @@ inputs:
   repo:
     description: "Repo name"
     required: true
+  overwrite_releases:
+    description: "Overwrite releases"
+    required: true
 
 runs:
   using: "composite"
@@ -63,7 +66,11 @@ runs:
       run: |
         found_wheel_files=$(find ${{ github.workspace }}/release/${{ inputs.release-artifacts-name }}/${{ inputs.release-artifacts-wheel-path }} -type f -iname "*.whl"  -print0 | xargs -0 realpath)
         for wheel in $found_wheel_files; do
-          s3pypi upload "$wheel" --put-root-index --bucket ${{ inputs.bucket }}
+          if [ "${{ inputs.overwrite_releases }}" == "true" ]; then
+            s3pypi upload "$wheel" --put-root-index --force --bucket ${{ inputs.bucket }}
+          else
+            s3pypi upload "$wheel" --put-root-index --bucket ${{ inputs.bucket }}
+          fi
         done
 
     - name: Test Tenstorrent PYPI package install
