@@ -55,8 +55,8 @@ jobs:
           unzip \
           wget
         # ttrt
-        apt-get install -y -qq --no-install-recommends \
-          libmpich12
+        # apt-get install -y -qq --no-install-recommends \
+        #   libmpich12
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           apt-get install -y -qq --no-install-recommends \
             build-essential \
@@ -64,7 +64,9 @@ jobs:
             sqlite3 \
             libopenmpi3 \
             libglib2.0-0
-        # elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+        elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+          apt-get install -y -qq --no-install-recommends \
+            libopenmpi3
         fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
