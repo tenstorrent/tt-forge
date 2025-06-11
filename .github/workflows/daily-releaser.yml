@@ -74,7 +74,7 @@ jobs:
     with:
       draft: ${{ inputs.draft || false}}
       repo: ${{ matrix.repo }}
-      overwrite_releases: ${{ inputs.overwrite_releases }}
+      overwrite_releases: ${{ inputs.overwrite_releases || false}}
 
   release-nightly:
     needs: get-repos
@@ -88,7 +88,7 @@ jobs:
     with:
       draft: ${{ inputs.draft || false}}
       repo: ${{ matrix.repo }}
-      overwrite_releases: ${{ inputs.overwrite_releases }}
+      overwrite_releases: ${{ inputs.overwrite_releases || false}}
 
   fail-notify:
     if: always()
