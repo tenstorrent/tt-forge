@@ -66,6 +66,7 @@ jobs:
             libglib2.0-0
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           apt-get install -y -qq --no-install-recommends \
+            build-essential \
             libopenmpi3
         fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
