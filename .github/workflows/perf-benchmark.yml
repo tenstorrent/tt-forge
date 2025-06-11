@@ -120,17 +120,17 @@ jobs:
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           python -m venv tt-forge-fe-venv
           source tt-forge-fe-venv/bin/activate
-          pip install tvm --pre --index-url https://pypi.eng.aws.tenstorrent.com/
-          pip install forge --pre --index-url https://pypi.eng.aws.tenstorrent.com/
+          pip install tvm --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
+          pip install forge --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          pip install tt_torch --pre --index-url https://pypi.eng.aws.tenstorrent.com/
-          # pip install ttmlir --pre --index-url https://pypi.eng.aws.tenstorrent.com/
+          pip install tt_torch --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
+          # pip install ttmlir --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
           source tt-xla-venv/bin/activate
-          pip install pjrt_plugin_tt --pre --index-url https://pypi.eng.aws.tenstorrent.com/
+          pip install pjrt_plugin_tt --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
