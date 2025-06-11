@@ -71,50 +71,9 @@ jobs:
 
     - name: Fetch job id
       id: fetch-job-id
-      # uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
-      # with:
-      #   job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
-      shell: bash
-      run: |
-        JOB_NAME="run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
-        workflow_id="${{ github.run_id }}"
-        repo="tenstorrent/tt-forge"
-        page=1
-        per_page=90
-        job_id=""
-
-        set +e
-        while true; do
-            response=$(curl -s -H "Authorization: token ${{secrets.GH_TOKEN}}" \
-                "https://api.github.com/repos/$repo/actions/runs/$workflow_id/jobs?per_page=$per_page&page=$page")
-            res=$?
-            if [ $res -ne 0 ]; then
-                echo "Error ($res) fetching jobs for workflow ID $workflow_id."
-                exit $res
-            fi
-
-            job_id=$(echo "$response" | jq -r --arg JOB_NAME "$JOB_NAME" '.jobs[] | select(.name | contains($JOB_NAME)) | .id')
-
-            if [ -n "$job_id" ]; then
-                echo "Job ID for job name '$JOB_NAME' is: $job_id"
-                break
-            fi
-
-            # Check if we have more pages to fetch
-            next_page=$(echo "$response" | jq -r '.total_count')
-            if [ "$((page * per_page))" -ge "$next_page" ]; then
-                break
-            fi
-
-            page=$((page + 1))
-        done
-
-        if [ -z "$job_id" ]; then
-            echo "Job name '$JOB_NAME' not found in workflow ID $workflow_id."
-            exit 1
-        fi
-
-        echo "job_id=$job_id" >> $GITHUB_OUTPUT
+      uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
+      with:
+        job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
 
     - name: Set reusable strings
       id: strings
