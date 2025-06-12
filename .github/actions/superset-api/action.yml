@@ -52,7 +52,9 @@ runs:
         query_params_json = '''${{ inputs.query_params }}'''
         
         # Parse query parameters
+        print(f'Query parameters: {query_params_json}')
         query_params = json.loads(query_params_json)
+        print(f'Parsed query parameters: {query_params}')
         
         # Construct full URL
         url = base_url + query
