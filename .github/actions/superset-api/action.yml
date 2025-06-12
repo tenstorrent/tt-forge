@@ -27,6 +27,14 @@ runs:
         role-to-assume: arn:aws:iam::533267429815:role/github-actions-api-gateway-role
         aws-region: us-east-2
 
+    - name: Setup Python Package Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     - name: Install dependencies
       shell: bash
       run: pip install boto3 requests
