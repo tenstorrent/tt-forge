@@ -1,0 +1,45 @@
+# Example workflow using the superset-api action
+name: Superset API Example
+
+on:
+  push:
+    paths:
+      - '.github/scripts/superset-api/**'
+  pull_request:
+    paths:
+      - '.github/scripts/superset-api/**'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read    # Required for checking out code
+
+jobs:
+  call_api:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code # only needed when using action in same repo
+        uses: actions/checkout@v3
+
+      - name: Call Superset API
+        id: api-call
+        uses: ./.github/actions/superset-api
+        with:
+          query: 'benchmarks/last_measurement'
+          query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
+
+      - name: Display Response
+        run: |
+          echo "API Response:"
+          echo '${{ steps.api-call.outputs.response }}'
+
+      - name: Create Job Summary
+        run: |
+          echo "# Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| ------ | ----- |" >> $GITHUB_STEP_SUMMARY
+
+          # Parse the JSON and create table rows
+          echo '${{ steps.api-call.outputs.response }}' | jq -r '.[] | "| " + .name + " | " + (.last_value | tostring) + " |"' >> $GITHUB_STEP_SUMMARY
