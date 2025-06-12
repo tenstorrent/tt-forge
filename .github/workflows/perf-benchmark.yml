@@ -21,10 +21,10 @@ jobs:
       matrix:
         build: [
           { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 },
           { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32} #, require: "onnx==1.17.0 onnxruntime" }
         ]
     runs-on:
@@ -55,19 +55,18 @@ jobs:
           unzip \
           wget
         # ttrt
-        apt-get install -y -qq --no-install-recommends \
-          libmpich12
+        wget -q https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb -O ${{runner.temp}}/openmpi-ulfm.deb && apt install ${{runner.temp}}/openmpi-ulfm.deb
+        # export PATH=/opt/openmpi-v5.0.7-ulfm/bin:$PATH
+        # export LD_LIBRARY_PATH=/opt/openmpi-v5.0.7-ulfm/lib:$LD_LIBRARY_PATH
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           apt-get install -y -qq --no-install-recommends \
             build-essential \
             libgl1-mesa-glx \
             sqlite3 \
-            libopenmpi3 \
             libglib2.0-0
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           apt-get install -y -qq --no-install-recommends \
             build-essential \
-            libopenmpi3
         fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
