@@ -2,20 +2,11 @@
 name: Superset API Example
 
 on:
-  workflow_dispatch:
-    inputs:
-      model_name:
-        description: 'ML model name'
-        required: true
-        default: 'tiiuae/falcon-7b-instruct'
-      batch_size:
-        description: 'Batch size'
-        required: true
-        default: '32'
-      precision:
-        description: 'Precision'
-        required: true
-        default: 'prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]'
+  push:
+
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read    # Required for checking out code
 
 jobs:
   call_api:
@@ -29,9 +20,6 @@ jobs:
         with:
           python-version: '3.x'
           
-      - name: Install jq
-        run: sudo apt-get install -y jq
-          
       - name: Call Superset API
         id: api-call
         uses: ./.github/actions/superset-api
@@ -40,12 +28,12 @@ jobs:
           query_params: >
             {
               "project": "tenstorrent/tt-metal",
-              "ml_model_name": "${{ github.event.inputs.model_name }}",
-              "batch_size": "${{ github.event.inputs.batch_size }}",
-              "precision": "${{ github.event.inputs.precision }}"
+              "ml_model_name": "tiiuae/falcon-7b-instruct",
+              "batch_size": "32",
+              "precision": "prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"
             }
             
       - name: Display Response
         run: |
           echo "API Response:"
-          echo '${{ steps.api-call.outputs.response }}' | jq .
+          echo '${{ steps.api-call.outputs.response }}'
