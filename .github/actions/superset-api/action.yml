@@ -26,11 +26,11 @@ runs:
       with:
         role-to-assume: arn:aws:iam::533267429815:role/github-actions-api-gateway-role
         aws-region: us-east-2
-      
+
     - name: Install dependencies
       shell: bash
       run: pip install boto3 requests
-    
+
     - name: Call Superset API
       id: api-call
       shell: bash
@@ -45,50 +45,50 @@ runs:
         import os
         from botocore.auth import SigV4Auth
         from botocore.awsrequest import AWSRequest
-        
+
         # Base API Gateway endpoint
         base_url = 'https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api-gw-data-db-main/api/v1/data_db_main/'
-        
+
         # Get inputs
         query = '${{ inputs.query }}'
         query_params_json = os.environ['QUERY_PARAMS']
-        
+
         # Parse query parameters
         query_params = json.loads(query_params_json)
-        
+
         # Construct full URL
         url = base_url + query
-        
+
         # Create a request
         request = AWSRequest(
             method='GET',
             url=url,
             params=query_params
         )
-        
+
         # Get credentials from the environment
         session = boto3.Session()
         credentials = session.get_credentials()
-        
+
         # Sign the request
         SigV4Auth(credentials, 'execute-api', 'us-east-2').add_auth(request)
-        
+
         # Get the signed headers
         signed_headers = dict(request.headers)
-        
+
         # Make the request
         response = requests.get(
             url,
             params=query_params,
             headers=signed_headers
         )
-        
+
         # Check if the request was successful
         response.raise_for_status()
-        
+
         # Output the response as JSON
         print(json.dumps(response.json()))
         ")
-        
+
         # Set the response as an output
         echo "response=$response" >> $GITHUB_OUTPUT

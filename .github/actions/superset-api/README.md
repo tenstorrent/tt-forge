@@ -65,11 +65,11 @@ This action enables workflows to:
     script: |
       const response = ${{ fromJSON(steps.api-call.outputs.response) }};
       let tableContent = '';
-      
+
       for (const item of response) {
         tableContent += `| ${item.name} | ${item.last_value} |\n`;
       }
-      
+
       require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, tableContent);
 ```
 
