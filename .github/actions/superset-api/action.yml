@@ -55,9 +55,7 @@ runs:
         query_params_json = os.environ['QUERY_PARAMS']
         
         # Parse query parameters
-        print(f'Query parameters: {query_params_json}')
         query_params = json.loads(query_params_json)
-        print(f'Parsed query parameters: {query_params}')
         
         # Construct full URL
         url = base_url + query
@@ -88,9 +86,6 @@ runs:
         
         # Check if the request was successful
         response.raise_for_status()
-        
-        # Print the response for debugging
-        print(f'Status Code: {response.status_code}')
         
         # Output the response as JSON
         print(json.dumps(response.json()))
