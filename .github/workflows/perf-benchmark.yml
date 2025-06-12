@@ -56,7 +56,7 @@ jobs:
           unzip \
           wget
         # ttrt
-        wget ---output-document="${{runner.temp}}/openmpi-ulfm.deb" "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb"
+        wget --output-document="${{runner.temp}}/openmpi-ulfm.deb" "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb"
         dpkg -i "${{runner.temp}}/openmpi-ulfm.deb"
         # apt install ${{runner.temp}}/openmpi-ulfm.deb
         # export PATH=/opt/openmpi-v5.0.7-ulfm/bin:$PATH
