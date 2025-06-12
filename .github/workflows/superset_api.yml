@@ -12,13 +12,9 @@ jobs:
   call_api:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+      - name: Checkout code
+        uses: actions/checkout@v3      
           
       - name: Call Superset API
         id: api-call

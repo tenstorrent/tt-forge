@@ -16,6 +16,12 @@ outputs:
 runs:
   using: 'composite'
   steps:
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -30,13 +36,60 @@ runs:
       id: api-call
       shell: bash
       run: |
-        # Set input variables for the Python script
-        export INPUT_QUERY='${{ inputs.query }}'
-        export INPUT_QUERY_PARAMS='${{ inputs.query_params }}'
+        response=$(python3 -c "
+        import boto3
+        import requests
+        import json
+        import sys
+        from botocore.auth import SigV4Auth
+        from botocore.awsrequest import AWSRequest
         
-        # Call the Python script
-        response=$(python3 ${{ github.action_path }}/superset_api.py)
+        # Base API Gateway endpoint
+        base_url = 'https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api-gw-data-db-main/api/v1/data_db_main/'
+        
+        # Get inputs
+        query = '${{ inputs.query }}'
+        query_params_json = '''${{ inputs.query_params }}'''
+        
+        # Parse query parameters
+        query_params = json.loads(query_params_json)
+        
+        # Construct full URL
+        url = base_url + query
+        
+        # Create a request
+        request = AWSRequest(
+            method='GET',
+            url=url,
+            params=query_params
+        )
+        
+        # Get credentials from the environment
+        session = boto3.Session()
+        credentials = session.get_credentials()
+        
+        # Sign the request
+        SigV4Auth(credentials, 'execute-api', 'us-east-2').add_auth(request)
+        
+        # Get the signed headers
+        signed_headers = dict(request.headers)
+        
+        # Make the request
+        response = requests.get(
+            url,
+            params=query_params,
+            headers=signed_headers
+        )
+        
+        # Check if the request was successful
+        response.raise_for_status()
+        
+        # Print the response for debugging
+        print(f'Status Code: {response.status_code}')
+        
+        # Output the response as JSON
+        print(json.dumps(response.json()))
+        ")
         
         # Set the response as an output
-        response_escaped=$(echo "$response" | jq -c . | sed 's/"/\\"/g')
-        echo "response=$response_escaped" >> $GITHUB_OUTPUT
+        echo "response=$response" >> $GITHUB_OUTPUT
