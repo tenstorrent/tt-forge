@@ -47,10 +47,9 @@ runs:
             COMMITS="No new commits since last nightly."
           fi
 
-          COMMITS="${COMMITS//'%'/'%25'}"
-          COMMITS="${COMMITS//$'\n'/'%0A'}"
-
-          echo "commits=$COMMITS" >> "$GITHUB_OUTPUT"
+          echo "commits<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$COMMITS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Create a release
