@@ -1,6 +1,11 @@
 name: Tag and release workflow
 description: Create a tag and a release for it
 
+inputs:
+  wheel-name:
+    required: true
+    description: Name of the wheel you are releasing
+
 runs: 
   using: composite
   steps:
@@ -22,7 +27,7 @@ runs:
     - name: Download wheel artifact
       uses: actions/download-artifact@v4
       with:
-        name: ${{ needs.nightly_tests.outputs.wheel-name }}
+        name: ${{ inputs.wheel-name }}
         path: dist
 
     - name: Get previous nightly tag and commit list
