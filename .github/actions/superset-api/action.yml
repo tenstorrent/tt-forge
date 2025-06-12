@@ -39,56 +39,56 @@ runs:
         export QUERY_PARAMS='${{ inputs.query_params }}'
         echo "Query parameters: $QUERY_PARAMS"
         response=$(python3 -c "
-          import boto3
-          import requests
-          import json
-          import sys
-          import os
-          from botocore.auth import SigV4Auth
-          from botocore.awsrequest import AWSRequest
+        import boto3
+        import requests
+        import json
+        import sys
+        import os
+        from botocore.auth import SigV4Auth
+        from botocore.awsrequest import AWSRequest
 
-          # Base API Gateway endpoint
-          base_url = 'https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api-gw-data-db-main/api/v1/data_db_main/'
+        # Base API Gateway endpoint
+        base_url = 'https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api-gw-data-db-main/api/v1/data_db_main/'
 
-          # Get inputs
-          query = '${{ inputs.query }}'
-          query_params_json = os.environ['QUERY_PARAMS']
+        # Get inputs
+        query = '${{ inputs.query }}'
+        query_params_json = os.environ['QUERY_PARAMS']
 
-          # Parse query parameters
-          query_params = json.loads(query_params_json)
+        # Parse query parameters
+        query_params = json.loads(query_params_json)
 
-          # Construct full URL
-          url = base_url + query
+        # Construct full URL
+        url = base_url + query
 
-          # Create a request
-          request = AWSRequest(
-              method='GET',
-              url=url,
-              params=query_params
-          )
+        # Create a request
+        request = AWSRequest(
+            method='GET',
+            url=url,
+            params=query_params
+        )
 
-          # Get credentials from the environment
-          session = boto3.Session()
-          credentials = session.get_credentials()
+        # Get credentials from the environment
+        session = boto3.Session()
+        credentials = session.get_credentials()
 
-          # Sign the request
-          SigV4Auth(credentials, 'execute-api', 'us-east-2').add_auth(request)
+        # Sign the request
+        SigV4Auth(credentials, 'execute-api', 'us-east-2').add_auth(request)
 
-          # Get the signed headers
-          signed_headers = dict(request.headers)
+        # Get the signed headers
+        signed_headers = dict(request.headers)
 
-          # Make the request
-          response = requests.get(
-              url,
-              params=query_params,
-              headers=signed_headers
-          )
+        # Make the request
+        response = requests.get(
+            url,
+            params=query_params,
+            headers=signed_headers
+        )
 
-          # Check if the request was successful
-          response.raise_for_status()
+        # Check if the request was successful
+        response.raise_for_status()
 
-          # Output the response as JSON
-          print(json.dumps(response.json()))
+        # Output the response as JSON
+        print(json.dumps(response.json()))
         ")
 
         # Set the response as an output
