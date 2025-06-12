@@ -36,11 +36,14 @@ runs:
       id: api-call
       shell: bash
       run: |
+        QUERY_PARAMS=${{ inputs.query_params }}
+        echo "Query parameters: $QUERY_PARAMS"
         response=$(python3 -c "
         import boto3
         import requests
         import json
         import sys
+        import os
         from botocore.auth import SigV4Auth
         from botocore.awsrequest import AWSRequest
         
@@ -49,7 +52,7 @@ runs:
         
         # Get inputs
         query = '${{ inputs.query }}'
-        query_params_json = '''${{ inputs.query_params }}'''
+        query_params_json = os.environ['QUERY_PARAMS']
         
         # Parse query parameters
         print(f'Query parameters: {query_params_json}')
