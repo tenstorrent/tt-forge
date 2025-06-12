@@ -1,109 +1,51 @@
-name: superset api
+# Example workflow using the superset-api action
+name: Superset API Example
 
 on:
-  push:
-
-permissions:
-  id-token: write   # Required for OIDC
-  contents: read    # Required for checking out code
-
-env:
-  AWS_REGION: us-east-2
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: 'ML model name'
+        required: true
+        default: 'tiiuae/falcon-7b-instruct'
+      batch_size:
+        description: 'Batch size'
+        required: true
+        default: '32'
+      precision:
+        description: 'Precision'
+        required: true
+        default: 'prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]'
 
 jobs:
-  api_call:
+  call_api:
     runs-on: ubuntu-latest
     steps:
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::533267429815:role/github-actions-api-gateway-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Print AWS Identity
-        run: aws sts get-caller-identity
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-
-      - name: Install dependencies
-        run: pip install boto3 requests
-
-      - name: Call API with Python
+          
+      - name: Install jq
+        run: sudo apt-get install -y jq
+          
+      - name: Call Superset API
+        id: api-call
+        uses: ./.github/actions/superset-api
+        with:
+          query: 'benchmarks/last_measurement'
+          query_params: >
+            {
+              "project": "tenstorrent/tt-metal",
+              "ml_model_name": "${{ github.event.inputs.model_name }}",
+              "batch_size": "${{ github.event.inputs.batch_size }}",
+              "precision": "${{ github.event.inputs.precision }}"
+            }
+            
+      - name: Display Response
         run: |
-          python3 -c "
-          import boto3
-          import requests
-          from botocore.auth import SigV4Auth
-          from botocore.awsrequest import AWSRequest
-          from urllib.parse import urlparse
-          
-          # API Gateway endpoint
-          url = 'https://ftuxhxqka0.execute-api.us-east-2.amazonaws.com/api-gw-data-db-main/api/v1/data_db_main/benchmarks/last_measurement'
-          
-          # Query parameters
-          params = {
-              'project': 'tenstorrent/tt-metal',
-              'ml_model_name': 'tiiuae/falcon-7b-instruct',
-              'batch_size': '32',
-              'precision': 'prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]'
-          }
-          
-          # Create a request
-          request = AWSRequest(
-              method='GET',
-              url=url,
-              params=params
-          )
-          
-          # Get credentials from the environment
-          session = boto3.Session()
-          credentials = session.get_credentials()
-          
-          # Sign the request
-          SigV4Auth(credentials, 'execute-api', 'us-east-2').add_auth(request)
-          
-          # Get the signed headers
-          signed_headers = dict(request.headers)
-          
-          # Make the request
-          response = requests.get(
-              url,
-              params=params,
-              headers=signed_headers
-          )
-          
-          print(f'Status Code: {response.status_code}')
-          print(f'Response: {response.text}')
-          
-          response.raise_for_status()
-          "
-
-      - name: Call api
-        shell: bash
-        env:
-          PROJECT: "tenstorrent/tt-metal"
-          ML_MODEL_NAME: "tiiuae/falcon-7b-instruct"
-          BATCH_SIZE: "32"
-          PRECISION_RAW: "prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"
-        run: |
-          # URL encode the precision parameter (replace [ with %5B and ] with %5D)
-          PRECISION=$(echo "$PRECISION_RAW" | sed 's/\[/%5B/g' | sed 's/\]/%5D/g')
-
-          pip install awscurl
-          RESPONSE=$(awscurl \
-            --region ${{ env.AWS_REGION }} \
-            --service execute-api \
-            -X GET \
-            -v \
-            --access_key $AWS_ACCESS_KEY_ID \
-            --secret_key $AWS_SECRET_ACCESS_KEY \
-            --session_token $AWS_SESSION_TOKEN \
-            "https://ftuxhxqka0.execute-api.${{ env.AWS_REGION }}.amazonaws.com/api/v1/data_db_main/benchmarks/last_measurement?project=$PROJECT&ml_model_name=$ML_MODEL_NAME&batch_size=$BATCH_SIZE&precision=$PRECISION")
-          
-          # Print the response
           echo "API Response:"
-          echo "$RESPONSE"
+          echo '${{ steps.api-call.outputs.response }}' | jq .

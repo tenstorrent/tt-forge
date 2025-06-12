@@ -1,0 +1,42 @@
+name: 'Superset API Call'
+description: 'Call the Superset API and return the JSON response'
+inputs:
+  query:
+    description: 'API path to query (added after base URL)'
+    required: true
+    default: 'benchmarks/last_measurement'
+  query_params:
+    description: 'Query parameters as a JSON string'
+    required: true
+outputs:
+  response:
+    description: 'JSON response from the API'
+    value: ${{ steps.api-call.outputs.response }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::533267429815:role/github-actions-api-gateway-role
+        aws-region: us-east-2
+      
+    - name: Install dependencies
+      shell: bash
+      run: pip install boto3 requests
+    
+    - name: Call Superset API
+      id: api-call
+      shell: bash
+      run: |
+        # Set input variables for the Python script
+        export INPUT_QUERY='${{ inputs.query }}'
+        export INPUT_QUERY_PARAMS='${{ inputs.query_params }}'
+        
+        # Call the Python script
+        response=$(python3 ${{ github.action_path }}/superset_api.py)
+        
+        # Set the response as an output
+        response_escaped=$(echo "$response" | jq -c . | sed 's/"/\\"/g')
+        echo "response=$response_escaped" >> $GITHUB_OUTPUT
