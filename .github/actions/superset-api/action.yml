@@ -4,7 +4,6 @@ inputs:
   query:
     description: 'API path to query (added after base URL)'
     required: true
-    default: 'benchmarks/last_measurement'
   query_params:
     description: 'Query parameters as a JSON string'
     required: true
