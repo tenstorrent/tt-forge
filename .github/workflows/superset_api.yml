@@ -21,13 +21,7 @@ jobs:
         uses: ./.github/actions/superset-api
         with:
           query: 'benchmarks/last_measurement'
-          query_params: >
-            {
-              "project": "tenstorrent/tt-metal",
-              "ml_model_name": "tiiuae/falcon-7b-instruct",
-              "batch_size": "32",
-              "precision": "prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"
-            }
+          query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
             
       - name: Display Response
         run: |

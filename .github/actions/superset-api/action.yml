@@ -36,7 +36,7 @@ runs:
       id: api-call
       shell: bash
       run: |
-        QUERY_PARAMS=${{ inputs.query_params }}
+        QUERY_PARAMS='${{ inputs.query_params }}'
         echo "Query parameters: $QUERY_PARAMS"
         response=$(python3 -c "
         import boto3
