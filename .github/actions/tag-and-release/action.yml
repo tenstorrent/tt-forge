@@ -1,0 +1,63 @@
+name: Tag and release workflow
+description: Create a tag and a release for it
+
+runs: 
+  using: composite
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+        fetch-depth: 0
+
+    - name: Add a tag
+      id: add-tag
+      shell: bash
+      run: |
+        TAG_NAME="nightly-$(date +'%Y%m%d')-${{ github.run_id }}-${{ github.run_attempt }}"
+        git tag "$TAG_NAME"
+        git push origin "$TAG_NAME"
+        echo "tag-name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+
+    - name: Download wheel artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ needs.nightly_tests.outputs.wheel-name }}
+        path: dist
+
+    - name: Get previous nightly tag and commit list
+      id: commit-list
+      shell: bash
+      run: |
+        TAG_NAME="${{ steps.add-tag.outputs.tag-name }}"
+
+        PREV_TAG=$(git tag --list 'nightly-*' --sort=-creatordate | grep -v "^$TAG_NAME$" | head -n 1)
+
+        if [ -z "$PREV_TAG" ]; then
+          echo "No previous nightly tag found."
+          echo "commits=No previous nightly tag found." >> "$GITHUB_OUTPUT"
+        else
+          COMMITS=$(git log --pretty=format:'- %h %s (%an)' "$PREV_TAG..$TAG_NAME")
+          if [ -z "$COMMITS" ]; then
+            COMMITS="No new commits since last nightly."
+          fi
+
+          COMMITS="${COMMITS//'%'/'%25'}"
+          COMMITS="${COMMITS//$'\n'/'%0A'}"
+
+          echo "commits=$COMMITS" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Create a release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.add-tag.outputs.tag-name }}
+        name: "Nigthly release: ${{ steps.add-tag.outputs.tag-name }}"
+        body: |
+          Release created during the nigthly workflow run.
+
+          Commits since the last nightly:
+          ${{ steps.commit-list.outputs.commits }}
+        files: ./dist/*.whl
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
