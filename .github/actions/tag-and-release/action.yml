@@ -38,6 +38,7 @@ runs:
       if: ${{ inputs.untar-wheel-artifact }}
       shell: bash
       run: |
+        pwd
         cd dist
         ls -lah
         tar xvf artifact.tar
@@ -46,6 +47,7 @@ runs:
         ls -lah
         cp *.whl ..
         cd ../..
+        pwd
 
     - name: Get previous nightly tag and commit list
       id: commit-list
