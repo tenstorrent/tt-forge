@@ -35,7 +35,7 @@ runs:
         path: dist
 
     - name: Untar the wheel artifact
-      if: ${{ inputs.untar-wheel-artifact == "true" }}
+      if: ${{ inputs.untar-wheel-artifact == 'true' }}
       shell: bash
       run: |
         cd dist
