@@ -129,7 +129,10 @@ jobs:
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
+          wget https://github.com/tenstorrent/tt-torch/actions/runs/15635813351/artifacts/3322910202 -O tt_torch.tar
+          tar -xf tt_torch.tar
+          pip install tt_torch-*.whl
+          # pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
           pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
