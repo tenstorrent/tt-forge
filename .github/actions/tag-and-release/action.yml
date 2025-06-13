@@ -2,9 +2,9 @@ name: Tag and release workflow
 description: Create a tag and a release for it
 
 inputs:
-  wheel-name:
+  wheel-artifact-name:
     required: true
-    description: Name of the wheel you are releasing
+    description: Name of the wheel's artifact that is getting released
   untar-wheel-artifact:
     required: false
     description: Flag that decides if you untar the artifact
@@ -31,7 +31,7 @@ runs:
     - name: Download wheel artifact
       uses: actions/download-artifact@v4
       with:
-        name: ${{ inputs.wheel-name }}
+        name: ${{ inputs.wheel-artifact-name }}
         path: dist
     
     - name: Untar the wheel artifact
