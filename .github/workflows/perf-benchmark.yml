@@ -149,7 +149,6 @@ jobs:
 
     - name: Run demo
       run: |
-        source tt-forge-fe-venv/bin/activate
         python benchmark/tt-forge-fe/demo_test.py
 
     - name: Run Perf Benchmark
