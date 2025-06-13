@@ -130,7 +130,7 @@ jobs:
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          curl -L -H "Authorization: Bearer ${{ github.token }}" https://github.com/tenstorrent/tt-torch/actions/runs/15635813351/artifacts/3322910202/zip -o install-artifacts.zip
+          curl -L -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" https://github.com/tenstorrent/tt-torch/actions/runs/15635813351/artifacts/3322910202/zip -o install-artifacts.zip
           unzip install-artifacts.zip
           tar -xf artifact.tar
           pip install wheels/tt_torch-*.whl
