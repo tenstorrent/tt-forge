@@ -65,9 +65,10 @@ jobs:
         # export LD_LIBRARY_PATH=/opt/openmpi-v5.0.7-ulfm/lib:$LD_LIBRARY_PATH
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           apt-get install -y -qq --no-install-recommends \
-            libgl1-mesa-glx \
-            sqlite3 \
-            libglib2.0-0
+            libnuma-dev
+        #     libgl1-mesa-glx \
+        #     sqlite3 \
+        #     libglib2.0-0
         # elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
         fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
