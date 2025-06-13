@@ -1,0 +1,70 @@
+name: Test Docker Update images
+
+on:
+    pull_request:
+      types: [opened, synchronize, reopened, ready_for_review]
+      branches: [ "main" ]
+      paths:
+        - '.github/actions/build-docker/**'
+        - '.github/actions/set-docker-facts/**'
+        - '.github/scripts/build-docker.sh'
+        - '.github/workflows/test-update-docker-images.yml'
+        - '.github/workflows/update-docker-images.yml'
+
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+jobs:
+  test-single-host-single-docker-update-image:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix permissions
+        shell: bash
+        run: sudo chown ubuntu:ubuntu -R $(pwd) || true
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Docker Images
+        id: build-docker
+        uses: ./.github/actions/build-docker
+        with:
+          image_name: test
+          dockerfile: .github/dockerfiles/Dockerfile.manylinux_2_34_x86_64
+          tag: test
+          from_image: "ghcr.io/${{ github.repository }}/manylinux_2_34_x86_64:latest"
+          skip_push: true
+          force_build: true
+
+  test-single-host-multiple-docker-update-images:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix permissions
+        shell: bash
+        run: sudo chown ubuntu:ubuntu -R $(pwd) || true
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: set json payload
+        id: set-json-payload
+        shell: bash
+        run: |
+          json_results='[{"dockerfile": ".github/dockerfiles/Dockerfile.manylinux_2_34_x86_64", "tag": "test1", "image_name": "test1"},{"dockerfile": ".github/dockerfiles/Dockerfile.manylinux_2_34_x86_64", "tag": "test2", "image_name": "test2"}]'
+          echo "json_results=$json_results" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Images
+        id: build-docker
+        uses: ./.github/actions/build-docker
+        with:
+          docker_build_json: ${{ steps.set-json-payload.outputs.json_results }}
+          skip_push: true
+          force_build: true
