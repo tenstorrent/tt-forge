@@ -3,6 +3,11 @@ name: Performance benchmark
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+  packages: read
+  statuses: read
 
 jobs:
   run-perf-benchmarks:
@@ -124,8 +129,8 @@ jobs:
       with:
         workflow: on-pr.yml
         branch: nsumrak/fix-wheel
-        name: "artifact"
-        name_is_regexp: true
+        name: "artifact.tar"
+        name_is_regexp: false
         repo: tenstorrent/tt-torch
         check_artifacts: true
         path: ./
