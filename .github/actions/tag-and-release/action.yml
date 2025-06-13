@@ -52,17 +52,21 @@ runs:
       shell: bash
       run: |
         TAG_NAME="${{ steps.add-tag.outputs.tag-name }}"
+        echo "tag_name created"
 
         PREV_TAG=$(git tag --list 'nightly-*' --sort=-creatordate | grep -v "^$TAG_NAME$" | head -n 1)
+        echo "prev_tag created"
 
         if [ -z "$PREV_TAG" ]; then
           echo "No previous nightly tag found."
           echo "commits=No previous nightly tag found." >> "$GITHUB_OUTPUT"
         else
+          echo "in else"
           COMMITS=$(git log --pretty=format:'- %h %s (%an)' "$PREV_TAG..$TAG_NAME")
           if [ -z "$COMMITS" ]; then
             COMMITS="No new commits since last nightly."
           fi
+          echo "commits queried"
 
           echo "commits<<EOF" >> "$GITHUB_OUTPUT"
           echo "$COMMITS" >> "$GITHUB_OUTPUT"
