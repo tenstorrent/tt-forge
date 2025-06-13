@@ -125,15 +125,13 @@ jobs:
         python-version: '3.10'
 
     - name: Download tt_torch wheel
-      uses: dawidd6/action-download-artifact@v6
+      uses: ./github/actions/download-artifact
       with:
-        workflow: on-pr.yml
-        branch: nsumrak/fix-wheel
         name: "artifact.tar"
-        name_is_regexp: false
-        repo: tenstorrent/tt-torch
-        check_artifacts: true
-        path: ./
+        repository: tenstorrent/tt-torch
+        run_id: "15635813351"
+        retry_count: 1
+        github_token: ${{ secrets.GH_TOKEN }}
 
     - name: Install wheels
       shell: bash
