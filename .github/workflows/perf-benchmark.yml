@@ -130,11 +130,11 @@ jobs:
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          curl -L -H "Authorization: Bearer ${{ secrets.GH_ACTIONS_TOKEN }}" https://api.github.com/repos/tenstorrent/tt-torch/actions/artifacts/3322910202/zip -o install-artifacts.zip
-          unzip install-artifacts.zip
-          tar -xf artifact.tar
-          pip install wheels/tt_torch-*.whl
-          # pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
+          # curl -L -H "Authorization: Bearer ${{ secrets.GH_ACTIONS_TOKEN }}" https://api.github.com/repos/tenstorrent/tt-torch/actions/artifacts/3322910202/zip -o install-artifacts.zip
+          # unzip install-artifacts.zip
+          # tar -xf artifact.tar
+          # pip install wheels/tt_torch-*.whl
+          pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
           pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
@@ -147,6 +147,12 @@ jobs:
         if [ -n "${{ matrix.build.require }}" ]; then
           pip install ${{ matrix.build.require }}
         fi
+
+    - name: Run demo
+      shell: bash
+      run: |
+        source ${{ matrix.build.project }}-venv/bin/activate
+        python benchmark/tt-torch/demo_test.py
 
     - name: Run Perf Benchmark
       shell: bash
