@@ -126,7 +126,6 @@ jobs:
         repository: tenstorrent/tt-torch
         run_id: "15635813351"
         retry_count: 1
-        github_token: ${{ secrets.GH_TOKEN }}
 
     - name: Install wheels
       shell: bash
