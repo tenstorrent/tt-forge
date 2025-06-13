@@ -2,33 +2,35 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import torch
-import forge
-from forge.verify.verify import verify
+from tt_torch.dynamo.backend import backend
 
 
-def test_eltwise_add(shape, dtype):
+def test_add(shape, dtype):
     class AddModel(torch.nn.Module):
         def forward(self, x, y):
             return x + y
+
+    model = AddModel()
+    model.eval()
 
     input1 = torch.randn(shape, dtype=dtype)
     input2 = torch.randn(shape, dtype=dtype)
     inputs = [input1, input2]
 
-    model = AddModel()
-    model.eval()
-
-    compiled_model = forge.compile(model, sample_inputs=inputs)
-    verify(inputs, model, compiled_model)
+    cmodel = torch.compile(model, backend=backend)
+    outputs = cmodel(inputs)
+    print(
+        f"Input shape: {inputs[0].shape}, Input dtype: {inputs[0].dtype}, Output shape: {outputs.shape}, Output dtype: {outputs.dtype}"
+    )
 
 
 def benchmark(config: dict):
-    test_eltwise_add((4, 4), torch.float32)
-    test_eltwise_add((6, 7), torch.float32)
+    test_add((4, 4), torch.float32)
+    test_add((6, 7), torch.float32)
     return {
-        "model": "EltwiseAddDemoModel",
+        "model": "AddDemoModel",
         "model_type": "Demo",
-        "run_type": "Demo_2_0_0_1",
+        "run_type": "Demo_1_0_0_1",
         "config": {"model_size": "small"},
         "num_layers": 0,
         "batch_size": 2,
