@@ -44,16 +44,6 @@ jobs:
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
-    - uses: actions/checkout@v4
-      with:
-          sparse-checkout: |
-            .github/
-            benchmark/
-            pytest.ini
-            conftest.py
-            .test_durations
-          fetch-depth: 1 # Fetch all history and tags
-
     - name: Install common tools and dependencies
       shell: bash
       run: |
@@ -79,6 +69,16 @@ jobs:
         if [ -n "${{ matrix.build.libreq }}" ]; then
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
         fi
+
+    - uses: actions/checkout@v4
+      with:
+          sparse-checkout: |
+            .github/
+            benchmark/
+            pytest.ini
+            conftest.py
+            .test_durations
+          fetch-depth: 1 # Fetch all history and tags
 
     - name: Fetch job id
       id: fetch-job-id
