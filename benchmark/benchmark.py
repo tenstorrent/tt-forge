@@ -75,11 +75,15 @@ def run_benchmark(config: Dict[str, Any]) -> Dict[str, Any]:
     project = config["project"]
     test = config["model"]
 
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
     # Add the project directory to sys.path so imports within the module work
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.abspath(os.path.join(script_dir, project))
     if project_dir not in sys.path:
         sys.path.insert(0, project_dir)
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
 
     # Construct the path to the test file
     test_file = os.path.join(project_dir, f"{test}.py")
@@ -241,7 +245,7 @@ def main():
 
         # Run the benchmark
         results = run_benchmark(config)
-        results["project"] = config["project"]
+        results["project"] = "tt-forge/" + config["project"]
         results["model_rawname"] = config["model"]
 
         # Save the results

@@ -6,7 +6,7 @@ on:
 jobs:
   run-perf-benchmarks:
     container:
-      image: "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
+      image:  ubuntu:22.04 # "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
       options: "--device /dev/tenstorrent/0"
       volumes:
         - /dev/hugepages:/dev/hugepages
@@ -20,17 +20,58 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          { runs-on: "n150", project: "forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 }
+          { runs-on: "n150", project: "tt-forge-fe", name: "demo_test",         dir: "", bs: 1, lp: 32 },
+          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-torch",    name: "demo_test",         dir: "", bs: 1, lp: 32 },
+          # torch error: Error running benchmark: No module named 'torch_mlir'
+          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32 }, #, require: "onnx==1.17.0 onnxruntime" }
+          { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "", bs: 1, lp: 32 }
         ]
     runs-on:
       - ${{ matrix.build.runs-on }}
+      - in-service
 
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
+
+    - uses: actions/checkout@v4
+      with:
+          sparse-checkout: |
+            benchmark/
+            pytest.ini
+            conftest.py
+            .test_durations
+          fetch-depth: 1 # Fetch all history and tags
+
+    - name: Install common tools and dependencies
+      shell: bash
+      run: |
+        apt-get update -qq >/dev/null 2>&1
+        apt-get install -y -qq --no-install-recommends \
+          ca-certificates \
+          git \
+          jq \
+          curl \
+          unzip \
+          build-essential \
+          wget \
+          libnuma1
+        # libopenmpi now specific impl for metal
+        wget "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb" -O "mpi.deb"
+        apt install -y "./mpi.deb"
+        rm ./mpi.deb
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          apt-get install -y -qq --no-install-recommends \
+            sqlite3
+        # elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+        fi
+        if [ -n "${{ matrix.build.libreq }}" ]; then
+          apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+        fi
 
     - name: Fetch job id
       id: fetch-job-id
@@ -48,69 +89,58 @@ jobs:
         echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
         echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
 
-    - name: Git safe dir
-      run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
-
-    - uses: actions/checkout@v4
-      with:
-          sparse-checkout: |
-            benchmark/
-            pytest.ini
-            conftest.py
-            .test_durations
-          fetch-depth: 0 # Fetch all history and tags
+    # - name: Git safe dir
+    #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
 
     # ttrt version (sha) should be taken from release metadata or something
-    - name: Download ttrt wheel
-      uses: dawidd6/action-download-artifact@v6
-      with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
-        workflow_conclusion: success
-        workflow: on-push.yml
-        branch: main
-        name: "(ttrt-whl|install-artifacts)-tracy"
-        name_is_regexp: true
-        repo: tenstorrent/tt-mlir
-        check_artifacts: true
-        path: ./
+    # - name: Download ttrt wheel
+    #   uses: dawidd6/action-download-artifact@v6
+    #   with:
+    #     workflow_conclusion: success
+    #     workflow: on-push.yml
+    #     branch: main
+    #     name: "(ttrt-whl|install-artifacts)-tracy"
+    #     name_is_regexp: true
+    #     repo: tenstorrent/tt-mlir
+    #     check_artifacts: true
+    #     path: ./
 
-    - name: Untar ttmlir install directory
-      shell: bash
-      run: |
-        mv install-artifacts-tracy/ install/
-        cd install
-        tar xvf artifact.tar
-        cd ..
+    # - name: Untar ttmlir install directory
+    #   shell: bash
+    #   run: |
+    #     mv install-artifacts-tracy/ install/
+    #     cd install
+    #     tar xvf artifact.tar
+    #     cd ..
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Download project releases
-      uses: robinraju/release-downloader@v1
-      with:
-        latest: true
-        preRelease: true
-        tarBall: false
-        zipBall: false
-        fileName: '*.whl'
-
     - name: Install wheels
       shell: bash
       run: |
-        if [ "${{ matrix.build.project }}" == "forge-fe" ]; then
-          python -m venv forge-fe-venv
-          source forge-fe-venv/bin/activate
-          pip install tvm*.whl --force-reinstall
-          pip install forge*.whl --force-reinstall
-        elif [ "${{ matrix.build.project }}" == "torch" ]; then
-          python -m venv torch-venv
-          source torch-venv/bin/activate
-          pip install tt_torch*.whl --force-reinstall
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          python -m venv tt-forge-fe-venv
+          source tt-forge-fe-venv/bin/activate
+          pip install tvm --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tvm
+          pip install forge --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install forge
+        elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+          python -m venv tt-torch-venv
+          source tt-torch-venv/bin/activate
+          pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
+          pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
+        elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          python -m venv tt-xla-venv
+          source tt-xla-venv/bin/activate
+          pip install pjrt_plugin_tt --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install pjrt_plugin_tt jax
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
+        fi
+        if [ -n "${{ matrix.build.require }}" ]; then
+          pip install ${{ matrix.build.require }}
         fi
 
     - name: Run Perf Benchmark
@@ -122,23 +152,26 @@ jobs:
       run: |
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
         source ${{ matrix.build.project }}-venv/bin/activate
-        python benchmark/benchmark.py ${{ matrix.build.project}} ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
-
-    - name: Install and run TTRT
-      shell: bash
-      run: |
-        python -m venv ttrt-venv
-        source ttrt-venv/bin/activate
-        pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
-        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-        echo "save artifacts"
-        ttrt query --save-artifacts
-        if [ -z "${{ matrix.build.allow-fail }}" ]; then
-          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        else
-          ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        if [ -n "${{ matrix.build.dir }}" ]; then
+          python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
         fi
+
+    # - name: Install and run TTRT
+    #   if: ${{ matrix.build.project != 'tt-torch' }}
+    #   shell: bash
+    #   run: |
+    #     python -m venv ttrt-venv
+    #     source ttrt-venv/bin/activate
+    #     pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
+    #     pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+    #     echo "save artifacts"
+    #     ttrt query --save-artifacts
+    #     if [ -z "${{ matrix.build.allow-fail }}" ]; then
+    #       ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}.json # _${{ steps.fetch-job-id.outputs.job_id }}.json
+    #     else
+    #       ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_.json || true # ${{ steps.fetch-job-id.outputs.job_id }}.json || true
+    #     fi
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4
