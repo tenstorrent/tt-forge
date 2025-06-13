@@ -28,3 +28,8 @@ def test_eltwise_add(shape, dtype):
 
     compiled_model = forge.compile(model, sample_inputs=inputs)
     verify(inputs, model, compiled_model)
+
+
+def benchmark(config: dict):
+    test_eltwise_add((4, 4), torch.float32)
+    test_eltwise_add((6, 7), torch.float32)

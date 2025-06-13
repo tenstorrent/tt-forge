@@ -4,4 +4,6 @@
 
 import jax
 
-jax.devices("tt")
+
+def benchmark(config: dict):
+    jax.devices("tt")
