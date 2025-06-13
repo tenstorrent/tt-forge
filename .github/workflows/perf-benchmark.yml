@@ -21,8 +21,8 @@ jobs:
       matrix:
         build: [
           { runs-on: "n150", project: "tt-forge-fe", name: "demo_test",         dir: "", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          # { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
           # { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32 },
           # { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32 },
           # { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32 },
@@ -49,7 +49,6 @@ jobs:
     - name: Install common tools and dependencies
       shell: bash
       run: |
-        set -x
         apt-get update -qq >/dev/null 2>&1
         apt-get install -y -qq --no-install-recommends \
           ca-certificates \
@@ -60,7 +59,7 @@ jobs:
           build-essential \
           wget \
           libnuma1
-        # ttrt
+        # libopenmpi now specific impl for metal
         wget "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb" -O "mpi.deb"
         apt install -y "./mpi.deb"
         # rm ./mpi.deb
