@@ -10,7 +10,7 @@ inputs:
     description: Flag that decides if you untar the artifact
     default: "false"
 
-runs: 
+runs:
   using: composite
   steps:
     - name: Checkout repository
@@ -33,7 +33,7 @@ runs:
       with:
         name: ${{ inputs.wheel-artifact-name }}
         path: dist
-    
+
     - name: Untar the wheel artifact
       if: ${{ inputs.untar-wheel-artifact == "true" }}
       shell: bash
