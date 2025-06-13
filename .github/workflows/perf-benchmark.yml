@@ -149,6 +149,7 @@ jobs:
 
     - name: Run demo
       run: |
+        source ${{ matrix.build.project }}-venv/bin/activate
         python benchmark/tt-forge-fe/demo_test.py
 
     - name: Run Perf Benchmark
