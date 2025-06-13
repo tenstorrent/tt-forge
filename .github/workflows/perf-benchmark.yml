@@ -148,6 +148,7 @@ jobs:
         fi
 
     - name: Run demo
+      shell: bash
       run: |
         source ${{ matrix.build.project }}-venv/bin/activate
         python benchmark/tt-forge-fe/demo_test.py
