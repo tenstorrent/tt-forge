@@ -1,0 +1,63 @@
+name: Build Docker
+description: Build Docker
+
+inputs:
+  docker_build_json:
+    required: false
+    type: string
+  image_name:
+    required: false
+    type: string
+  dockerfile:
+    required: false
+    type: string
+  tag:
+    required: false
+    type: string
+  from_image:
+    required: false
+    type: string
+  skip_push:
+    required: false
+    type: boolean
+    default: false
+  force_build:
+    required: false
+    type: boolean
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build docker image
+      id: build-docker
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        export SKIP_PUSH="${{ inputs.skip_push }}"
+        export FORCE_BUILD="${{ inputs.force_build }}"
+
+        # Used for single image build
+        if [ -z "${{ inputs.docker_build_json }}" ]; then
+          export IMAGE_NAME="${{ inputs.image_name }}"
+          export DOCKER_TAG="${{ inputs.tag }}"
+          export DOCKERFILE="${{ inputs.dockerfile }}"
+          export FROM_IMAGE="${{ inputs.from_image }}"
+          ./.github/scripts/build-docker.sh
+          #TODO: Return json of created image for ci
+
+        else
+          # Used to build multiple images on same host for improved cache hits
+          while read dict
+          do
+            export IMAGE_NAME=$(echo "$dict" | jq -r .image_name)
+            export DOCKER_TAG=$(echo "$dict" | jq -r .tag)
+            export DOCKERFILE=$(echo "$dict" | jq -r .dockerfile)
+            export FROM_IMAGE=$(echo "$dict" | jq -r .from_image || "")
+            ./.github/scripts/build-docker.sh
+
+            #TODO: Return json of created images for ci
+
+          done < <(echo '${{ inputs.docker_build_json }}' | jq -c '.[]')
+        fi
