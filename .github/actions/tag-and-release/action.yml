@@ -39,13 +39,9 @@ runs:
       shell: bash
       run: |
         cd dist
-        ls -lah
         tar xvf artifact.tar
-        ls -lah
-        cd wheels
-        ls -lah
-        cp *.whl ..
-        cd ../..
+        cp wheels/*.whl .
+        cd ..
 
     - name: Get previous nightly tag and commit list
       id: commit-list
