@@ -119,14 +119,6 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Download tt_torch wheel
-      uses: ./.github/actions/download-artifact
-      with:
-        name: "artifact.tar"
-        repository: tenstorrent/tt-torch
-        run_id: "15635813351"
-        retry_count: 1
-
     - name: Install wheels
       shell: bash
       run: |
@@ -138,6 +130,8 @@ jobs:
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
+          curl -L -H "Authorization: Bearer ${{ github.token }}" https://github.com/tenstorrent/tt-torch/actions/runs/15635813351/artifacts/3322910202/zip -o install-artifacts.zip
+          unzip install-artifacts.zip
           tar -xf artifact.tar
           pip install wheels/tt_torch-*.whl
           # pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
