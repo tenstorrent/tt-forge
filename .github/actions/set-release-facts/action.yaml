@@ -52,7 +52,7 @@ runs:
             artifact_download_glob='*{wheel,test-reports}*'
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
             workflow_result_in_job="fail-notify"
-            pip_wheel_names="forge tvm"
+            pip_wheel_names="tt_forge_fe tt_tvm"
         elif [[ "${{ inputs.repo }}" =~ "tt-torch" ]]; then
             workflow="Nightly Tests"
             artifact_download_glob='*{install-artifacts,test-reports-models-}*'

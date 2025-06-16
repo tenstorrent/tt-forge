@@ -62,19 +62,20 @@ jobs:
       with:
         repo: ${{ inputs.repo }}
 
-  release-rc-stable:
-    needs: get-repos
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{fromJson(needs.get-repos.outputs.json_results)}}
-    uses: ./.github/workflows/update-releases.yml
-    secrets: inherit
-    name: ${{ matrix.repo_short }} Update RC and Stable
-    with:
-      draft: ${{ inputs.draft || false}}
-      repo: ${{ matrix.repo }}
-      overwrite_releases: ${{ inputs.overwrite_releases || false}}
+# TODO: Disable RC and Stable release for now
+#  release-rc-stable:
+#    needs: get-repos
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        include: ${{fromJson(needs.get-repos.outputs.json_results)}}
+#    uses: ./.github/workflows/update-releases.yml
+#    secrets: inherit
+#    name: ${{ matrix.repo_short }} Update RC and Stable
+#    with:
+#      draft: ${{ inputs.draft || false}}
+#      repo: ${{ matrix.repo }}
+#      overwrite_releases: ${{ inputs.overwrite_releases || false}}
 
   release-nightly:
     needs: get-repos
@@ -93,7 +94,7 @@ jobs:
   fail-notify:
     if: always()
     needs:
-      - release-rc-stable
+      #- release-rc-stable
       - release-nightly
     runs-on: ubuntu-latest
     outputs:
@@ -108,7 +109,9 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: release-rc-stable,release-nightly
+          # TODO: Disable RC and Stable release for now
+          #allowed-skips: release-rc-stable,release-nightly
+          allowed-skips: release-nightly
 
   fail-send-msg:
     if: always()
@@ -129,7 +132,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_NIGHTLY_FAIL }}
 
   delete-drafts:
-    needs: fail-notify
+    needs: fail-send-msg
     if: ${{ inputs.delete-drafts }}
     runs-on: ubuntu-latest
     steps:
