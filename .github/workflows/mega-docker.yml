@@ -44,8 +44,9 @@ jobs:
           wget -P whl/tt-xla https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-0.1.0.${DAILY_TAG}-py3-none-linux_x86_64.whl
 
       - name: Build and push tt-forge-slim
+        id: build
         run: |
-          IMAGE_NAME=ghcr.io/tenstorrent/tt-forge-slim
+          IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/tt-forge-slim
           DOCKER_TAG=${{ env.daily_tag }}
 
           # Check if the image already exists
@@ -55,8 +56,9 @@ jobs:
             echo "Building image $IMAGE_NAME:$DOCKER_TAG"
             docker build -f .github/Dockerfile.tt-forge-slim -t $IMAGE_NAME:$DOCKER_TAG .
             docker push $IMAGE_NAME:$DOCKER_TAG
+            echo "Docker image size:"
+            docker images --format "{{.Size}}" $IMAGE_NAME:$DOCKER_TAG
           fi
-
           echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
 
   test-tt-forge-slim:
