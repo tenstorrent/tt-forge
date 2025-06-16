@@ -22,13 +22,22 @@ jobs:
       matrix:
         build: [
           { runs-on: "n150", project: "tt-forge-fe", name: "demo_test",         dir: "", bs: 1, lp: 1 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", ts: 'na', bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", ts: 'na', bs: 32, lp: 32 },
+          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", ts: 'classification', bs: 3, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", ts: 'classification', bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", ts: 'classification', bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "segformer",         dir: "Segformer", ts: 'na', bs: 1, lp: 32, df: 'float32', libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "vit",               dir: "ViTBase", ts: 'classification', bs: 8, lp: 32, df: 'float32', libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "vovnet",            dir: "VovnetOSMR", ts: 'classification', bs: 16, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v4",           dir: "YOLOv4", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v8",           dir: "YOLOv8", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v9",           dir: "YOLOv9", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v10",          dir: "YOLOv10", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
+          { runs-on: "n150", project: "tt-forge-fe", name: "unet",              dir: "UNet", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, require: "loguru requests transformers datasets torchvision pytest" },
-          { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "", bs: 1, lp: 1 },
+          { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "", bs: 1, lp: 1, require: "pytest" },
+          { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "", bs: 1, lp: 32, require: "pytest tqdm" },
           { runs-on: "n150", project: "tt-mlir",     name: "demo_test",         dir: "", bs: 1, lp: 1 },
         ]
     runs-on:

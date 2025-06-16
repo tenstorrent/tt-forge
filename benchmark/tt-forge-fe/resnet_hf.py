@@ -6,95 +6,147 @@
 import pytest
 import time
 import socket
-import json
-import os
 from datetime import datetime
+from tqdm import tqdm
 
 # Third-party modules
 import torch
-from torch import nn
 from transformers import ResNetForImageClassification
-from datasets import load_dataset
 
 # Forge modules
 import forge
+from forge.verify.value_checkers import AutomaticValueChecker
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
-from forge.verify.compare import compare_with_golden
-from utils import download_model
+from forge._C import DataFormat
+from forge.config import CompilerConfig, MLIRConfig
 
+from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
 
-# Common constants
+TASK = [
+    "classification",
+]
 
-# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
-# Input size configurations
+DATA_FORMAT = [
+    "bfloat16",
+]
+
 INPUT_SIZE = [
     (224, 224),
 ]
 
-# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
-# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
-variants = [
+VARIANTS = [
     "microsoft/resnet-50",
 ]
 
+MLIR_CONFIG_OVERRIDES = [
+    None,
+    "override-conv2d-config=conv2d_81.dc.conv2d.2=shard_layout#height_sharded,conv2d_97.dc.conv2d.2=shard_layout#height_sharded",
+]
 
-@pytest.mark.parametrize("variant", variants, ids=variants)
+
+@pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
+@pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
+@pytest.mark.parametrize("mlir_config_overrides", MLIR_CONFIG_OVERRIDES, ids=MLIR_CONFIG_OVERRIDES)
 def test_resnet_hf(
-    training,
-    batch_size,
-    input_size,
-    channel_size,
-    loop_count,
     variant,
+    channel_size,
+    input_size,
+    batch_size,
+    loop_count,
+    task,
+    data_format,
+    mlir_config_overrides,
+    training,
 ):
 
     if training:
         pytest.skip("Training is not supported")
 
-    # TODO: This we will need when when we run resnet with real data.
-    # Load tiny dataset
-    # dataset = load_dataset("zh-plus/tiny-imagenet")
-    # images = random.sample(dataset["valid"]["image"], 10)
+    module_name = "ResNetForImageClassificationConfig"
 
-    # Random data
-    input_sample = [torch.rand(batch_size, channel_size, *input_size)]
+    if task == "classification":
+        inputs, labels = load_benchmark_dataset(
+            task=task,
+            model_version=variant,
+            dataset_name="imagenet-1k",
+            split="validation",
+            batch_size=batch_size,
+            loop_count=loop_count,
+        )
+    elif task == "na":
+        torch.manual_seed(1)
+        inputs = [torch.rand(batch_size, channel_size, *input_size)]
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
 
-    # Load framework model
-    framework_model = download_model(ResNetForImageClassification.from_pretrained, variant, return_dict=False)
-    fw_out = framework_model(*input_sample)
+    if data_format == "bfloat16":
+        inputs = [item.to(torch.bfloat16) for item in inputs]
 
-    # Compile model
-    compiled_model = forge.compile(framework_model, *input_sample)
+    if data_format == "bfloat16":
+        framework_model = download_model(
+            ResNetForImageClassification.from_pretrained, variant, return_dict=False, torch_dtype=torch.bfloat16
+        )
+        framework_model = framework_model.to(dtype=torch.bfloat16)
+    else:
+        framework_model = download_model(ResNetForImageClassification.from_pretrained, variant, return_dict=False)
+
+    compiler_cfg = CompilerConfig()
+    if data_format == "bfloat16":
+        compiler_cfg.default_df_override = DataFormat.Float16_b
+
+    # Turn on MLIR optimizations.
+    mlir_config = (
+        MLIRConfig().set_enable_optimizer(True).set_enable_fusing(True).set_enable_memory_layout_analysis(True)
+    )
+    if mlir_config_overrides:
+        mlir_config.set_custom_config(mlir_config_overrides)
+
+    # Enable Forge FE optimizations
+    compiler_cfg.enable_optimization_passes = True
+    compiler_cfg.mlir_config = mlir_config
+    compiled_model = forge.compile(framework_model, inputs[0], compiler_cfg=compiler_cfg)
 
     # Enable program cache on all devices
     settings = DeviceSettings()
     settings.enable_program_cache = True
     configure_devices(device_settings=settings)
 
-    # Run for the first time to warm up the model.
-    # This is required to get accurate performance numbers.
-    co_out = compiled_model(*input_sample)
-    start = time.time()
-    for _ in range(loop_count):
-        co_out = compiled_model(*input_sample)
-    end = time.time()
+    # Run for the first time to warm up the model. This is required to get accurate performance numbers.
+    compiled_model(inputs[0])
 
-    co_out = [co.to("cpu") for co in co_out]
-    assert [compare_with_golden(golden=fo, calculated=co, pcc=0.95) for fo, co in zip(fw_out, co_out)]
+    if task == "classification":
+        predictions = []
+        start = time.time()
+        for i in tqdm(range(loop_count)):
+            co_out = compiled_model(inputs[i])[0]
+            predictions.append(co_out)
+        end = time.time()
+        predictions = torch.cat(predictions)
+        labels = torch.cat(labels)
+        evaluation_score = evaluate_classification(predictions, labels)
+    elif task == "na":
+        start = time.time()
+        for i in tqdm(range(loop_count)):
+            co_out = compiled_model(inputs[0])[0]
+        end = time.time()
+        evaluation_score = 0.0
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
@@ -103,8 +155,15 @@ def test_resnet_hf(
 
     samples_per_sec = total_samples / total_time
     model_name = "Resnet 50 HF"
-    model_type = "Classification, Random Input Data"
-    dataset_name = "Resnet, Random Data"
+    model_type = "Classification"
+    if task == "classification":
+        model_type += ", ImageNet-1K"
+        dataset_name = "ImageNet-1K"
+    elif task == "na":
+        model_type += ", Random Input Data"
+        dataset_name = model_name + ", Random Data"
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
     num_layers = 50  # Number of layers in the model, in this case 50 layers
 
     print("====================================================================")
@@ -173,19 +232,24 @@ def test_resnet_hf(
 
 
 def benchmark(config: dict):
-
-    training = config["training"]
-    batch_size = config["batch_size"]
-    input_size = INPUT_SIZE[0]
+    variant = VARIANTS[0]
     channel_size = CHANNEL_SIZE[0]
+    input_size = INPUT_SIZE[0]
+    batch_size = config["batch_size"]
     loop_count = config["loop_count"]
-    variant = variants[0]
+    task = config.get("task", "na")
+    data_format = config.get("data_format", DATA_FORMAT[0])
+    mlir_config_overrides = config.get("mlir_config_overrides", MLIR_CONFIG_OVERRIDES[0])
+    training = config.get("training", False)
 
     return test_resnet_hf(
-        training=training,
-        batch_size=batch_size,
-        input_size=input_size,
-        channel_size=channel_size,
-        loop_count=loop_count,
         variant=variant,
+        channel_size=channel_size,
+        input_size=input_size,
+        batch_size=batch_size,
+        loop_count=loop_count,
+        task=task,
+        data_format=data_format,
+        mlir_config_overrides=mlir_config_overrides,
+        training=training,
     )

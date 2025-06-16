@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from ttmlir.ir import *
-from ttmlir.dialects import tt, ttir
+from ttmlir.dialects import ttcore, ttir
 
 
 def benchmark(config: dict):
