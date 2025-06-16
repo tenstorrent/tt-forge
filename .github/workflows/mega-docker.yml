@@ -81,7 +81,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     container:
       image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      options: --device /dev/tenstorrent/0
+      options: --device /dev/tenstorrent/0 --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -97,5 +97,5 @@ jobs:
       - name: Run ${{ matrix.frontend }} tests
         shell: bash
         run: |
-          source venv-${{ matrix.frontend }}/bin/activate
+          source /home/forge/venv-${{ matrix.frontend }}/bin/activate
           python tt-forge/demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py
