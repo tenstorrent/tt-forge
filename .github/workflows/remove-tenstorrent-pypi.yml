@@ -15,6 +15,11 @@ on:
         description: 'Version to remove from Tenstorrent PyPI'
         required: true
 
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+
 jobs:
   remove-tenstorrent-pypi:
     runs-on: ubuntu-latest
@@ -37,7 +42,7 @@ jobs:
         run: |
           pip install s3pypi
 
-      - name: Remove Tenstorrent PyPI
+      - name: Remove version from Tenstorrent PyPI
         shell: bash
         run: |
           s3pypi delete --bucket ${{ secrets.PYPI_BUCKET }} --name ${{ inputs.package }} --version ${{ inputs.version }}
