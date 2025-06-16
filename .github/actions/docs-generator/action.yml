@@ -6,6 +6,10 @@ inputs:
     description: "Repo's name"
     required: true
     type: string
+  repo_short:
+    description: "Repo's short name"
+    required: true
+    type: string
   artifact_job_json:
     description: ""
     required: true
@@ -38,7 +42,7 @@ runs:
       if: ${{ inputs.release_type == 'nightly' }}
       id: last_release
       run: |
-        loop_count=50
+        loop_count=100
         echo "Search the lastest $loop_count releases to find latest ${{ inputs.release_type }}"
         releases=$(gh release list -R tenstorrent/tt-forge -L $loop_count --json name,tagName,publishedAt,isDraft)
 
@@ -57,9 +61,8 @@ runs:
             continue
           fi
 
-
-          # TODO: Need to fix this once merge since we need tag history
-          if [[ "$tagName" =~ ${{ inputs.release_type }} ]]; then
+          regex="${{ inputs.repo_short }}-.*\.dev.*"
+          if [[ "$tagName" =~ $regex ]]; then
             echo "Selected release name: $name tag: $tagName publishedAt: $publishedAt"
             echo "publishedAt=$publishedAt" >> $GITHUB_OUTPUT
             success=true
