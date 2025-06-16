@@ -1,0 +1,94 @@
+name: Build TT-Forge Docker Images
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  packages: write
+  checks: write
+
+jobs:
+
+  build-tt-forge-slim:
+    name: Build tt-forge-slim Docker Image
+    runs-on: tt-beta-ubuntu-2204-large
+    outputs:
+      docker-image:
+        description: "Built docker image name"
+        value: ghcr.io/tenstorrent/tt-forge-slim:${{ env.daily_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Create whl directory and download wheels
+        run: |
+          DAILY_TAG=dev$(date +'%Y%m%d')
+          echo "daily_tag=${DAILY_TAG}" >> $GITHUB_ENV
+
+          mkdir -p whl/tt-forge-fe
+          wget -P whl/tt-forge-fe https://pypi.eng.aws.tenstorrent.com/tt-forge-fe/tt_forge_fe-0.1.0.${DAILY_TAG}-cp310-cp310-linux_x86_64.whl
+          wget -P whl/tt-forge-fe https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-0.1.0.${DAILY_TAG}-cp310-cp310-linux_x86_64.whl
+          mkdir -p whl/tt-torch
+          wget -P whl/tt-torch https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-0.1.0.${DAILY_TAG}-cp310-cp310-linux_x86_64.whl
+          mkdir -p whl/tt-xla
+          wget -P whl/tt-xla https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-0.1.0.${DAILY_TAG}-py3-none-linux_x86_64.whl
+
+      - name: Build and push tt-forge-slim
+        run: |
+          IMAGE_NAME=ghcr.io/tenstorrent/tt-forge-slim
+          DOCKER_TAG=${{ env.daily_tag }}
+
+          # Check if the image already exists
+          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG > /dev/null 2>&1; then
+            echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
+          else
+            echo "Building image $IMAGE_NAME:$DOCKER_TAG"
+            docker build -f .github/Dockerfile.tt-forge-slim -t $IMAGE_NAME:$DOCKER_TAG .
+            docker push $IMAGE_NAME:$DOCKER_TAG
+          fi
+
+          echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
+
+
+    test-tt-forge-slim:
+      needs: build-tt-forge-slim
+      strategy:
+        fail-fast: false
+        matrix:
+          runs-on:
+            - tt-beta-ubuntu-2204-n150-large-stable
+          frontend:
+            - tt-forge-fe
+            # - tt-torch
+            # - tt-xla
+      runs-on: ${{ matrix.runs-on }}
+      container:
+        image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+        options: --device /dev/tenstorrent/0
+        volumes:
+          - /dev/hugepages:/dev/hugepages
+          - /dev/hugepages-1G:/dev/hugepages-1G
+          - /etc/udev/rules.d:/etc/udev/rules.d
+          - /lib/modules:/lib/modules
+          - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+
+      steps:
+
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Run ${{ matrix.frontend }} tests
+          run: |
+            source venv-${{ matrix.frontend }}-bin/activate
+            python tt-forge/demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py
