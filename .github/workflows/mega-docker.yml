@@ -58,35 +58,34 @@ jobs:
 
           echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
 
+  test-tt-forge-slim:
+    needs: build-tt-forge-slim
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on:
+          - tt-beta-ubuntu-2204-n150-large-stable
+        frontend:
+          - tt-forge-fe
+          # - tt-torch
+          # - tt-xla
+    runs-on: ${{ matrix.runs-on }}
+    container:
+      image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+      options: --device /dev/tenstorrent/0
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
-    test-tt-forge-slim:
-      needs: build-tt-forge-slim
-      strategy:
-        fail-fast: false
-        matrix:
-          runs-on:
-            - tt-beta-ubuntu-2204-n150-large-stable
-          frontend:
-            - tt-forge-fe
-            # - tt-torch
-            # - tt-xla
-      runs-on: ${{ matrix.runs-on }}
-      container:
-        image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
-        options: --device /dev/tenstorrent/0
-        volumes:
-          - /dev/hugepages:/dev/hugepages
-          - /dev/hugepages-1G:/dev/hugepages-1G
-          - /etc/udev/rules.d:/etc/udev/rules.d
-          - /lib/modules:/lib/modules
-          - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+    steps:
 
-      steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-        - name: Checkout repository
-          uses: actions/checkout@v4
-
-        - name: Run ${{ matrix.frontend }} tests
-          run: |
-            source venv-${{ matrix.frontend }}-bin/activate
-            python tt-forge/demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py
+      - name: Run ${{ matrix.frontend }} tests
+        run: |
+          source venv-${{ matrix.frontend }}-bin/activate
+          python tt-forge/demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py
