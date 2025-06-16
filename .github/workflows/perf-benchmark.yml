@@ -20,16 +20,17 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          { runs-on: "n150", project: "tt-forge-fe", name: "demo_test",         dir: "", bs: 1, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
-          { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-torch",    name: "demo_test",         dir: "", bs: 1, lp: 32 },
-          # torch error: Error running benchmark: No module named 'torch_mlir'
-          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32 }, #, require: "onnx==1.17.0 onnxruntime" }
-          { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "", bs: 1, lp: 32 }
+          # { runs-on: "n150", project: "tt-forge-fe", name: "demo_test",         dir: "", bs: 1, lp: 1 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear", bs: 32, lp: 32 },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 3, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          # { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0", bs: 1, lp: 32, libreq: "libgl1-mesa-glx libglib2.0-0" },
+          # { runs-on: "n150", project: "tt-torch",    name: "demo_test",         dir: "", bs: 1, lp: 32 },
+          # # torch error: Error running benchmark: No module named 'torch_mlir'
+          # { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32 }, #, require: "onnx==1.17.0 onnxruntime" }
+          # { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "", bs: 1, lp: 1 },
+          { runs-on: "n150", project: "tt-mlir",     name: "demo_test",         dir: "", bs: 1, lp: 1 },
         ]
     runs-on:
       - ${{ matrix.build.runs-on }}
@@ -130,11 +131,14 @@ jobs:
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
           pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
-          pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
           source tt-xla-venv/bin/activate
           pip install pjrt_plugin_tt --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install pjrt_plugin_tt jax
+        elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          python -m venv tt-mlir-venv
+          source tt-mlir-venv/bin/activate
+          pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
         else
           echo "Unknown project: ${{ matrix.build.project }}"
           exit 1
