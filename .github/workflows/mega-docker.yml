@@ -31,6 +31,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Create whl directory and download wheels
+        shell: bash
         run: |
           DAILY_TAG=dev$(date +'%Y%m%d')
           echo "daily_tag=${DAILY_TAG}" >> $GITHUB_ENV
@@ -44,6 +45,7 @@ jobs:
           wget -P whl/tt-xla https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-0.1.0.${DAILY_TAG}-py3-none-linux_x86_64.whl
 
       - name: Build and push tt-forge-slim
+        shell: bash
         id: build
         run: |
           IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/tt-forge-slim
@@ -89,6 +91,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run ${{ matrix.frontend }} tests
+        shell: bash
         run: |
           source venv-${{ matrix.frontend }}-bin/activate
           python tt-forge/demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py
