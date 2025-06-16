@@ -42,8 +42,8 @@ WORKDIR /home/forge
 # Switch to forge user for remaining operations
 USER forge
 
-# Copy wheel files from host
-COPY whl whl
+# Copy wheel files from host with proper ownership
+COPY --chown=forge:forge whl whl
 
 # Create and activate virtual environment for tt-forge-fe
 RUN FRONTEND=tt-forge-fe && \
