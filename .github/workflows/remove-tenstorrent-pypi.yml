@@ -45,4 +45,4 @@ jobs:
       - name: Remove version from Tenstorrent PyPI
         shell: bash
         run: |
-          s3pypi delete --bucket ${{ secrets.PYPI_BUCKET }} --name ${{ inputs.package }} --version ${{ inputs.version }}
+          s3pypi delete ${{ inputs.package }} ${{ inputs.version }} --bucket ${{ secrets.PYPI_BUCKET }}
