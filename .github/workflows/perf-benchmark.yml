@@ -1,7 +1,11 @@
-name: "Performance benchmark"
+name: Performance benchmark
 
 on:
   workflow_dispatch:
+
+permissions:
+  packages: write
+  checks: write
 
 jobs:
   test:
