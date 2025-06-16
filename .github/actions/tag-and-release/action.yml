@@ -32,16 +32,16 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.wheel-artifact-name }}
-        path: dist
+        path: ${{ runner.temp }}
 
     - name: Untar the wheel artifact
       if: ${{ inputs.untar-wheel-artifact == 'true' }}
       shell: bash
       run: |
-        cd dist
+        cd ${{ runner.temp }}
         tar xvf artifact.tar
         cp wheels/*.whl .
-        cd ..
+        cd -
 
     - name: Get previous nightly tag and commit list
       id: commit-list
@@ -75,6 +75,6 @@ runs:
 
           Commits since the last nightly:
           ${{ steps.commit-list.outputs.commits }}
-        files: ./dist/*.whl
+        files: ${{ runner.temp }}/*.whl
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
