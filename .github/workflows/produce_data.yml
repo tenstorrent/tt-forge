@@ -1,0 +1,28 @@
+name: "[internal] Collect workflow data"
+run-name: "Collect data for run_id ${{ github.event.workflow_run.id }} attempt ${{ github.event.workflow_run.run_attempt }}"
+
+on:
+  workflow_run:
+    workflows: # List workflow that we want to collect data for
+      - "Performance benchmark"
+    types:
+      - completed
+
+jobs:
+  produce-cicd-data:
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Collect CI/CD data
+        uses: tenstorrent/tt-github-actions/.github/actions/collect_data@main
+        if: ${{ github.event_name == 'workflow_run' }}
+        with:
+          repository: ${{ github.repository }}
+          run_id: ${{ github.event.workflow_run.id }}
+          run_attempt: ${{ github.event.workflow_run.run_attempt }}
+          sftp_host: ${{ secrets.SFTP_CICD_WRITER_HOSTNAME }}
+          sftp_user: ${{ secrets.SFTP_CICD_WRITER_USERNAME }}
+          sftp_perf_host: ${{ secrets.SFTP_PERF_WRITER_HOSTNAME }}
+          sftp_perf_user: ${{ secrets.SFTP_PERF_WRITER_USERNAME }}
+          ssh-private-key: ${{ secrets.SFTP_CICD_WRITER_KEY }}
