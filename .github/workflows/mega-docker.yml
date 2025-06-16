@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docker-image: ${{ steps.build.outputs.docker-image }}
+      docker-image-harbor: ${{ steps.build.outputs.docker-image-harbor }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
