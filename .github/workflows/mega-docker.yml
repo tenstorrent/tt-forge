@@ -14,9 +14,7 @@ jobs:
     name: Build tt-forge-slim Docker Image
     runs-on: tt-beta-ubuntu-2204-large
     outputs:
-      docker-image:
-        description: "Built docker image name"
-        value: ghcr.io/tenstorrent/tt-forge-slim:${{ env.daily_tag }}
+      docker-image: ${{ steps.build.outputs.docker-image }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
