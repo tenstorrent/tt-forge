@@ -7,6 +7,9 @@ on:
       - "Performance benchmark"
     types:
       - completed
+    branches:
+      - main
+      - vvukoman/test-data
 
 jobs:
   produce-cicd-data:
