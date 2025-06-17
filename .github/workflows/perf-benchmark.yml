@@ -124,8 +124,8 @@ jobs:
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           python -m venv tt-forge-fe-venv
           source tt-forge-fe-venv/bin/activate
-          pip install tvm --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tvm
-          pip install forge --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install forge
+          pip install tt_tvm --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tvm
+          pip install tt_forge_fe --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install forge
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
