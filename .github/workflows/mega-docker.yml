@@ -78,8 +78,9 @@ jobs:
           # - tt-xla
     runs-on: ${{ matrix.runs-on }}
     container:
-      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      options: --device /dev/tenstorrent/0 --user forge
+      # image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+      image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+      options: --device /dev/tenstorrent --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
