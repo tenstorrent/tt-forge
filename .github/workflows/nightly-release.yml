@@ -66,6 +66,7 @@ jobs:
       id: check-tag
       with:
         tag: "${{needs.get-version.outputs.repo_short }}-${{ needs.get-version.outputs.tag }}"
+        repo: ${{ inputs.repo }}
 
     - name: Build Release Artifacts
       if: ${{ inputs.draft || steps.check-tag.outputs.exists == 'false' }}

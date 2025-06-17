@@ -43,9 +43,15 @@ runs:
       id: last_release
       run: |
         loop_count=100
-        echo "Search the lastest $loop_count releases to find latest ${{ inputs.release_type }}"
-        releases=$(gh release list -R ${{ github.repository }} -L $loop_count --json name,tagName,publishedAt,isDraft)
 
+        if [[ ${{ github.repository }} == 'tenstorrent/tt-forge' ]]; then
+          lookup_repo="${{ github.repository }}"
+        else
+          lookup_repo="${{ inputs.repo }}"
+        fi
+
+        releases=$(gh release list -R $lookup_repo -L $loop_count --json name,tagName,publishedAt,isDraft)
+        echo "Search the lastest $loop_count releases to find latest ${{ inputs.release_type }}"
         array_ptr=0
         success=false
 
