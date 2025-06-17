@@ -19,14 +19,14 @@ runs:
         fetch-tags: true
         fetch-depth: 0
 
-    - name: Add a tag
-      id: add-tag
-      shell: bash
-      run: |
-        TAG_NAME="nightly-$(date +'%Y%m%d')-${{ github.run_id }}-${{ github.run_attempt }}"
-        git tag "$TAG_NAME"
-        git push origin "$TAG_NAME"
-        echo "tag-name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+    # - name: Add a tag
+    #   id: add-tag
+    #   shell: bash
+    #   run: |
+    #     TAG_NAME="nightly-$(date +'%Y%m%d')-${{ github.run_id }}-${{ github.run_attempt }}"
+    #     git tag "$TAG_NAME"
+    #     git push origin "$TAG_NAME"
+    #     echo "tag-name=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
     - name: Download wheel artifact
       uses: actions/download-artifact@v4
@@ -43,11 +43,33 @@ runs:
         cp wheels/*.whl .
         cd -
 
-    - name: Get previous nightly tag and commit list
-      id: commit-list
+    - name: Push the tag and get commit diff
+      id: push-tag
       shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        TAG_NAME="${{ steps.add-tag.outputs.tag-name }}"
+        RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
+          "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}")
+        echo "First started at: $(echo "$RESPONSE" | jq -r .created_at)"
+
+        workflow_start_date=$(echo "$RESPONSE" | jq -r .created_at)
+        workflow_date=$(echo "$workflow_start_date" | cut -d'T' -f1)
+
+        if [ "$(date +'%Y-%m-%d')" != "$workflow_date" ]; then
+          echo "Old nigthly workflow can't create a release"
+          exit 0
+        fi
+
+        TAG_NAME="nightly-$(date +'%Y%m%d')"
+
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+          echo "Nighly release already exists for today"
+          exit 0
+        else
+
+        git tag "$TAG_NAME"
+        git push origin "$TAG_NAME"
 
         PREV_TAG=$(git tag --list 'nightly-*' --sort=-creatordate | grep -v "^$TAG_NAME$" | head -n 1)
 
@@ -65,11 +87,15 @@ runs:
           echo "EOF" >> "$GITHUB_OUTPUT"
         fi
 
+        echo "tag-name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+
     - name: Create a release
+      id: create-release
       uses: softprops/action-gh-release@v2
+      if: ${{ steps.push-tag.outputs.tag-name != '' }}
       with:
-        tag_name: ${{ steps.add-tag.outputs.tag-name }}
-        name: "Nigthly release: ${{ steps.add-tag.outputs.tag-name }}"
+        tag_name: ${{ steps.push-tag.outputs.tag-name }}
+        name: "Nigthly release: ${{ steps.push-tag.outputs.tag-name }}"
         body: |
           Release created during the nigthly workflow run.
 
@@ -78,3 +104,12 @@ runs:
         files: ${{ runner.temp }}/*.whl
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+
+    - name: Remove tag if release creation failed
+      shell: bash
+      if: ${{ steps.create-release.conclusion == 'failure' }}
+      run: |
+        TAG_NAME=${{steps.push-tag.outputs.tag-name}}
+        git push --delete origin "$TAG_NAME" || echo "Failed to remove the remote tag"
+        git tag -d "$TAG_NAME" || echo "Failed to remove the local tag"
+        echo "Tag $TAG_NAME removed due to release creation failure"
