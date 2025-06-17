@@ -82,8 +82,8 @@ jobs:
 
     runs-on: ${{ matrix.runs-on }}
     container:
-      # image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+      # image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
       options: --device /dev/tenstorrent --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
@@ -97,8 +97,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run ${{ matrix.demos. demo }} tests
+      - name: Run ${{ matrix.demos.demo }} tests
+        if: ${{ matrix.demos.frontend == 'tt-forge-fe' }}
         shell: bash
         run: |
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
+          python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
+
+      - name: Run ${{ matrix.demos.demo }} tests
+        if: ${{ matrix.demos.frontend == 'tt-torch' }}
+        shell: bash
+        run: |
+          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
+
+          # tt-torch workarounds
+          # Install tt-torch dependencies
+          curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/requirements.txt -o requirements.txt
+          pip install -r requirements.txt
+          # Add venv-tt-torch and venv-tt-torch/lib to PYTHONPATH
+          export PYTHONPATH=$PYTHONPATH:venv-tt-torch:venv-tt-torch/lib
+
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
