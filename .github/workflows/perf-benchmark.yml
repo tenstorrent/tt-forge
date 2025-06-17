@@ -124,12 +124,14 @@ jobs:
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           python -m venv tt-forge-fe-venv
           source tt-forge-fe-venv/bin/activate
-          pip install tt_tvm --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tvm
-          pip install tt_forge_fe --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install forge
+          pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-tvm tt-forge-fe
+          # pip install tt_tvm --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tvm
+          # pip install tt_forge_fe --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install forge
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-          pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
+          pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt_torch
+          # pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
           pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
