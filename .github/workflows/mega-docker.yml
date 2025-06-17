@@ -65,25 +65,22 @@ jobs:
           echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
 
 
-  test-tt-forge-slim:
+  basic-test-tt-forge-slim:
     needs: build-tt-forge-slim
     strategy:
       fail-fast: false
       matrix:
         runs-on:
           - tt-beta-ubuntu-2204-n150-large-stable
-        demos:
-          - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
-          - { "frontend": "tt-torch", "demo": "cnn/mobile_netv2_demo.py" }
-          - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+          - tt-beta-ubuntu-2204-p150b-large-stable
+        frontends:
+          - tt-forge-fe
+          - tt-torch
+          - tt-xla
 
     runs-on: ${{ matrix.runs-on }}
     container:
       image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      # image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
       options: --device /dev/tenstorrent --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
@@ -97,24 +94,49 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run ${{ matrix.demos.demo }} tests
-        if: ${{ matrix.demos.frontend == 'tt-forge-fe' }}
+      - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
+        shell: bash
+        run: |
+          source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+          python benchmark/${{ matrix.frontend }}/demo_test.py
+
+
+  demo-test-tt-forge-slim:
+    needs:
+      - build-tt-forge-slim
+      - basic-test-tt-forge-slim
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on:
+          - tt-beta-ubuntu-2204-n150-large-stable
+          - tt-beta-ubuntu-2204-p150b-large-stable
+        demos:
+          # - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
+          # - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
+          # - { "frontend": "tt-torch", "demo": "cnn/mobile_netv2_demo.py" }
+          # - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+
+    runs-on: ${{ matrix.runs-on }}
+    container:
+      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+      options: --device /dev/tenstorrent --user forge
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
         shell: bash
         run: |
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
-          python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
-
-      - name: Run ${{ matrix.demos.demo }} tests
-        if: ${{ matrix.demos.frontend == 'tt-torch' }}
-        shell: bash
-        run: |
-          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
-
-          # tt-torch workarounds
-          # Install tt-torch dependencies
-          curl -s https://raw.githubusercontent.com/tenstorrent/tt-torch/main/requirements.txt -o requirements.txt
-          pip install -r requirements.txt
-          # Add venv-tt-torch and venv-tt-torch/lib to PYTHONPATH
-          export PYTHONPATH=$PYTHONPATH:venv-tt-torch:venv-tt-torch/lib
-
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
