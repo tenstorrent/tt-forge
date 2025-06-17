@@ -47,7 +47,7 @@ runs:
       id: push-tag
       shell: bash
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ env.GITHUB_TOKEN }}
       run: |
         RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}")
