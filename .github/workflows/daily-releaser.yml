@@ -22,6 +22,16 @@ on:
         type: boolean
         default: false
         description: Overwrite releases
+      slack-token:
+        type: string
+        description: 'Slack token'
+        required: false
+        default: ''
+      gha-token:
+        type: string
+        description: 'GHA token'
+        required: false
+        default: ''
 
   workflow_call:
     inputs:
@@ -42,6 +52,16 @@ on:
         type: boolean
         default: false
         description: Overwrite releases
+      slack-token:
+        type: string
+        description: 'Slack token'
+        required: false
+        default: ''
+      gha-token:
+        type: string
+        description: 'GHA token'
+        required: false
+        default: ''
 
 permissions:
   pages: write
@@ -129,7 +149,7 @@ jobs:
               "channel": "C088QN7E0R3"
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_NIGHTLY_FAIL }}
+          SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}
 
   delete-drafts:
     needs: fail-send-msg
@@ -139,4 +159,4 @@ jobs:
       - name: Delete drafts
         uses: hugo19941994/delete-draft-releases@v1.0.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ inputs.gha-token || secrets.GITHUB_TOKEN }}

@@ -37,7 +37,13 @@ jobs:
     - name: version tag
       id: version-tag
       run: |
-        source .version
+        if [[ ${{ github.repository }} == 'tenstorrent/tt-forge' ]]; then
+          source .version
+        else
+          wget https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/main/.version
+          source .version
+        fi
+
         repo="${{ inputs.repo }}"
         repo_short="${repo#tenstorrent/}" >> $GITHUB_OUTPUT
         tag="${VERSION}.dev$(date +"%Y%m%d")"
