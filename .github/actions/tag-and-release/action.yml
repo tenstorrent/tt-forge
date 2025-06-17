@@ -66,7 +66,7 @@ runs:
         if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
           echo "Nighly release already exists for today"
           exit 0
-        else
+        fi
 
         git tag "$TAG_NAME"
         git push origin "$TAG_NAME"
