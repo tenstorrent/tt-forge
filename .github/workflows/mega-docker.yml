@@ -72,10 +72,14 @@ jobs:
       matrix:
         runs-on:
           - tt-beta-ubuntu-2204-n150-large-stable
-        frontend:
-          - tt-forge-fe
-          # - tt-torch
-          # - tt-xla
+        demos:
+          - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
+          - { "frontend": "tt-torch", "demo": "cnn/mobile_netv2_demo.py" }
+          - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+
     runs-on: ${{ matrix.runs-on }}
     container:
       # image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
@@ -93,8 +97,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run ${{ matrix.frontend }} tests
+      - name: Run ${{ matrix.demos. demo }} tests
         shell: bash
         run: |
-          source /home/forge/venv-${{ matrix.frontend }}/bin/activate
-          python demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py
+          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
+          python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
