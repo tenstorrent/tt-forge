@@ -92,7 +92,7 @@ runs:
           ${{ steps.push-tag.outputs.commits }}
         files: ${{ runner.temp }}/*.whl
       env:
-        GITHUB_TOKEN: "randomtoken"
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
 
     - name: Remove tag if release creation failed
       shell: bash
