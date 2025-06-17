@@ -46,19 +46,19 @@ WORKDIR /home/forge
 USER forge
 
 # Create and activate virtual environment for tt-forge-fe, install whl
-RUN FRONTEND=tt-forge-fe && \
+RUN FRONTEND=tt_forge_fe && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     pip install https://pypi.eng.aws.tenstorrent.com/$FRONTEND/$FRONTEND-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
 
 # Create and activate virtual environment for tt-torch, install whl
-RUN FRONTEND=tt-torch && \
+RUN FRONTEND=tt_torch && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     pip install https://pypi.eng.aws.tenstorrent.com/$FRONTEND/$FRONTEND-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
 
 # Create and activate virtual environment for tt-xla, install whl
-RUN FRONTEND=tt-xla && \
+RUN FRONTEND=tt_xla && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     pip install https://pypi.eng.aws.tenstorrent.com/$FRONTEND/$FRONTEND-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
