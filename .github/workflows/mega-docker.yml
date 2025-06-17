@@ -66,6 +66,7 @@ jobs:
 
 
   basic-test-tt-forge-slim:
+    name: Basic test ${{ matrix.frontend }} on ${{ matrix.runs-on }}
     needs: build-tt-forge-slim
     strategy:
       fail-fast: false
@@ -73,7 +74,7 @@ jobs:
         runs-on:
           - tt-beta-ubuntu-2204-n150-large-stable
           - tt-beta-ubuntu-2204-p150b-large-stable
-        frontends:
+        frontend:
           - tt-forge-fe
           - tt-torch
           - tt-xla
@@ -94,7 +95,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
+      - name: Check ${{ matrix.frontend }}
         shell: bash
         run: |
           source /home/forge/venv-${{ matrix.frontend }}/bin/activate
@@ -102,6 +103,7 @@ jobs:
 
 
   demo-test-tt-forge-slim:
+    name: Demo ${{ matrix.demos.frontend }} ${{ matrix.demos.demo }} on ${{ matrix.runs-on }}
     needs:
       - build-tt-forge-slim
       - basic-test-tt-forge-slim
