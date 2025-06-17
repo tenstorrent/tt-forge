@@ -47,7 +47,7 @@ runs:
         workflow_start_date=$(echo "$RESPONSE" | jq -r .created_at)
         workflow_date=$(echo "$workflow_start_date" | cut -d'T' -f1)
         if [ "$(date +'%Y-%m-%d')" != "$workflow_date" ]; then
-          echo "Old nigthly workflow can't create a release"
+          echo "Old nightly workflow can't create a release"
           exit 0
         fi
 
@@ -84,19 +84,19 @@ runs:
       if: ${{ steps.push-tag.outputs.tag-name != '' }}
       with:
         tag_name: ${{ steps.push-tag.outputs.tag-name }}
-        name: "Nigthly release: ${{ steps.push-tag.outputs.tag-name }}"
+        name: "Nightly release: ${{ steps.push-tag.outputs.tag-name }}"
         body: |
-          Release created during the nigthly workflow run.
+          Release created during the nightly workflow run.
 
           Commits since the last nightly:
-          ${{ steps.commit-list.outputs.commits }}
+          ${{ steps.push-tag.outputs.commits }}
         files: ${{ runner.temp }}/*.whl
       env:
         GITHUB_TOKEN: "randomtoken"
 
     - name: Remove tag if release creation failed
       shell: bash
-      if: ${{ steps.create-release.conclusion == 'failure' }}
+      if: ${{ steps.create-release.outcome == 'failure' }}
       run: |
         TAG_NAME=${{steps.push-tag.outputs.tag-name}}
         git push --delete origin "$TAG_NAME" || echo "Failed to remove the remote tag"
