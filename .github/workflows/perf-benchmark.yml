@@ -131,13 +131,8 @@ jobs:
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
-<<<<<<< nsumrak/forge_fe-name-changes
           pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt_torch
           # pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
-          pip install ttmlir --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install ttmlir
-=======
-          pip install tt_torch --no-deps --pre --index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade && pip install tt_torch
->>>>>>> main
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           python -m venv tt-xla-venv
           source tt-xla-venv/bin/activate
