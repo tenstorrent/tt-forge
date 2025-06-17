@@ -16,6 +16,7 @@ RUN apt-get update && \
     nano \
     ca-certificates \
     sudo \
+    ssh \
     python3.10 \
     python3.10-venv \
     python3.10-dev \
