@@ -107,6 +107,7 @@ jobs:
           draft: ${{ inputs.draft }}
           repo: ${{ inputs.repo }}
           release_type: 'nightly'
+          token: ${{ secrets.GH_ACTIONS_TOKEN }}
           new_version_tag: ${{ needs.get-version.outputs.tag }}
           prerelease: true
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
