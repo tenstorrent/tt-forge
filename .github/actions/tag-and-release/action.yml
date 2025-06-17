@@ -80,6 +80,7 @@ runs:
     - name: Create a release
       id: create-release
       uses: softprops/action-gh-release@v2
+      continue-on-error: true
       if: ${{ steps.push-tag.outputs.tag-name != '' }}
       with:
         tag_name: ${{ steps.push-tag.outputs.tag-name }}
