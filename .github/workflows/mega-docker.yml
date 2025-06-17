@@ -96,4 +96,4 @@ jobs:
         shell: bash
         run: |
           source /home/forge/venv-${{ matrix.frontend }}/bin/activate
-          python tt-forge/demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py
+          python demos/${{ matrix.frontend }}/cnn/mobile_netv2_demo.py

@@ -50,18 +50,21 @@ RUN FRONTEND=tt-forge-fe && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     pip install https://pypi.eng.aws.tenstorrent.com/tt-forge-fe/tt_forge_fe-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
-    pip install https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
+    pip install https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+    pip cache purge && rm -rf ~/.cache/pip
 
 # Create and activate virtual environment for tt-torch, install whl
 RUN FRONTEND=tt-torch && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
-    pip install https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
+    pip install https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+    pip cache purge && rm -rf ~/.cache/pip
 
 # Create and activate virtual environment for tt-xla, install whl
 RUN FRONTEND=tt-xla && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
-    pip install https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl
+    pip install https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl && \
+    pip cache purge && rm -rf ~/.cache/pip
 
 CMD ["/bin/bash"]
