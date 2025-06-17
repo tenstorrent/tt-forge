@@ -19,15 +19,6 @@ runs:
         fetch-tags: true
         fetch-depth: 0
 
-    # - name: Add a tag
-    #   id: add-tag
-    #   shell: bash
-    #   run: |
-    #     TAG_NAME="nightly-$(date +'%Y%m%d')-${{ github.run_id }}-${{ github.run_attempt }}"
-    #     git tag "$TAG_NAME"
-    #     git push origin "$TAG_NAME"
-    #     echo "tag-name=$TAG_NAME" >> "$GITHUB_OUTPUT"
-
     - name: Download wheel artifact
       uses: actions/download-artifact@v4
       with:
@@ -55,14 +46,12 @@ runs:
 
         workflow_start_date=$(echo "$RESPONSE" | jq -r .created_at)
         workflow_date=$(echo "$workflow_start_date" | cut -d'T' -f1)
-
         if [ "$(date +'%Y-%m-%d')" != "$workflow_date" ]; then
           echo "Old nigthly workflow can't create a release"
           exit 0
         fi
 
         TAG_NAME="nightly-$(date +'%Y%m%d')"
-
         if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
           echo "Nighly release already exists for today"
           exit 0
@@ -72,7 +61,6 @@ runs:
         git push origin "$TAG_NAME"
 
         PREV_TAG=$(git tag --list 'nightly-*' --sort=-creatordate | grep -v "^$TAG_NAME$" | head -n 1)
-
         if [ -z "$PREV_TAG" ]; then
           echo "No previous nightly tag found."
           echo "commits=No previous nightly tag found." >> "$GITHUB_OUTPUT"
@@ -103,7 +91,7 @@ runs:
           ${{ steps.commit-list.outputs.commits }}
         files: ${{ runner.temp }}/*.whl
       env:
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        GITHUB_TOKEN: "randomtoken"
 
     - name: Remove tag if release creation failed
       shell: bash
