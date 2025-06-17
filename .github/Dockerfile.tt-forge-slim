@@ -1,5 +1,8 @@
 FROM ubuntu:22.04
 
+# Define build arguments for wheel URLs
+ARG WHL_VERSION
+
 SHELL ["/bin/bash", "-c"]
 
 # Install system tools
@@ -42,27 +45,22 @@ WORKDIR /home/forge
 # Switch to forge user for remaining operations
 USER forge
 
-# Copy wheel files from host with proper ownership
-COPY --chown=forge:forge whl whl
-
-# Create and activate virtual environment for tt-forge-fe
+# Create and activate virtual environment for tt-forge-fe, install whl
 RUN FRONTEND=tt-forge-fe && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
-    pip install whl/$FRONTEND/*.whl
+    pip install https://pypi.eng.aws.tenstorrent.com/$FRONTEND/$FRONTEND-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
 
-# Create and activate virtual environment for tt-torch
+# Create and activate virtual environment for tt-torch, install whl
 RUN FRONTEND=tt-torch && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
-    pip install whl/$FRONTEND/*.whl
+    pip install https://pypi.eng.aws.tenstorrent.com/$FRONTEND/$FRONTEND-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
 
-# Create and activate virtual environment for tt-xla
+# Create and activate virtual environment for tt-xla, install whl
 RUN FRONTEND=tt-xla && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
-    pip install whl/$FRONTEND/*.whl
-
-RUN rm -rf whl
+    pip install https://pypi.eng.aws.tenstorrent.com/$FRONTEND/$FRONTEND-$WHL_VERSION-cp310-cp310-linux_x86_64.whl
 
 CMD ["/bin/bash"]
