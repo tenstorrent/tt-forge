@@ -1,0 +1,70 @@
+name: "Build Release"
+description: "Build Release"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+  branch:
+    description: "Branch name"
+    default: "main"
+    required: false
+  workflow:
+    description: "Workflow name"
+    required: true
+  workflow_allow_failed:
+    description: "Return run even if workflow has failed"
+    required: false
+  workflow_result_in_job:
+    description: "Set that workflow result is job result"
+    default: ""
+    required: false
+  release_type:
+    description: "Release type"
+    required: true
+  latest_branch_commit:
+    description: "Latest branch commit"
+    required: false
+  new_version_tag:
+    description: "New version tag for wheel"
+    required: false
+  latest_branch_commit_date:
+    description: "Latest branch commit date"
+    required: false
+  second_latest_branch_commit_date:
+    description: "Second latest branch commit date"
+    required: false
+  draft:
+    description: "Draft release"
+    required: true
+
+outputs:
+  release-artifacts-id:
+    description: "release artifacts"
+    value: ${{ steps.release-artifacts.outputs.artifact-id }}
+  run-conclusion:
+    description: 'Workflow run conclusion'
+    value: ${{ steps.find_workflow.outputs.run_conclusion }}
+
+runs:
+  using: "composite"
+  steps:
+  - uses: yogeshlonkar/wait-for-jobs@v0
+    with:
+
+      # To ignore jobs that are skipped from given list of job dependencies
+      # default: 'false'
+      # required: false
+      ignore-skipped: 'false'
+
+      # Comma or newline separated list of names of job dependencies for this step, it must be `name:` property of job if set
+      # required: true
+      jobs: 'build-release-remote'
+    
+  - name: Download release artifacts
+    uses: actions/download-artifact@v4
+    id: release-artifacts
+    with:
+      pattern: "build-release-*"
+      path: ${{ github.workspace }}/release/**
+      
+
