@@ -84,7 +84,7 @@ runs:
       if: ${{ steps.push-tag.outputs.tag-name != '' }}
       with:
         tag_name: ${{ steps.push-tag.outputs.tag-name }}
-        name: "Nightly release: ${{ steps.push-tag.outputs.tag-name }}"
+        name: "Nightly release: ${{ github.sha }}"
         body: |
           Release created during the nightly workflow run.
 
