@@ -1,7 +1,6 @@
 name: Build TT-Forge Docker Images
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       force_rebuild:
@@ -102,6 +101,7 @@ jobs:
         shell: bash
         run: |
           source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           python benchmark/${{ matrix.frontend }}/demo_test.py
 
 
@@ -144,4 +144,5 @@ jobs:
         shell: bash
         run: |
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
+          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
