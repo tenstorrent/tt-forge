@@ -1,8 +1,14 @@
 name: Build TT-Forge Docker Images
 
 on:
-  workflow_dispatch:
   push:
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild of Docker images even if they exist'
+        type: boolean
+        default: false
+
 
 permissions:
   packages: write
@@ -13,6 +19,7 @@ jobs:
   build-tt-forge-slim:
     name: Build tt-forge-slim Docker Image
     # runs-on: tt-beta-ubuntu-2204-large
+    # TODO We cant use tt-beta-ubuntu-2204-large until we whitelist pypi.eng.aws.tenstorrent.com on proxy
     runs-on: ubuntu-latest
     outputs:
       docker-image: ${{ steps.build.outputs.docker-image }}
@@ -31,13 +38,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ github.token }}
 
-      - name: Set daily tag and wheel URLs
+      - name: Set daily tag
         shell: bash
         run: |
           DAILY_TAG=dev$(date +'%Y%m%d')
-          WHL_VERSION=0.1.0.${DAILY_TAG}
           echo "daily_tag=${DAILY_TAG}" >> $GITHUB_ENV
-          echo "wheels_version=${WHL_VERSION}" >> $GITHUB_ENV
 
       - name: Build and push tt-forge-slim
         shell: bash
@@ -45,14 +50,12 @@ jobs:
         run: |
           IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/tt-forge-slim
           DOCKER_TAG=${{ env.daily_tag }}
-
-          # Check if the image already exists
-          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG > /dev/null 2>&1; then
+          # Check if image already exists and not forced to rebuild
+          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ github.event.inputs.force_rebuild }}" != "true" ]]; then
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
           else
             echo "Building image $IMAGE_NAME:$DOCKER_TAG"
             docker build -f .github/Dockerfile.tt-forge-slim \
-              --build-arg WHL_VERSION="${{ env.wheels_version }}" \
               -t $IMAGE_NAME:$DOCKER_TAG .
             docker push $IMAGE_NAME:$DOCKER_TAG
             echo "\nDocker image size:"
@@ -76,7 +79,7 @@ jobs:
           - tt-beta-ubuntu-2204-p150b-large-stable
         frontend:
           - tt-forge-fe
-          # - tt-torch
+          - tt-torch
           - tt-xla
 
     runs-on: ${{ matrix.runs-on }}
@@ -118,8 +121,8 @@ jobs:
           # - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
           - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
           - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
-          # - { "frontend": "tt-torch", "demo": "cnn/mobile_netv2_demo.py" }
-          # - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+          - { "frontend": "tt-torch", "demo": "cnn/mobile_netv2_demo.py" }
+          - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
 
     runs-on: ${{ matrix.runs-on }}
     container:

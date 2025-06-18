@@ -1,8 +1,5 @@
 FROM ubuntu:22.04
 
-# Define build arguments for wheel URLs
-ARG WHL_VERSION
-
 SHELL ["/bin/bash", "-c"]
 
 # Install system tools
@@ -49,6 +46,7 @@ USER forge
 RUN FRONTEND=tt-forge-fe && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
+    WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | cut -d',' -f1) && \
     pip install https://pypi.eng.aws.tenstorrent.com/tt-forge-fe/tt_forge_fe-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
     pip install https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
     pip cache purge && rm -rf ~/.cache/pip
@@ -57,6 +55,7 @@ RUN FRONTEND=tt-forge-fe && \
 RUN FRONTEND=tt-torch && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
+    WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | cut -d',' -f1) && \
     pip install https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
     pip cache purge && rm -rf ~/.cache/pip
 
@@ -64,6 +63,7 @@ RUN FRONTEND=tt-torch && \
 RUN FRONTEND=tt-xla && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
+    WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | cut -d',' -f1) && \
     pip install https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl && \
     pip cache purge && rm -rf ~/.cache/pip
 
