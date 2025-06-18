@@ -103,7 +103,7 @@ jobs:
         run: |
           source /home/forge/venv-${{ matrix.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          rm -rf .cache/tt-metal-cache # Nuke metal cache
+          rm -rf /home/forge/.cache/tt-metal-cache # Nuke metal cache
           python benchmark/${{ matrix.frontend }}/demo_test.py
 
 
@@ -147,5 +147,5 @@ jobs:
         run: |
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          rm -rf .cache/tt-metal-cache # Nuke metal cache
+          rm -rf /home/forge/.cache/tt-metal-cache # Nuke metal cache
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
