@@ -1,6 +1,7 @@
 name: Build TT-Forge Docker Images
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       force_rebuild:
@@ -78,7 +79,7 @@ jobs:
           - tt-beta-ubuntu-2204-p150b-large-stable
         frontend:
           - tt-forge-fe
-          # - tt-torch
+          - tt-torch
           - tt-xla
 
     runs-on: ${{ matrix.runs-on }}
