@@ -113,6 +113,18 @@ jobs:
     #     tar xvf artifact.tar
     #     cd ..
 
+    - name: Download fresh forge-fe wheel
+      uses: dawidd6/action-download-artifact@v9
+      with:
+        github_token: ${{secrets.GITHUB_TOKEN}}
+        workflow_conclusion: success
+        workflow_search: true
+        workflow: on-push.yml
+        name: forge-wheel
+        repo: tenstorrent/tt-forge-fe
+        check_artifacts: true
+        search_artifacts: true
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -124,7 +136,9 @@ jobs:
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           python -m venv tt-forge-fe-venv
           source tt-forge-fe-venv/bin/activate
-          pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt-tvm tt-forge-fe
+          pip install tt_tvm*.whl --force-reinstall
+          pip install tt_forge_fe*.whl --force-reinstall
+          # pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt-tvm tt-forge-fe
         elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           python -m venv tt-torch-venv
           source tt-torch-venv/bin/activate
