@@ -49,22 +49,35 @@ runs:
         # Set release facts based on repo
         if [[ "${{ inputs.repo }}" =~ "tt-forge-fe" ]]; then
             workflow="On nightly"
+            if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
+                workflow="On push"
+            fi
             artifact_download_glob='*{wheel,test-reports}*'
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
             workflow_result_in_job="fail-notify"
             pip_wheel_names="tt_forge_fe tt_tvm"
         elif [[ "${{ inputs.repo }}" =~ "tt-torch" ]]; then
             workflow="Nightly Tests"
+            if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
+                workflow="On push"
+            fi
             artifact_download_glob='*{install-artifacts,test-reports-models-}*'
             artifact_cleanup_file_glob='*torchvision*'
             artifact_cleanup_folder_glob='*install-artifacts-debug*'
             pip_wheel_names="tt-torch"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
-            workflow="On push"
+            # NOTE: no nightly job current for tt-mlir keeping this here for future use
+            #workflow="On push"
+            if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
+                workflow="On push"
+            fi
             artifact_download_glob='*ttmlir-wheel*'
             pip_wheel_names="ttmlir"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
+            if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
+                workflow="On push"
+            fi
             artifact_download_glob='*{xla-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
         else
