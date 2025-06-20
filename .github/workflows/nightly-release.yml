@@ -56,16 +56,27 @@ jobs:
       release-artifacts-id: ${{ steps.build-release.outputs.release-artifacts-id }}
       run-conclusion: ${{ steps.build-release.outputs.run-conclusion }}
       check-tag: ${{ steps.check-tag.outputs.exists }}
+      target_commit: ${{ steps.build-release.outputs.target_commit }}
     runs-on: ubuntu-latest
     needs: get-version
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v4
+    - uses: ./.github/actions/set-release-facts
+      id: set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        release_type: 'nightly'
+        draft: ${{ inputs.draft }}
+        new_version_tag: ${{ needs.get-version.outputs.tag }}
+
     - uses: mukunku/tag-exists-action@v1.6.0
+      if: ${{ !inputs.overwrite_releases }}
       id: check-tag
       with:
-        tag: "${{needs.get-version.outputs.repo_short }}-${{ needs.get-version.outputs.tag }}"
+        tag: "${{ steps.set-release-facts.outputs.new_version_tag }}"
+        repo: ${{ inputs.draft && 'tenstorrent/tt-forge' || inputs.repo }}
 
     - name: Build Release Artifacts
       if: ${{ inputs.draft || steps.check-tag.outputs.exists == 'false' }}
@@ -106,6 +117,8 @@ jobs:
           draft: ${{ inputs.draft }}
           repo: ${{ inputs.repo }}
           release_type: 'nightly'
+          release_token: ${{ secrets.TT_FORGE_RELEASER }}
           new_version_tag: ${{ needs.get-version.outputs.tag }}
+          target_commit: ${{ needs.build-release.outputs.target_commit }}
           prerelease: true
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}

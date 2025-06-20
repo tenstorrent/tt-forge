@@ -43,7 +43,10 @@ outputs:
     value: ${{ steps.release-artifacts.outputs.artifact-id }}
   run-conclusion:
     description: 'Workflow run conclusion'
-    value: ${{ steps.find_workflow.outputs.run_conclusion }}
+    value: ${{ steps.find_workflow_build_release.outputs.run_conclusion }}
+  target_commit:
+    description: "Target commit"
+    value: ${{ steps.find_workflow_build_release.outputs.run-commit-sha }}
 
 runs:
   using: "composite"
@@ -56,7 +59,7 @@ runs:
         release_type: ${{ inputs.release_type }}
 
     - name: Find workflow artifact candidate
-      id: find_workflow
+      id: find_workflow_build_release
       uses: ./.github/actions/find-workflow
       with:
         repo: ${{ inputs.repo }}
@@ -71,7 +74,7 @@ runs:
       id: uplift-artifacts
       with:
         repo: ${{ inputs.repo }}
-        run-id: ${{ steps.find_workflow.outputs.run-id }}
+        run-id: ${{ steps.find_workflow_build_release.outputs.run-id }}
         artifact_download_glob: ${{ steps.set-release-facts.outputs.artifact_download_glob }}
         artifact_cleanup_file_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_file_glob }}
         artifact_cleanup_folder_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_folder_glob }}
@@ -89,7 +92,7 @@ runs:
       env:
         XML_ROOT: ${{ github.workspace }}/release/artifacts
         FILE_OUTPUT: ${{ github.workspace }}/release/docs/readme_hardware_table.md
-        URL_SHAS: '{"${{ inputs.repo }}": "${{ steps.find_workflow.outputs.run-commit-sha }}"}'
+        URL_SHAS: '{"${{ inputs.repo }}": "${{ steps.find_workflow_build_release.outputs.run-commit-sha }}"}'
       shell: bash
       run: |
         readme_path="${{ github.workspace }}/release/docs"
@@ -108,7 +111,7 @@ runs:
         repo: ${{ inputs.repo }}
         repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
         artifact_job_json: "${{ toJSON(steps.uplift-artifacts.outputs) }}"
-        workflow_job_json: "${{ toJSON(steps.find_workflow.outputs) }}"
+        workflow_job_json: "${{ toJSON(steps.find_workflow_build_release.outputs) }}"
         release_type: ${{ inputs.release_type }}
         latest_branch_commit_date: ${{ inputs.latest_branch_commit_date }}
         second_latest_branch_commit_date: ${{ inputs.second_latest_branch_commit_date }}
