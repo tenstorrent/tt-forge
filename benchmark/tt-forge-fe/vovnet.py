@@ -2,22 +2,21 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
-# Built-in modules
+import pytest
 import time
 import socket
-import pytest
 from datetime import datetime
 
-# Third-party modules
 import torch
 from tqdm import tqdm
+from pytorchcv.model_provider import get_model as ptcv_get_model
 
-# Forge modules
 import forge
 from forge.verify.value_checkers import AutomaticValueChecker
 from forge.verify.verify import verify
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
+from forge.verify.config import VerifyConfig
 from forge._C import DataFormat
 
 from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
@@ -45,6 +44,10 @@ CHANNEL_SIZE = [
 
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
+VARIANTS = [
+    "vovnet27s",
+]
+
 
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
@@ -52,16 +55,25 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_count, task, data_format):
+def test_vovnet_osmr(
+    training,
+    batch_size,
+    input_size,
+    channel_size,
+    loop_count,
+    variant,
+    task,
+    data_format,
+):
     """
-    This function creates a basic MobileNetV2 model using PyTorch.
+    Test the Vovnet OSMR benchmark function.
     It is used for benchmarking purposes.
     """
 
     if training:
         pytest.skip("Training is not supported")
 
-    module_name = "MobileNetv2Basic"
+    module_name = "VovnetOSMR"
 
     if task == "classification":
         inputs, labels = load_benchmark_dataset(
@@ -74,37 +86,49 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
         )
     elif task == "na":
         torch.manual_seed(1)
-        inputs = [torch.randn(batch_size, channel_size, *input_size)]
+        inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])]
     else:
-        raise ValueError(f"Unsupported task: {task}.")
+        raise ValueError(f"Unsupported task: {task}")
 
     if data_format == "bfloat16":
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
-    framework_model = download_model(torch.hub.load, "pytorch/vision:v0.10.0", "mobilenet_v2", pretrained=True)
+    framework_model = download_model(ptcv_get_model, variant, pretrained=True)
     if data_format == "bfloat16":
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
 
     compiler_config = CompilerConfig()
-    # compiler_config.mlir_config = MLIRConfig().set_enable_consteval(True).set_enable_optimizer(True)
     if data_format == "bfloat16":
         compiler_config.default_df_override = DataFormat.Float16_b
+    # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.
+    # # Turn on MLIR optimizations.
+    # compiler_config.mlir_config = MLIRConfig().set_enable_consteval(True).set_enable_optimizer(True)
 
     compiled_model = forge.compile(
         framework_model, sample_inputs=inputs[0], module_name=module_name, compiler_cfg=compiler_config
     )
 
+    # Enable program cache on all devices
     settings = DeviceSettings()
     settings.enable_program_cache = True
     configure_devices(device_settings=settings)
 
+    # Run for the first time to warm up the model, it will be done by verify function.
+    # This is required to get accurate performance numbers.
+    pcc = 0.99
+    verify_cfg = VerifyConfig()
+    if data_format == "bfloat16":
+        # Set smaller pcc for bfloat16
+        pcc = 0.97
+    verify_cfg.value_checker = AutomaticValueChecker(pcc=pcc)
     verify(
         [
             inputs[0],
         ],
         framework_model,
         compiled_model,
+        verify_cfg=verify_cfg,
     )
 
     if task == "classification":
@@ -136,7 +160,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "MobileNet V2 Basic"
+    model_name = "Vovnet OSMR"
     model_type = "Classification"
     if task == "classification":
         model_type += ", ImageNet-1K"
@@ -144,12 +168,10 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
     elif task == "na":
         model_type += ", Random Input Data"
         dataset_name = model_name + ", Random Data"
-    else:
-        raise ValueError(f"Unsupported task: {task}.")
-    num_layers = 54  # Number of layers in the model, in this case number of convolutional layers
+    num_layers = 27  # Number of layers in the model, in this case number of convolutional layers
 
     print("====================================================================")
-    print("| MobileNet V2 Benchmark Results:                                  |")
+    print("| Vovnet OSMR Benchmark Results:                                   |")
     print("--------------------------------------------------------------------")
     print(f"| Model: {model_name}")
     print(f"| Model type: {model_type}")
@@ -184,7 +206,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
         "training": training,
         "measurements": [
             {
-                "iteration": 1,
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
                 "step_name": model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
@@ -194,7 +216,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
             {
-                "iteration": 1,
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
                 "step_name": model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
@@ -204,7 +226,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
             {
-                "iteration": 1,
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
                 "step_name": model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "evaluation_score",
@@ -228,7 +250,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
 
 def benchmark(config: dict):
     """
-    Run the mobilenet v2 basic benchmark.
+    Run the vovnet osmr benchmark.
     This function is a placeholder for the actual benchmark implementation.
     """
 
@@ -237,15 +259,17 @@ def benchmark(config: dict):
     input_size = INPUT_SIZE[0]
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
-    data_format = config["data_format"]
+    variant = VARIANTS[0]
     task = config["task"]
+    data_format = config["data_format"]
 
-    return test_mobilenetv2_basic(
+    return test_vovnet_osmr(
         training=training,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
         loop_count=loop_count,
+        variant=variant,
         task=task,
         data_format=data_format,
     )

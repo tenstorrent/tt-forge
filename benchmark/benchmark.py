@@ -197,6 +197,10 @@ def read_args():
         default=None,
         help="Output json file to write results to, optionally. If file already exists, results will be appended.",
     )
+    parser.add_argument(
+        "-ts", "--task", default="na", help="Task to benchmark, i.e. classification, segmentation, etc. Default is 'na'"
+    )
+    parser.add_argument("-df", "--data_format", default="float32", help="Data format i.e. float32, bfloat16, etc.")
 
     args = parser.parse_args()
 
@@ -221,6 +225,8 @@ def read_args():
     config["input_size"] = args.input_size
     config["hidden_size"] = args.hidden_size
     config["output"] = args.output
+    config["task"] = args.task
+    config["data_format"] = args.data_format
 
     return config
 
