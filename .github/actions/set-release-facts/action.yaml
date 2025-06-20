@@ -87,9 +87,9 @@ runs:
 
         repo_short="${{ inputs.repo }}"
         repo_short="${repo_short#tenstorrent/}"
-        new_version_tag="${repo_short}-${{ inputs.new_version_tag }}"
+        new_version_tag="${{ inputs.new_version_tag }}"
         if [[ "${{ inputs.draft }}" == "true" ]]; then
-            new_version_tag="draft-${new_version_tag}"
+            new_version_tag="draft-${repo_short}-${new_version_tag}"
         fi
 
         echo "Using workflow: $workflow"

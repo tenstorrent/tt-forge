@@ -20,6 +20,12 @@ inputs:
   prerelease:
     description: "Prerelease release"
     required: true
+  release_token:
+    description: "GitHub token"
+    required: true
+  target_commit:
+    description: "Target commitish"
+    required: true
 
 runs:
   using: "composite"
@@ -40,10 +46,12 @@ runs:
       uses: softprops/action-gh-release@v2.2.2
       with:
         body_path: "${{ github.workspace }}/release/build-release-${{ steps.set-release-facts.outputs.repo_short }}/docs/readme"
-        token: ${{ github.token }}
+        token: ${{ inputs.release_token }}
         name: ${{ steps.set-release-facts.outputs.repo_short }} ${{ inputs.release_type }} ${{ steps.set-release-facts.outputs.new_version_tag }}
         tag_name: ${{ steps.set-release-facts.outputs.new_version_tag }}
+        target_commitish: ${{ inputs.draft == 'true' && 'main' || inputs.target_commit }}
         draft: ${{ inputs.draft }}
+        repository: ${{ inputs.draft == 'true' && 'tenstorrent/tt-forge' || inputs.repo }}
         prerelease: ${{ inputs.prerelease }}
         fail_on_unmatched_files: true
         files: |

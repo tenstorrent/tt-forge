@@ -77,8 +77,9 @@ jobs:
     #needs: test-create-version-branches
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/daily-releaser.yml
+    secrets: inherit
     with:
-      draft: ${{ inputs.draft || true}}
+      draft: ${{ inputs.draft || true }}
       delete-drafts: ${{ inputs.delete-drafts || true }}
       overwrite_releases: false
       repo: ${{ inputs.repo || '' }}
