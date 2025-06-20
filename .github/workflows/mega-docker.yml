@@ -70,10 +70,10 @@ jobs:
         if: ${{ github.event.inputs.use_latest_tt_torch_artifacts != false }}
         shell: bash
         run: |
-          ls -l artifacts/tt-torch
-          # unpack from artifact.tar and copy whl files to wheels/tt-torch
           cd artifacts/tt-torch
-          tar -xvf artifact.tar
+          ls -l
+          # unpack tar
+          tar -xvf *.tar
           ls -l
           cp *.whl wheels/tt-torch
 
