@@ -71,7 +71,11 @@ jobs:
         shell: bash
         run: |
           ls -l artifacts/tt-torch
-          tar -xvf artifacts/tt-torch/install-artifacts-tracy/whl/*.whl -C wheels/tt-torch
+          # unpack from artifact.tar and copy whl files to wheels/tt-torch
+          cd artifacts/tt-torch
+          tar -xvf artifact.tar
+          ls -l
+          cp *.whl wheels/tt-torch
 
       - name: Build and push tt-forge-slim
         shell: bash
