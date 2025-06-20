@@ -48,7 +48,7 @@ WORKDIR /home/forge
 USER forge
 
 # is TT_TORCH_ARTIFACT_PATH is set COPY wheels folder from host
-COPY wheels wheels
+COPY --chown=forge:forge wheels /home/forge/wheels
 
 # Create and activate virtual environment for tt-torch, install whl
 RUN FRONTEND=tt-torch && \
