@@ -1,0 +1,101 @@
+name: Update Docker images
+
+on:
+    push:
+      branches:
+        - main
+      paths:
+        - '.github/dockerfiles/**'
+    pull_request:
+      types: [opened, synchronize, reopened, ready_for_review]
+      branches: [ "main" ]
+      paths:
+        - '.github/dockerfiles/**'
+    workflow_call:
+      inputs:
+        skip_push:
+          type: boolean
+          default: false
+        force_build:
+          type: boolean
+          default: false
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+jobs:
+  changed-docker-files:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.changed-files.outputs.all_changed_files }}
+      docker_build_json: ${{ steps.docker_job_json.outputs.json_results }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ignore files
+        id: changed-files
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            .github/dockerfiles/**
+      - name: create json for dockerbuild job
+        shell: bash
+        id: docker_job_json
+        run: |
+          json_results="[]"
+          changed_docker_files="${{ steps.changed-files.outputs.all_changed_files }}"
+          echo "changed_docker_files: $changed_docker_files"
+          for dockerfile in $changed_docker_files; do
+            json_results=$(echo $json_results | jq -r -c --arg dockerfile "$dockerfile" '. += [{
+                "dockerfile": $dockerfile,
+            }]')
+          done
+
+          echo "json_results=$json_results"
+          echo "json_results=$json_results" >> $GITHUB_OUTPUT
+
+  build-docker-images:
+    needs: changed-docker-files
+    if: ${{ needs.changed-docker-files.outputs.files }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.changed-docker-files.outputs.docker_build_json) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix permissions
+        shell: bash
+        run: sudo chown ubuntu:ubuntu -R $(pwd) || true
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Docker facts
+        id: set-docker-facts
+        uses: ./.github/actions/set-docker-facts
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+
+      - name: Build Docker Images
+        id: build-docker
+        uses: ./.github/actions/build-docker
+        with:
+          image_name: ${{ steps.set-docker-facts.outputs.image_name }}
+          dockerfile: ${{ matrix.dockerfile }}
+          tag: ${{ steps.set-docker-facts.outputs.tag }}
+          from_image: ${{ steps.set-docker-facts.outputs.from_image }}
+          skip_push: ${{ inputs.skip_push  || false }}
+          force_build: ${{ inputs.force_build || false }}
