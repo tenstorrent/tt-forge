@@ -1,11 +1,27 @@
 name: Build TT-Forge Docker Images
 
 on:
-  push:
+  # push:
   workflow_dispatch:
     inputs:
       force_rebuild:
         description: 'Force rebuild of Docker images even if they exist'
+        type: boolean
+        default: false
+      # tt_forge_fe_version:
+      #   description: 'Specific tt-forge-fe commit SHA or branch name'
+      #   required: false
+      #   type: string
+      # tt_torch_version:
+      #   description: 'Specific tt-torch commit SHA or branch name'
+      #   required: false
+      #   type: string
+      # tt_xla_version:
+      #   description: 'Specific tt-xla commit SHA or branch name'
+      #   required: false
+      #   type: string
+      use_latest_tt_torch_artifacts:
+        description: 'Use latest tt-torch from artifacts'
         type: boolean
         default: false
 
@@ -31,18 +47,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ github.token }}
+      - name: Setup artifact directories
+        if: ${{ github.event.inputs.tt_forge_fe_version != '' || github.event.inputs.tt_torch_version != '' || github.event.inputs.tt_xla_version != '' }}
+        run: |
+          mkdir -p artifacts/{tt-forge-fe,tt-torch,tt-xla}
+          mkdir -p wheels/{tt-forge-fe,tt-torch,tt-xla}
 
-      - name: Set daily tag
+      - name: Download tt-torch artifacts
+        if: ${{ github.event.inputs.use_latest_tt_torch_artifacts != false }}
+        id: download_tt_torch_artifacts
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow_conclusion: success
+          workflow: on-push.yml
+          branch: main
+          name: install-artifacts
+          repo: tenstorrent/tt-torch
+          check_artifacts: true
+          path: artifacts/tt-torch
+
+      - name: Unpack tt-torch artifacts
+        if: ${{ github.event.inputs.use_latest_tt_torch_artifacts != false }}
         shell: bash
         run: |
-          DAILY_TAG=dev$(date +'%Y%m%d')
-          echo "daily_tag=${DAILY_TAG}" >> $GITHUB_ENV
+          ls -l artifacts/tt-torch
+          tar -xvf artifacts/tt-torch/install-artifacts-tracy/whl/*.whl -C wheels/tt-torch
 
       - name: Build and push tt-forge-slim
         shell: bash
@@ -55,7 +84,14 @@ jobs:
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
           else
             echo "Building image $IMAGE_NAME:$DOCKER_TAG"
-            docker build -f .github/Dockerfile.tt-forge-slim \
+            # Build with custom artifacts if provided
+            BUILD_ARGS=""
+            if [ -n "${{ env.tt_torch_artifact_path }}" ]; then
+              BUILD_ARGS="$BUILD_ARGS --build-arg TT_TORCH_ARTIFACT_PATH=${{ env.tt_torch_artifact_path }}"
+            fi
+
+            echo "Build arguments: $BUILD_ARGS"
+            docker build -f .github/Dockerfile.tt-forge-slim $BUILD_ARGS \
               -t $IMAGE_NAME:$DOCKER_TAG .
             docker push $IMAGE_NAME:$DOCKER_TAG
             echo "Docker image size:"

@@ -2,6 +2,11 @@ FROM ubuntu:22.04
 
 SHELL ["/bin/bash", "-c"]
 
+# Define build arguments for custom artifacts
+# ARG TT_FORGE_FE_ARTIFACT_PATH
+ARG TT_TORCH_ARTIFACT_PATH
+# ARG TT_XLA_ARTIFACT_PATH
+
 # Install system tools
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -57,9 +62,13 @@ RUN FRONTEND=tt-forge-fe && \
 RUN FRONTEND=tt-torch && \
     python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
-    # WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | cut -d',' -f1) && \
-    # pip install https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
-    pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-torch && \
+    if [ -d "${TT_TORCH_ARTIFACT_PATH}" ]; then \
+        echo "Installing tt-torch from artifacts in ${TT_TORCH_ARTIFACT_PATH}" && \
+        pip install $TT_TORCH_ARTIFACT_PATH/*.whl && \
+    else \
+        echo "Installing latest tt-torch from PyPI" && \
+        pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-torch; \
+    fi && \
     pip cache purge && rm -rf ~/.cache/pip
 
 # Create and activate virtual environment for tt-xla, install whl
