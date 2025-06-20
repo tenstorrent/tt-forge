@@ -71,9 +71,8 @@ jobs:
         shell: bash
         run: |
           echo ${{ steps.download_tt_torch_artifacts.outputs.artifacts }}
-          cd artifacts/tt-torch
-          tar -xvf *.tar
-          cp wheels/*.whl wheels/tt-torch
+          tar -xvf artifacts/tt-torch/*.tar -C artifacts/tt-torch
+          cp artifacts/tt-torch/wheels/*.whl wheels/tt-torch
 
       - name: Set daily tag
         shell: bash
