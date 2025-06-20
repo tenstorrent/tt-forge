@@ -75,7 +75,7 @@ jobs:
           # unpack tar
           tar -xvf *.tar
           ls -l
-          cp *.whl wheels/tt-torch
+          cp wheels/*.whl wheels/tt-torch
 
       - name: Build and push tt-forge-slim
         shell: bash
