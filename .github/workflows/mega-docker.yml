@@ -66,15 +66,13 @@ jobs:
           check_artifacts: true
           path: artifacts/tt-torch
 
-      - name: Unpack tt-torch artifacts
+      - name: Unpack wheels from artifacts
         if: ${{ github.event.inputs.use_latest_tt_torch_artifacts != false }}
         shell: bash
         run: |
+          echo ${{ steps.download_tt_torch_artifacts.outputs.artifacts }}
           cd artifacts/tt-torch
-          ls -l
-          # unpack tar
           tar -xvf *.tar
-          ls -l
           cp wheels/*.whl wheels/tt-torch
 
       - name: Set daily tag

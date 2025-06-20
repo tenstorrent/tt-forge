@@ -47,16 +47,8 @@ WORKDIR /home/forge
 # Switch to forge user for remaining operations
 USER forge
 
-# Create and activate virtual environment for tt-forge-fe, install whl
-RUN FRONTEND=tt-forge-fe && \
-    python -m venv venv-$FRONTEND && \
-    source venv-$FRONTEND/bin/activate && \
-    # WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | cut -d',' -f1) && \
-    # pip install https://pypi.eng.aws.tenstorrent.com/tt-forge-fe/tt_forge_fe-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
-    # pip install https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
-    pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-forge-fe && \
-    pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-tvm && \
-    pip cache purge && rm -rf ~/.cache/pip
+# is TT_TORCH_ARTIFACT_PATH is set COPY wheels folder from host
+COPY wheels wheels
 
 # Create and activate virtual environment for tt-torch, install whl
 RUN FRONTEND=tt-torch && \
@@ -69,6 +61,17 @@ RUN FRONTEND=tt-torch && \
         echo "Installing latest tt-torch from PyPI" && \
         pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-torch; \
     fi && \
+    pip cache purge && rm -rf ~/.cache/pip
+
+# Create and activate virtual environment for tt-forge-fe, install whl
+RUN FRONTEND=tt-forge-fe && \
+    python -m venv venv-$FRONTEND && \
+    source venv-$FRONTEND/bin/activate && \
+    # WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | cut -d',' -f1) && \
+    # pip install https://pypi.eng.aws.tenstorrent.com/tt-forge-fe/tt_forge_fe-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+    # pip install https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+    pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-forge-fe && \
+    pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ tt-tvm && \
     pip cache purge && rm -rf ~/.cache/pip
 
 # Create and activate virtual environment for tt-xla, install whl
