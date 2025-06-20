@@ -79,7 +79,7 @@ jobs:
         repo: ${{ inputs.draft && 'tenstorrent/tt-forge' || inputs.repo }}
 
     - name: Build Release Artifacts
-      if: ${{ inputs.draft || steps.check-tag.outputs.exists == 'false' }}
+      if: ${{ inputs.draft || inputs.overwrite_releases ||steps.check-tag.outputs.exists == 'false' }}
       id: build-release
       uses: ./.github/actions/build-release
       with:
