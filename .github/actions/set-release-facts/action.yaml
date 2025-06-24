@@ -39,6 +39,9 @@ outputs:
   pip_wheel_names:
     description: "Names of pip wheels"
     value: ${{ steps.set-manifest.outputs.pip_wheel_names }}
+  pip_wheel_deps_names:
+    description: "Names of pip wheel dependencies"
+    value: ${{ steps.set-manifest.outputs.pip_wheel_deps_names }}
 runs:
   using: "composite"
   steps:
@@ -80,6 +83,9 @@ runs:
             fi
             artifact_download_glob='*{xla-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
+        elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
+            pip_wheel_deps_names="tt-torch tt_forge_fe tt_tvm pjrt-plugin-tt"
+            pip_wheel_names="forge"
         else
             echo "Unknown repo: ${{ inputs.repo }}"
             exit 1
@@ -105,6 +111,7 @@ runs:
         echo "Using second_latest_branch_commit_date: $second_latest_branch_commit_date"
         echo "Using repo_short: $repo_short"
         echo "Using pip_wheel_names: $pip_wheel_names"
+        echo "Using pip_wheel_deps_names: $pip_wheel_deps_names"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -115,3 +122,4 @@ runs:
         echo "repo_short=$repo_short" >> $GITHUB_OUTPUT
         echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
         echo "pip_wheel_names=$pip_wheel_names" >> $GITHUB_OUTPUT
+        echo "pip_wheel_deps_names=$pip_wheel_deps_names" >> $GITHUB_OUTPUT

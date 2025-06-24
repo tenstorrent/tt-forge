@@ -21,7 +21,7 @@ runs:
       run: |
         # Get all repos that are allowed to release
         # NOTE: make sure to update .github/actions/set-release-facts/action.yaml when adding new repos
-        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-mlir tenstorrent/tt-xla'
+        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-mlir tenstorrent/tt-xla tenstorrent/tt-forge'
 
         # Initialize empty results array
         json_results='[]'
