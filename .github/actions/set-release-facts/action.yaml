@@ -42,6 +42,10 @@ outputs:
   pip_wheel_deps_names:
     description: "Names of pip wheel dependencies"
     value: ${{ steps.set-manifest.outputs.pip_wheel_deps_names }}
+  skip_wheel_install:
+    description: "Skip wheel install"
+    value: ${{ steps.set-manifest.outputs.skip_wheel_install }}
+
 runs:
   using: "composite"
   steps:
@@ -50,6 +54,10 @@ runs:
       shell: bash
       run: |
         # Set release facts based on repo
+
+        # Globals
+        skip_wheel_install="false"
+
         if [[ "${{ inputs.repo }}" =~ "tt-forge-fe" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
@@ -86,6 +94,7 @@ runs:
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             pip_wheel_deps_names="tt-torch tt_forge_fe tt_tvm pjrt-plugin-tt"
             pip_wheel_names="tt-forge"
+            skip_wheel_install="true"
         else
             echo "Unknown repo: ${{ inputs.repo }}"
             exit 1
@@ -112,6 +121,7 @@ runs:
         echo "Using repo_short: $repo_short"
         echo "Using pip_wheel_names: $pip_wheel_names"
         echo "Using pip_wheel_deps_names: $pip_wheel_deps_names"
+        echo "Using skip_wheel_install: $skip_wheel_install"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -123,3 +133,4 @@ runs:
         echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
         echo "pip_wheel_names=$pip_wheel_names" >> $GITHUB_OUTPUT
         echo "pip_wheel_deps_names=$pip_wheel_deps_names" >> $GITHUB_OUTPUT
+        echo "skip_wheel_install=$skip_wheel_install" >> $GITHUB_OUTPUT
