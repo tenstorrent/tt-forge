@@ -58,7 +58,7 @@ runs:
         mv ${{ github.workspace }}/dist/*.whl ${{ github.workspace }}/release/artifacts/.
         cd ${{ github.workspace }}/release/artifacts
         # TODO: build alerting around this.
-        if [ "${{ steps.set-release-facts.outputs.skip_wheel_install }}" == "true" ]; then
+        if [ "${{ steps.set-release-facts.outputs.skip_wheel_install }}" == "false" ]; then
           pip install *.whl
         else
           pip install *.whl || echo "Failed to install wheel"

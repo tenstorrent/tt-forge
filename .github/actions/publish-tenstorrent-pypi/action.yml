@@ -81,7 +81,7 @@ runs:
         for wheel_name in $pip_wheel_names; do
           # Check the only tenstorrent index for the wheel version
           pip index versions $wheel_name --pre --index-url https://pypi.eng.aws.tenstorrent.com/ | grep ${{ inputs.new_version_tag }}
-          if [ "${{ steps.set-release-facts.outputs.skip_wheel_install }}" == "true" ]; then
+          if [ "${{ steps.set-release-facts.outputs.skip_wheel_install }}" == "false" ]; then
             # Test install wheel version.
             pip install $wheel_name==${{ inputs.new_version_tag }} --no-cache-dir --extra-index-url https://pypi.eng.aws.tenstorrent.com/
             # Wheel import wheel
