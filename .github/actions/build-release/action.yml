@@ -59,6 +59,7 @@ runs:
         release_type: ${{ inputs.release_type }}
 
     - name: Find workflow artifact candidate
+      if: ${{ inputs.repo != 'tenstorrent/tt-forge' }}
       id: find_workflow_build_release
       uses: ./.github/actions/find-workflow
       with:
@@ -70,6 +71,7 @@ runs:
         commit: ${{ inputs.latest_branch_commit }}
 
     - name: Uplift ${{ inputs.repo }} artifacts
+      if: ${{ inputs.repo != 'tenstorrent/tt-forge' }}
       uses: ./.github/actions/uplift-artifacts
       id: uplift-artifacts
       with:
@@ -78,9 +80,16 @@ runs:
         artifact_download_glob: ${{ steps.set-release-facts.outputs.artifact_download_glob }}
         artifact_cleanup_file_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_file_glob }}
         artifact_cleanup_folder_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_folder_glob }}
-
+    - name: Create tt-forge wheel
+      if: ${{ inputs.repo == 'tenstorrent/tt-forge' }}
+      uses: ./.github/actions/tt-forge-wheel
+      with:
+        new_version_tag: ${{ inputs.new_version_tag }}
+        draft: ${{ inputs.draft }}
+        release_type: ${{ inputs.release_type }}
 
     - name: Update Wheel version to ${{ inputs.new_version_tag }}
+      if: ${{ inputs.repo != 'tenstorrent/tt-forge' }}
       env:
         WHEEL_VERSION: ${{ inputs.new_version_tag }}
         WHEEL_ROOT_PATH: ${{ github.workspace }}/release/artifacts
@@ -88,6 +97,7 @@ runs:
       shell: bash
 
     - name: Create model compatible table
+      if: ${{ inputs.repo != 'tenstorrent/tt-forge' }}
       working-directory: ./.github/scripts/model-compatible-table
       env:
         XML_ROOT: ${{ github.workspace }}/release/artifacts
@@ -110,7 +120,6 @@ runs:
         owner: tenstorrent
         repo: ${{ inputs.repo }}
         repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
-        artifact_job_json: "${{ toJSON(steps.uplift-artifacts.outputs) }}"
         workflow_job_json: "${{ toJSON(steps.find_workflow_build_release.outputs) }}"
         release_type: ${{ inputs.release_type }}
         latest_branch_commit_date: ${{ inputs.latest_branch_commit_date }}
@@ -121,7 +130,9 @@ runs:
       id: doc_helper
       run: |
         # Used to add model compatible table to readme at the bottom of the document
-        cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
+        if [[ -f ${{ github.workspace }}/release/docs/readme_hardware_table.md ]]; then
+          cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
+        fi
 
     - name: Store release artifacts
       uses: actions/upload-artifact@v4

@@ -1,0 +1,61 @@
+name: "Create tt-forge wheel"
+description: "Creates a release wheel for tt-forge"
+inputs:
+  draft:
+    description: "Draft release"
+    required: true
+    type: boolean
+  release_type:
+    description: "Release type"
+    required: true
+    type: string
+  new_version_tag:
+    description: "New version tag for wheel"
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: tenstorrent/tt-forge
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Use yesterday version for draft
+      id: use-yesterday-version
+      shell: bash
+      run: |
+        NEW_VERSION_TAG=${{ inputs.new_version_tag }}
+        if [[ ${{ inputs.draft }} == 'true' ]]; then
+          if [[ ${{ inputs.release_type }} == 'nightly' ]]; then
+            # Take the last nightly release tag. Used for draft and workflow testing
+            NEW_VERSION_TAG=$(curl -s https://api.github.com/repos/tenstorrent/tt-mlir/releases | jq -r 'map(select(.name | contains("tt-mlir nightly"))) | first  | .tag_name')
+          fi
+        fi
+        echo "NEW_VERSION_TAG=$NEW_VERSION_TAG" >> $GITHUB_OUTPUT
+
+    - name: Wait for pypi frontend wheels to be available on tt-pypi
+      shell: bash
+      env:
+        PIP_WHEEL_NAMES: ${{ steps.set-release-facts.outputs.pip_wheel_deps_names }}
+        NEW_VERSION_TAG: ${{ steps.use-yesterday-version.outputs.NEW_VERSION_TAG }}
+      run: .github/scripts/wait-on-tt-pypi-wheels.sh
+
+    - name: Build wheel
+      shell: bash
+      env:
+        NEW_VERSION_TAG: ${{ steps.use-yesterday-version.outputs.NEW_VERSION_TAG }}
+      run: |
+        envsubst < .github/scripts/template-setup.py > setup.py
+        pip install wheel
+        python setup.py sdist bdist_wheel
+        mkdir -p ${{ github.workspace }}/release/artifacts
+        mv ${{ github.workspace }}/dist/*.whl ${{ github.workspace }}/release/artifacts/.
+        cd ${{ github.workspace }}/release/artifacts
+        # TODO: build alerting around this.
+        pip install *.whl || echo "Failed to install wheel"

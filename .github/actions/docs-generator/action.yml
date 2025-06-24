@@ -10,10 +10,6 @@ inputs:
     description: "Repo's short name"
     required: true
     type: string
-  artifact_job_json:
-    description: ""
-    required: true
-    type: string
   workflow_job_json:
     description: ""
     required: true
@@ -118,7 +114,7 @@ runs:
         mkdir -p $readme_path
 
         repo=$(echo "${{ inputs.repo }}"  | awk -F'[/]' ' { print $2 }')
-        found_files=$(find ${{ fromJson(inputs.artifact_job_json).download-path }} -type f -exec basename {} \;)
+        found_files=$(find ${{ github.workspace }}/release/artifacts -type f -exec basename {} \;)
         download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
         echo ""
 

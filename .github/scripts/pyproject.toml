@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0", "cmake", "pybind11", "nanobind", "wheel", "pip", "ninja"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tt-forge"
+description = "AI/ML framework for Tenstorrent devices"
+readme = "../../README.md"
+authors = [
+  { name = "Tenstorrent", email = "info@tenstorrent.com" }
+]
+requires-python = ">=3.10"
+keywords = ["forge", "tt-forge", "machine learning", "tenstorrent"]
+license = "Apache-2.0"
+license-files = ["../../LICENSE*"]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+
+# We will dynamically provide `version` and `dependencies` in setup.py
+dynamic = ["version", "dependencies", "readme"]
+
+[project.urls]
+Homepage = "https://docs.tenstorrent.com/tt-forge/"
+Documentation = "https://docs.tenstorrent.com/tt-forge/"
+Repository = "https://github.com/tenstorrent/tt-forge"
+Issues = "https://github.com/tenstorrent/tt-forge/issues"
+
+#[tool.cibuildwheel]
+#build = "cp310-manylinux_x86_64*"
+#skip = "*-musllinux_*"
+
+build-verbosity = 2
