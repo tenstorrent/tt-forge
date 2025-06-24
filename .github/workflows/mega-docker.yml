@@ -78,7 +78,7 @@ jobs:
           - tt-beta-ubuntu-2204-p150b-large-stable
         frontend:
           - tt-forge-fe
-          # - tt-torch
+          - tt-torch
           - tt-xla
 
     runs-on: ${{ matrix.runs-on }}
