@@ -117,12 +117,12 @@ jobs:
           - tt-beta-ubuntu-2204-n150-large-stable
           - tt-beta-ubuntu-2204-p150b-large-stable
         demos:
-          # - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
-          # - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
           - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
           - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
-          # - { "frontend": "tt-torch", "demo": "cnn/mobile_netv2_demo.py" }
-          # - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+          - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+          - { "frontend": "tt-torch", "demo": "resnet50_demo.py" }
 
     runs-on: ${{ matrix.runs-on }}
     container:
