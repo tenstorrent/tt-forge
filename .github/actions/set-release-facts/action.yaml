@@ -85,7 +85,7 @@ runs:
             pip_wheel_names="pjrt-plugin-tt"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             pip_wheel_deps_names="tt-torch tt_forge_fe tt_tvm pjrt-plugin-tt"
-            pip_wheel_names="forge"
+            pip_wheel_names="tt-forge"
         else
             echo "Unknown repo: ${{ inputs.repo }}"
             exit 1
