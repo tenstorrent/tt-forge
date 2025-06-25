@@ -155,7 +155,7 @@ jobs:
         HF_HUB_DISABLE_PROGRESS_BARS: 1
       run: |
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
-        source ${{ matrix.build.project }}-venv/bin/activate
+        source /venv-${{ matrix.build.project }}/bin/activate
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
         if [ -n "${{ matrix.build.dir }}" ]; then
           python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir

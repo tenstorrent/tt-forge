@@ -110,16 +110,10 @@ jobs:
       - name: Check ${{ matrix.frontend }}
         shell: bash
         run: |
-          ls /
-          echo "--"
-          ls /home
-          echo "--"
-          find ./ -name "activate"
           # source /home/forge/venv-${{ matrix.frontend }}/bin/activate
-          source venv-${{ matrix.frontend }}/bin/activate
-          find ./ -name "activate"
+          source /venv-${{ matrix.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          python benchmark/${{ matrix.frontend }}/demo_test.py
+          python basic_tests/${{ matrix.frontend }}/demo_test.py
 
 
   # demo-test-tt-forge-slim:
