@@ -5,9 +5,8 @@ on:
     inputs:
       docker-image:
         description: "Docker image used in tests"
-        required: false
+        required: true
         type: string
-        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
   workflow_call:
     inputs:
       docker-image:
@@ -60,15 +59,15 @@ jobs:
     steps:
 
     - name: Debug permissions
-      run: ls -ld /__w /__w/_temp /__w/_temp/_runner_file_commands
+      run: ls -ld $(pwd) /__w /__w/_temp /__w/_temp/_runner_file_commands
 
     - name: Fix directory permissions
       run: |
         pwd
-        sudo chown -R forge:forge $(pwd)
+        sudo chown -R forge:forge ${{ runner.temp }}
 
     - name: Debug permissions
-      run: ls -ld /__w /__w/_temp /__w/_temp/_runner_file_commands
+      run: ls -ld $(pwd) /__w /__w/_temp /__w/_temp/_runner_file_commands
 
     - uses: actions/checkout@v4
       with:
