@@ -46,10 +46,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install system and python dependencies
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.demos.libreq }}" ]; then
+            apt-get install -y -qq --no-install-recommends ${{ matrix.demos.libreq }}
+          fi
+          if [ -n "${{ matrix.demos.require }}" ]; then
+            pip install ${{ matrix.demos.require }}
+          fi
+
       - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
         shell: bash
         run: |
-          # source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           source /venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
