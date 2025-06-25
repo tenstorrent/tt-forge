@@ -4,42 +4,16 @@
 
 import jax
 
+m = jax.numpy.array([1, 2, 3])
+x = jax.numpy.array([4, 5, 6])
+b = jax.numpy.array([7, 8, 9])
 
-def benchmark(config: dict):
-    jax.devices("tt")
+@jax.jit
+def compute_y(m, x, b):
+    return m * x + b
 
-    return {
-        "model": "JaxDeviceInit",
-        "model_type": "Demo",
-        "run_type": "Demo_0_0_0_0",
-        "config": {"model_size": "small"},
-        "num_layers": 0,
-        "batch_size": 0,
-        "precision": "f32",
-        "dataset_name": "",
-        "profile_name": "",
-        "input_sequence_length": -1,  # When this value is negative, it means it is not applicable
-        "output_sequence_length": -1,  # When this value is negative, it means it is not applicable
-        "image_dimension": "0x0",
-        "perf_analysis": False,
-        "training": False,
-        "measurements": [
-            {
-                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": "None",
-                "step_warm_up_num_iterations": 0,
-                "measurement_name": "total_samples",
-                "value": 1,
-                "target": -1,  # This value is negative, because we don't have a target value.
-                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
-                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
-            }
-        ],
-        "device_info": {
-            "device_name": "",
-            "galaxy": False,
-            "arch": "",
-            "chips": 1,
-        },
-        "device_ip": None,
-    }
+y = compute_y(m, x, b)
+
+with jax.default_device(jax.devices("cpu")[0]):
+    y_ref = m * x + b
+    assert all(jax.numpy.abs(y-y_ref)) < 1e-6, "Device and CPU results do not match!"
