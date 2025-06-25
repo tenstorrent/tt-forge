@@ -1,0 +1,55 @@
+name: Demo tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      docker-image:
+        description: "Docker image used in tests"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      docker-image:
+        description: "Docker image used in tests"
+        required: true
+        type: string
+
+jobs:
+  demo-test:
+    name: Demo ${{ matrix.demos.frontend }} ${{ matrix.demos.demo }} on ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on:
+          - tt-beta-ubuntu-2204-n150-large-stable
+          - tt-beta-ubuntu-2204-p150b-large-stable
+        demos:
+          # - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
+          # - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
+          - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
+          # - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+          # - { "frontend": "tt-torch", "demo": "resnet50_demo.py" }
+
+    runs-on: ${{ matrix.runs-on }}
+    container:
+      image: ${{ inputs.docker-image }}
+      options: --device /dev/tenstorrent
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
+        shell: bash
+        run: |
+          # source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
+          source venv-${{ matrix.demos.frontend }}/bin/activate
+          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
+          python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
