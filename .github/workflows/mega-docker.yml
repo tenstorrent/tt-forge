@@ -147,6 +147,9 @@ jobs:
         - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
     steps:
+      - name: Debug user context
+        run: id
+
       - name: Debug permissions
         run: ls -ld /__w /__w/_temp /__w/_temp/_runner_file_commands
 
@@ -165,6 +168,5 @@ jobs:
       - build-tt-forge-slim
       - basic-test-tt-forge-slim
     uses: ./.github/workflows/perf-benchmark.yml
-    secrets: inherit
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
