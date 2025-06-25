@@ -146,6 +146,8 @@ jobs:
         - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
     steps:
+      - name: Debug permissions
+        run: ls -ld /__w /__w/_temp /__w/_temp/_runner_file_commands
 
       - name: Checkout repository
         uses: actions/checkout@v4
