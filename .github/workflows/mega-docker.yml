@@ -110,8 +110,11 @@ jobs:
       - name: Check ${{ matrix.frontend }}
         shell: bash
         run: |
+          ls /
+          echo "--"
           ls /home
-          ls /home/ubuntu
+          echo "--"
+          find ./ -name "activate"
           # source /home/forge/venv-${{ matrix.frontend }}/bin/activate
           source venv-${{ matrix.frontend }}/bin/activate
           find ./ -name "activate"
