@@ -68,13 +68,15 @@ permissions:
   contents: write
 
 jobs:
-#  test-create-version-branches:
-#    uses: ./.github/workflows/create-version-branches.yml
-#    with:
-#      draft: true
-#      repo: ${{ inputs.repo }}
+  test-create-version-branches:
+    uses: ./.github/workflows/create-version-branches.yml
+    secrets: inherit
+    with:
+      draft: ${{ inputs.draft || true }}
+      repo: ${{ inputs.repo || 'tenstorrent/tt-forge' }}
+      workflow_allow_failed: ${{ inputs.workflow_allow_failed || false }}
+
   test-daily-releaser:
-    #needs: test-create-version-branches
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/daily-releaser.yml
     secrets: inherit
