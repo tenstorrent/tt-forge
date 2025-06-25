@@ -164,7 +164,7 @@ jobs:
   demo-test-tt-forge-slim:
     needs:
       - build-tt-forge-slim
-      - basic-test-tt-forge-slim
+      # - basic-test-tt-forge-slim
     uses: ./.github/workflows/demo-tests.yml
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
@@ -172,7 +172,7 @@ jobs:
   perf-test-tt-forge-slim:
     needs:
       - build-tt-forge-slim
-      - basic-test-tt-forge-slim
+      # - basic-test-tt-forge-slim
     uses: ./.github/workflows/perf-benchmark.yml
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
