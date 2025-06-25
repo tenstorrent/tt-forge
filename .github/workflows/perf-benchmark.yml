@@ -120,33 +120,6 @@ jobs:
     #     tar xvf artifact.tar
     #     cd ..
 
-    # - name: Install wheels
-    #   shell: bash
-    #   run: |
-    #     if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-    #       python -m venv tt-forge-fe-venv
-    #       source tt-forge-fe-venv/bin/activate
-    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt-tvm tt-forge-fe
-    #     elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-    #       python -m venv tt-torch-venv
-    #       source tt-torch-venv/bin/activate
-    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt_torch
-    #     elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-    #       python -m venv tt-xla-venv
-    #       source tt-xla-venv/bin/activate
-    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade pjrt_plugin_tt
-    #     elif [ "${{ matrix.build.project }}" == "tt-mlir" ]; then
-    #       python -m venv tt-mlir-venv
-    #       source tt-mlir-venv/bin/activate
-    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade ttmlir
-    #     else
-    #       echo "Unknown project: ${{ matrix.build.project }}"
-    #       exit 1
-    #     fi
-    #     if [ -n "${{ matrix.build.require }}" ]; then
-    #       pip install ${{ matrix.build.require }}
-    #     fi
-
     - name: Run Perf Benchmark
       shell: bash
       env:
