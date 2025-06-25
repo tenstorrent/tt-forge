@@ -55,7 +55,7 @@ jobs:
       - ${{ matrix.build.runs-on }}
       - in-service
 
-    name: "Performance benchmark ${{ matrix.build.project }} ${{ matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+    name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
     - uses: actions/checkout@v4
