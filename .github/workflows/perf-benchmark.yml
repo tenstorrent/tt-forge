@@ -59,8 +59,13 @@ jobs:
     name: "Performance benchmark ${{ matrix.build.project }} ${{ matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
-    - name: Debug user context
-      run: id
+    - name: Debug permissions
+      run: ls -ld /__w /__w/_temp /__w/_temp/_runner_file_commands
+
+    - name: Fix directory permissions
+      run: |
+        pwd
+        sudo chown -R forge:forge $(pwd)
 
     - name: Debug permissions
       run: ls -ld /__w /__w/_temp /__w/_temp/_runner_file_commands

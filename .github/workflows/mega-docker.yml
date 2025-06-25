@@ -124,9 +124,8 @@ jobs:
       fail-fast: false
       matrix:
         runs-on:
-          # - tt-beta-ubuntu-2204-n150-large-stable
-          # - tt-beta-ubuntu-2204-p150b-large-stable
-          - n150
+          - tt-beta-ubuntu-2204-n150-large-stable
+          - tt-beta-ubuntu-2204-p150b-large-stable
         demos:
           # - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
           # - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
@@ -137,7 +136,7 @@ jobs:
 
     runs-on: ${{ matrix.runs-on }}
     container:
-      image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
       options: --device /dev/tenstorrent --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
