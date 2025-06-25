@@ -65,7 +65,7 @@ jobs:
       run: |
         CURRENT_DIR=$(pwd)
         TARGET_DIR=$(dirname $(dirname "$CURRENT_DIR"))
-        sudo chmod -R u+rwx "$TARGET_DIR"
+        sudo chmod -R o+rwx "$TARGET_DIR"
 
     - name: Debug permissions
       run: ls -ld $(pwd) /__w /__w/_temp /__w/_temp/_runner_file_commands
