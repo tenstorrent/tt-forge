@@ -13,8 +13,10 @@ x = jax.device_put(x, device=tt_device)
 b = jax.numpy.array([7, 8, 9])
 b = jax.device_put(b, device=tt_device)
 
+
 @jax.jit
 def compute_y(m, x, b):
     return m * x + b
+
 
 y = compute_y(m, x, b)
