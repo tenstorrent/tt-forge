@@ -1,0 +1,3 @@
+[submodule "third_party/tt_forge_models"]
+	path = third_party/tt_forge_models
+	url = https://github.com/tenstorrent/tt-forge-models.git
