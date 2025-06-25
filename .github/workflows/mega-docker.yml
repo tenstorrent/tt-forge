@@ -156,3 +156,12 @@ jobs:
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
+
+  perf-test-tt-forge-slim:
+    needs:
+      - build-tt-forge-slim
+      - basic-test-tt-forge-slim
+    uses: ./.github/workflows/perf-benchmark.yml
+    secrets: inherit
+    with:
+      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}

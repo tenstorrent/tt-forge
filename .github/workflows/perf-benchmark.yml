@@ -2,11 +2,24 @@ name: Performance benchmark
 
 on:
   workflow_dispatch:
+    inputs:
+      docker-image:
+        description: "Docker image used in tests"
+        required: false
+        type: string
+        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+  workflow_call:
+    inputs:
+      docker-image:
+        description: "Docker image used in tests"
+        required: true
+        type: string
 
 jobs:
   run-perf-benchmarks:
     container:
-      image:  ubuntu:22.04 # "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
+      # image:  ubuntu:22.04 # "ghcr.io/tenstorrent/tt-mlir/tt-mlir-ci-ubuntu-22-04:latest"
+      image: ${{ inputs.docker-image }}
       options: "--device /dev/tenstorrent/0"
       volumes:
         - /dev/hugepages:/dev/hugepages
@@ -44,7 +57,7 @@ jobs:
       - ${{ matrix.build.runs-on }}
       - in-service
 
-    name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+    name: "Performance benchmark ${{ matrix.build.project }} ${{ matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
     - uses: actions/checkout@v4
@@ -56,30 +69,14 @@ jobs:
             .test_durations
           fetch-depth: 1 # Fetch all history and tags
 
-    - name: Install common tools and dependencies
+    - name: Install additional dependencies
       shell: bash
       run: |
-        apt-get update -qq >/dev/null 2>&1
-        apt-get install -y -qq --no-install-recommends \
-          ca-certificates \
-          git \
-          jq \
-          curl \
-          unzip \
-          build-essential \
-          wget \
-          libnuma1
-        # libopenmpi now specific impl for metal
-        wget "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb" -O "mpi.deb"
-        apt install -y "./mpi.deb"
-        rm ./mpi.deb
-        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          apt-get install -y -qq --no-install-recommends \
-            sqlite3
-        # elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-        fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+        fi
+        if [ -n "${{ matrix.build.require }}" ]; then
+          pip install ${{ matrix.build.require }}
         fi
 
     - name: Fetch job id
@@ -122,37 +119,32 @@ jobs:
     #     tar xvf artifact.tar
     #     cd ..
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install wheels
-      shell: bash
-      run: |
-        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          python -m venv tt-forge-fe-venv
-          source tt-forge-fe-venv/bin/activate
-          pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt-tvm tt-forge-fe
-        elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-          python -m venv tt-torch-venv
-          source tt-torch-venv/bin/activate
-          pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt_torch
-        elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          python -m venv tt-xla-venv
-          source tt-xla-venv/bin/activate
-          pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade pjrt_plugin_tt
-        elif [ "${{ matrix.build.project }}" == "tt-mlir" ]; then
-          python -m venv tt-mlir-venv
-          source tt-mlir-venv/bin/activate
-          pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade ttmlir
-        else
-          echo "Unknown project: ${{ matrix.build.project }}"
-          exit 1
-        fi
-        if [ -n "${{ matrix.build.require }}" ]; then
-          pip install ${{ matrix.build.require }}
-        fi
+    # - name: Install wheels
+    #   shell: bash
+    #   run: |
+    #     if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+    #       python -m venv tt-forge-fe-venv
+    #       source tt-forge-fe-venv/bin/activate
+    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt-tvm tt-forge-fe
+    #     elif [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+    #       python -m venv tt-torch-venv
+    #       source tt-torch-venv/bin/activate
+    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade tt_torch
+    #     elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+    #       python -m venv tt-xla-venv
+    #       source tt-xla-venv/bin/activate
+    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade pjrt_plugin_tt
+    #     elif [ "${{ matrix.build.project }}" == "tt-mlir" ]; then
+    #       python -m venv tt-mlir-venv
+    #       source tt-mlir-venv/bin/activate
+    #       pip install --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --upgrade ttmlir
+    #     else
+    #       echo "Unknown project: ${{ matrix.build.project }}"
+    #       exit 1
+    #     fi
+    #     if [ -n "${{ matrix.build.require }}" ]; then
+    #       pip install ${{ matrix.build.require }}
+    #     fi
 
     - name: Run Perf Benchmark
       shell: bash
