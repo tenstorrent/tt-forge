@@ -46,9 +46,9 @@ jobs:
           { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v9",           dir: "YOLOv9", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v10",          dir: "YOLOv10", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "unet",              dir: "UNet", ts: 'na', bs: 1, lp: 32, df: 'bfloat16', libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, require: "loguru requests transformers datasets torchvision pytest" },
-          { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "", bs: 1, lp: 1, require: "pytest" },
-          { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "", bs: 1, lp: 32, require: "pytest tqdm" },
+          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "", bs: 8, lp: 32, pyreq: "loguru requests transformers datasets torchvision pytest" },
+          { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "", bs: 1, lp: 1, pyreq: "pytest" },
+          { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "", bs: 1, lp: 32, pyreq: "pytest tqdm" },
           { runs-on: "n150", project: "tt-mlir",     name: "demo_test",         dir: "", bs: 1, lp: 1 },
         ]
     runs-on:
@@ -76,8 +76,8 @@ jobs:
         if [ -n "${{ matrix.build.libreq }}" ]; then
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
         fi
-        if [ -n "${{ matrix.build.require }}" ]; then
-          pip install ${{ matrix.build.require }}
+        if [ -n "${{ matrix.build.pyreq }}" ]; then
+          pip install ${{ matrix.build.pyreq }}
         fi
 
     - name: Fetch job id

@@ -52,8 +52,8 @@ jobs:
           if [ -n "${{ matrix.demos.libreq }}" ]; then
             apt-get install -y -qq --no-install-recommends ${{ matrix.demos.libreq }}
           fi
-          if [ -n "${{ matrix.demos.require }}" ]; then
-            pip install ${{ matrix.demos.require }}
+          if [ -n "${{ matrix.demos.pyreq }}" ]; then
+            pip install ${{ matrix.demos.pyreq }}
           fi
 
       - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
