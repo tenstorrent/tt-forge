@@ -137,7 +137,7 @@ jobs:
 
     runs-on: ${{ matrix.runs-on }}
     container:
-      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+      image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
       options: --device /dev/tenstorrent --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
