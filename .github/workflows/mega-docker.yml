@@ -122,7 +122,7 @@ jobs:
     name: Demo ${{ matrix.demos.frontend }} ${{ matrix.demos.demo }} on ${{ matrix.runs-on }}
     needs:
       - build-tt-forge-slim
-      # - basic-test-tt-forge-slim
+      - basic-test-tt-forge-slim
     strategy:
       fail-fast: false
       matrix:
@@ -140,7 +140,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     container:
       image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      options: --device /dev/tenstorrent --user
+      options: --device /dev/tenstorrent
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -163,7 +163,7 @@ jobs:
   perf-test-tt-forge-slim:
     needs:
       - build-tt-forge-slim
-      # - basic-test-tt-forge-slim
+      - basic-test-tt-forge-slim
     uses: ./.github/workflows/perf-benchmark.yml
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
