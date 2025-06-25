@@ -62,9 +62,7 @@ jobs:
       run: ls -ld $(pwd) /__w /__w/_temp /__w/_temp/_runner_file_commands
 
     - name: Fix directory permissions
-      run: |
-        pwd
-        sudo chown -R forge:forge ${{ runner.workspace }}/..
+      run: sudo chown -R forge:forge $(dirname "${{ runner.workspace }}")
 
     - name: Debug permissions
       run: ls -ld $(pwd) /__w /__w/_temp /__w/_temp/_runner_file_commands
