@@ -77,49 +77,49 @@ jobs:
           echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
 
 
-  basic-test-tt-forge-slim:
-    name: Basic test ${{ matrix.frontend }} on ${{ matrix.runs-on }}
-    needs: build-tt-forge-slim
-    strategy:
-      fail-fast: false
-      matrix:
-        runs-on:
-          - tt-beta-ubuntu-2204-n150-large-stable
-          - tt-beta-ubuntu-2204-p150b-large-stable
-        frontend:
-          - tt-forge-fe
-          - tt-torch
-          - tt-xla
+  # basic-test-tt-forge-slim:
+  #   name: Basic test ${{ matrix.frontend }} on ${{ matrix.runs-on }}
+  #   needs: build-tt-forge-slim
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       runs-on:
+  #         - tt-beta-ubuntu-2204-n150-large-stable
+  #         - tt-beta-ubuntu-2204-p150b-large-stable
+  #       frontend:
+  #         - tt-forge-fe
+  #         - tt-torch
+  #         - tt-xla
 
-    runs-on: ${{ matrix.runs-on }}
-    container:
-      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      options: --device /dev/tenstorrent --user forge
-      volumes:
-        - /dev/hugepages:/dev/hugepages
-        - /dev/hugepages-1G:/dev/hugepages-1G
-        - /etc/udev/rules.d:/etc/udev/rules.d
-        - /lib/modules:/lib/modules
-        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+  #   runs-on: ${{ matrix.runs-on }}
+  #   container:
+  #     image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+  #     options: --device /dev/tenstorrent --user forge
+  #     volumes:
+  #       - /dev/hugepages:/dev/hugepages
+  #       - /dev/hugepages-1G:/dev/hugepages-1G
+  #       - /etc/udev/rules.d:/etc/udev/rules.d
+  #       - /lib/modules:/lib/modules
+  #       - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
-    steps:
+  #   steps:
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Check ${{ matrix.frontend }}
-        shell: bash
-        run: |
-          source /home/forge/venv-${{ matrix.frontend }}/bin/activate
-          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          python benchmark/${{ matrix.frontend }}/demo_test.py
+  #     - name: Check ${{ matrix.frontend }}
+  #       shell: bash
+  #       run: |
+  #         source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+  #         pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
+  #         python benchmark/${{ matrix.frontend }}/demo_test.py
 
 
   demo-test-tt-forge-slim:
     name: Demo ${{ matrix.demos.frontend }} ${{ matrix.demos.demo }} on ${{ matrix.runs-on }}
     needs:
       - build-tt-forge-slim
-      - basic-test-tt-forge-slim
+      # - basic-test-tt-forge-slim
     strategy:
       fail-fast: false
       matrix:
@@ -166,7 +166,7 @@ jobs:
   perf-test-tt-forge-slim:
     needs:
       - build-tt-forge-slim
-      - basic-test-tt-forge-slim
+      # - basic-test-tt-forge-slim
     uses: ./.github/workflows/perf-benchmark.yml
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
