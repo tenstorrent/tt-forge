@@ -1,0 +1,40 @@
+
+name: "Set Docker Facts"
+description: "Set Docker Facts"
+inputs:
+  dockerfile:
+    description: "Dockerfile name"
+    required: true
+outputs:
+  image_name:
+    description: "Image name"
+    value: ${{ steps.set-docker-facts.outputs.image_name }}
+  tag:
+    description: "Tag"
+    value: ${{ steps.set-docker-facts.outputs.tag }}
+  from_image:
+    description: "From image"
+    value: ${{ steps.set-docker-facts.outputs.from_image }}
+runs:
+  using: "composite"
+  steps:
+    - name: Set Docker facts
+      id: set-docker-facts
+      shell: bash
+      run: |
+        # Set docker facts based on repo
+        registry="ghcr.io/${{ github.repository }}"
+        dockerfile_suffix=$( echo "${{ inputs.dockerfile }}" | grep -oP '(?<=Dockerfile\.).*')
+        image_name="${registry}/${dockerfile_suffix}"
+        from_image=""
+
+        tag="$(sha256sum ${{ inputs.dockerfile }} | sha256sum | cut -d ' ' -f 1)"
+
+        echo "Using image name: $image_name"
+        echo "Using tag: $tag"
+        echo "Using from_image: $from_image"
+
+        # Set outputs
+        echo "image_name=$image_name" >> $GITHUB_OUTPUT
+        echo "tag=$tag" >> $GITHUB_OUTPUT
+        echo "from_image=$from_image" >> $GITHUB_OUTPUT
