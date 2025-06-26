@@ -1,0 +1,9 @@
+name: Mock Successful
+on:
+  workflow_call:
+
+jobs:
+  mock-successful:
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0
