@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# ResNet Demo Script
+# Regnet Demo Script
 
 import forge
-from third_party.tt_forge_models.resnet.pytorch import ModelLoader
+from third_party.tt_forge_models.regnet.pytorch import ModelLoader
 
 # Load model and input
 loader = ModelLoader()
