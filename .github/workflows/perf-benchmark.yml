@@ -86,7 +86,7 @@ jobs:
           apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
         fi
 
-        source /venv-${{ matrix.build.project }}/bin/activate
+        source /home/forge/venv-${{ matrix.build.project }}/bin/activate
         if [ -n "${{ matrix.build.pyreq }}" ]; then
           pip install ${{ matrix.build.pyreq }}
         fi
