@@ -1,6 +1,7 @@
 name: Mock Failed
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   mock-failed:
