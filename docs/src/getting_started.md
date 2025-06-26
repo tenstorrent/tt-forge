@@ -129,10 +129,11 @@ git clone https://github.com/tenstorrent/tt-forge.git
 
 In this walkthrough, **resnet_50_demo.py** is used.
 
-4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Navigate into the **/cnn folder** and run the following command:
+4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Navigate to the root of the tt-forge repository and run the following commands:
 
 ```bash
-python3 resnet_50_demo.py
+export PYTHONPATH=.
+python3 demos/tt-forge-fe/cnn/resnet_50_demo.py
 ```
 
 If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
