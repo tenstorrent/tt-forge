@@ -19,7 +19,7 @@ jobs:
   run-perf-benchmarks:
     container:
       image: ${{ inputs.docker-image }}
-      options: --device /dev/tenstorrent
+      options: --device /dev/tenstorrent --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -55,6 +55,15 @@ jobs:
 
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
+
+    - name: List all users and their UID
+      shell: bash
+      run: |
+        getent passwd | awk -F: '{print $1, $3}'
+        echo "---"
+        ls -ld __w 
+        echo "---"
+        ls -ld __w/temp
 
     - uses: actions/checkout@v4
       with:
