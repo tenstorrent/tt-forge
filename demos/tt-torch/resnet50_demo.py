@@ -1,11 +1,12 @@
 # SPDX-FileCopyrightText: (c) 2025 Tenstorrent AI ULC
 #
 # SPDX-License-Identifier: Apache-2.0
+import argparse
 import torch
+import tt_torch
 from tt_torch.tools.utils import CompilerConfig
-from tt_torch.dynamo.backend import backend, BackendOptions
+from tt_torch.dynamo.backend import BackendOptions
 from PIL import Image
-import torch
 from torchvision import transforms
 import torchvision.models as models
 import tabulate
@@ -13,9 +14,9 @@ import requests
 from tt_torch.tools.device_manager import DeviceManager
 
 
-def main():
-    weights = models.ResNet152_Weights.IMAGENET1K_V2
-    model = models.resnet152(weights=weights).to(torch.bfloat16).eval()
+def main(run_interactive):
+    weights = models.ResNet50_Weights.IMAGENET1K_V2
+    model = models.resnet50(weights=weights).to(torch.bfloat16).eval()
     classes = weights.meta["categories"]
     preprocess = weights.transforms()
 
@@ -25,16 +26,16 @@ def main():
 
     options = BackendOptions()
     options.compiler_config = cc
-    tt_model = torch.compile(model, backend=backend, dynamic=False, options=options)
+    tt_model = torch.compile(model, backend="tt", dynamic=False, options=options)
 
     headers = ["Top 5 Predictions"]
     topk = 5
-    prompt = 'Enter the path of the image (type "stop" to exit or hit enter to use a default image): '
-    img_path = input(prompt)
-    while img_path != "stop":
+
+    DEFAULT_IMAGE = "demos/tt-torch/000000039769.jpg"
+
+    def process_image(img_path):
         if img_path == "":
-            url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-            img = Image.open(requests.get(url, stream=True).raw)
+            img = Image.open(DEFAULT_IMAGE)
         elif img_path.startswith("http"):
             img = Image.open(requests.get(img_path, stream=True).raw)
         else:
@@ -55,8 +56,23 @@ def main():
         print(tabulate.tabulate(rows, headers=headers))
         print()
 
+    if not run_interactive:
+        print("Running with default image image: ", DEFAULT_IMAGE)
+        process_image("")
+    else:
+        prompt = 'Enter the path of the image (type "stop" to exit or hit enter to use a default image): '
         img_path = input(prompt)
+        while img_path != "stop":
+            process_image(img_path)
+            img_path = input(prompt)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--run_interactive",
+        action="store_true",
+        help="Run the demo interactively as opposed to once with the default image.",
+    )
+    args = parser.parse_args()
+    main(args.run_interactive)
