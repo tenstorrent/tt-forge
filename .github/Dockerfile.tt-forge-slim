@@ -31,16 +31,16 @@ RUN apt-get update && \
     apt install -y "./mpi.deb" && \
     rm -f "mpi.deb"
 
-# Create forge user and home directory
-RUN useradd -m -s /bin/bash forge && \
-echo "forge ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/forge && \
-chmod 0440 /etc/sudoers.d/forge
+# # Create forge user and home directory
+# RUN useradd -m -s /bin/bash forge && \
+# echo "forge ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/forge && \
+# chmod 0440 /etc/sudoers.d/forge
 
-# Set working directory
-WORKDIR /home/forge
+# # Set working directory
+# WORKDIR /home/forge
 
-# Switch to forge user for remaining operations
-USER forge
+# # Switch to forge user for remaining operations
+# USER forge
 
 # Create and activate virtual environment for tt-forge-fe, install whl
 RUN FRONTEND=tt-forge-fe && \

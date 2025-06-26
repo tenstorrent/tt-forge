@@ -7,6 +7,9 @@ on:
         description: 'Force rebuild of Docker images even if they exist'
         type: boolean
         default: false
+  schedule:
+    - cron: '0 7 * * *'
+
 
 
 permissions:
@@ -63,6 +66,13 @@ jobs:
             docker history --no-trunc --format "Size: {{.Size}}\tCreated: {{.CreatedSince}}\tCommand: {{.CreatedBy}}" $IMAGE_NAME:$DOCKER_TAG
           fi
 
+          # Add latest tag if on main
+          ON_MAIN=$(git branch --show-current | grep -q main && echo "true" || echo "false")
+          if [ "$ON_MAIN" == "true" ]; then
+            echo "Pushing latest tag for $IMAGE_NAME"
+            docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG --tag $IMAGE_NAME:latest --tag $IMAGE_NAME:$DOCKER_TAG
+          fi
+
           echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
           echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
 
@@ -78,13 +88,13 @@ jobs:
           - tt-beta-ubuntu-2204-p150b-large-stable
         frontend:
           - tt-forge-fe
-          # - tt-torch
+          - tt-torch
           - tt-xla
 
     runs-on: ${{ matrix.runs-on }}
     container:
       image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      options: --device /dev/tenstorrent --user forge
+      options: --device /dev/tenstorrent
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -100,49 +110,22 @@ jobs:
       - name: Check ${{ matrix.frontend }}
         shell: bash
         run: |
-          source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+          source /venv-${{ matrix.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          python benchmark/${{ matrix.frontend }}/demo_test.py
-
+          python basic_tests/${{ matrix.frontend }}/demo_test.py
 
   demo-test-tt-forge-slim:
-    name: Demo ${{ matrix.demos.frontend }} ${{ matrix.demos.demo }} on ${{ matrix.runs-on }}
     needs:
       - build-tt-forge-slim
       - basic-test-tt-forge-slim
-    strategy:
-      fail-fast: false
-      matrix:
-        runs-on:
-          - tt-beta-ubuntu-2204-n150-large-stable
-          - tt-beta-ubuntu-2204-p150b-large-stable
-        demos:
-          # - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
-          # - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
-          # - { "frontend": "tt-torch", "demo": "cnn/mobile_netv2_demo.py" }
-          # - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py" }
+    uses: ./.github/workflows/demo-tests.yml
+    with:
+      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
 
-    runs-on: ${{ matrix.runs-on }}
-    container:
-      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
-      options: --device /dev/tenstorrent --user forge
-      volumes:
-        - /dev/hugepages:/dev/hugepages
-        - /dev/hugepages-1G:/dev/hugepages-1G
-        - /etc/udev/rules.d:/etc/udev/rules.d
-        - /lib/modules:/lib/modules
-        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
-
-    steps:
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
-        shell: bash
-        run: |
-          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
-          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
+  perf-test-tt-forge-slim:
+    needs:
+      - build-tt-forge-slim
+      - basic-test-tt-forge-slim
+    uses: ./.github/workflows/perf-benchmark.yml
+    with:
+      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
