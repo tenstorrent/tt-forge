@@ -7,7 +7,7 @@ on:
         description: "Docker image used in tests"
         required: false
         type: string
-        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+        default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
   workflow_call:
     inputs:
       docker-image:

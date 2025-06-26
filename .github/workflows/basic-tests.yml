@@ -1,0 +1,53 @@
+name: Basic tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      docker-image:
+        description: "Docker image used in tests"
+        required: false
+        type: string
+        default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+  workflow_call:
+    inputs:
+      docker-image:
+        description: "Docker image used in tests"
+        required: true
+        type: string
+
+jobs:
+  demo-test:
+    name: Basic test ${{ matrix.frontend }} on ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on:
+          - tt-beta-ubuntu-2204-n150-large-stable
+          - tt-beta-ubuntu-2204-p150b-large-stable
+        frontend:
+          - tt-forge-fe
+          - tt-torch
+          - tt-xla
+
+    runs-on: ${{ matrix.runs-on }}
+    container:
+      image: ${{ inputs.docker-image }}
+      options: --device /dev/tenstorrent --user root
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run tests for ${{ matrix.frontend }}
+        shell: bash
+        run: |
+          source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
+          pip install pytest
+          pytest basic_tests/${{ matrix.frontend }}
