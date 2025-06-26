@@ -1,0 +1,9 @@
+name: Mock Failed
+on:
+  workflow_call:
+
+jobs:
+  mock-failed:
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 1
