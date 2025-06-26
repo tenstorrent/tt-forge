@@ -31,6 +31,9 @@ jobs:
           - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
           - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
           - { "frontend": "tt-torch", "demo": "resnet50_demo.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
+          - { "frontend": "tt-xla", "demo": "/albert_base_v2/demo.py", "pyreq_file": "true" }
+          - { "frontend": "tt-xla", "demo": "/gpt2/demo.py", "pyreq_file": "true" }
+          - { "frontend": "tt-xla", "demo": "/opt_125m/demo.py", "pyreq_file": "true" }
 
     runs-on: ${{ matrix.runs-on }}
     container:
@@ -57,6 +60,9 @@ jobs:
           source /venv-${{ matrix.demos.frontend }}/bin/activate
           if [ -n "${{ matrix.demos.pyreq }}" ]; then
             pip install ${{ matrix.demos.pyreq }}
+          fi
+          if [ "${{ matrix.demos.pyreq_file }}" == "true" ]; then
+            pip install demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}/../requirements.txt
           fi
 
       - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
