@@ -33,9 +33,8 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          { runs-on: "n150", project: "tt-forge-fe", name: "demo_test",         dir: "",                             bs: 1,  lp: 1,  df: 'default' },
           { runs-on: "n150", project: "tt-forge-fe", name: "llama",             dir: "LlamaModel",                   bs: 1,  lp: 32, df: 'float32',  ts: 'na',           libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear",                  bs: 32, lp: 32, df: 'float32',  ts: 'na' },
+          { runs-on: "n150", project: "tt-forge-fe", name: "mnist_linear",      dir: "MNISTLinear",                  bs: 32, lp: 32, df: 'float32',  ts: 'na', },
           { runs-on: "n150", project: "tt-forge-fe", name: "resnet_hf",         dir: "ResNetForImageClassification", bs: 8,  lp: 32, df: 'bfloat16', ts: 'classification', libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "mobilenetv2_basic", dir: "MobileNetv2Basic",             bs: 8,  lp: 32, df: 'bfloat16', ts: 'classification', libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "efficientnet_timm", dir: "EfficientNetTimmB0",           bs: 6,  lp: 32, df: 'bfloat16', ts: 'classification', libreq: "libgl1-mesa-glx libglib2.0-0" },
@@ -47,10 +46,8 @@ jobs:
           { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v9",           dir: "YOLOv9",                       bs: 1,  lp: 32, df: 'bfloat16', ts: 'na',           libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v10",          dir: "YOLOv10",                      bs: 1,  lp: 32, df: 'bfloat16', ts: 'na',           libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "unet",              dir: "UNet",                         bs: 1,  lp: 32, df: 'bfloat16', ts: 'na',           libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "",                             bs: 8,  lp: 32, df: 'default', require: "loguru requests transformers datasets torchvision pytest" },
-          { runs-on: "n150", project: "tt-xla",      name: "demo_test",         dir: "",                             bs: 1,  lp: 1,  df: 'default', require: "pytest" },
-          { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "",                             bs: 1,  lp: 32, df: 'default', require: "pytest tqdm" },
-          { runs-on: "n150", project: "tt-mlir",     name: "demo_test",         dir: "",                             bs: 1,  lp: 1,  df: 'default' },
+          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "",                             bs: 8,  lp: 32, df: 'default',  ts: 'na', require: "loguru requests transformers datasets torchvision pytest" },
+          { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "",                             bs: 1,  lp: 32, df: 'default',  ts: 'na',require: "pytest tqdm" },
         ]
     runs-on:
       - ${{ matrix.build.runs-on }}
@@ -132,7 +129,7 @@ jobs:
       run: |
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
         source /venv-${{ matrix.build.project }}/bin/activate
-        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
         if [ -n "${{ matrix.build.dir }}" ]; then
           python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
         fi
