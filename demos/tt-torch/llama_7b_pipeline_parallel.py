@@ -8,8 +8,6 @@ import torch
 from tt_torch.tools.device_manager import DeviceManager
 from transformers import AutoModelForCausalLM, AutoTokenizer  # need transformers <= 4.52.4
 from accelerate import infer_auto_device_map
-from tt_torch.tools.verify import verify_against_golden
-import tabulate
 
 
 def main():
