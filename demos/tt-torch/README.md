@@ -51,4 +51,3 @@ The `llama_7b_pipeline_parallel.py` script will split a large language model (Ll
 ```
 python demos/tt-torch/llama_7b_pipeline_parallel.py
 ```
-The displayed device map demonstrates which model layers are on each device.
