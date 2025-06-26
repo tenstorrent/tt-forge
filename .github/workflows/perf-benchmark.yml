@@ -65,7 +65,7 @@ jobs:
         echo "---"
         ls -ld /__w 
         echo "---"
-        ls -ld /__w/temp
+        cat /etc/passwd | grep 1003
 
     - uses: actions/checkout@v4
       with:
