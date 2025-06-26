@@ -5,6 +5,8 @@ on:
   workflow_run:
     workflows: # List workflow that we want to collect data for
       - "Performance benchmark"
+      - "Build TT-Forge Docker Images"
+      - "Demo tests"
     types:
       - completed
 
