@@ -31,12 +31,11 @@ def main(run_interactive):
     headers = ["Top 5 Predictions"]
     topk = 5
 
-    DEFAULT_URL = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    DEFAULT_IMAGE = "demos/tt-torch/000000039769.jpg"
 
     def process_image(img_path):
         if img_path == "":
-            url = DEFAULT_URL
-            img = Image.open(requests.get(url, stream=True).raw)
+            img = Image.open(DEFAULT_IMAGE)
         elif img_path.startswith("http"):
             img = Image.open(requests.get(img_path, stream=True).raw)
         else:
@@ -58,7 +57,7 @@ def main(run_interactive):
         print()
 
     if not run_interactive:
-        print("Running with default image URL: ", DEFAULT_URL)
+        print("Running with default image image: ", DEFAULT_IMAGE)
         process_image("")
     else:
         prompt = 'Enter the path of the image (type "stop" to exit or hit enter to use a default image): '

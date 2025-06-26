@@ -10,7 +10,6 @@ from datasets import load_dataset
 import os
 import glob
 import torchvision.models as models
-from models.sample_data.huggingface_imagenet_classes import IMAGENET2012_CLASSES
 import torchvision.models as models
 from torch.utils.data import DataLoader
 from torchvision import datasets
@@ -20,9 +19,14 @@ from tt_torch.dynamo.backend import backend, BackendOptions
 from tt_torch.tools.device_manager import DeviceManager
 import ast
 import warnings
+import json
+from collections import OrderedDict
 
 warnings.filterwarnings("ignore")
 import time
+
+with open("demos/tt-torch/imagenet2012.json", "r") as f:
+    IMAGENET2012_CLASSES = json.load(f, object_pairs_hook=OrderedDict)
 
 # Load DeiT model and processor
 weights = models.ResNet50_Weights.IMAGENET1K_V2
