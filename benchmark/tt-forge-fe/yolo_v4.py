@@ -16,8 +16,7 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
 
-from benchmark.utils import Yolov4Wrapper
-from third_party.tt_forge_models.yolov4 import ModelLoader
+from yolov4_utils import Yolov4Wrapper, ModelLoader
 
 
 BATCH_SIZE = [
