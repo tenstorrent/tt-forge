@@ -43,3 +43,12 @@ python demos/tt-torch/resnet50_benchmark.py
 ```
 
 The script will process the first 100 images, output the top-1 accuracy, and display a summary at the end. This demonstrates the model's performance on a larger, more diverse set of images.
+
+## Pipeline Parallel for Models Too Large for 1 Device (llama_7b_pipeline_parallel.py)
+
+The `llama_7b_pipeline_parallel.py` script will split a large language model (Llama-7B) across two devices since it's too large to fit on a single device. The script automatically maps model layers to different devices and processes a text prompt to predict the next tokens.
+
+```
+python demos/tt-torch/llama_7b_pipeline_parallel.py
+```
+The displayed device map demonstrates which model layers are on each device.
