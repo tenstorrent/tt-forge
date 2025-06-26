@@ -19,7 +19,7 @@ jobs:
   run-perf-benchmarks:
     container:
       image: ${{ inputs.docker-image }}
-      options: --device /dev/tenstorrent
+      options: --device /dev/tenstorrent --user root
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
