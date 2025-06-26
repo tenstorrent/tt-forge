@@ -38,7 +38,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     container:
       image: ${{ inputs.docker-image }}
-      options: --device /dev/tenstorrent
+      options: --device /dev/tenstorrent --user root
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -47,8 +47,6 @@ jobs:
         - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
 
     steps:
-      - name: Log out user
-        run: id
       - name: Checkout repository
         uses: actions/checkout@v4
 
