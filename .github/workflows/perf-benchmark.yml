@@ -46,8 +46,8 @@ jobs:
           { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v9",           dir: "YOLOv9",                       bs: 1,  lp: 32, df: 'bfloat16', ts: 'na',           libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "yolo_v10",          dir: "YOLOv10",                      bs: 1,  lp: 32, df: 'bfloat16', ts: 'na',           libreq: "libgl1-mesa-glx libglib2.0-0" },
           { runs-on: "n150", project: "tt-forge-fe", name: "unet",              dir: "UNet",                         bs: 1,  lp: 32, df: 'bfloat16', ts: 'na',           libreq: "libgl1-mesa-glx libglib2.0-0" },
-          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "",                             bs: 8,  lp: 32, df: 'default',  ts: 'na', require: "loguru requests transformers datasets torchvision pytest" },
-          { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "",                             bs: 1,  lp: 32, df: 'default',  ts: 'na',require: "pytest tqdm" },
+          { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "",                             bs: 8,  lp: 32, df: 'default',  ts: 'na', pyreq: "loguru requests transformers datasets torchvision pytest" },
+          { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "",                             bs: 1,  lp: 32, df: 'default',  ts: 'na', pyreq: "pytest tqdm" },
         ]
     runs-on:
       - ${{ matrix.build.runs-on }}
