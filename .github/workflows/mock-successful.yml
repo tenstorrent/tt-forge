@@ -1,6 +1,7 @@
 name: Mock Successful
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   mock-successful:
