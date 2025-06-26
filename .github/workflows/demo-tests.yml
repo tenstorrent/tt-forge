@@ -53,6 +53,8 @@ jobs:
           if [ -n "${{ matrix.demos.libreq }}" ]; then
             apt-get install -y -qq --no-install-recommends ${{ matrix.demos.libreq }}
           fi
+
+          source /venv-${{ matrix.demos.frontend }}/bin/activate
           if [ -n "${{ matrix.demos.pyreq }}" ]; then
             pip install ${{ matrix.demos.pyreq }}
           fi
