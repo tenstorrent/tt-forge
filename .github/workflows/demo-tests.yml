@@ -63,7 +63,7 @@ jobs:
           fi
           if [ "${{ matrix.demos.pyreq_file }}" == "true" ]; then
             REQUIREMENTS_PATH=$(dirname demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }})
-            pip install $REQUIREMENTS_PATH/requirements.txt
+            pip install -r $REQUIREMENTS_PATH/requirements.txt
           fi
 
       - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
