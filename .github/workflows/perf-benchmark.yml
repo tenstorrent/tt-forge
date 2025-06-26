@@ -59,6 +59,8 @@ jobs:
     - name: List all users and their UID
       shell: bash
       run: |
+        id
+        echo "---"
         getent passwd | awk -F: '{print $1, $3}'
         echo "---"
         ls -ld /__w 
