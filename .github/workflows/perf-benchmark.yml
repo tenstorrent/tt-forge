@@ -56,17 +56,6 @@ jobs:
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
-    - name: List all users and their UID
-      shell: bash
-      run: |
-        set +e
-        id
-        echo "---"
-        getent passwd | awk -F: '{print $1, $3}'
-        echo "---"
-        cat /etc/passwd | grep 1003
-        set -e
-
     - uses: actions/checkout@v4
       with:
           sparse-checkout: |
