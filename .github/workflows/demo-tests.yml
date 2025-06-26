@@ -70,6 +70,6 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          source /venv-${{ matrix.demos.frontend }}/bin/activate
+          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
