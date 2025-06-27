@@ -14,4 +14,5 @@ setup(
         "pjrt-plugin-tt @https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-${NEW_VERSION_TAG}-py3-none-linux_x86_64.whl",
     ],
     python_requires=">=3.10",
+    py_modules=[],
 )
