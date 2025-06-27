@@ -74,6 +74,7 @@ def main():
     model, tokenizer = load_model()
     input_args = load_inputs(model, tokenizer)
     generated_ids = input_args["input_ids"]
+    print(tokenizer.decode(generated_ids[0].tolist()), end="", flush=True)
 
     clear_dynamo_cache()
     cc = CompilerConfig()
@@ -101,16 +102,16 @@ def main():
         outputs = compiled_model(**input_args)
         next_token_ids = outputs.logits[:, -1:].argmax(dim=-1)
         generated_ids = torch.cat([generated_ids, next_token_ids], dim=-1)
-        print(tokenizer.decode(generated_ids[0].tolist()), end="")
-        cache_position = input_args["cache_position"][-1:] + 1
+        print(tokenizer.decode(next_token_ids[0].tolist()), end="", flush=True)
 
+        cache_position = input_args["cache_position"][-1:] + 1
         input_args = {
             "input_ids": next_token_ids.to(dtype=torch.int32),
             "past_key_values": input_args["past_key_values"],  # updated in place
             "cache_position": cache_position,
             "use_cache": True,
         }
-
+    print()  # Add a newline at the end of the output
     DeviceManager.release_parent_device(device)
     clear_dynamo_cache()
 
