@@ -10,7 +10,6 @@ from transformers import (
     AutoModelForCausalLM,
     StaticCache,
 )
-import time
 
 _global_max_cache_len = 64 + 64
 
@@ -102,12 +101,7 @@ def main():
         outputs = compiled_model(**input_args)
         next_token_ids = outputs.logits[:, -1:].argmax(dim=-1)
         generated_ids = torch.cat([generated_ids, next_token_ids], dim=-1)
-        print(
-            "Decoded output so far:",
-            "\033[91m",
-            tokenizer.decode(generated_ids[0].tolist()),
-            "\033[0m",
-        )
+        print(tokenizer.decode(generated_ids[0].tolist()), end="")
         cache_position = input_args["cache_position"][-1:] + 1
 
         input_args = {
