@@ -38,7 +38,7 @@ jobs:
           - demos: { "frontend": "tt-torch", "demo": "llama_7b_pipeline_parallel.py", pyreq: "loguru requests transformers==4.52.4 datasets torchvision pytest tabulate accelerate" }
             runs-on: tt-beta-ubuntu-2204-n300-large-stable
           - demos: { "frontend": "tt-torch", "demo": "llama3.2_generate_demo.py", pyreq: "transformers==4.52.4" }
-            runs-on: tt-beta-ubuntu-2204-n300-large-stable
+            runs-on: tt-beta-ubuntu-2204-n150-large-stable
 
     runs-on: ${{ matrix.runs-on }}
     container:

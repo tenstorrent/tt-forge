@@ -99,15 +99,8 @@ def main():
     tokens_to_generate = 32
 
     for i in range(tokens_to_generate):
-        print("\n===== Decode step", i, "=====\n")
-        print(f"Input args to step {i}", input_args)
-
-        start_time = time.time()
-
         outputs = compiled_model(**input_args)
-
         next_token_ids = outputs.logits[:, -1:].argmax(dim=-1)
-
         generated_ids = torch.cat([generated_ids, next_token_ids], dim=-1)
         print(
             "Decoded output so far:",
@@ -115,7 +108,6 @@ def main():
             tokenizer.decode(generated_ids[0].tolist()),
             "\033[0m",
         )
-        print("Time elapsed for this step: ", time.time() - start_time)
         cache_position = input_args["cache_position"][-1:] + 1
 
         input_args = {
