@@ -93,7 +93,7 @@ jobs:
 
     runs-on: ${{ matrix.runs-on }}
     container:
-      image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+      image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
       options: --device /dev/tenstorrent
       volumes:
         - /dev/hugepages:/dev/hugepages
@@ -120,7 +120,7 @@ jobs:
       - basic-test-tt-forge-slim
     uses: ./.github/workflows/demo-tests.yml
     with:
-      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
 
   perf-test-tt-forge-slim:
     needs:
