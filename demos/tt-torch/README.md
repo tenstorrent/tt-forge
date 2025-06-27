@@ -51,3 +51,11 @@ The `llama_7b_pipeline_parallel.py` script will split a large language model (Ll
 ```
 python demos/tt-torch/llama_7b_pipeline_parallel.py
 ```
+
+## Generative Models (llama3.2_generate_demo.py)
+
+The `llama3.2_generate_demo.py` script demonstrates a text generation loop using the llama 3.2 3B parameter model. It shows usage of an on-device static kv-cache shared between prefill and decode stages, and produces a stream of output tokens.
+
+```
+python demos/tt-torch/llama3.2_generate_demo.py
+```
