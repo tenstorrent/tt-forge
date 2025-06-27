@@ -8,6 +8,7 @@ on:
         - '.github/scripts/model-compatible-table/**'
         - '.github/scripts/wheel-version-updater.sh'
         - '.github/scripts/prune-nightly-branches.sh'
+        - '.github/scripts/wait-on-tt-pypi-wheels.sh'
         - '.github/workflows/update-release.yml'
         - '.github/workflows/daily-releaser.yml'
         - '.github/workflows/nightly-release.yml'
@@ -24,6 +25,8 @@ on:
         - '.github/actions/publish-tenstorrent-pypi/**'
         - '.github/actions/publish-github-release/**'
         - '.github/workflows/test-releaser.yml'
+        - '.github/scripts/pyproject.toml'
+        - '.github/scripts/template-setup.py'
     pull_request:
       types: [opened, synchronize, reopened, ready_for_review]
       branches: [ "main" ]
@@ -31,6 +34,7 @@ on:
         - '.github/scripts/model-compatible-table/**'
         - '.github/scripts/wheel-version-updater.sh'
         - '.github/scripts/prune-nightly-branches.sh'
+        - '.github/scripts/wait-on-tt-pypi-wheels.sh'
         - '.github/workflows/update-release.yml'
         - '.github/workflows/daily-releaser.yml'
         - '.github/workflows/nightly-release.yml'
@@ -47,6 +51,8 @@ on:
         - '.github/actions/publish-tenstorrent-pypi/**'
         - '.github/actions/publish-github-release/**'
         - '.github/workflows/test-releaser.yml'
+        - '.github/scripts/pyproject.toml'
+        - '.github/scripts/template-setup.py'
     workflow_dispatch:
       inputs:
         repo:

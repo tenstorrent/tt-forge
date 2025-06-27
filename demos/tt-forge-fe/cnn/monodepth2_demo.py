@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# ResNet Demo Script
+# MonoDepthV2 Demo Script
 
 import forge
-from third_party.tt_forge_models.resnet.pytorch import ModelLoader
+from third_party.tt_forge_models.monodepth2.pytorch import ModelLoader
 
 # Load model and input
 loader = ModelLoader()
@@ -18,4 +18,4 @@ compiled_model = forge.compile(model, sample_inputs=[inputs])
 output = compiled_model(inputs)
 
 # Post-process the output
-loader.post_processing(output)
+loader.postprocess_and_save_disparity_map(output)

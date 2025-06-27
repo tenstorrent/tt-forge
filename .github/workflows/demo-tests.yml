@@ -7,7 +7,7 @@ on:
         description: "Docker image used in tests"
         required: false
         type: string
-        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+        default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
   workflow_call:
     inputs:
       docker-image:
@@ -31,11 +31,17 @@ jobs:
           - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
           - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
           - { "frontend": "tt-torch", "demo": "resnet50_demo.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
+          - { "frontend": "tt-xla", "demo": "/albert_base_v2/demo.py", "pyreq_file": "true" }
+          - { "frontend": "tt-xla", "demo": "/gpt2/demo.py", "pyreq_file": "true" }
+          - { "frontend": "tt-xla", "demo": "/opt_125m/demo.py", "pyreq_file": "true" }
+        include:
+          - demos: { "frontend": "tt-torch", "demo": "llama_7b_pipeline_parallel.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
+            runs-on: tt-beta-ubuntu-2204-n300-large-stable
 
     runs-on: ${{ matrix.runs-on }}
     container:
       image: ${{ inputs.docker-image }}
-      options: --device /dev/tenstorrent
+      options: --device /dev/tenstorrent --user root
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -54,14 +60,20 @@ jobs:
             apt-get install -y -qq --no-install-recommends ${{ matrix.demos.libreq }}
           fi
 
-          source /venv-${{ matrix.demos.frontend }}/bin/activate
+          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           if [ -n "${{ matrix.demos.pyreq }}" ]; then
             pip install ${{ matrix.demos.pyreq }}
+          fi
+          if [ "${{ matrix.demos.pyreq_file }}" == "true" ]; then
+            REQUIREMENTS_PATH=$(dirname demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }})
+            pip install -r $REQUIREMENTS_PATH/requirements.txt
           fi
 
       - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
         shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          source /venv-${{ matrix.demos.frontend }}/bin/activate
+          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
