@@ -35,7 +35,7 @@ jobs:
           - { "frontend": "tt-xla", "demo": "/gpt2/demo.py", "pyreq_file": "true" }
           - { "frontend": "tt-xla", "demo": "/opt_125m/demo.py", "pyreq_file": "true" }
         include:
-          - demos: { "frontend": "tt-torch", "demo": "llama_7b_pipeline_parallel.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
+          - demos: { "frontend": "tt-torch", "demo": "llama_7b_pipeline_parallel.py", pyreq: "loguru requests transformers==4.52.4 datasets torchvision pytest tabulate accelerate" }
             runs-on: tt-beta-ubuntu-2204-n300-large-stable
 
     runs-on: ${{ matrix.runs-on }}
