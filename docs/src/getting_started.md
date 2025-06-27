@@ -146,10 +146,18 @@ To run performance benchmarks for all models, you need to install additional lib
 
 1. **Install Python Requirements**
 
-   Install the required Python packages from the [requirements](../../benchmark/requirements.txt) file:
+   Install the required Python packages from the `requirements.txt` file of the project you wish to run:
 
    ```bash
-   pip install -r benchmark/requirements.txt
+   pip install -r benchmark/[project]/requirements.txt
+   ```
+
+   **Example:**
+
+   If you want to test a model from `tt-torch` project, you would run:
+
+   ```bash
+   pip install -r benchmark/tt-torch/requirements.txt
    ```
 
 2. **Install System Dependencies**
@@ -216,10 +224,10 @@ Once you have completed the prerequisites, you can run the performance benchmark
    python benchmark/benchmark.py -p tt-forge-fe -m mobilenetv2_basic -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-mobilenetv2_basic.json
    ```
 
-3. Alternatively, you can run specific model tests using pytest:
+3. Alternatively, you can run specific model tests using `pytest`:
 
    ```bash
-   python -m pytest project/model_name.py
+   python -m pytest [project]/[model_name].py
    ```
 
    **Example:**
