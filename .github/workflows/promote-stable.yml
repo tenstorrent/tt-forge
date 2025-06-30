@@ -78,7 +78,7 @@ jobs:
             echo "current_release_tag=$current_release_tag"
             exit 1
         fi
-        new_version_tag="${{ needs.get-facts.outputs.major_version }}.${{ needs.get-facts.outputs.minor_version }}.0"
+        new_version_tag="${{ needs.set-release-facts.outputs.major_version }}.${{ needs.set-release-facts.outputs.minor_version }}.0"
 
         if [ "${{ inputs.draft }}" == "true" ]; then
             new_version_tag="draft.${{ steps.set-release-facts.outputs.repo_short }}.${new_version_tag}"
