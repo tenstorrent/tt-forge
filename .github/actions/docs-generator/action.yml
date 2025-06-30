@@ -18,17 +18,14 @@ inputs:
     description: ""
     required: false
     type: string
-  second_latest_branch_commit_date:
+  current_release_tag_commit_date:
     description: ""
     required: false
     type: string
   release_type:
-        type: choice
-        description: select release type
-        options:
-        - nightly
-        - stable
-        - rc
+    description: "Release type"
+    required: true
+    type: string
 
 runs:
   using: "composite"
@@ -81,7 +78,7 @@ runs:
           start=${{ steps.last_release.outputs.publishedAt }}
           end=$(date +'%FT%T'Z)
         else
-          start=$(date -d @${{ inputs.second_latest_branch_commit_date }} +'%FT%T'Z)
+          start=$(date -d @${{ inputs.current_release_tag_commit_date }} +'%FT%T'Z)
           end=$(date -d @${{ inputs.latest_branch_commit_date }} +'%FT%T'Z)
         fi
 

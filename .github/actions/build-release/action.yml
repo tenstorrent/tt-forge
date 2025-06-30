@@ -11,9 +11,6 @@ inputs:
   workflow:
     description: "Workflow name"
     required: true
-  workflow_allow_failed:
-    description: "Return run even if workflow has failed"
-    required: false
   workflow_result_in_job:
     description: "Set that workflow result is job result"
     default: ""
@@ -30,12 +27,20 @@ inputs:
   latest_branch_commit_date:
     description: "Latest branch commit date"
     required: false
-  second_latest_branch_commit_date:
+  current_release_tag_commit_date:
     description: "Second latest branch commit date"
     required: false
   draft:
     description: "Draft release"
     required: true
+  unique_artifact_suffix:
+    description: "Unique artifacts slug for draft testing"
+    required: false
+  override_release_fact_workflow:
+    description: "Override release facts workflow"
+    required: false
+    type: string
+    default: ''
 
 outputs:
   release-artifacts-id:
@@ -57,6 +62,9 @@ runs:
       with:
         repo: ${{ inputs.repo }}
         release_type: ${{ inputs.release_type }}
+        draft: ${{ inputs.draft }}
+        new_version_tag: ${{ inputs.new_version_tag }}
+        branch: ${{ inputs.branch }}
 
     - name: Find workflow artifact candidate
       if: ${{ inputs.repo != 'tenstorrent/tt-forge' }}
@@ -64,11 +72,12 @@ runs:
       uses: ./.github/actions/find-workflow
       with:
         repo: ${{ inputs.repo }}
-        branch: ${{ inputs.branch }}
+        branch: ${{ steps.set-release-facts.outputs.build_release_find_workflow_branch }}
         workflow: ${{ steps.set-release-facts.outputs.workflow }}
-        workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
+        workflow_allow_failed: ${{ steps.set-release-facts.outputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ steps.set-release-facts.outputs.workflow_result_in_job }}
         commit: ${{ inputs.latest_branch_commit }}
+        override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
 
     - name: Uplift ${{ inputs.repo }} artifacts
       if: ${{ inputs.repo != 'tenstorrent/tt-forge' }}
@@ -80,6 +89,7 @@ runs:
         artifact_download_glob: ${{ steps.set-release-facts.outputs.artifact_download_glob }}
         artifact_cleanup_file_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_file_glob }}
         artifact_cleanup_folder_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_folder_glob }}
+
     - name: Create tt-forge wheel
       if: ${{ inputs.repo == 'tenstorrent/tt-forge' }}
       uses: ./.github/actions/tt-forge-wheel
@@ -117,13 +127,12 @@ runs:
     - name: Generate docs
       uses: ./.github/actions/docs-generator
       with:
-        owner: tenstorrent
         repo: ${{ inputs.repo }}
         repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
         workflow_job_json: "${{ toJSON(steps.find_workflow_build_release.outputs) }}"
         release_type: ${{ inputs.release_type }}
         latest_branch_commit_date: ${{ inputs.latest_branch_commit_date }}
-        second_latest_branch_commit_date: ${{ inputs.second_latest_branch_commit_date }}
+        current_release_tag_commit_date: ${{ inputs.current_release_tag_commit_date }}
 
     - name: doc helper
       shell: bash
@@ -138,5 +147,5 @@ runs:
       uses: actions/upload-artifact@v4
       id: release-artifacts
       with:
-        name: build-release-${{ steps.set-release-facts.outputs.repo_short }}
+        name: build-release-${{ steps.set-release-facts.outputs.repo_short }}${{ inputs.unique_artifact_suffix }}
         path: ${{ github.workspace }}/release/**
