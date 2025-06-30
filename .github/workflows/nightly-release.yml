@@ -122,3 +122,12 @@ jobs:
           target_commit: ${{ needs.build-release.outputs.target_commit }}
           prerelease: true
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
+
+  docker-slim-build:
+    needs:
+      - publish-release
+      - get-version
+    uses: ./.github/workflows/mega-docker.yml
+    if: ${{ inputs.repo == 'tenstorrent/tt-forge' && !inputs.draft }}
+    with:
+      version_tag: ${{ needs.get-version.outputs.tag }}
