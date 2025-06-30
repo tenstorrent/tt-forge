@@ -69,7 +69,6 @@ jobs:
           if [ -n "${{ matrix.demos.pyreq }}" ]; then
             pip install ${{ matrix.demos.pyreq }}
           fi
-          pip install -e third_party/tt_forge_models
           if [ "${{ matrix.demos.pyreq_file }}" == "true" ]; then
             REQUIREMENTS_PATH=$(dirname demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }})
             pip install -r $REQUIREMENTS_PATH/requirements.txt
@@ -82,4 +81,4 @@ jobs:
         run: |
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
+          PYTHONPATH=$PYTHONPATH:$(pwd) python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
