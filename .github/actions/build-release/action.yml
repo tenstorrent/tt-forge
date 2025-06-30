@@ -89,7 +89,7 @@ runs:
         artifact_download_glob: ${{ steps.set-release-facts.outputs.artifact_download_glob }}
         artifact_cleanup_file_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_file_glob }}
         artifact_cleanup_folder_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_folder_glob }}
-    
+
     - name: Create tt-forge wheel
       if: ${{ inputs.repo == 'tenstorrent/tt-forge' }}
       uses: ./.github/actions/tt-forge-wheel

@@ -52,7 +52,7 @@ runs:
         token: ${{ inputs.GH_TOKEN }}
         ref: ${{ inputs.branch }}
         fetch-depth: 0
-        
+
     - name: Get branch facts
       id: get-git-facts
       shell: bash
@@ -67,4 +67,3 @@ runs:
     # Recheckout forge repo to fix side effects for clean up job
     - uses: actions/checkout@v4
       if: ${{ !inputs.draft }}
-        

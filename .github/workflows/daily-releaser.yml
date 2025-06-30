@@ -63,7 +63,7 @@ jobs:
 
   update-releases:
     if: ${{ !inputs.draft }}
-    needs: 
+    needs:
       - get-repos
     strategy:
       fail-fast: false
@@ -130,5 +130,3 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}
-
-

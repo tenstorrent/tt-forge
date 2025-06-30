@@ -16,7 +16,7 @@ on:
         default: true
         required: false
         description: 'Put PR in draft mode for testing'
-        
+
 
   workflow_call:
     inputs:
@@ -46,6 +46,7 @@ jobs:
       major_version: ${{ steps.set-release-facts.outputs.major_version }}
       minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
       release_tag_equals_latest_commit: ${{ steps.git-facts.outputs.release_tag_equals_latest_commit }}
+      new_version_tag: ${{ steps.verify-release-candidate.outputs.new_version_tag }}
 
     name: Get Release Facts
     runs-on: ubuntu-latest
@@ -68,6 +69,7 @@ jobs:
         branch: ${{ inputs.release_branch }}
         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
     - name: Verify Current tag is release candidate
+      id: verify-release-candidate
       run: |
         current_release_tag=${{ steps.git-facts.outputs.current_release_tag }}
         check_release_type=$(echo "$current_release_tag" | grep -oP '(?<=rc)\d+$')
@@ -76,13 +78,20 @@ jobs:
             echo "current_release_tag=$current_release_tag"
             exit 1
         fi
+        new_version_tag="${{ needs.get-facts.outputs.major_version }}.${{ needs.get-facts.outputs.minor_version }}.0"
+
+        if [ "${{ inputs.draft }}" == "true" ]; then
+            new_version_tag="draft.${{ steps.set-release-facts.outputs.repo_short }}.${new_version_tag}"
+        fi
+        echo "new_version_tag=$new_version_tag"
+        echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
 
 
 
 
   promote-stable:
     if: ${{ needs.get-facts.outputs.release_tag_equals_latest_commit == 'true' }}
-    needs: 
+    needs:
       - get-facts
     name: ${{ inputs.draft == 'true' && 'Draft' || '' }} ${{ inputs.repo_short }} Stable Release
     secrets: inherit
@@ -92,7 +101,7 @@ jobs:
       repo: ${{ inputs.repo }}
       release_type: stable
       repo_short: ${{ needs.get-facts.outputs.repo_short }}
-      new_version_tag: "${{ needs.get-facts.outputs.major_version }}.${{ needs.get-facts.outputs.minor_version }}.0"
+      new_version_tag: ${{ needs.get-facts.outputs.new_version_tag }}
       latest_branch_commit: ${{ needs.get-facts.outputs.latest_branch_commit }}
       latest_branch_commit_date: ${{ needs.get-facts.outputs.latest_branch_commit_date }}
       current_release_tag_commit_date: ${{ needs.get-facts.outputs.current_release_tag_commit_date }}

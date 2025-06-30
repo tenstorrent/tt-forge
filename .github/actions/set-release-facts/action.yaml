@@ -230,7 +230,7 @@ runs:
         echo "prerelease=$prerelease"
         echo "draft=$draft"
         echo "make_latest=$make_latest"
-        
+
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
         echo "event_name=$event_name" >> $GITHUB_OUTPUT

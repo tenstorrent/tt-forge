@@ -37,4 +37,3 @@ runs:
       with:
         workflow_name: ${{ inputs.workflow_name }}
         branch: ${{ steps.trigger-workflow.outputs.branch }}
-      

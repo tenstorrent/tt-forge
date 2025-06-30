@@ -5,7 +5,7 @@ inputs:
   branch:
     description: "Branch to add commit to"
     required: true
-  
+
 
 runs:
   using: "composite"

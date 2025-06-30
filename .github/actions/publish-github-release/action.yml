@@ -36,7 +36,7 @@ inputs:
     description: "Make release latest"
     required: false
     default: false
-    
+
 runs:
   using: "composite"
   steps:

@@ -1,4 +1,4 @@
-  
+
 name: Test Release RC/Stable Lifecycle
 on:
     push:
@@ -92,7 +92,7 @@ jobs:
           wait: true
 
   create-version-branch:
-    needs: 
+    needs:
       - get-repos
       - mock-successful-workflow-pre-release-branch
     strategy:
@@ -115,7 +115,7 @@ jobs:
     outputs:
       json_results: ${{ steps.get-release-branches.outputs.json_results }}
       no_release_branches_or_new_commits: ${{ steps.get-release-branches.outputs.no_release_branches_or_new_commits }}
-    needs: 
+    needs:
       - get-repos
       - create-version-branch
     strategy:
@@ -138,7 +138,7 @@ jobs:
           ignore_update_check: true
 
   first-commit-successful:
-    needs: 
+    needs:
       - get-release-branches
     strategy:
       fail-fast: false
@@ -163,7 +163,7 @@ jobs:
 
 
   release-rc-first-commit-observed:
-    needs: 
+    needs:
       - get-repos
       - first-commit-successful
     strategy:
@@ -180,7 +180,7 @@ jobs:
 
 
   promote-stable:
-    needs: 
+    needs:
       - get-repos
       - release-rc-first-commit-observed
       - get-release-branches
@@ -194,11 +194,4 @@ jobs:
     with:
       draft: true
       repo: ${{ matrix.repo }}
-      release_branch: ${{ matrix.branch }} 
-
-
-
-
-
-      
-    
+      release_branch: ${{ matrix.branch }}

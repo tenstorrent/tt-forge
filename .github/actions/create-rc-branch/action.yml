@@ -140,7 +140,7 @@ runs:
         # Call twice for GHA workflow logs and to store in github output
         ./git_facts.sh
         ./git_facts.sh >> $GITHUB_OUTPUT
-        
+
 
     # Recheckout forge repo to fix side effects for clean up job
     - uses: actions/checkout@v4

@@ -112,7 +112,7 @@ jobs:
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
 
   create-rc-initial-release:
-    needs: 
+    needs:
       - create-version-branch
     name: ${{ inputs.draft == 'true' && 'Draft' || '' }} ${{ inputs.repo_short }} RC Release
     secrets: inherit
@@ -128,4 +128,3 @@ jobs:
       latest_branch_commit_date: ${{ needs.create-version-branch.outputs.latest_branch_commit_date }}
       current_release_tag_commit_date: ${{ needs.create-version-branch.outputs.current_release_tag_commit_date }}
       override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
-      

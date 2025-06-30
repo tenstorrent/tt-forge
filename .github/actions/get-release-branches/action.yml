@@ -39,7 +39,7 @@ runs:
       id: get-release-branches
       shell: bash
       run: |
-        # Get all release branches from a repo 
+        # Get all release branches from a repo
 
         json_results="[]"
         release_prefix="release"

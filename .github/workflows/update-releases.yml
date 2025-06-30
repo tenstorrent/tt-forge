@@ -68,4 +68,3 @@ jobs:
       latest_branch_commit: ${{ matrix.latest_branch_commit }}
       latest_branch_commit_date: ${{ matrix.latest_branch_commit_date }}
       current_release_tag_commit_date: ${{ matrix.current_release_tag_commit_date }}
-

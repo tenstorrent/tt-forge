@@ -167,7 +167,7 @@ jobs:
           make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
 
       - uses: ./.github/actions/push-tag
-        # Used for testing since draft release to do not create tags. 
+        # Used for testing since draft release to do not create tags.
         if: ${{ inputs.release_type != 'nightly' && inputs.draft }}
         with:
           repo: ${{ inputs.repo }}
@@ -175,4 +175,3 @@ jobs:
           GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
           new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
           commit: ${{ inputs.latest_branch_commit }}
-        
