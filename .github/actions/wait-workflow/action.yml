@@ -1,0 +1,30 @@
+name: "Wait for workflow run"
+description: "Wait for workflow run to complete"
+inputs:
+  workflow_name:
+    description: "Workflow name"
+    required: true
+  branch:
+    description: "Branch name"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Wait for workflow run
+      shell: bash
+      run: |
+        workflow_name="${{ inputs.workflow_name }}"
+        branch="${{ inputs.branch }}"
+        if [ -z "$branch" ]; then
+          # Get the current branch name. Usefully for PRs
+          branch=${{ github.head_ref }}
+        fi
+
+        echo "Waiting for workflow run $workflow_name on branch $branch to complete"
+        while [ -z "$run_id" ]; do
+          run_id=$(gh run list --workflow="$workflow_name" --branch $branch -L 1 --json databaseId | jq -r '.[].databaseId')
+          sleep 1
+        done
+        gh run watch $run_id
+        echo "Workflow run completed"
