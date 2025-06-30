@@ -10,7 +10,7 @@ on:
       - completed
 
 env:
-  disable: true
+  disable: false
 
 jobs:
   delete-drafts:
