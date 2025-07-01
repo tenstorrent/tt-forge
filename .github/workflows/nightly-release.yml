@@ -112,6 +112,11 @@ jobs:
           repo: ${{ inputs.repo }}
           overwrite_releases: ${{ inputs.overwrite_releases }}
 
+      - uses: ./.github/workflows/mega-docker.yml
+        if: ${{ inputs.repo == 'tenstorrent/tt-forge' && !inputs.draft }}
+        with:
+          version_tag: ${{ needs.get-version.outputs.tag }}
+
       - uses: ./.github/actions/publish-github-release
         with:
           draft: ${{ inputs.draft }}

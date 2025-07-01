@@ -26,7 +26,8 @@ RUN apt-get update && \
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
-    libnuma1 && \
+    libnuma1 \
+    protobuf-compiler && \
     wget "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb" -O "mpi.deb" && \
     apt install -y "./mpi.deb" && \
     rm -f "mpi.deb"
