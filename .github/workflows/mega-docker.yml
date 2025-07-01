@@ -79,15 +79,17 @@ jobs:
 
           # Add latest tag if on main
           ON_MAIN=$(git branch --show-current | grep -q main && echo "true" || echo "false")
-          echo "Pushing latest tag for $IMAGE_NAME"
-          TAGS="--tag $IMAGE_NAME:$DOCKER_TAG"
+          if [ "$ON_MAIN" == "true" ]; then
+            echo "Pushing latest tag for $IMAGE_NAME"
+            TAGS="--tag $IMAGE_NAME:latest --tag $IMAGE_NAME:$DOCKER_TAG"
 
-          if [ -n "$VERSION_TAG" ]; then
-            echo "Pushing version tag for $IMAGE_NAME"
-            TAGS="$TAGS --tag $IMAGE_NAME:$VERSION_TAG"
+            if [ -n "$VERSION_TAG" ]; then
+              echo "Pushing version tag for $IMAGE_NAME"
+              TAGS="$TAGS --tag $IMAGE_NAME:$VERSION_TAG"
+            fi
+
+            docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG $TAGS
           fi
-
-          docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG $TAGS
 
           echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
           echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
