@@ -150,7 +150,6 @@ jobs:
           overwrite_releases: ${{ inputs.overwrite_releases }}
 
       - name: Log in to GitHub Container Registry
-        if: ${{ inputs.repo == 'tenstorrent/tt-forge'  }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -159,14 +158,14 @@ jobs:
 
       - uses: tyriis/docker-image-tag-exists@v2.1.0
         id: image_exists
-        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft && steps.image_exists.outputs.tag == 'not found' && '${{ github.ref }}' == 'refs/heads/main' }}
+        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft && steps.image_exists.outputs.tag == 'not found' }}
         with:
           registry: ghcr.io
           repository: tenstorrent/tt-forge
           tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
 
       - uses: ./.github/actions/trigger-workflow
-        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft && steps.image_exists.outputs.tag == 'not found' && '${{ github.ref }}' == 'refs/heads/main' }}
+        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft && steps.image_exists.outputs.tag == 'not found' }}
         with:
           workflow_name: 'Build TT-Forge Docker Images'
           wait: true
