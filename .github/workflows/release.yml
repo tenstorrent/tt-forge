@@ -158,7 +158,7 @@ jobs:
 
       - uses: tyriis/docker-image-tag-exists@v2.1.0
         id: image_exists
-        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft && steps.image_exists.outputs.tag == 'not found' }}
+        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft }}
         with:
           registry: ghcr.io
           repository: tenstorrent/tt-forge
