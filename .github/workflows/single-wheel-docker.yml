@@ -123,4 +123,3 @@ jobs:
 
           echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
           echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
-
