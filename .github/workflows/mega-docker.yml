@@ -13,9 +13,6 @@ on:
         description: 'Release version tag'
         type: string
         required: false
-  schedule:
-    - cron: '0 7 * * *'
-
 
 
 permissions:
@@ -55,6 +52,8 @@ jobs:
       - name: Build and push tt-forge-slim
         shell: bash
         id: build
+        env:
+          VERSION_TAG: ${{ inputs.version_tag }}
         run: |
           IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/tt-forge-slim
           DOCKER_TAG=${{ env.daily_tag }}
@@ -74,9 +73,21 @@ jobs:
 
           # Add latest tag if on main
           ON_MAIN=$(git branch --show-current | grep -q main && echo "true" || echo "false")
-          if [ "$ON_MAIN" == "true" ]; then
+          if [[ "$ON_MAIN" == "true" && -n "$VERSION_TAG" ]]; then
             echo "Pushing latest tag for $IMAGE_NAME"
             docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG --tag $IMAGE_NAME:latest --tag $IMAGE_NAME:$DOCKER_TAG
+          fi
+
+          if [ "$ON_MAIN" == "true" ]; then
+            echo "Pushing latest tag for $IMAGE_NAME"
+            TAGS="--tag $IMAGE_NAME:latest --tag $IMAGE_NAME:$DOCKER_TAG"
+
+            if [ -n "$VERSION_TAG" ]; then
+              echo "Pushing version tag for $IMAGE_NAME"
+              TAGS="$TAGS --tag $IMAGE_NAME:$VERSION_TAG"
+            fi
+
+            docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG $TAGS
           fi
 
           echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
