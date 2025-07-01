@@ -7,12 +7,18 @@ on:
         description: 'Force rebuild of Docker images even if they exist'
         type: boolean
         default: false
+      version_tag:
+        description: 'Release version tag'
+        type: string
+        required: false
+        default: ''
   workflow_call:
     inputs:
       version_tag:
         description: 'Release version tag'
         type: string
         required: false
+        default: ''
 
 
 permissions:
