@@ -1,0 +1,103 @@
+name: Promote Stable Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        type: string
+        description: 'Repo to release RC branch for (e.g tt-forge-fe)'
+        required: true
+      release_branch:
+        type: string
+        description: 'Release branch'
+        required: true
+      draft:
+        type: boolean
+        default: true
+        required: false
+        description: 'Put PR in draft mode for testing'
+
+
+  workflow_call:
+    inputs:
+      repo:
+        type: string
+        description: 'Repo to release RC branch for (e.g tt-forge-fe)'
+        required: true
+      release_branch:
+        type: string
+        description: 'Release branch'
+        required: true
+      draft:
+        type: boolean
+        default: true
+        required: false
+        description: 'Put PR in draft mode for testing'
+
+jobs:
+  get-facts:
+    outputs:
+      latest_branch_commit: ${{ steps.git-facts.outputs.latest_branch_commit }}
+      current_release_tag: ${{ steps.git-facts.outputs.current_release_tag }}
+      current_release_tag_commit: ${{ steps.git-facts.outputs.current_release_tag_commit }}
+      repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
+      major_version: ${{ steps.set-release-facts.outputs.major_version }}
+      minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
+      release_tag_equals_latest_commit: ${{ steps.git-facts.outputs.release_tag_equals_latest_commit }}
+      new_version_tag: ${{ steps.verify-release-candidate.outputs.new_version_tag }}
+
+    name: Get Release Facts
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        release_type: 'stable'
+        draft: ${{ inputs.draft || false }}
+    - name: Get branch facts
+      id: git-facts
+      uses: ./.github/actions/git-facts
+      with:
+        repo: ${{ inputs.repo }}
+        draft: ${{ inputs.draft || false }}
+        branch: ${{ inputs.release_branch }}
+        GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+    - name: Verify Current tag is release candidate
+      id: verify-release-candidate
+      run: |
+        current_release_tag=${{ steps.git-facts.outputs.current_release_tag }}
+        check_release_type=$(echo "$current_release_tag" | grep -oP '(?<=rc)\d+$')
+        if [[ -z "$check_release_type" ]]; then
+            echo "Release tag is not a release candidate"
+            echo "current_release_tag=$current_release_tag"
+            exit 1
+        fi
+        new_version_tag="${{ steps.set-release-facts.outputs.major_version }}.${{ steps.set-release-facts.outputs.minor_version }}.0"
+
+        if [ "${{ inputs.draft }}" == "true" ]; then
+            new_version_tag="draft.${{ steps.set-release-facts.outputs.repo_short }}.${new_version_tag}"
+        fi
+        echo "new_version_tag=$new_version_tag"
+        echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
+
+  promote-stable:
+    if: ${{ needs.get-facts.outputs.release_tag_equals_latest_commit == 'true' }}
+    needs:
+      - get-facts
+    name: ${{ inputs.draft == 'true' && 'Draft' || '' }} ${{ inputs.repo_short }} Stable Release
+    secrets: inherit
+    uses: ./.github/workflows/release.yml
+    with:
+      draft: ${{ inputs.draft || false }}
+      repo: ${{ inputs.repo }}
+      release_type: stable
+      repo_short: ${{ needs.get-facts.outputs.repo_short }}
+      new_version_tag: ${{ needs.get-facts.outputs.new_version_tag }}
+      latest_branch_commit: ${{ needs.get-facts.outputs.latest_branch_commit }}
+      current_release_tag_commit: ${{ needs.get-facts.outputs.current_release_tag_commit }}
+      override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
