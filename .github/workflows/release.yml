@@ -166,7 +166,8 @@ jobs:
 
       - name: Trigger Forge Image Build
         uses: ./.github/actions/trigger-workflow
-        if: ${{ inputs.repo == 'tenstorrent/tt-forge' && !inputs.draft && steps.image_exists.outputs.tag == 'not found' }}
+        if: ${{ inputs.repo == 'tenstorrent/tt-forge' && inputs.draft && steps.image_exists.outputs.tag == 'not found' }}
+        #if: ${{ inputs.repo == 'tenstorrent/tt-forge' && !inputs.draft && steps.image_exists.outputs.tag == 'not found' }}
         with:
           workflow_name: 'Build TT-Forge Docker Images'
           wait: true

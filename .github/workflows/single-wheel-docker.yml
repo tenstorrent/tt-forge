@@ -70,6 +70,7 @@ jobs:
           # For Dispatch workflow calls
           DOCKER_TAG=${{ inputs.docker_tag }}
           WHL_VERSION=${{ inputs.wheel_tag }}
+          WHL_NAME=${{ inputs.wheel_name }}
 
           if [[ -z "${DOCKER_TAG}" && -z "${WHL_VERSION}" ]]; then
             # For Nightly builds and testing
