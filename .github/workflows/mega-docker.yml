@@ -7,11 +7,6 @@ on:
         description: 'Force rebuild of Docker images even if they exist'
         type: boolean
         default: false
-      version_tag:
-        description: 'Release version tag'
-        type: string
-        required: false
-        default: ''
   workflow_call:
     inputs:
       version_tag:
@@ -52,7 +47,7 @@ jobs:
       - name: Set daily tag
         shell: bash
         run: |
-          DAILY_TAG=dev$(date +'%Y%m%d')-test
+          DAILY_TAG=dev$(date +'%Y%m%d')
           echo "daily_tag=${DAILY_TAG}" >> $GITHUB_ENV
 
       - name: Build and push tt-forge-slim
