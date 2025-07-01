@@ -13,9 +13,14 @@ on:
         required: true
       draft:
         type: boolean
-        default: true
+        default: false
         required: false
         description: 'Put PR in draft mode for testing'
+      override_release_fact_workflow:
+        description: 'Override release facts default workflow (e.g. On push)'
+        required: false
+        type: string
+        default: ''
 
 
   workflow_call:
@@ -30,9 +35,20 @@ on:
         required: true
       draft:
         type: boolean
-        default: true
+        default: false
         required: false
         description: 'Put PR in draft mode for testing'
+      override_release_fact_workflow:
+        description: 'Override release facts default workflow (e.g. On push)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+  actions: write
 
 jobs:
   get-facts:
@@ -63,7 +79,7 @@ jobs:
       id: git-facts
       uses: ./.github/actions/git-facts
       with:
-        repo: ${{ inputs.repo }}
+        repo: ${{ steps.set-release-facts.outputs.repo_full }}
         draft: ${{ inputs.draft || false }}
         branch: ${{ inputs.release_branch }}
         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}

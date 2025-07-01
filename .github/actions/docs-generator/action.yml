@@ -2,10 +2,6 @@
 name: "Create docs"
 description: "Creates a release doc for all frontend and cats them to one single file"
 inputs:
-  repo:
-    description: "Repo's name"
-    required: true
-    type: string
   repo_short:
     description: "Repo's short name"
     required: true
@@ -14,98 +10,127 @@ inputs:
     description: ""
     required: true
     type: string
-  latest_branch_commit_date:
+  latest_commit:
     description: ""
     required: false
     type: string
-  second_latest_branch_commit_date:
+  new_version_tag:
+    description: ""
+    required: true
+    type: string
+  current_release_tag_commit:
     description: ""
     required: false
     type: string
   release_type:
-        type: choice
-        description: select release type
-        options:
-        - nightly
-        - stable
-        - rc
+    description: "Release type"
+    required: true
+    type: string
+  major_version:
+    description: "Major version"
+    required: true
+    type: string
+  minor_version:
+    description: "Minor version"
+    required: true
+    type: string
+  pip_wheel_names:
+    description: "Names of pip wheels"
+    required: true
+    type: string
+  ignore_docker_instructions:
+    description: "Ignore docker instructions"
+    required: false
+    type: boolean
 
 runs:
   using: "composite"
   steps:
-    - name: Get last release nightly
+    - name: Get tags
+      id: get-tags
       shell: bash
-      if: ${{ inputs.release_type == 'nightly' }}
-      id: last_release
       run: |
-        loop_count=100
-        echo "Search the lastest $loop_count releases to find latest ${{ inputs.release_type }}"
-        releases=$(gh release list -R ${{ github.repository }} -L $loop_count --json name,tagName,publishedAt,isDraft)
+        new_version="${{ inputs.latest_commit }}"
+        old_version="${{ inputs.current_release_tag_commit }}"
 
-        array_ptr=0
-        success=false
-
-        while [[ $array_ptr -ne $loop_count ]]; do
-          name=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].name')
-          tagName=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].tagName')
-          publishedAt=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].publishedAt')
-          isDraft=$(echo $releases | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].isDraft')
-
-          if [[ "$isDraft" == "true" ]]; then
-            echo "Skipping draft release name: $name tag: $tagName publishedAt: $publishedAt"
-            array_ptr=$((array_ptr+1))
-            continue
-          fi
-
-          regex="${{ inputs.repo_short }}-.*\.dev.*"
-          if [[ "$tagName" =~ $regex ]]; then
-            echo "Selected release name: $name tag: $tagName publishedAt: $publishedAt"
-            echo "publishedAt=$publishedAt" >> $GITHUB_OUTPUT
-            success=true
-            break
-          fi
-
-          array_ptr=$((array_ptr+1))
-        done
-
-        if [[ "$success" == "false" ]]; then
-          echo "Failed to find a previous release with ${{ inputs.release_type }}"
-          exit 1
+        if [[ -z "${old_version}" ]]; then
+          old_version="${{ inputs.latest_commit }}"
         fi
 
-    - name: All changes urls
-      shell: bash
-      id: all_changes
-      run: |
-        if [[ ${{ inputs.release_type }} == 'nightly' ]]; then
-          start=${{ steps.last_release.outputs.publishedAt }}
-          end=$(date +'%FT%T'Z)
-        else
-          start=$(date -d @${{ inputs.second_latest_branch_commit_date }} +'%FT%T'Z)
-          end=$(date -d @${{ inputs.latest_branch_commit_date }} +'%FT%T'Z)
+        ## TODO: Add Logic here to compare current stable release to latest stable release. First stable will compare to RC
+
+        if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
+          old_version="${{ inputs.major_version }}.${{ inputs.minor_version }}.0.dev$(date -d "24 hours ago" '+%Y%m%d')"
         fi
-
-        function store_encoded_url() {
-          local url_parms=$1
-          local store_var=$2
-          local base_url="https://github.com/${{ inputs.repo }}/issues?q="
-          local encoded_params
-          local url
-
-          encoded_params=$(echo -n $url_parms|jq -sRr @uri)
-          url="$base_url$encoded_params"
-
-          echo "$store_var=$url" >> $GITHUB_OUTPUT
-        }
-
-        # test query for github issues.
-        #merged_changes="sort:created-desc  state:merged created:2025-03-12T00:00:00+00:00..2025-03-24T18:41:53Z -label:uplift"
-
-        merged_changes_parms="sort:created-desc  state:merged created:$start..$end"
-        store_encoded_url "$merged_changes_parms" "merged_changes"
-
-        bug_fixes_parms="label:bug created:<$end -label:\"CI / Infra\""
-        store_encoded_url "$bug_fixes_parms" "bug_fixes"
+        echo "old_version=$old_version" >> $GITHUB_OUTPUT
+        echo "new_version=$new_version" >> $GITHUB_OUTPUT
+    - name: Build Changelog
+      id: github_release
+      uses: mikepenz/release-changelog-builder-action@v5
+      with:
+        owner: tenstorrent
+        repo: ${{ inputs.repo_short }}
+        fromTag: ${{ steps.get-tags.outputs.old_version }}
+        toTag: ${{ steps.get-tags.outputs.new_version }}
+        fetchViaCommits: true
+        fetchReleaseInformation: true
+        fetchReviewers: true
+        fetchReviews: true
+        failOnError: true
+        mode: "COMMIT"
+        configurationJson: |
+          {
+            "template": "#{{CHANGELOG}}",
+            "categories": [
+              {
+                "title": "## 🚀 Features",
+                "labels": ["feature", "enhancement"]
+              },
+              {
+                "title": "## 🛠 Fixes",
+                "labels": ["fix", "bug"]
+              },
+              {
+                "title": "## 🧹 Maintenance",
+                "labels": ["chore", "refactor", "cleanup"]
+              },
+              {
+                "title": "## 📦 Build",
+                "labels": ["build", "ci"]
+              },
+              {
+                "title": "## 📝 Documentation",
+                "labels": ["docs"]
+              },
+              {
+                "title": "## ⚡️ Performance Improvements",
+                "labels": ["perf"]
+              },
+              {
+                "title": "## 🧪 Tests",
+                "labels": ["test"]
+              },
+              {
+                "title": "## ⏪ Reverts",
+                "labels": ["revert"]
+              },
+              {
+                "title": "## 🎨 Styling",
+                "labels": ["style"]
+              },
+              {
+                "title": "## 🎯 Other Changes",
+                "labels": []
+              }
+            ],
+            "label_extractor": [
+              {
+                "pattern": "^(build|chore|ci|docs|feature|enhancement|fix|bug|perf|cleanup|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
+                "target": "$1"
+              }
+            ],
+            "pr_template": "- [#{{TITLE}}](https://github.com/tenstorrent/${{ inputs.repo_short }}/commit/#{{MERGE_SHA}}) by @#{{AUTHOR}}"
+          }
 
     - name: output readme
       shell: bash
@@ -113,17 +138,51 @@ runs:
         readme_path="${{ github.workspace }}/release/docs"
         mkdir -p $readme_path
 
-        repo=$(echo "${{ inputs.repo }}"  | awk -F'[/]' ' { print $2 }')
+        new_version_tag="${{ inputs.new_version_tag }}"
+
+        # Generate pip install instructions
+
+        pip_install_instructions=""
+        pip_wheel_names="${{ inputs.pip_wheel_names }}"
+        for wheel_name in $pip_wheel_names; do
+            pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
+        done
+
         found_files=$(find ${{ github.workspace }}/release/artifacts -type f -exec basename {} \;)
         download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
-        echo ""
 
+        echo "found_files=$found_files"
+        echo "download_list_files=$download_list_files"
+        echo "pip_install_instructions=$pip_install_instructions"
+        docker_instructions="ghcr.io/tenstorrent/tt-forge/tt-forge-slim:${{ inputs.new_version_tag }}<br>"
+        docker_instructions+="More detailed instructions can be found in the [Getting Started](https://docs.tenstorrent.com/${{ inputs.repo_short }}) docker section<br>"
+        echo "docker_instructions=$docker_instructions"
+
+        if [[ "${{ inputs.ignore_docker_instructions }}" == "true" ]]; then
         cat <<- EOF >> "$readme_path/readme"
-        :green_book: [Getting started](https://docs.tenstorrent.com/$repo)
-        :bug: [Bugs](${{ steps.all_changes.outputs.bug_fixes }})
-        :leftwards_arrow_with_hook: [All Merged Changes](${{ steps.all_changes.outputs.merged_changes }})
-        #### Test status: ${{fromJson(inputs.workflow_job_json).run-status-symbol }}
-        #### Workflow run: ${{fromJson(inputs.workflow_job_json).run-url }}
+        :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo_short }})
+        #### Install via pip
+          $pip_install_instructions
+        #### Test status: ${{ fromJson(inputs.workflow_job_json).run-status-symbol }}
+        #### Workflow run: ${{ fromJson(inputs.workflow_job_json).run-url }}
+        ${{ steps.github_release.outputs.changelog }}
         #### Files:
           $download_list_files
         EOF
+
+        else
+
+        cat <<- EOF >> "$readme_path/readme"
+        :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo_short }})
+        #### Install via pip
+          $pip_install_instructions
+        #### Docker container
+          $docker_instructions
+        #### Test status: ${{ fromJson(inputs.workflow_job_json).run-status-symbol }}
+        #### Workflow run: ${{ fromJson(inputs.workflow_job_json).run-url }}
+        ${{ steps.github_release.outputs.changelog }}
+        #### Files:
+          $download_list_files
+        EOF
+
+        fi

@@ -1,4 +1,4 @@
-name: Test Releaser
+name: Test Nightly Releaser
 
 on:
     push:
@@ -24,7 +24,7 @@ on:
         - '.github/actions/install-verification/**'
         - '.github/actions/publish-tenstorrent-pypi/**'
         - '.github/actions/publish-github-release/**'
-        - '.github/workflows/test-releaser.yml'
+        - '.github/workflows/test-nightly-releaser.yml'
         - '.github/scripts/pyproject.toml'
         - '.github/scripts/template-setup.py'
     pull_request:
@@ -50,7 +50,7 @@ on:
         - '.github/actions/install-verification/**'
         - '.github/actions/publish-tenstorrent-pypi/**'
         - '.github/actions/publish-github-release/**'
-        - '.github/workflows/test-releaser.yml'
+        - '.github/workflows/test-nightly-releaser.yml'
         - '.github/scripts/pyproject.toml'
         - '.github/scripts/template-setup.py'
     workflow_dispatch:
@@ -72,22 +72,14 @@ permissions:
   pages: write
   id-token: write
   contents: write
+  actions: write
 
 jobs:
-  test-create-version-branches:
-    uses: ./.github/workflows/create-version-branches.yml
-    secrets: inherit
-    with:
-      draft: ${{ inputs.draft || true }}
-      repo: ${{ inputs.repo || 'tenstorrent/tt-forge' }}
-      workflow_allow_failed: ${{ inputs.workflow_allow_failed || false }}
-
-  test-daily-releaser:
+  test-daily-nightly-releaser:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/daily-releaser.yml
     secrets: inherit
     with:
-      draft: ${{ inputs.draft || true }}
-      delete-drafts: ${{ inputs.delete-drafts || true }}
+      draft: true
       overwrite_releases: false
       repo: ${{ inputs.repo || '' }}

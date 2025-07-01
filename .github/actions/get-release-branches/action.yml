@@ -1,23 +1,35 @@
 
 name: "Check Release Branches"
-description: "Check Release Branches"
+description: "Check Release Branches if updates need to be released"
 inputs:
   repo:
     description: "Repo name"
     required: true
-
+  repo_short:
+    description: "Repo short name"
+    required: true
+  draft:
+    description: "Draft release"
+    required: true
+    default: false
+  ignore_update_check:
+    description: "Ignore update check"
+    required: false
+    default: "false"
+    type: string
 outputs:
   json_results:
     description: 'JSON results'
     value: ${{ steps.get-release-branches.outputs.json_results }}
-  is_empty:
-    description: 'True if no release branches were found'
-    value: ${{ steps.get-release-branches.outputs.is_empty }}
+  no_release_branches_or_new_commits:
+    description: 'True if no release branches or new commits were found'
+    value: ${{ steps.get-release-branches.outputs.no_release_branches_or_new_commits }}
 
 runs:
   using: "composite"
   steps:
     - name: Checkout target repo
+      if: ${{ !inputs.draft }}
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.repo }}
@@ -27,53 +39,104 @@ runs:
       id: get-release-branches
       shell: bash
       run: |
-        # Get the latest release branches sorted by date in ascending order
+        # Get all release branches from a repo
+
         json_results="[]"
-        set +e
-        release_branches=$(git for-each-ref refs/remotes/origin/ --format='%(refname:short)' | grep -oP '(?<=origin\/)release-\d+\.\d+$' | xargs)
-        set -e
+        release_prefix="release"
+
+
+        if [ "${{ inputs.draft }}" == "true" ]; then
+          release_prefix="draft-${{ inputs.repo_short }}-release"
+        fi
+
+        if [ -z "$release_branches" ]; then
+          # broken up so release prefix can be variable
+          regex="^"
+          regex+="${release_prefix}-\d+\.\d+$"
+          echo "branches regex: $regex"
+          set +e
+          release_branches="$(git for-each-ref refs/remotes/origin/ --format='%(refname:short)' | sed 's!^origin/!!' | grep -oP "$regex" | xargs)"
+          set -e
+        fi
+
+        echo "release_branches=$release_branches"
         if [ -z "$release_branches" ]; then
           echo "No release branches found"
           exit 0
         fi
+        echo "Selected release branches: $release_branches"
+
 
         for branch in $release_branches; do
-          current_tag_commit=$(git rev-list --branches=$branch --tags --max-count=1)
-          current_release_tag=$(git describe --tags $current_tag_commit)
-          latest_branch_commit=$(git rev-parse origin/$branch)
-          latest_branch_commit_date=$(git show --no-patch --format=%ct $latest_branch_commit)
-          second_latest_branch_commit=$(git rev-list --branches=$branch --tags --max-count=2 | tail -n 1)
-          second_latest_branch_commit_date=$(git show --no-patch --format=%ct $second_latest_branch_commit)
-          echo "Branch is $branch"
-          echo "Current Release Tag is $current_release_tag"
-          echo "Current Tag Commit is $current_tag_commit"
-          echo "Latest Branch Commit is $latest_branch_commit"
 
-          if [[ "$current_tag_commit" == "$latest_branch_commit" ]]; then
+          wget -q https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/${{ github.head_ref || github.ref_name }}/.github/scripts/git_facts.sh
+          chmod +x git_facts.sh
+          export branch=$branch
+          source ./git_facts.sh
+
+          if [[ "${{ inputs.ignore_update_check }}" == "false" && "$current_release_tag_commit" == "$latest_branch_commit" ]]; then
             echo "Branch $branch has no new commits"
             continue
-          elif [[ "$current_release_tag" =~ rc ]]; then
-            # Bump RC version for release candidate branch
-            IFS='.' read -r major minor rc rc_version <<< "$current_release_tag"
-            new_version_tag="${major}.${minor}.${rc}.$((rc_version+1))"
-            release_type="rc"
-          else
-            # Bump Patch version for stable branch
-            IFS='.' read -r major minor patch <<< "$current_release_tag"
-            new_version_tag="${major}.${minor}.$((patch+1))"
-            release_type="stable"
           fi
 
+          release_type="rc"
+          check_release_type=$(echo "$current_release_tag" | grep -oP '(?<=rc)\d+$')
+          echo "check_release_type=$check_release_type"
+          if [[ -z "$check_release_type" ]]; then
+              release_type="stable"
+          fi
+          echo "release_type=$release_type"
+
+          # Determine new release tag
+
+          if [[ "${{ inputs.ignore_update_check }}" == "false" ]]; then
+            if [[ "${{ inputs.draft }}" == "false" ]]; then
+              if [[ "$release_type" == "rc" ]]; then
+                # Bump RC version for release candidate branch
+                IFS='.' read -r major minor patch_rc <<< "$current_release_tag"
+                patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
+                echo "patch=$patch"
+                current_rc_version=$(echo "$patch_rc" | grep -oP '(?<=rc)\d+')
+                echo "current_rc_version=$current_rc_version"
+                new_rc_version=$((current_rc_version + 1))
+                echo "new_rc_version=$new_rc_version"
+                new_version_tag="${major}.${minor}.${patch}rc$((new_rc_version))"
+              else
+                # Bump Patch version for stable branch
+                IFS='.' read -r major minor patch <<< "$current_release_tag"
+                new_version_tag="${major}.${minor}.$((patch+1))"
+              fi
+            else
+              if [[ "$release_type" == "rc" ]]; then
+                # Bump RC version for release candidate branch
+                IFS='.' read -r draft repo major minor patch_rc <<< "$current_release_tag"
+                patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
+                echo "patch=$patch"
+                current_rc_version=$(echo "$patch_rc" | grep -oP '(?<=rc)\d+')
+                echo "current_rc_version=$current_rc_version"
+                new_rc_version=$((current_rc_version + 1))
+                echo "new_rc_version=$new_rc_version"
+                new_version_tag="${draft}.${repo}.${major}.${minor}.${patch}rc$((new_rc_version))"
+              else
+                # Bump Patch version for stable branch
+                IFS='.' read -r draft repo major minor patch <<< "$current_release_tag"
+                new_version_tag="${draft}.${repo}.${major}.${minor}.$((patch+1))"
+              fi
+            fi
+          fi
+
+          echo "new_version_tag=$new_version_tag"
+
           # Append results to json_results
-          json_results=$(echo $json_results | jq -r -c --arg branch "$branch" --arg new_version_tag "$new_version_tag" --arg latest_branch_commit "$latest_branch_commit" --arg release_type "$release_type" --arg latest_branch_commit_date "$latest_branch_commit_date" --arg second_latest_branch_commit_date "$second_latest_branch_commit_date" --arg second_latest_branch_commit "$second_latest_branch_commit" '. += [{
+          json_results=$(echo $json_results | jq -r -c --arg branch "$branch" --arg new_version_tag "$new_version_tag" --arg latest_branch_commit "$latest_branch_commit" --arg release_type "$release_type" --arg current_release_tag_commit "$current_release_tag_commit" --arg current_release_tag "$current_release_tag" '. += [{
               "branch": $branch,
               "new_version_tag": $new_version_tag,
+              "current_release_tag": $current_release_tag,
+              "current_release_tag_commit": $current_release_tag_commit,
               "latest_branch_commit": $latest_branch_commit,
-              "latest_branch_commit_date": $latest_branch_commit_date,
-              "second_latest_branch_commit": $second_latest_branch_commit,
-              "second_latest_branch_commit_date": $second_latest_branch_commit_date,
               "repo": "${{ inputs.repo }}",
               "release_type": $release_type,
+              "repo_short": "${{ inputs.repo_short }}",
           }]')
         done
 
@@ -83,11 +146,14 @@ runs:
         # Check if json_results is empty (only contains an empty array [])
         if [ "$json_results" = "[]" ]; then
           echo "No release branches found with new commits"
-          echo "is_empty=true" >> $GITHUB_OUTPUT
+          no_release_branches_or_new_commits=true
         else
           echo "Found release branches with new commits"
-          echo "is_empty=false" >> $GITHUB_OUTPUT
+          no_release_branches_or_new_commits=false
         fi
+        echo "no_release_branches_or_new_commits=$no_release_branches_or_new_commits"
+        echo "no_release_branches_or_new_commits=$no_release_branches_or_new_commits" >> $GITHUB_OUTPUT
 
     # Recheckout forge repo to fix side effects for clean up job
     - uses: actions/checkout@v4
+      if: ${{ !inputs.draft }}

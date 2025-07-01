@@ -3,24 +3,26 @@ name: Create Version Branch releaser
 on:
   workflow_dispatch:
     inputs:
-      draft:
-        description: 'Put PR in draft mode for testing'
-        type: boolean
-        default: true
-        required: false
       repo:
         type: string
-        description: 'Repo to release RC branch for e.g tenstorrent/tt-forge-fe'
+        description: 'Repo to release RC branch for (e.g tt-forge-fe)'
         required: true
       workflow_allow_failed:
         description: 'Run even if workflow has failed'
         required: false
         type: boolean
         default: false
-      commit:
-        description: "Commit sha if you want to override release branch selection"
+      override_release_fact_workflow:
+        description: 'Override release facts default workflow (e.g. On push)'
         required: false
         type: string
+        default: ''
+      commit:
+        description: "Commit sha if you want to override auto select latest passing workflow"
+        required: false
+        default: ""
+        type: string
+
   workflow_call:
     inputs:
       draft:
@@ -32,26 +34,96 @@ on:
         type: string
         description: 'Repo to release RC branch for e.g tt-forge-fe'
         required: true
+      commit:
+        description: "Commit sha if you want to override auto select latest passing workflow"
+        required: false
+        type: string
+      branch:
+        description: "Source branch name"
+        required: false
+        default: ""
+        type: string
       workflow_allow_failed:
-        description: 'Run even if workflow has failed'
+        description: "Ignore if workflow has failed"
         required: false
         type: boolean
         default: false
-      commit:
-        description: "Commit sha if you want to override release branch selection by last passing workflow"
+      workflow:
+        description: "Workflow name"
+        required: false
+        type: string
+      ignore_artifacts:
+        description: "Ignore artifacts"
+        type: boolean
+        default: false
+        required: false
+      draft_slug_name:
+        description: "Draft slug name"
+        required: false
+        type: string
+      override_release_fact_workflow:
+        description: "Override release facts workflow"
         required: false
         type: string
 
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+  actions: write
+
 jobs:
   create-version-branch:
+    outputs:
+      tag_name: ${{ steps.create-rc-branch.outputs.tag_name }}
+      branch_name: ${{ steps.create-rc-branch.outputs.branch_name }}
+      latest_branch_commit: ${{ steps.create-rc-branch.outputs.latest_branch_commit }}
+      current_release_tag_commit: ${{ steps.create-rc-branch.outputs.current_release_tag_commit }}
+      repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        release_type: 'rc'
+        draft: ${{ inputs.draft }}
     - name: Create Version branch - ${{ inputs.repo }}
       id: create-rc-branch
       uses: ./.github/actions/create-rc-branch
       with:
-        repo: ${{ inputs.repo }}
-        draft: ${{ inputs.draft || false }}
-        workflow_allow_failed: ${{ inputs.workflow_allow_failed || false }}
+        repo: ${{ steps.set-release-facts.outputs.draft == 'true' && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
+        draft: ${{steps.set-release-facts.outputs.draft == 'true' || false }}
+        workflow_allow_failed: ${{ steps.set-release-facts.outputs.workflow_allow_failed }}
         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+        draft_slug_name: ${{ inputs.draft_slug_name || '' }}
+        workflow: ${{ inputs.workflow || steps.set-release-facts.outputs.workflow }}
+        branch: ${{ inputs.branch || github.head_ref }}
+        ignore_artifacts: ${{ inputs.ignore_artifacts || false }}
+        workflow_result_in_job: ${{ steps.set-release-facts.outputs.workflow_result_in_job }}
+        major_version: ${{ steps.set-release-facts.outputs.major_version }}
+        minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
+        commit: ${{ inputs.commit }}
+        override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
+
+  create-rc-initial-release:
+    needs:
+      - create-version-branch
+    name: ${{ inputs.draft == 'true' && 'Draft' || '' }} ${{ inputs.repo_short }} RC Release
+    secrets: inherit
+    uses: ./.github/workflows/release.yml
+    with:
+      draft: ${{ inputs.draft || false}}
+      repo: ${{ inputs.repo }}
+      release_type: rc
+      repo_short: ${{ needs.create-version-branch.outputs.repo_short }}
+      new_version_tag: ${{ needs.create-version-branch.outputs.tag_name }}
+      branch: ${{ needs.create-version-branch.outputs.branch_name }}
+      latest_branch_commit: ${{ needs.create-version-branch.outputs.latest_branch_commit }}
+      current_release_tag_commit: ${{ needs.create-version-branch.outputs.current_release_tag_commit }}
+      override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}

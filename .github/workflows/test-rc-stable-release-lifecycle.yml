@@ -1,0 +1,197 @@
+
+name: Test Release RC/Stable Lifecycle
+on:
+    push:
+      branches:
+        - main
+      paths:
+        - '.github/scripts/model-compatible-table/**'
+        - '.github/scripts/wheel-version-updater.sh'
+        - '.github/scripts/prune-nightly-branches.sh'
+        - '.github/workflows/update-release.yml'
+        - '.github/workflows/daily-releaser.yml'
+        - '.github/workflows/nightly-release.yml'
+        - '.github/workflows/create-version-branches.yml'
+        - '.github/actions/create-rc-branch/**'
+        - '.github/actions/docs-generator/**'
+        - '.github/actions/find-workflow/**'
+        - '.github/actions/get-release-branches/**'
+        - '.github/actions/get-repos/**'
+        - '.github/actions/build-release/**'
+        - '.github/actions/uplift-artifacts/**'
+        - '.github/actions/set-release-facts/**'
+        - '.github/actions/install-verification/**'
+        - '.github/actions/publish-tenstorrent-pypi/**'
+        - '.github/actions/publish-github-release/**'
+        - '.github/workflows/test-nightly-releaser.yml'
+        - '.github/workflows/test-rc-stable-release-lifecycle.yml'
+        - '.github/scripts/pyproject.toml'
+        - '.github/scripts/template-setup.py'
+    pull_request:
+      types: [opened, synchronize, reopened, ready_for_review]
+      branches: [ "main" ]
+      paths:
+        - '.github/scripts/model-compatible-table/**'
+        - '.github/scripts/wheel-version-updater.sh'
+        - '.github/scripts/prune-nightly-branches.sh'
+        - '.github/workflows/update-release.yml'
+        - '.github/workflows/daily-releaser.yml'
+        - '.github/workflows/nightly-release.yml'
+        - '.github/workflows/create-version-branches.yml'
+        - '.github/actions/create-rc-branch/**'
+        - '.github/actions/docs-generator/**'
+        - '.github/actions/find-workflow/**'
+        - '.github/actions/get-release-branches/**'
+        - '.github/actions/get-repos/**'
+        - '.github/actions/build-release/**'
+        - '.github/actions/uplift-artifacts/**'
+        - '.github/actions/set-release-facts/**'
+        - '.github/actions/install-verification/**'
+        - '.github/actions/publish-tenstorrent-pypi/**'
+        - '.github/actions/publish-github-release/**'
+        - '.github/workflows/test-nightly-releaser.yml'
+        - '.github/workflows/test-rc-stable-release-lifecycle.yml'
+        - '.github/scripts/pyproject.toml'
+        - '.github/scripts/template-setup.py'
+    workflow_dispatch:
+      inputs:
+        delete-drafts:
+          type: boolean
+          default: true
+          description: Delete drafts
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+  actions: write
+
+jobs:
+
+  get-repos:
+    outputs:
+      json_results: ${{ steps.get-repos.outputs.json_results }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get Repos
+        id: get-repos
+        uses: ./.github/actions/get-repos
+        with:
+          repo: 'tt-mlir'
+
+  mock-successful-workflow-pre-release-branch:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/trigger-workflow
+        with:
+          workflow_name: 'Mock Successful'
+          wait: true
+
+  create-version-branch:
+    needs:
+      - get-repos
+      - mock-successful-workflow-pre-release-branch
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} Create Version branch
+    uses: ./.github/workflows/create-version-branches.yml
+    secrets: inherit
+    with:
+      repo: ${{ matrix.repo }}
+      draft: true
+      draft_slug_name: ${{ matrix.repo_short }}
+      workflow_allow_failed: false
+      workflow: 'Mock Successful'
+      branch: ${{ github.head_ref }}
+      ignore_artifacts: true
+
+  get-release-branches:
+    outputs:
+      json_results: ${{ steps.get-release-branches.outputs.json_results }}
+      no_release_branches_or_new_commits: ${{ steps.get-release-branches.outputs.no_release_branches_or_new_commits }}
+    needs:
+      - get-repos
+      - create-version-branch
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} Get Release RC Branches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get Release Branches
+        id: get-release-branches
+        uses: ./.github/actions/get-release-branches
+        with:
+          repo: ${{ matrix.repo }}
+          repo_short: ${{ matrix.repo_short }}
+          draft: true
+          ignore_update_check: true
+
+  first-commit-successful:
+    needs:
+      - get-release-branches
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} First Commit Successful
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add random test file
+        uses: ./.github/actions/add-commit
+        with:
+          branch: ${{ matrix.branch }}
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/trigger-workflow
+        with:
+          workflow_name: 'Mock Successful'
+          wait: true
+          branch: ${{ matrix.branch }}
+
+
+  release-rc-first-commit-observed:
+    needs:
+      - get-repos
+      - first-commit-successful
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+    uses: ./.github/workflows/update-releases.yml
+    secrets: inherit
+    name: ${{ matrix.repo_short }} Update RC on observed first commit
+    with:
+      draft: true
+      repo: ${{ matrix.repo }}
+      overwrite_releases: false
+
+
+  promote-stable:
+    needs:
+      - get-repos
+      - release-rc-first-commit-observed
+      - get-release-branches
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} Promote RC to Stable
+    secrets: inherit
+    uses: ./.github/workflows/promote-stable.yml
+    with:
+      draft: true
+      repo: ${{ matrix.repo }}
+      release_branch: ${{ matrix.branch }}

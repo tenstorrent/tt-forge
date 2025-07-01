@@ -17,8 +17,8 @@ runs:
         workflow_name="${{ inputs.workflow_name }}"
         branch="${{ inputs.branch }}"
         if [ -z "$branch" ]; then
-          # Get the current branch name. Usefully for PRs
-          branch=${{ github.head_ref }}
+          # Get the current branch name. Usefully for PRs and branches
+          branch=${{ github.head_ref || github.ref_name }}
         fi
 
         echo "Waiting for workflow run $workflow_name on branch $branch to complete"

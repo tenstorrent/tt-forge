@@ -21,68 +21,50 @@ permissions:
   pages: write
   id-token: write
   contents: write
+  actions: write
 
 jobs:
   get-release-branches:
     outputs:
       json_results: ${{ steps.branches.outputs.json_results }}
-      is_empty: ${{ steps.branches.outputs.is_empty }}
+      no_release_branches_or_new_commits: ${{ steps.branches.outputs.no_release_branches_or_new_commits }}
     runs-on: ubuntu-latest
     env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout target repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: ./.github/actions/set-release-facts
+      id: set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        draft: ${{ inputs.draft }}
     - uses: ./.github/actions/get-release-branches
       id: branches
       with:
         repo: ${{ inputs.repo }}
+        draft: ${{ inputs.draft || false }}
+        repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
 
-  build-release:
-    if: ${{ needs.get-release-branches.outputs.is_empty == 'false' }}
-    name: Build Release ${{ matrix.new_version_tag }}
-    runs-on: ubuntu-latest
+  update-release-branches:
+    if: ${{ needs.get-release-branches.outputs.no_release_branches_or_new_commits == 'false' }}
     needs: get-release-branches
     strategy:
+      fail-fast: false
       matrix:
-        include: ${{fromJson(needs.get-release-branches.outputs.json_results)}}
-    env:
-        GH_TOKEN: ${{ github.token }}
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: mukunku/tag-exists-action@v1.6.0
-      id: check-tag
-      with:
-        tag: ${{ matrix.new_version_tag }}
-        repo: ${{ inputs.repo }}
-
-    - name: Build Release
-      if: steps.check-tag.outputs.exists == 'false'
-      uses: ./.github/actions/build-release
-      with:
-        repo: ${{ matrix.repo }}
-        branch: ${{ matrix.branch }}
-        release_type: ${{ matrix.release_type }}
-        latest_branch_commit: ${{ matrix.latest_branch_commit  }}
-        new_version_tag: ${{ matrix.new_version_tag }}
-        latest_branch_commit_date: ${{ matrix.latest_branch_commit_date  }}
-        second_latest_branch_commit_date: ${{ matrix.second_latest_branch_commit_date  }}
-        draft: ${{ inputs.draft }}
-
-
-    - name: Checkout Release Branch for tagging
-      uses: actions/checkout@v4
-      with:
-        repository: ${{ inputs.repo }}
-        token: ${{ env.GH_TOKEN }}
-        ref: ${{ matrix.branch }}
-
-    - name: Push Release Version tag to Release Branch
-      if: steps.check-tag.outputs.exists == 'false'
-      shell: bash
-      run: |
-        git tag ${{ matrix.new_version_tag }}
-        git push origin ${{ matrix.branch }} --tags
-
-    # Recheckout forge repo to fix side effects for clean up job
-    - uses: actions/checkout@v4
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    name: "${{ inputs.draft && 'Draft' || '' }}  ${{ matrix.repo_short }} ${{ matrix.release_type }} ${{ matrix.new_version_tag }}"
+    secrets: inherit
+    uses: ./.github/workflows/release.yml
+    with:
+      draft: ${{ inputs.draft || false }}
+      repo: ${{ matrix.repo }}
+      overwrite_releases: ${{ inputs.overwrite_releases || false }}
+      release_type: ${{ matrix.release_type }}
+      repo_short: ${{ matrix.repo_short }}
+      branch: ${{ matrix.branch }}
+      new_version_tag: ${{ matrix.new_version_tag }}
+      latest_branch_commit: ${{ matrix.latest_branch_commit }}
+      current_release_tag_commit: ${{ matrix.current_release_tag_commit }}

@@ -1,0 +1,64 @@
+name: "Branch Facts"
+description: "Branch Facts"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+    type: string
+  branch:
+    description: "Branch name"
+    required: true
+    type: string
+  draft:
+    description: "Draft release"
+    required: false
+    type: boolean
+    default: false
+  GH_TOKEN:
+    description: "GitHub token"
+    required: true
+    type: string
+
+
+
+outputs:
+  latest_branch_commit:
+    description: "Latest branch commit"
+    value: ${{ steps.get-git-facts.outputs.latest_branch_commit }}
+  current_release_tag_commit:
+    description: "Current release tag commit"
+    value: ${{ steps.get-git-facts.outputs.current_release_tag_commit }}
+  current_release_tag:
+    description: "Current release tag"
+    value: ${{ steps.get-git-facts.outputs.current_release_tag }}
+  release_tag_equals_latest_commit:
+    description: "Release tag equals latest commit"
+    value: ${{ steps.get-git-facts.outputs.release_tag_equals_latest_commit }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout target repo
+      if: ${{ inputs.draft == 'false' }}
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repo }}
+        token: ${{ inputs.GH_TOKEN }}
+        ref: ${{ inputs.branch }}
+        fetch-depth: 0
+
+    - name: Get branch facts
+      id: get-git-facts
+      shell: bash
+      run: |
+        set -e
+        export branch=${{ inputs.branch }}
+        wget -q https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/${{ github.head_ref || github.ref_name }}/.github/scripts/git_facts.sh
+        chmod +x git_facts.sh
+        # Call twice for GHA workflow logs and to store in github output
+        ./git_facts.sh
+        ./git_facts.sh >> $GITHUB_OUTPUT
+
+    # Recheckout forge repo to fix side effects for clean up job
+    - uses: actions/checkout@v4
+      if: ${{ inputs.draft == 'false' }}
