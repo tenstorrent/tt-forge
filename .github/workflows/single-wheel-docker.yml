@@ -1,0 +1,125 @@
+name: Build Single Wheel Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild of Docker images even if they exist'
+        type: boolean
+        default: false
+      docker_tag:
+        description: 'Docker tag to build'
+        type: string
+        required: false
+        default: ''
+      wheel_tag:
+        description: 'Wheel tag to build'
+        type: string
+        required: false
+        default: ''
+      wheel_name:
+        description: 'Wheel name to build'
+        type: string
+        required: false
+        default: ''
+      action:
+        type: choice
+        description: "Action to perform. Run all or only actions for release"
+        options:
+        - all
+        - release
+      draft:
+        description: 'Draft release'
+        type: boolean
+        default: true
+
+permissions:
+  packages: write
+  checks: write
+
+jobs:
+
+  build-single-wheel-slim:
+    name: Build Single Wheel Docker Image ${inputs.wheel_name}
+    # runs-on: tt-beta-ubuntu-2204-large
+    # TODO We cant use tt-beta-ubuntu-2204-large until we whitelist pypi.eng.aws.tenstorrent.com on proxy
+    runs-on: ubuntu-latest
+    outputs:
+      docker-image: ${{ steps.build.outputs.docker-image }}
+      docker-image-harbor: ${{ steps.build.outputs.docker-image-harbor }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Set tags
+        id: docker-tag
+        shell: bash
+        run: |
+          source .version
+
+          # For Dispatch workflow calls
+          DOCKER_TAG=${{ inputs.docker_tag }}
+          WHL_VERSION=${{ inputs.wheel_tag }}
+
+          if [[ -z "${DOCKER_TAG}" && -z "${WHL_VERSION}" ]]; then
+            # For Nightly builds and testing
+            DOCKER_TAG="${VERSION}.dev$(date +'%Y%m%d')"
+            WHL_VERSION="${DOCKER_TAG}"
+            if [[ "${{ inputs.draft }}" == "true" ]]; then
+              DOCKER_TAG="draft.tt-forge.${DOCKER_TAG}"
+            fi
+          fi
+          echo "docker_tag=${DOCKER_TAG}"
+          echo "whl_version=${WHL_VERSION}"
+          echo "whl_version=${WHL_VERSION}" >> $GITHUB_OUTPUT
+          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build and push tt-forge-slim
+        shell: bash
+        id: build
+        run: |
+          IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/tt-forge-slim
+          DOCKER_TAG=${{ steps.docker-tag.outputs.docker_tag }}
+          WHL_VERSION=${{ steps.docker-tag.outputs.whl_version }}
+          # Check if image already exists and not forced to rebuild
+          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ github.event.inputs.force_rebuild }}" != "true" ]]; then
+            echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
+          else
+            echo "Building image $IMAGE_NAME:$DOCKER_TAG"
+            docker build -f .github/Dockerfile.single-wheel-slim \
+              --build-arg WHL_VERSION=$WHL_VERSION \
+              --build-arg WHL_NAME=$WHL_NAME \
+              -t $IMAGE_NAME:$DOCKER_TAG .
+            docker push $IMAGE_NAME:$DOCKER_TAG
+            echo "Docker image size:"
+            docker images --format "{{.Size}}" $IMAGE_NAME:$DOCKER_TAG
+            echo "Docker image layer sizes:"
+            docker history --no-trunc --format "Size: {{.Size}}\tCreated: {{.CreatedSince}}\tCommand: {{.CreatedBy}}" $IMAGE_NAME:$DOCKER_TAG
+          fi
+
+          # Add latest tag if on main
+          ON_MAIN=$(git branch --show-current | grep -q main && echo "true" || echo "false")
+          if [ "$ON_MAIN" == "true" ]; then
+            echo "Pushing latest tag for $IMAGE_NAME"
+            TAGS="--tag $IMAGE_NAME:latest --tag $IMAGE_NAME:$DOCKER_TAG"
+
+            if [ -n "$VERSION_TAG" ]; then
+              echo "Pushing version tag for $IMAGE_NAME"
+              TAGS="$TAGS --tag $IMAGE_NAME:$VERSION_TAG"
+            fi
+
+            docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG $TAGS
+          fi
+
+          echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
+          echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
