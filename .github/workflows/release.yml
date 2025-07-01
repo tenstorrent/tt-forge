@@ -1,0 +1,197 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      draft:
+        type: boolean
+        default: true
+        description: Put PR in draft mode for testing
+      repo:
+        type: string
+        description: 'Repo to release e.g tt-forge-fe'
+        required: true
+        default: ''
+      repo_short:
+        type: string
+        description: 'Repo short name'
+        required: true
+      release_type:
+        type: string
+        description: 'Release type'
+        required: true
+      overwrite_releases:
+        type: boolean
+        default: false
+        description: Overwrite releases
+      new_version_tag:
+        type: string
+        description: 'New version tag for wheel'
+        required: false
+      branch:
+        type: string
+        description: 'Branch to release e.g main'
+        required: false
+        default: ''
+      latest_branch_commit:
+        type: string
+        description: 'Latest branch commit'
+        required: false
+        default: ''
+      current_release_tag_commit:
+        type: string
+        description: 'Current release tag commit'
+        required: false
+        default: ''
+      override_release_fact_workflow:
+        type: string
+        description: 'Override release facts workflow'
+        required: false
+        default: ''
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+  actions: write
+
+jobs:
+
+  generate-seed:
+    outputs:
+      id: ${{ steps.random.outputs.id }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - uses: ./.github/actions/random
+      id: random
+      with:
+        draft: ${{ inputs.draft }}
+
+  build-release:
+    needs: generate-seed
+    name: "${{ inputs.draft && 'Draft' || '' }} Build Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
+    outputs:
+      release-artifacts-id: ${{ steps.build-release.outputs.release-artifacts-id }}
+      run-conclusion: ${{ steps.build-release.outputs.run-conclusion }}
+      check-tag: ${{ steps.check-tag.outputs.exists }}
+      target_commit: ${{ steps.build-release.outputs.target_commit }}
+
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/set-release-facts
+      id: set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        release_type: ${{ inputs.release_type }}
+        draft: ${{ inputs.draft }}
+        new_version_tag: ${{ inputs.new_version_tag }}
+        latest_branch_commit: ${{ inputs.latest_branch_commit }}
+
+    - uses: mukunku/tag-exists-action@v1.6.0
+      if: ${{ !inputs.overwrite_releases }}
+      id: check-tag
+      with:
+        tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+        repo: ${{ inputs.draft && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
+
+    - name: Build Release Artifacts
+      if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && steps.set-release-facts.outputs.event_name == 'workflow_dispatch') || steps.check-tag.outputs.exists == 'false' }}
+      id: build-release
+      uses: ./.github/actions/build-release
+      with:
+        draft: ${{ inputs.draft }}
+        repo: ${{ steps.set-release-facts.outputs.repo_full }}
+        release_type: ${{ inputs.release_type }}
+        branch: ${{ inputs.branch || 'main' }}
+        new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
+        latest_branch_commit: ${{ steps.set-release-facts.outputs.build_release_latest_branch_commit }}
+        current_release_tag_commit: ${{ steps.set-release-facts.outputs.current_release_tag_commit }}
+        unique_artifact_suffix: ${{ needs.generate-seed.outputs.id }}
+        override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
+
+  publish-release:
+    name: "${{ inputs.draft && 'Draft' || '' }} Publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
+    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
+    needs:
+      - build-release
+      - generate-seed
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/set-release-facts
+        id: set-release-facts
+        with:
+          repo: ${{ inputs.repo }}
+          release_type: ${{ inputs.release_type }}
+          draft: ${{ inputs.draft }}
+          new_version_tag: ${{ inputs.new_version_tag }}
+
+      - uses: ./.github/actions/publish-tenstorrent-pypi
+        # Skip Wheel PyPI upload in workflow test
+        if: ${{ !inputs.draft && '${{ github.ref }}' == 'refs/heads/main' }}
+        with:
+          release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
+          release-artifacts-name: build-release-${{ inputs.repo_short }}
+          release-artifacts-wheel-path: artifacts
+          role-to-assume: ${{ secrets.PYPI_ROLE }}
+          region: ${{ secrets.PYPI_REGION }}
+          bucket: ${{ secrets.PYPI_BUCKET }}
+          new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
+          repo: ${{ inputs.repo }}
+          overwrite_releases: ${{ inputs.overwrite_releases }}
+
+      - name: Log in to GitHub Container Registry
+        if: ${{ inputs.repo == 'tenstorrent/tt-forge'  }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - uses: tyriis/docker-image-tag-exists@v2.1.0
+        id: image_exists
+        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft && steps.image_exists.outputs.tag == 'not found' && '${{ github.ref }}' == 'refs/heads/main' }}
+        with:
+          registry: ghcr.io
+          repository: tenstorrent/tt-forge
+          tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
+
+      - uses: ./.github/actions/trigger-workflow
+        if: ${{ (inputs.repo == 'tenstorrent/tt-forge' || inputs.release_type == 'rc' || inputs.release_type == 'stable') && !inputs.draft && steps.image_exists.outputs.tag == 'not found' && '${{ github.ref }}' == 'refs/heads/main' }}
+        with:
+          workflow_name: 'Build TT-Forge Docker Images'
+          wait: true
+          json_params: '{ "docker_tag": "${{ steps.set-release-facts.outputs.gh_new_version_tag }}", "wheel_tag": "${{ steps.set-release-facts.outputs.build_release_tag }}", "action": "release", "draft": "${{ inputs.draft }}" }'
+
+      - uses: ./.github/actions/publish-github-release
+        with:
+          draft: ${{ inputs.draft }}
+          repo: ${{ steps.set-release-facts.outputs.repo_full }}
+          release_type: ${{ inputs.release_type }}
+          release_token: ${{ secrets.TT_FORGE_RELEASER }}
+          new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
+          target_commit: ${{ needs.build-release.outputs.target_commit }}
+          repo_short: ${{ inputs.repo_short }}
+          prerelease: ${{ inputs.prerelease || steps.set-release-facts.outputs.prerelease }}
+          release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
+          unique_artifact_suffix: ${{ needs.generate-seed.outputs.id }}
+          make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
+
+      - uses: ./.github/actions/push-tag
+        # Used for testing since draft release to do not create tags.
+        if: ${{ inputs.release_type != 'nightly' && inputs.draft }}
+        with:
+          repo: ${{ inputs.repo }}
+          draft: ${{ inputs.draft }}
+          GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+          new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
+          commit: ${{ inputs.latest_branch_commit }}

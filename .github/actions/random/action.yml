@@ -1,0 +1,26 @@
+name: "Random"
+description: "Create random id for testing"
+
+inputs:
+  draft:
+    description: "Draft mode"
+    required: true
+
+outputs:
+  id:
+    value: ${{ steps.random.outputs.id }}
+    description: "Random number"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create random id
+      id: random
+      shell: bash
+      run: |
+        # Keep empty for production runs
+        if [ "${{ inputs.draft }}" == "true" ]; then
+          id="$(date +%s)"
+        fi
+        echo "id=$id"
+        echo "id=$id" >> $GITHUB_OUTPUT

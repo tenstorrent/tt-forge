@@ -1,0 +1,31 @@
+name: "Publish GitHub Release"
+description: "Publish GitHub Release"
+
+inputs:
+  branch:
+    description: "Branch to add commit to"
+    required: true
+
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    - name: Create random test file
+      id: random_file
+      shell: bash
+      run: |
+        random="$RANDOM"
+        echo "$random" > "$random.txt"
+        echo "Created random test file: $random.txt"
+        echo "random_text_file=$random.txt" >> $GITHUB_OUTPUT
+        echo "id=$random" >> $GITHUB_OUTPUT
+    - name: Publish GitHub Release
+      uses: EndBug/add-and-commit@v9 # You can change this to use a specific version.
+      with:
+        new_branch: ${{ inputs.branch }}
+        add: ${{ steps.random_file.outputs.random_text_file }}
+        message: "Add random test file: ${{ steps.random_file.outputs.id }}"
+
+    # Recheckout forge repo to fix side effects for clean up job
+    - uses: actions/checkout@v4

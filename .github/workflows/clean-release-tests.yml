@@ -9,13 +9,10 @@ on:
     types:
       - completed
 
-env:
-  disable: true
 
 jobs:
   delete-drafts:
     runs-on: ubuntu-latest
-    if: ${{ env.disable == 'false' }}
     steps:
       - name: Wait for workflow run Test Release RC/Stable Lifecycle
         uses: ./.github/actions/wait-workflow
@@ -28,9 +25,12 @@ jobs:
       - name: Delete drafts releases
         uses: hugo19941994/delete-draft-releases@v1.0.0
         env:
-          GITHUB_TOKEN: ${{ inputs.gha-token || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
       - name: Delete draft-*-release-*.* branches
         uses: dawidd6/action-delete-branch@v3
         with:
-          github_token: ${{ github.token }}
+          github_token: ${{ secrets.TT_FORGE_RELEASER }}
           prefix: draft-*-release-*.*
+      - uses: fabriziocacicia/delete-tags-without-release-action@v0.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}

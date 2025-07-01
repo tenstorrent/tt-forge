@@ -1,0 +1,46 @@
+
+name: "Trigger workflow"
+description: "Trigger workflow"
+inputs:
+  workflow_name:
+    description: "Workflow name"
+    required: true
+  wait:
+    description: "Wait for workflow run to complete"
+    required: true
+    default: true
+  branch:
+    description: "Branch name"
+    required: false
+  json_params:
+    description: "Parameters to pass to workflow"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Trigger workflow
+      shell: bash
+      run: |
+        branch=${{ inputs.branch }}
+        if [ -z "$branch" ]; then
+          # Get the current branch name. Usefully for PRs and branches
+          branch=${{ github.head_ref || github.ref_name }}
+        fi
+        echo "Triggering workflow: ${{ inputs.workflow_name }} on branch $branch"
+        workflow_name="${{ inputs.workflow_name }}"
+        if [ -n "${{ inputs.json_params }}" ]; then
+          echo '${{ inputs.json_params }}' | gh workflow run "$workflow_name" --ref $branch  --json
+        else
+          gh workflow run "$workflow_name" --ref $branch
+        fi
+        echo "Workflow run in progress"
+        echo "branch=$branch" >> $GITHUB_OUTPUT
+
+
+    - name: Wait for workflow run
+      if: ${{ inputs.wait }}
+      uses: ./.github/actions/wait-workflow
+      with:
+        workflow_name: ${{ inputs.workflow_name }}
+        branch: ${{ steps.trigger-workflow.outputs.branch }}

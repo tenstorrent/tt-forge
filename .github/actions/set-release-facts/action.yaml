@@ -4,7 +4,7 @@ description: "Set Release Facts"
 inputs:
   repo:
     description: "Repo name"
-    required: true
+    required: false
   release_type:
     description: "Release type"
     required: false
@@ -14,6 +14,15 @@ inputs:
   new_version_tag:
     description: "New version tag for wheel"
     required: false
+    default: ''
+  branch:
+    description: "Branch name"
+    required: false
+    default: ''
+  latest_branch_commit:
+    description: "Latest branch commit"
+    required: false
+    default: ''
 outputs:
   workflow:
     description: "Workflow name"
@@ -36,6 +45,9 @@ outputs:
   new_version_tag:
     description: "New version tag for wheel"
     value: ${{ steps.set-manifest.outputs.new_version_tag }}
+  gh_new_version_tag:
+    description: "New version tag for GitHub release"
+    value: ${{ steps.set-manifest.outputs.gh_new_version_tag }}
   pip_wheel_names:
     description: "Names of pip wheels"
     value: ${{ steps.set-manifest.outputs.pip_wheel_names }}
@@ -45,6 +57,51 @@ outputs:
   skip_wheel_install:
     description: "Skip wheel install"
     value: ${{ steps.set-manifest.outputs.skip_wheel_install }}
+  all_repos:
+    description: "All repos that are allowed to release"
+    value: ${{ steps.set-manifest.outputs.all_repos }}
+  build_release_tag:
+    description: "Build release tag"
+    value: ${{ steps.set-manifest.outputs.build_release_tag }}
+  build_find_workflow_branch:
+    description: "Build find workflow branch"
+    value: ${{ steps.set-manifest.outputs.build_find_workflow_branch }}
+  workflow_allow_failed:
+    description: "Return run even if workflow has failed"
+    value: ${{ steps.set-manifest.outputs.workflow_allow_failed }}
+  build_release_latest_branch_commit:
+    description: "Build release latest branch commit"
+    value: ${{ steps.set-manifest.outputs.build_release_latest_branch_commit }}
+  major_version:
+    description: "Major version"
+    value: ${{ steps.set-manifest.outputs.major_version }}
+  minor_version:
+    description: "Minor version"
+    value: ${{ steps.set-manifest.outputs.minor_version }}
+  prerelease:
+    description: "Prerelease release"
+    value: ${{ steps.set-manifest.outputs.prerelease }}
+  repo_full:
+    description: "Repo name with full path"
+    value: ${{ steps.set-manifest.outputs.repo_full }}
+  draft:
+    description: "Draft release"
+    value: ${{ steps.set-manifest.outputs.draft }}
+  event_name:
+    description: "Event name"
+    value: ${{ steps.set-manifest.outputs.event_name }}
+  make_latest:
+    description: "Make release latest"
+    value: ${{ steps.set-manifest.outputs.make_latest }}
+  ignore_artifacts:
+    description: "Ignore artifacts"
+    value: ${{ steps.set-manifest.outputs.ignore_artifacts }}
+  skip_model_compatible_table:
+    description: "Skip model compatible table"
+    value: ${{ steps.set-manifest.outputs.skip_model_compatible_table }}
+  ignore_docker_instructions:
+    description: "Ignore docker instructions"
+    value: ${{ steps.set-manifest.outputs.ignore_docker_instructions }}
 
 runs:
   using: "composite"
@@ -54,9 +111,50 @@ runs:
       shell: bash
       run: |
         # Set release facts based on repo
+        set -e
+        source .version
 
-        # Globals
+        # All Repo Defaults
+
         skip_wheel_install="false"
+        repo="${{ inputs.repo }}"
+        repo_short="${repo#tenstorrent/}"
+        repo_full="tenstorrent/${repo_short}"
+        # List of all repos that are allowed to release. Make sure to update the conditional below
+        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-mlir tenstorrent/tt-xla tenstorrent/tt-forge'
+        workflow_allow_failed="false"
+        build_release_find_workflow_branch="${{ inputs.branch }}"
+        build_release_latest_branch_commit="${{ inputs.latest_branch_commit }}"
+        build_release_tag="${{ inputs.new_version_tag }}"
+        prerelease="true"
+        draft="${{ inputs.draft }}"
+        event_name="${{ github.event_name }}"
+        make_latest="false"
+        major_version=$MAJOR
+        minor_version=$MINOR
+        ignore_artifacts="false"
+        skip_model_compatible_table="false"
+        ignore_docker_instructions="false"
+
+        # Tag & Release Defaults
+
+        new_version_tag="${{ inputs.new_version_tag }}"
+
+        # RC is not mentioned here since the defaults are enough
+        if [[ "${{ inputs.release_type }}" == "stable" ]]; then
+          prerelease="false"
+          make_latest="true"
+        elif [[ "${{ inputs.release_type }}" == "nightly" ]]; then
+          new_version_tag="${VERSION}.dev$(date +"%Y%m%d")"
+          workflow_allow_failed="true"
+          build_release_find_workflow_branch="main"
+        fi
+
+        gh_new_version_tag="${new_version_tag}"
+        build_release_tag="${new_version_tag}"
+
+
+        # Repo Specific Defaults
 
         if [[ "${{ inputs.repo }}" =~ "tt-forge-fe" ]]; then
             workflow="On nightly"
@@ -78,12 +176,14 @@ runs:
             pip_wheel_names="tt-torch"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
             # NOTE: no nightly job current for tt-mlir keeping this here for future use
-            #workflow="On push"
+            workflow="On push"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
                 workflow="On push"
             fi
             artifact_download_glob='*ttmlir-wheel*'
             pip_wheel_names="ttmlir"
+            skip_model_compatible_table="true"
+            ignore_docker_instructions="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
@@ -92,45 +192,102 @@ runs:
             artifact_download_glob='*{xla-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
+            workflow="Daily Releaser"
+            ignore_artifacts="true"
             pip_wheel_deps_names="tt-torch tt_forge_fe tt_tvm pjrt-plugin-tt"
             pip_wheel_names="tt-forge"
             skip_wheel_install="true"
-        else
-            echo "Unknown repo: ${{ inputs.repo }}"
-            exit 1
+            skip_model_compatible_table="true"
+            ignore_docker_instructions="true"
         fi
 
-        repo_short="${{ inputs.repo }}"
-        repo_short="${repo_short#tenstorrent/}"
-        new_version_tag="${{ inputs.new_version_tag }}"
+
+        # Testing Overrides
+
+        # Different tags exist for e2e testing for draft releases/test workflow. This is to guard against overwriting releases
+        # We also can't use the draft style tag below since it won't work when we do a wheel re-version
+        # REF: https://packaging.python.org/en/latest/discussions/versioning/#valid-version-numbers
         if [[ "${{ inputs.draft }}" == "true" ]]; then
-            new_version_tag="draft-${repo_short}-${new_version_tag}"
+            prerelease="true"
+
+            # null out the commit to so e2e testing can pick up the arfiacts from the repo.
+            # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
+            build_release_latest_branch_commit=""
+
+            # build_release_tag is a sanitized version tag for build_release action.
+            # Tag sanitization only needs to happen for rc and stable release. See get-branches for more detail.
+
+            if [[ "${{ inputs.release_type }}" == "stable" ]]; then
+                new_version_tag="draft.${repo_short}.${new_version_tag}"
+                set +e
+                build_release_tag="$(echo "${new_version_tag}" | grep -oP '\d+\.\d+\.\d+')"
+                set -e
+            elif [[ "${{ inputs.release_type }}" == "rc" ]]; then
+                set +e
+                build_release_tag="$(echo "${new_version_tag}" | grep -oP '\d+\.\d+\.\d+rc\d+')"
+                set -e
+            else
+                build_release_tag="${new_version_tag}"
+            fi
+
+            gh_new_version_tag="draft.${repo_short}.${build_release_tag}"
         fi
 
-        echo "Using workflow: $workflow"
-        echo "Using artifact_download_glob: $artifact_download_glob"
-        echo "Using artifact_cleanup_file_glob: $artifact_cleanup_file_glob"
-        echo "Using workflow_result_in_job: $workflow_result_in_job"
-        echo "Using artifact_cleanup_folder_glob: $artifact_cleanup_folder_glob"
-        echo "Using workflow_allow_failed: $workflow_allow_failed"
-        echo "Using latest_branch_commit: $latest_branch_commit"
-        echo "Using new_version_tag: $new_version_tag"
-        echo "Using release_type: ${{ inputs.release_type }}"
-        echo "Using latest_branch_commit_date: $latest_branch_commit_date"
-        echo "Using second_latest_branch_commit_date: $second_latest_branch_commit_date"
-        echo "Using repo_short: $repo_short"
-        echo "Using pip_wheel_names: $pip_wheel_names"
-        echo "Using pip_wheel_deps_names: $pip_wheel_deps_names"
-        echo "Using skip_wheel_install: $skip_wheel_install"
+        echo "## Set Release Facts Outputs ##"
+        echo "workflow=$workflow"
+        echo "ignore_artifacts=$ignore_artifacts"
+        echo "event_name=$event_name"
+        echo "artifact_download_glob=$artifact_download_glob"
+        echo "artifact_cleanup_file_glob=$artifact_cleanup_file_glob"
+        echo "workflow_result_in_job=$workflow_result_in_job"
+        echo "artifact_cleanup_folder_glob=$artifact_cleanup_folder_glob"
+        echo "workflow_allow_failed=$workflow_allow_failed"
+        echo "new_version_tag=$new_version_tag"
+        echo "gh_new_version_tag=$gh_new_version_tag"
+        echo "release_type=${{ inputs.release_type }}"
+        echo "repo_short=$repo_short"
+        echo "repo_full=$repo_full"
+        echo "repo=$repo"
+        echo "pip_wheel_names=$pip_wheel_names"
+        echo "pip_wheel_deps_names=$pip_wheel_deps_names"
+        echo "skip_wheel_install=$skip_wheel_install"
+        echo "all_repos=$all_repos"
+        echo "build_release_tag=$build_release_tag"
+        echo "build_release_find_workflow_branch=$build_release_find_workflow_branch"
+        echo "build_release_latest_branch_commit=$build_release_latest_branch_commit"
+        echo "major_version=$major_version"
+        echo "minor_version=$minor_version"
+        echo "prerelease=$prerelease"
+        echo "draft=$draft"
+        echo "make_latest=$make_latest"
+        echo "skip_model_compatible_table=$skip_model_compatible_table"
+        echo "ignore_docker_instructions=$ignore_docker_instructions"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
+        echo "ignore_artifacts=$ignore_artifacts" >> $GITHUB_OUTPUT
+        echo "event_name=$event_name" >> $GITHUB_OUTPUT
         echo "artifact_download_glob=$artifact_download_glob" >> $GITHUB_OUTPUT
         echo "artifact_cleanup_file_glob=$artifact_cleanup_file_glob" >> $GITHUB_OUTPUT
         echo "artifact_cleanup_folder_glob=$artifact_cleanup_folder_glob" >> $GITHUB_OUTPUT
         echo "workflow_result_in_job=$workflow_result_in_job" >> $GITHUB_OUTPUT
         echo "repo_short=$repo_short" >> $GITHUB_OUTPUT
+        echo "repo_full=$repo_full" >> $GITHUB_OUTPUT
         echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
+        echo "gh_new_version_tag=$gh_new_version_tag" >> $GITHUB_OUTPUT
         echo "pip_wheel_names=$pip_wheel_names" >> $GITHUB_OUTPUT
         echo "pip_wheel_deps_names=$pip_wheel_deps_names" >> $GITHUB_OUTPUT
         echo "skip_wheel_install=$skip_wheel_install" >> $GITHUB_OUTPUT
+        echo "all_repos=$all_repos" >> $GITHUB_OUTPUT
+        echo "build_release_tag=$build_release_tag" >> $GITHUB_OUTPUT
+        echo "build_release_find_workflow_branch=$build_release_find_workflow_branch" >> $GITHUB_OUTPUT
+        echo "workflow_allow_failed=$workflow_allow_failed" >> $GITHUB_OUTPUT
+        echo "major_version=$major_version" >> $GITHUB_OUTPUT
+        echo "minor_version=$minor_version" >> $GITHUB_OUTPUT
+        echo "prerelease=$prerelease" >> $GITHUB_OUTPUT
+        echo "draft=$draft" >> $GITHUB_OUTPUT
+        echo "build_release_find_workflow_branch=$build_release_find_workflow_branch" >> $GITHUB_OUTPUT
+        echo "build_release_latest_branch_commit=$build_release_latest_branch_commit" >> $GITHUB_OUTPUT
+        echo "make_latest=$make_latest" >> $GITHUB_OUTPUT
+        echo "skip_model_compatible_table=$skip_model_compatible_table" >> $GITHUB_OUTPUT
+        echo "ignore_docker_instructions=$ignore_docker_instructions" >> $GITHUB_OUTPUT

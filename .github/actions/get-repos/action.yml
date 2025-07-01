@@ -15,13 +15,14 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - uses: ./.github/actions/set-release-facts
+      id: set-release-facts
     - name: Get Repos
       shell: bash
       id: get-repos
       run: |
         # Get all repos that are allowed to release
-        # NOTE: make sure to update .github/actions/set-release-facts/action.yaml when adding new repos
-        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-mlir tenstorrent/tt-xla tenstorrent/tt-forge'
+        all_repos="${{ steps.set-release-facts.outputs.all_repos }}"
 
         # Initialize empty results array
         json_results='[]'
@@ -43,7 +44,8 @@ runs:
           echo "Filtering for repo: ${{ inputs.repo }}"
           # Get all repos by filter
           for repo in $all_repos; do
-            if [[ "$repo" =~ "${{ inputs.repo }}" ]]; then
+            repo_short="${repo#tenstorrent/}"
+            if [[ "$repo_short" == "${{ inputs.repo }}" ]]; then
               add_repo "$repo"
             fi
           done

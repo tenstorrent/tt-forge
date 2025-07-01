@@ -32,11 +32,21 @@ runs:
       run: |
         NEW_VERSION_TAG=${{ inputs.new_version_tag }}
         if [[ ${{ inputs.draft }} == 'true' ]]; then
-          if [[ ${{ inputs.release_type }} == 'nightly' ]]; then
-            # Take the last nightly release tag. Used for draft and workflow testing
-            NEW_VERSION_TAG=$(curl -s https://api.github.com/repos/tenstorrent/tt-mlir/releases | jq -r 'map(select(.name | contains("tt-mlir nightly"))) | first  | .tag_name')
-          fi
+          # Take the last nightly release tag. Used for draft and workflow testing
+          n=0
+          until [ "$n" -ge 5 ]
+          do
+            set +e
+            NEW_VERSION_TAG=$(curl -s https://api.github.com/repos/tenstorrent/tt-mlir/releases | jq -r 'map(select(.name | contains(".dev"))) | first  | .tag_name')
+            set -e
+            if [[ -n "$NEW_VERSION_TAG" ]]; then
+              break
+            fi
+            n=$((n+1))
+            sleep 1
+          done
         fi
+        echo "NEW_VERSION_TAG=$NEW_VERSION_TAG"
         echo "NEW_VERSION_TAG=$NEW_VERSION_TAG" >> $GITHUB_OUTPUT
 
     - name: Wait for pypi frontend wheels to be available on tt-pypi
