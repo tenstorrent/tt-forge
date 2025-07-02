@@ -134,6 +134,7 @@ runs:
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
         pip_wheel_names: ${{ steps.set-release-facts.outputs.pip_wheel_names }}
         skip_docker_build: ${{ steps.set-release-facts.outputs.skip_docker_build }}
+        make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
 
     - name: doc helper
       shell: bash
