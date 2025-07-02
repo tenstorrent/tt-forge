@@ -137,7 +137,7 @@ jobs:
 
       - uses: ./.github/actions/publish-tenstorrent-pypi
         # Skip Wheel PyPI upload in workflow test
-        if: ${{ !inputs.draft && '${{ github.ref }}' == 'refs/heads/main' }}
+        if: ${{ !inputs.draft && '${{ github.head_ref || github.ref_name }}' == 'main' }}
         with:
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
           release-artifacts-name: build-release-${{ inputs.repo_short }}
