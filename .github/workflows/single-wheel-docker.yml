@@ -93,7 +93,7 @@ jobs:
         shell: bash
         id: build
         run: |
-          IMAGE_NAME=ghcr.io/tenstorrent/${{ inputs.repo_short }}/${{ inputs.repo_short }}-slim
+          IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/${{ inputs.repo_short }}-slim
           DOCKER_TAG=${{ steps.docker-tag.outputs.docker_tag }}
           WHL_VERSION=${{ steps.docker-tag.outputs.whl_version }}
           WHL_NAME=${{ inputs.wheel_name }}
