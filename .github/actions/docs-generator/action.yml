@@ -154,8 +154,8 @@ runs:
         echo "found_files=$found_files"
         echo "download_list_files=$download_list_files"
         echo "pip_install_instructions=$pip_install_instructions"
-        docker_instructions="ghcr.io/tenstorrent/tt-forge/${{ inputs.repo_short}}-slim:${{ inputs.new_version_tag }}<br>"
-        docker_instructions+="More detailed instructions can be found in the [Getting Started](https://docs.tenstorrent.com/${{ inputs.repo_short }}) docker section<br>"
+        docker_instructions="ghcr.io/tenstorrent/${{ inputs.repo_short }}-slim:${{ inputs.new_version_tag }}<br>"
+        docker_instructions+="<br>More detailed instructions can be found in the [Getting Started](https://docs.tenstorrent.com/${{ inputs.repo_short }}) docker section<br>"
         echo "docker_instructions=$docker_instructions"
 
         if [[ "${{ inputs.skip_docker_build }}" == "true" ]]; then
