@@ -64,6 +64,9 @@ outputs:
   current_release_tag_commit:
     description: "Current release tag commit"
     value: ${{ steps.get-release-branch.outputs.current_release_tag_commit }}
+  branch_exists:
+    description: "Branch exists"
+    value: ${{ steps.get-release-branch.outputs.branch_exists }}
 
 runs:
   using: "composite"
@@ -125,19 +128,26 @@ runs:
         # Set export commit sha and branch for git_facts.sh
         export branch="${{ steps.create-rc-branch.outputs.branch_name }}"
         tag_name="${{ steps.create-rc-branch.outputs.tag_name }}"
+        branch_exists=false
+
 
         check_branch=$(git ls-remote origin $branch)
 
         if [[ -z "$check_branch" ]]; then
             git checkout -b $branch ${{ steps.find_workflow.outputs.run-commit-sha }}
             git push origin $branch
+        else
+            echo "Release branch: $branch already exists. If you need to recreate a new branch for RC release, please delete the existing branch: ${branch}, the tag: ${tag_name}, and the GH release: ${tag_name} on repo: ${{ inputs.repo }}. Then start this process again"
+            branch_exists=true
         fi
 
         wget -q https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/${{ github.head_ref || github.ref_name }}/.github/scripts/git_facts.sh
         chmod +x git_facts.sh
-        ls -al
         # Call twice for GHA workflow logs and to store in github output
         ./git_facts.sh
+        echo "branch_exists=$branch_exists"
+        echo "tag_name=$tag_name"
+        echo "branch_exists=$branch_exists" >> $GITHUB_OUTPUT
         ./git_facts.sh >> $GITHUB_OUTPUT
 
 
