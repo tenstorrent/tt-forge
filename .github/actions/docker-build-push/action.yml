@@ -1,0 +1,73 @@
+name: "Build Single Wheel Docker Image"
+description: "Build Single Wheel Docker Image"
+inputs:
+  image_name:
+    description: 'Image name'
+    type: string
+    required: true
+  docker_tag:
+    description: 'Docker tag to build'
+    type: string
+    required: true
+    default: ''
+  repo_short:
+    description: 'Repo short name'
+    type: string
+    required: true
+    default: ''
+  make_latest:
+    description: 'Make latest tag'
+    type: boolean
+    default: false
+  force_rebuild:
+    description: 'Force rebuild of Docker images even if they exist'
+    type: boolean
+    default: false
+  build_args:
+    description: 'Build arguments for Docker image'
+    type: string
+    required: false
+    default: ''
+  dockerfile:
+    description: 'Dockerfile to use'
+    type: string
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push ${{ inputs.image_name }} ${{ inputs.docker_tag }}
+      shell: bash
+      id: build
+      run: |
+          IMAGE_NAME=${{ inputs.image_name }}
+          DOCKER_TAG=${{ inputs.docker_tag }}
+          echo "IMAGE_NAME=$IMAGE_NAME"
+          echo "DOCKER_TAG=$DOCKER_TAG"
+
+          # Check if image already exists and not forced to rebuild
+          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ inputs.force_rebuild }}" != "true" ]]; then
+            echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
+          else
+            echo "Building image $IMAGE_NAME:$DOCKER_TAG"
+            docker build -f ${{ inputs.dockerfile }} \
+              ${{ inputs.build_args }} \
+              -t $IMAGE_NAME:$DOCKER_TAG .
+            docker push $IMAGE_NAME:$DOCKER_TAG
+            echo "Docker image size:"
+            docker images --format "{{.Size}}" $IMAGE_NAME:$DOCKER_TAG
+            echo "Docker image layer sizes:"
+            docker history --no-trunc --format "Size: {{.Size}}\tCreated: {{.CreatedSince}}\tCommand: {{.CreatedBy}}" $IMAGE_NAME:$DOCKER_TAG
+          fi
+
+          TAGS="--tag $IMAGE_NAME:$DOCKER_TAG"
+          if [[ "${{ inputs.make_latest }}" == "true" ]]; then
+            TAGS=+" --tag $IMAGE_NAME:latest"
+          fi
+          echo "TAGS=${TAGS}"
+          set -x
+          docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG $TAGS

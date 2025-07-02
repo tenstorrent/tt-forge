@@ -38,8 +38,8 @@ inputs:
     description: "Names of pip wheels"
     required: true
     type: string
-  ignore_docker_instructions:
-    description: "Ignore docker instructions"
+  skip_docker_build:
+    description: "Skip docker build instructions"
     required: false
     type: boolean
 
@@ -158,7 +158,7 @@ runs:
         docker_instructions+="More detailed instructions can be found in the [Getting Started](https://docs.tenstorrent.com/${{ inputs.repo_short }}) docker section<br>"
         echo "docker_instructions=$docker_instructions"
 
-        if [[ "${{ inputs.ignore_docker_instructions }}" == "true" ]]; then
+        if [[ "${{ inputs.skip_docker_build }}" == "true" ]]; then
         cat <<- EOF >> "$readme_path/readme"
         :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo_short }})
         #### Install via pip

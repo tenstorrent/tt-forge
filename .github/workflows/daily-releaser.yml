@@ -15,8 +15,9 @@ on:
         description: Delete drafts
       repo:
         type: string
-        description: 'Repo to release e.g tt-forge-fe'
-        required: true
+        description: 'Repo to release e.g tt-forge-fe. Default to all repos'
+        required: false
+        default: ''
       overwrite_releases:
         type: boolean
         default: false
@@ -47,6 +48,8 @@ permissions:
   id-token: write
   contents: write
   actions: write
+  packages: write
+  attestations: write
 
 jobs:
 

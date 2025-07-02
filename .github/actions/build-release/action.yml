@@ -133,7 +133,7 @@ runs:
         minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
         pip_wheel_names: ${{ steps.set-release-facts.outputs.pip_wheel_names }}
-        ignore_docker_instructions: ${{ steps.set-release-facts.outputs.ignore_docker_instructions }}
+        skip_docker_build: ${{ steps.set-release-facts.outputs.skip_docker_build }}
 
     - name: doc helper
       shell: bash

@@ -7,30 +7,19 @@ on:
         description: 'Force rebuild of Docker images even if they exist'
         type: boolean
         default: false
-      docker_tag:
-        description: 'Docker tag to build'
+  workflow_call:
+    inputs:
+      version_tag:
+        description: 'Release version tag'
         type: string
         required: false
         default: ''
-      wheel_tag:
-        description: 'Wheel tag to build'
-        type: string
-        required: false
-        default: ''
-      action:
-        type: choice
-        description: "Action to perform. Run all or only actions for release"
-        options:
-        - all
-        - release
-      draft:
-        description: 'Draft release'
-        type: boolean
-        default: true
+
 
 permissions:
   packages: write
   checks: write
+  attestations: write
 
 jobs:
 
@@ -56,43 +45,26 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ github.token }}
 
-      - name: Set tags
-        id: docker-tag
+      - name: Set daily tag
         shell: bash
         run: |
-          source .version
-
-          # For Dispatch workflow calls
-          DOCKER_TAG=${{ inputs.docker_tag }}
-          WHL_VERSION=${{ inputs.wheel_tag }}
-
-          if [[ -z "${DOCKER_TAG}" && -z "${WHL_VERSION}" ]]; then
-            # For Nightly builds and testing
-            DOCKER_TAG="${VERSION}.dev$(date +'%Y%m%d')"
-            WHL_VERSION="${DOCKER_TAG}"
-            if [[ "${{ inputs.draft }}" == "true" ]]; then
-              DOCKER_TAG="draft.tt-forge.${DOCKER_TAG}"
-            fi
-          fi
-          echo "docker_tag=${DOCKER_TAG}"
-          echo "whl_version=${WHL_VERSION}"
-          echo "whl_version=${WHL_VERSION}" >> $GITHUB_OUTPUT
-          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+          DAILY_TAG=dev$(date +'%Y%m%d')
+          echo "daily_tag=${DAILY_TAG}" >> $GITHUB_ENV
 
       - name: Build and push tt-forge-slim
         shell: bash
         id: build
+        env:
+          VERSION_TAG: ${{ inputs.version_tag }}
         run: |
           IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/tt-forge-slim
-          DOCKER_TAG=${{ steps.docker-tag.outputs.docker_tag }}
-          WHL_VERSION=${{ steps.docker-tag.outputs.whl_version }}
+          DOCKER_TAG=${{ env.daily_tag }}
           # Check if image already exists and not forced to rebuild
           if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ github.event.inputs.force_rebuild }}" != "true" ]]; then
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
           else
             echo "Building image $IMAGE_NAME:$DOCKER_TAG"
             docker build -f .github/Dockerfile.tt-forge-slim \
-              --build-arg WHL_VERSION=$WHL_VERSION \
               -t $IMAGE_NAME:$DOCKER_TAG .
             docker push $IMAGE_NAME:$DOCKER_TAG
             echo "Docker image size:"
@@ -119,8 +91,6 @@ jobs:
           echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
 
   basic-test-tt-forge-slim:
-    # Temporarily disabled until after stable release. Please reenable after 0.1.0 is released
-    if: ${{ inputs.action == 'all' }}
     needs:
       - build-tt-forge-slim
     uses: ./.github/workflows/basic-tests.yml
@@ -128,7 +98,6 @@ jobs:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
 
   demo-test-tt-forge-slim:
-    if: ${{ inputs.action == 'all' }}
     needs:
       - build-tt-forge-slim
       - basic-test-tt-forge-slim
@@ -137,7 +106,6 @@ jobs:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
 
   perf-test-tt-forge-slim:
-    if: ${{ inputs.action == 'all' }}
     needs:
       - build-tt-forge-slim
       - basic-test-tt-forge-slim
