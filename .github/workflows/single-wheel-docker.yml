@@ -22,6 +22,11 @@ on:
         type: string
         required: false
         default: ''
+      repo_short:
+        description: 'Repo to release e.g tt-forge-fe'
+        type: string
+        required: true
+        default: ''
       action:
         type: choice
         description: "Action to perform. Run all or only actions for release"
@@ -88,9 +93,10 @@ jobs:
         shell: bash
         id: build
         run: |
-          IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/tt-forge-slim
+          IMAGE_NAME=ghcr.io/tenstorrent/tt-forge/${{ inputs.repo_short }}-slim
           DOCKER_TAG=${{ steps.docker-tag.outputs.docker_tag }}
           WHL_VERSION=${{ steps.docker-tag.outputs.whl_version }}
+          WHL_NAME=${{ inputs.wheel_name }}
           # Check if image already exists and not forced to rebuild
           if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ github.event.inputs.force_rebuild }}" != "true" ]]; then
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
