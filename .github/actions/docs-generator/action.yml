@@ -42,6 +42,10 @@ inputs:
     description: "Skip docker build instructions"
     required: false
     type: boolean
+  make_latest:
+    description: "Make latest"
+    required: false
+    type: boolean
 
 runs:
   using: "composite"
@@ -145,7 +149,11 @@ runs:
         pip_install_instructions=""
         pip_wheel_names="${{ inputs.pip_wheel_names }}"
         for wheel_name in $pip_wheel_names; do
-            pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
+            if [[ "${{ inputs.make_latest }}" == "true" ]]; then
+                pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
+            else
+                pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
+            fi
         done
 
         found_files=$(find ${{ github.workspace }}/release/artifacts -type f -exec basename {} \;)
