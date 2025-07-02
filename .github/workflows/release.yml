@@ -180,7 +180,7 @@ jobs:
         with:
           workflow_name: 'Build Single Wheel Docker Image'
           wait: true
-          json_params: '{ "docker_tag": "${{ steps.set-release-facts.outputs.gh_new_version_tag }}", "wheel_tag": "${{ steps.set-release-facts.outputs.build_release_tag }}", "action": "release", "draft": "${{ inputs.draft }}", "wheel_name": "${{ steps.set-release-facts.outputs.pip_wheel_names }}" }'
+          json_params: '{ "docker_tag": "${{ steps.set-release-facts.outputs.gh_new_version_tag }}", "wheel_tag": "${{ steps.set-release-facts.outputs.build_release_tag }}", "action": "release", "draft": "${{ inputs.draft }}", "wheel_name": "${{ steps.set-release-facts.outputs.pip_wheel_names }}", "repo_short": "${{ steps.set-release-facts.outputs.repo_short }}" }'
 
       - uses: ./.github/actions/publish-github-release
         with:
