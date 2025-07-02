@@ -158,17 +158,16 @@ jobs:
           password: ${{ github.token }}
 
       - name: Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}
-        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
-        #if: ${{  !inputs.draft && steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        if: ${{  !inputs.draft && steps.set-release-facts.outputs.skip_docker_build == 'false' }}
         uses: ./.github/actions/docker-build-push
         with:
           # TODO: Need to expand the permissions of secrets.TT_FORGE_RELEASER to publish image under frontend repos
-          image_name: "ghcr.io/tenstorrent/tt-forge/${{ steps.set-release-facts.outputs.repo_short }}-slim"
+          image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
           docker_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
           make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
           force_rebuild: ${{ inputs.overwrite_releases }}
           dockerfile: ".github/Dockerfile.single-wheel-slim"
-          build_args: "--build-arg WHL_VERSION=${{ steps.set-release-facts.outputs.build_release_tag }} --build-arg WHL_NAME='${{ steps.set-release-facts.outputs.pip_wheel_names }}' --build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }}"
+          build_args: "--build-arg WHL_VERSION=${{ steps.set-release-facts.outputs.build_release_tag }} --build-arg PIP_WHEEL_NAMES='${{ steps.set-release-facts.outputs.pip_wheel_names }}' --build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }}"
 
       - uses: ./.github/actions/publish-github-release
         with:
