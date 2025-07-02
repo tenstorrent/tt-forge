@@ -4,6 +4,11 @@ SHELL ["/bin/bash", "-c"]
 
 ARG WHL_VERSION
 ARG WHL_NAME
+ARG REPO_SHORT
+
+LABEL org.opencontainers.image.source=https://github.com/tenstorrent/${REPO_SHORT}
+LABEL org.opencontainers.image.description=${REPO_SHORT}
+LABEL org.opencontainers.image.licenses=Apache-2.0
 
 # Install system tools
 RUN apt-get update && \

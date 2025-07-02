@@ -22,6 +22,8 @@ permissions:
   id-token: write
   contents: write
   actions: write
+  packages: write
+  attestations: write
 
 jobs:
   get-release-branches:

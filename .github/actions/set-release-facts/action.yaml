@@ -102,6 +102,9 @@ outputs:
   ignore_docker_instructions:
     description: "Ignore docker instructions"
     value: ${{ steps.set-manifest.outputs.ignore_docker_instructions }}
+  skip_docker_build:
+    description: "Skip docker build"
+    value: ${{ steps.set-manifest.outputs.skip_docker_build }}
 
 runs:
   using: "composite"
@@ -134,7 +137,7 @@ runs:
         minor_version=$MINOR
         ignore_artifacts="false"
         skip_model_compatible_table="false"
-        ignore_docker_instructions="false"
+        skip_docker_build="false"
 
         # Tag & Release Defaults
 
@@ -183,7 +186,6 @@ runs:
             artifact_download_glob='*ttmlir-wheel*'
             pip_wheel_names="ttmlir"
             skip_model_compatible_table="true"
-            ignore_docker_instructions="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
@@ -198,7 +200,7 @@ runs:
             pip_wheel_names="tt-forge"
             skip_wheel_install="true"
             skip_model_compatible_table="true"
-            ignore_docker_instructions="true"
+            skip_docker_build="true"
         fi
 
 
@@ -262,6 +264,7 @@ runs:
         echo "make_latest=$make_latest"
         echo "skip_model_compatible_table=$skip_model_compatible_table"
         echo "ignore_docker_instructions=$ignore_docker_instructions"
+        echo "skip_docker_build=$skip_docker_build"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -291,3 +294,4 @@ runs:
         echo "make_latest=$make_latest" >> $GITHUB_OUTPUT
         echo "skip_model_compatible_table=$skip_model_compatible_table" >> $GITHUB_OUTPUT
         echo "ignore_docker_instructions=$ignore_docker_instructions" >> $GITHUB_OUTPUT
+        echo "skip_docker_build=$skip_docker_build" >> $GITHUB_OUTPUT

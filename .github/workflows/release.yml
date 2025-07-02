@@ -54,6 +54,8 @@ permissions:
   id-token: write
   contents: write
   actions: write
+  packages: write
+  attestations: write
 
 jobs:
 
@@ -121,8 +123,6 @@ jobs:
       - build-release
       - generate-seed
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -155,23 +155,20 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.TT_FORGE_RELEASER }}
+          password: ${{ github.token }}
 
-      - uses: tyriis/docker-image-tag-exists@v2.1.0
-        id: image_exists
-        if: ${{ !inputs.draft }}
+      - name: Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        #if: ${{  !inputs.draft && steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        uses: ./.github/actions/docker-build-push
         with:
-          registry: ghcr.io
-          repository: tenstorrent/tt-forge
-          tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
-
-      - name: Trigger Single Wheel Image Build
-        uses: ./.github/actions/trigger-workflow
-        if: ${{ !inputs.draft && steps.image_exists.outputs.tag == 'not found' }}
-        with:
-          workflow_name: 'Build Single Wheel Docker Image'
-          wait: true
-          json_params: '{ "docker_tag": "${{ steps.set-release-facts.outputs.gh_new_version_tag }}", "wheel_tag": "${{ steps.set-release-facts.outputs.build_release_tag }}", "action": "release", "draft": "${{ inputs.draft }}", "wheel_name": "${{ steps.set-release-facts.outputs.pip_wheel_names }}", "repo_short": "${{ steps.set-release-facts.outputs.repo_short }}" }'
+          # TODO: Need to expand the permissions of secrets.TT_FORGE_RELEASER to publish image under frontend repos
+          image_name: "ghcr.io/tenstorrent/tt-forge/${{ steps.set-release-facts.outputs.repo_short }}-slim"
+          docker_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
+          make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
+          force_rebuild: ${{ inputs.overwrite_releases }}
+          dockerfile: ".github/Dockerfile.single-wheel-slim"
+          build_args: "--build-arg WHL_VERSION=${{ steps.set-release-facts.outputs.build_release_tag }} --build-arg WHL_NAME='${{ steps.set-release-facts.outputs.pip_wheel_names }}' --build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }}"
 
       - uses: ./.github/actions/publish-github-release
         with:
