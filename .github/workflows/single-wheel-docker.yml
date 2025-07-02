@@ -75,7 +75,6 @@ jobs:
           # For Dispatch workflow calls
           DOCKER_TAG=${{ inputs.docker_tag }}
           WHL_VERSION=${{ inputs.wheel_tag }}
-          WHL_NAME=${{ inputs.wheel_name }}
 
           if [[ -z "${DOCKER_TAG}" && -z "${WHL_VERSION}" ]]; then
             # For Nightly builds and testing
@@ -97,6 +96,7 @@ jobs:
           IMAGE_NAME=ghcr.io/tenstorrent/${{ inputs.repo_short }}/${{ inputs.repo_short }}-slim
           DOCKER_TAG=${{ steps.docker-tag.outputs.docker_tag }}
           WHL_VERSION=${{ steps.docker-tag.outputs.whl_version }}
+          WHL_NAME=${{ inputs.wheel_name }}
           # Check if image already exists and not forced to rebuild
           if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ github.event.inputs.force_rebuild }}" != "true" ]]; then
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
