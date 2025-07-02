@@ -52,7 +52,7 @@ WORKDIR /home/forge
 USER forge
 COPY --chmod=0755 .github/scripts/install_wheels.sh .
 
-# Install all wheels 
+# Install all wheels
 RUN PIP_WHEEL_NAMES="$PIP_WHEEL_NAMES" WHL_VERSION="$WHL_VERSION" ./install_wheels.sh && rm -f install_wheels.sh
 
 CMD ["/bin/bash"]
