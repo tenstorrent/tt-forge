@@ -79,6 +79,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
           sparse-checkout: |
+            .github/
             benchmark/
             pytest.ini
             conftest.py
