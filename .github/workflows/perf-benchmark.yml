@@ -7,7 +7,7 @@ on:
         description: "Docker image used in tests"
         required: false
         type: string
-        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+        default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
       project:
         description: "Project where to find new version of wheel"
         required: false
@@ -69,7 +69,7 @@ jobs:
           { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "",                             bs: 8,  lp: 32, df: 'default',  ts: 'na', pyreq: "loguru requests transformers datasets torchvision pytest ultralytics", libreq: "libgl1-mesa-glx libglib2.0-0" },
           # { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "",                             bs: 1,  lp: 32, df: 'default',  ts: 'na', pyreq: "pytest tqdm loguru requests transformers datasets flax torch" },
         ]
-    runs-on: ubuntu-latest
+    runs-on: tt-beta-ubuntu-2204-n150-large-stable
       # - ${{ matrix.build.runs-on }}
       # - in-service
 
