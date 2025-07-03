@@ -83,6 +83,7 @@ jobs:
       latest_branch_commit: ${{ steps.create-rc-branch.outputs.latest_branch_commit }}
       current_release_tag_commit: ${{ steps.create-rc-branch.outputs.current_release_tag_commit }}
       repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
+      branch_exists: ${{ steps.create-rc-branch.outputs.branch_exists }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
