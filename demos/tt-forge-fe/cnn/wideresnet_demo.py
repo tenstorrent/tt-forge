@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# HRNet Demo Script
+# Wideresnet Demo Script
 
 import forge
-from third_party.tt_forge_models.hrnet.pytorch import ModelLoader
+from third_party.tt_forge_models.wide_resnet.pytorch import ModelLoader
 
 # Load model and input
 loader = ModelLoader()

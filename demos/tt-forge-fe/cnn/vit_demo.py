@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# HRNet Demo Script
+# VIT Demo Script
 
 import forge
-from third_party.tt_forge_models.hrnet.pytorch import ModelLoader
+from third_party.tt_forge_models.vit.pytorch import ModelLoader
 
 # Load model and input
 loader = ModelLoader()
@@ -18,4 +18,4 @@ compiled_model = forge.compile(model, sample_inputs=[inputs])
 output = compiled_model(inputs)
 
 # Post-process the output
-loader.print_cls_results(output)
+loader.post_processing(output)
