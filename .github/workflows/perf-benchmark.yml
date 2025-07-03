@@ -85,7 +85,7 @@ jobs:
             conftest.py
             .test_durations
           fetch-depth: 1
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
 
     - name: Install system and python dependencies
       shell: bash
