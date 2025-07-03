@@ -39,14 +39,14 @@ jobs:
   run-perf-benchmarks:
     container:
       image: ${{ inputs.docker-image }}
-      # options: --device /dev/tenstorrent --user root
-      # volumes:
-      #   - /dev/hugepages:/dev/hugepages
-      #   - /dev/hugepages-1G:/dev/hugepages-1G
-      #   - /etc/udev/rules.d:/etc/udev/rules.d
-      #   - /lib/modules:/lib/modules
-      #   - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
-      #   - /mnt/dockercache:/mnt/dockercache
+      options: --device /dev/tenstorrent --user root
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+        - /mnt/dockercache:/mnt/dockercache
 
     # tt-torch reqs are not needed by tt-torch, but rather by benchmarking infra, should be moved elsewhere: https://github.com/tenstorrent/tt-forge/issues/177
     strategy:
@@ -69,9 +69,9 @@ jobs:
           { runs-on: "n150", project: "tt-torch",    name: "resnet",            dir: "",                             bs: 8,  lp: 32, df: 'default',  ts: 'na', pyreq: "loguru requests transformers datasets torchvision pytest ultralytics", libreq: "libgl1-mesa-glx libglib2.0-0" },
           # { runs-on: "n150", project: "tt-xla",      name: "resnet",            dir: "",                             bs: 1,  lp: 32, df: 'default',  ts: 'na', pyreq: "pytest tqdm loguru requests transformers datasets flax torch" },
         ]
-    runs-on: ubuntu-latest
-      # - ${{ matrix.build.runs-on }}
-      # - in-service
+    runs-on:
+      - ${{ matrix.build.runs-on }}
+      - in-service
 
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
