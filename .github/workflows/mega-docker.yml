@@ -7,13 +7,8 @@ on:
         description: 'Force rebuild of Docker images even if they exist'
         type: boolean
         default: false
-  workflow_call:
-    inputs:
-      version_tag:
-        description: 'Release version tag'
-        type: string
-        required: false
-        default: ''
+  schedule:
+    - cron: '0 7 * * *'
 
 
 permissions:
