@@ -8,14 +8,6 @@ on:
         required: false
         type: string
         default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
-      project:
-        description: "Project where to find new version of wheel"
-        required: false
-        type: string
-      run_id:
-        description: "Workflow ID to use for the new version of wheel"
-        required: false
-        type: string
   workflow_call:
     inputs:
       docker-image:
