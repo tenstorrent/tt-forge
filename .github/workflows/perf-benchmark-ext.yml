@@ -1,0 +1,14 @@
+name: Performance Benchmark External Trigger
+
+on:
+  repository_dispatch:
+    types: [trigger-workflow]
+
+jobs:
+  receive_trigger:
+    uses: ./.github/workflows/perf-benchmark.yml
+    with:
+      docker-image: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+      project: ${{ github.event.client_payload.project }}
+      run_id: ${{ github.event.client_payload.run_id }}
+      ref: ${{ github.event.client_payload.ref }}
