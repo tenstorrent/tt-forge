@@ -48,9 +48,9 @@ runs:
       if: ${{ steps.set-wheel-name.outputs.untar }}
       shell: bash
       # /${{ steps.set-wheel-name.outputs.artifact }}
-      run: tar -xvf "${{ runner.temp }}/artifact.tar"
+      run: tar -xvf "${{ runner.temp }}/artifact.tar" -C "${{ runner.temp }}"
 
     - name: Install wheel
       shell: bash
       run: |
-        pip install "${{ runner.temp }}/${{ steps.set-wheel-name.outputs.wheel_name }}" --upgrade
+        pip install ${{ runner.temp }}/${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade

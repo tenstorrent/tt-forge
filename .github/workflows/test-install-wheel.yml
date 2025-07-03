@@ -18,7 +18,7 @@ jobs:
       matrix:
         build: [
           { project: "tt-torch", run_id: "15983228065", wheel_name: "tt[-_]torch" },
-          { project: "tt-forge", run_id: "16046494009", wheel_name: "tt[-_]forge[-_]fe" },
+          { project: "tt-forge-fe", run_id: "16046494009", wheel_name: "tt[-_]forge[-_]fe" },
           { project: "tt-xla", run_id: "16044326176", wheel_name: "pjrt[-_]" }
         ]
 
