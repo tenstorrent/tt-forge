@@ -84,7 +84,7 @@ jobs:
             pytest.ini
             conftest.py
             .test_durations
-          fetch-depth: 1 # Fetch all history and tags
+          fetch-depth: 1
           ref: ${{ inputs.ref }}
 
     - name: Install system and python dependencies
@@ -104,7 +104,7 @@ jobs:
 
     - name: Install upgrede wheel
       if: ${{ inputs.project != '' && inputs.run_id != '' }}
-      uses: /.github/actions/install-wheel
+      uses: ./.github/actions/install-wheel
       with:
         project: ${{ inputs.project }}
         run_id: ${{ inputs.run_id }}
