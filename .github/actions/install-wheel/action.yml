@@ -1,0 +1,55 @@
+name: Install wheel for TT project for given run_id
+
+description: Install wheel for TT project for given run_id
+
+inputs:
+  project:
+    description: 'Name of the project to install wheel for'
+    required: true
+    type: string
+  run_id:
+    description: 'Run ID to install wheel for'
+    required: true
+    type: string
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set wheel name
+      id: set-wheel-name
+      shell: bash
+      run: |
+        if [ "${{ inputs.project }}" = "tt-forge-fe" ]; then
+          echo "artifact=forge-wheel" >> $GITHUB_OUTPUT
+          echo "wheel_name=tt_*" >> $GITHUB_OUTPUT
+        elif [ "${{ inputs.project }}" = "tt-torch" ]; then
+          echo "artifact=install-artifacts-release" >> $GITHUB_OUTPUT
+          echo "wheel_name=wheels/tt_*" >> $GITHUB_OUTPUT
+          echo "untar='true'" >> $GITHUB_OUTPUT
+        elif [ "${{ inputs.project }}" = "tt-xla" ]; then
+          echo "artifact=xla-whl-release" >> $GITHUB_OUTPUT
+          echo "wheel_name=pjrt_*" >> $GITHUB_OUTPUT
+        else
+          echo "Unknown project: ${{ inputs.project }}"
+          exit 1
+        fi
+
+    - name: Download wheel
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        run_id: ${{ inputs.run_id }}
+        name: "${{ steps.set-wheel-name.outputs.artifact }}"
+        name_is_regexp: false
+        repo: "tenstorrent/${{ inputs.project }}"
+        check_artifacts: true
+        path: ${{ runner.temp }}
+
+    - name: Untar
+      if: ${{ steps.set-wheel-name.outputs.untar }}
+      shell: bash
+      run: tar -xvf "${{ runner.temp }}/artifact.tar" -C "${{ runner.temp }}"
+
+    - name: Install wheel
+      shell: bash
+      run: |
+        pip install ${{ runner.temp }}/${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade

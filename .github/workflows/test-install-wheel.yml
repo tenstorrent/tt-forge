@@ -1,0 +1,45 @@
+name: Test Install wheel action
+
+on:
+    push:
+      branches:
+        - main
+      paths:
+        - '.github/actions/install-wheel/**'
+    pull_request:
+      types: [opened, synchronize, reopened, ready_for_review]
+      branches: [ "main" ]
+      paths:
+        - '.github/actions/install-wheel/**'
+jobs:
+  test-install-wheel:
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [
+          { project: "tt-torch", run_id: "15983228065", wheel_name: "tt[-_]torch" },
+          { project: "tt-forge-fe", run_id: "16046494009", wheel_name: "tt[-_]forge[-_]fe" },
+          { project: "tt-xla", run_id: "16044326176", wheel_name: "pjrt[-_]" }
+        ]
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install projects wheel
+        uses: ./.github/actions/install-wheel
+        with:
+          project: ${{ matrix.build.project }}
+          run_id: ${{ matrix.build.run_id }}
+      - name: Verify installation
+        run: |
+          c=$(pip list | grep -c -E "${{ matrix.build.wheel_name }}")
+          if [ $c -eq 0 ]; then
+            echo "${{ matrix.build.project }} is not installed"
+            exit 1
+          fi
