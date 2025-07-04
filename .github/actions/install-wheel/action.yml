@@ -42,14 +42,13 @@ runs:
         name_is_regexp: false
         repo: "tenstorrent/${{ inputs.project }}"
         check_artifacts: true
-        path: ${{ runner.temp }}
 
     - name: Untar
       if: ${{ steps.set-wheel-name.outputs.untar }}
       shell: bash
-      run: tar -xvf "${{ runner.temp }}/artifact.tar" -C "${{ runner.temp }}"
+      run: tar -xvf "artifact.tar"
 
     - name: Install wheel
       shell: bash
       run: |
-        pip install ${{ runner.temp }}/${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade
+        pip install ${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade
