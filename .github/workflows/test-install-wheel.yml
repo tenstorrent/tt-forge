@@ -22,7 +22,7 @@ jobs:
           { project: "tt-xla", run_id: "16044326176", wheel_name: "pjrt[-_]" }
         ]
 
-    runs-on: ubuntu-latest
+    runs-on: n150
     steps:
       - name: Setup Python environment
         uses: actions/setup-python@v4
