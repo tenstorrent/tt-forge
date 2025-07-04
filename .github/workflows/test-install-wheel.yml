@@ -13,6 +13,9 @@ on:
         - '.github/actions/install-wheel/**'
 jobs:
   test-install-wheel:
+    container:
+      image: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
@@ -22,7 +25,7 @@ jobs:
           { project: "tt-xla", run_id: "16044326176", wheel_name: "pjrt[-_]" }
         ]
 
-    runs-on: ubuntu-latest
+    runs-on: n150
     steps:
       - name: Setup Python environment
         uses: actions/setup-python@v4
