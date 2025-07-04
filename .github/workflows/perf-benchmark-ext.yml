@@ -7,6 +7,7 @@ on:
 jobs:
   receive_trigger:
     uses: ./.github/workflows/perf-benchmark.yml
+    secrets: inherit
     with:
       docker-image: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
       project: ${{ github.event.client_payload.project }}

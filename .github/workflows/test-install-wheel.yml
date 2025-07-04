@@ -40,6 +40,6 @@ jobs:
         run: |
           c=$(pip list | grep -c -E "${{ matrix.build.wheel_name }}")
           if [ $c -eq 0 ]; then
-            echo "tt-torch is not installed"
+            echo "${{ matrix.build.project }} is not installed"
             exit 1
           fi

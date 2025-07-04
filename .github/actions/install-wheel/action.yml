@@ -47,7 +47,6 @@ runs:
     - name: Untar
       if: ${{ steps.set-wheel-name.outputs.untar }}
       shell: bash
-      # /${{ steps.set-wheel-name.outputs.artifact }}
       run: tar -xvf "${{ runner.temp }}/artifact.tar" -C "${{ runner.temp }}"
 
     - name: Install wheel

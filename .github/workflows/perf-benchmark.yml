@@ -88,7 +88,7 @@ jobs:
           pip install ${{ matrix.build.pyreq }}
         fi
 
-    - name: Install upgrede wheel
+    - name: Install upgraded wheel
       if: ${{ inputs.project && inputs.run_id }}
       uses: ./.github/actions/install-wheel
       with:
