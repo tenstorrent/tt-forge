@@ -13,6 +13,9 @@ on:
         - '.github/actions/install-wheel/**'
 jobs:
   test-install-wheel:
+    container:
+      image: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
