@@ -99,6 +99,7 @@ jobs:
     uses: ./.github/workflows/demo-tests.yml
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+      secrets: inherit
 
   perf-test-tt-forge-slim:
     needs:
@@ -107,3 +108,4 @@ jobs:
     uses: ./.github/workflows/perf-benchmark.yml
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+      secrets: inherit
