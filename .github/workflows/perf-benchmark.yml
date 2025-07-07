@@ -143,19 +143,25 @@ jobs:
         HF_HOME: /mnt/dockercache/huggingface
         HF_HUB_DISABLE_PROGRESS_BARS: 1
       run: |
+        echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
+
         echo "Run perf benchmark"
         mkdir -p /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}
-        if [ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]; then
+
+        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
           export TT_TORCH_SAVE_MLIR=TTIR
         fi
+
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        if [ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla"]; then
+       
+        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
           cp /__w/tt-forge/tt-forge/model_mlir/${{ matrix.build.name }}_ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
         else
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
         fi
+        
         echo "Remove system descriptor from ttir"
         python benchmark/device_perf.py -ct /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
 
