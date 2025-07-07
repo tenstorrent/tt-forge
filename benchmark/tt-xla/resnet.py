@@ -13,6 +13,7 @@ import jax
 
 from transformers import FlaxResNetForImageClassification
 from jax import device_put
+from tools import serialize_function_to_binary
 
 
 BATCH_SIZE = [
@@ -35,6 +36,7 @@ VARIANTS = [
 
 DATA_FORMAT = ["float32"]
 
+TTIR_FILE_PATH = "./model_dir/tt-xla/resnet/ttir.mlir"
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
@@ -71,11 +73,13 @@ def test_resnet(
     framework_model.params = jax.tree_util.tree_map(lambda x: device_put(x, tt_device), framework_model.params)
     input_sample = device_put(input_sample, tt_device)
 
+    # Preserve the TTIR file
+    serialize_function_to_binary(framework_model.__call__, TTIR_FILE_PATH, input_sample)
+
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
     # Warm up the model
     res = compiled_fwd(input_sample, train=False, params=framework_model.params)
-    print(res)
     # Run the model
     start = time.time()
     for _ in tqdm(range(loop_count)):
