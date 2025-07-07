@@ -38,6 +38,7 @@ DATA_FORMAT = ["float32"]
 
 TTIR_FILE_PATH = "./model_dir/tt-xla/resnet/ttir.mlir"
 
+
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
