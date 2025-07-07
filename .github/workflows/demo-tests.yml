@@ -77,7 +77,8 @@ jobs:
       - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
         shell: bash
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}]
+          HF_HOME: /mnt/dockercache/huggingface
         run: |
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
