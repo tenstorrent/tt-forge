@@ -69,6 +69,7 @@ def test_resnet_hf(
     channel_size,
     loop_count,
     variant,
+    module_name="resnet",
 ):
 
     if training:
@@ -89,6 +90,8 @@ def test_resnet_hf(
     cc = CompilerConfig()
     cc.enable_consteval = True
     cc.consteval_parameters = True
+    cc.save_mlir_override = "TTIR"
+    cc.model_name = module_name
 
     options = BackendOptions()
     options.compiler_config = cc
@@ -212,6 +215,7 @@ def benchmark(config: dict):
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     variant = variants[0]
+    module_name = config.get("model", "resnet")
 
     return test_resnet_hf(
         training=training,
@@ -220,4 +224,5 @@ def benchmark(config: dict):
         channel_size=channel_size,
         loop_count=loop_count,
         variant=variant,
+        module_name=module_name,
     )

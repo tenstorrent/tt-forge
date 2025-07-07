@@ -38,6 +38,7 @@ jobs:
         - /etc/udev/rules.d:/etc/udev/rules.d
         - /lib/modules:/lib/modules
         - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+        - /usr/local/bin:/usr/local/bin
         - /mnt/dockercache:/mnt/dockercache
 
     # tt-torch reqs are not needed by tt-torch, but rather by benchmarking infra, should be moved elsewhere: https://github.com/tenstorrent/tt-forge/issues/177
@@ -115,25 +116,25 @@ jobs:
     #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
 
     # ttrt version (sha) should be taken from release metadata or something
-    # - name: Download ttrt wheel
-    #   uses: dawidd6/action-download-artifact@v6
-    #   with:
-    #     workflow_conclusion: success
-    #     workflow: on-push.yml
-    #     branch: main
-    #     name: "(ttrt-whl|install-artifacts)-tracy"
-    #     name_is_regexp: true
-    #     repo: tenstorrent/tt-mlir
-    #     check_artifacts: true
-    #     path: ./
+    - name: Download ttrt wheel
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow_conclusion: success
+        workflow: on-push.yml
+        branch: main
+        name: "(ttrt-whl|install-artifacts)-tracy"
+        name_is_regexp: true
+        repo: tenstorrent/tt-mlir
+        check_artifacts: true
+        path: ./
 
-    # - name: Untar ttmlir install directory
-    #   shell: bash
-    #   run: |
-    #     mv install-artifacts-tracy/ install/
-    #     cd install
-    #     tar xvf artifact.tar
-    #     cd ..
+    - name: Untar ttmlir install directory
+      shell: bash
+      run: |
+        mv install-artifacts-tracy/ install/
+        cd install
+        tar xvf artifact.tar
+        cd ..
 
     - name: Run Perf Benchmark
       shell: bash
@@ -142,28 +143,44 @@ jobs:
         HF_HOME: /mnt/dockercache/huggingface
         HF_HUB_DISABLE_PROGRESS_BARS: 1
       run: |
+        echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
-        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        if [ -n "${{ matrix.build.dir }}" ]; then
-          python benchmark/create_ttir.py ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir
+
+        echo "Run perf benchmark"
+        mkdir -p /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}
+
+        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          export TT_TORCH_SAVE_MLIR=TTIR
         fi
 
-    # - name: Install and run TTRT
-    #   if: ${{ matrix.build.project != 'tt-torch' }}
-    #   shell: bash
-    #   run: |
-    #     python -m venv ttrt-venv
-    #     source ttrt-venv/bin/activate
-    #     pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
-    #     pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-    #     echo "save artifacts"
-    #     ttrt query --save-artifacts
-    #     if [ -z "${{ matrix.build.allow-fail }}" ]; then
-    #       ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}.json # _${{ steps.fetch-job-id.outputs.job_id }}.json
-    #     else
-    #       ./benchmark/compile_and_run.sh ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_.json || true # ${{ steps.fetch-job-id.outputs.job_id }}.json || true
-    #     fi
+        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+
+        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          cp /__w/tt-forge/tt-forge/model_mlir/${{ matrix.build.name }}_ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
+        else
+          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
+        fi
+
+        echo "Remove system descriptor from ttir"
+        python benchmark/device_perf.py -ct /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
+
+    - name: Install and run TTRT
+      shell: bash
+      run: |
+        python -m venv ttrt-venv
+        source ttrt-venv/bin/activate
+        apt-get install -y -qq --no-install-recommends libtbb12
+        apt-get install -y -qq --no-install-recommends libcapstone4
+        pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
+        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+        echo "save artifacts"
+        ttrt query --save-artifacts
+        if [ -z "${{ matrix.build.allow-fail }}" ]; then
+          ./benchmark/compile_and_run.sh /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        else
+          ./benchmark/compile_and_run.sh /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+        fi
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4

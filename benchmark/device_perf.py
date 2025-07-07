@@ -55,46 +55,19 @@ def create_ttir(ttir_path):
 
     """
 
-    # Read the TTIR the JSON file
-    try:
-        with open(ttir_path, "r") as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        print(f"Error: TTIR file '{ttir_path}' not found.")
-        return
-    except json.JSONDecodeError:
-        print(f"Error: TTIR file '{ttir_path}' contains invalid JSON.")
-        return
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        return
+    with open(ttir_path, "r") as file:
+        content = file.read()
 
-    # Make string from the JSON data
-    # This JSON has should have the following structure:
-    #   {
-    #       'content': 'string'
-    #       'module': 'string'
-    #   }
+    import regex as re
 
-    # Content is actually what we want to write to the TTIR file, module is the name of the module
-    # Content is a string separated by newlines, we will create a list of strings from it, and modify it
-    content = data["content"].split("\n")
-
-    # The first line of the content is system descriptor, we don't need it
-    # The second line is the definition of the module with attrubutes, we need to empty the attributes field
-    attr_definition = "attributes {tt.system_desc = #system_desc}"
-    attr_empty = "attributes {}"
-    content[2] = content[2].replace(attr_definition, attr_empty)
-    content.pop(1)
+    content = re.sub(r"attributes {ttcore.system_desc = .*}", "attributes {}", content)
+    content = re.sub(r"attributes {tt.system_desc = .*}", "attributes {}", content)
 
     ttir_path_out = ttir_path.replace(".mlir", "_out.mlir")
 
-    for item in content:
-        print(item)
-
     # Write the modified content to the TTIR file
     with open(ttir_path_out, "w") as file:
-        file.write("\n".join(content))
+        file.write(content)
 
 
 def parse_device_perf(device_perf_path):
@@ -266,6 +239,7 @@ def main():
     if args.create_ttir:
         ttir_path = args.create_ttir
         create_ttir(ttir_path)
+        print(ttir_path)
     elif args.create_device_perf:
         device_perf_path = args.create_device_perf[0]
         perf_report_path = args.create_device_perf[1]
