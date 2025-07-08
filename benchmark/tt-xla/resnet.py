@@ -38,12 +38,8 @@ DATA_FORMAT = ["float32"]
 
 import os
 current_directory = os.getcwd()
-print(f"Current directory: {current_directory}")
 
-import subprocess
-subprocess.run(["ls", "-ls", "."], check=True)
-
-TTIR_FILE_PATH = "./model_dir/resnet_ttir.mlir"
+TTIR_FILE_PATH = current_directory + "/model_dir/resnet_ttir.mlir"
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
