@@ -7,7 +7,7 @@
 # <mlir_file> <json_file>
 
 echo "run ttmlir-opt on $1"
-./install/bin/ttmlir-opt --tt-register-device="system-desc-path=ttrt-artifacts/system_desc.ttsys" --ttir-to-ttnn-backend-pipeline $1 -o ttnn.mlir
+./install/bin/ttmlir-opt --ttcore-register-device="system-desc-path=ttrt-artifacts/system_desc.ttsys" --ttir-to-ttnn-backend-pipeline $1 -o ttnn.mlir
 if [ $? -ne 0 ]; then
     echo "Error: TTmlir opt command failed."
     exit 1
@@ -25,7 +25,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo "run device_perf.py creating $2"
-python ./benchmark/device_perf.py ttrt-artifacts/out.ttnn/perf/ops_perf_results.csv $2
+python ./benchmark/device_perf.py -cdp ttrt-artifacts/out.ttnn/perf/ops_perf_results.csv $2
 csv_file="${2%.*}.csv"
 cp ttrt-artifacts/out.ttnn/perf/ops_perf_results.csv "$csv_file"
 if [ $? -ne 0 ]; then
