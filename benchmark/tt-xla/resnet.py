@@ -81,6 +81,13 @@ def test_resnet(
     # Preserve the TTIR file
     serialize_function_to_mlir(framework_model.__call__, TTIR_FILE_PATH, input_sample)
 
+    import os
+
+    # Example with a relative path
+    relative_path = TTIR_FILE_PATH
+    absolute_path = os.path.abspath(relative_path)
+    print(f"Absolute path for '{relative_path}': {absolute_path}")
+
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
     # Warm up the model
