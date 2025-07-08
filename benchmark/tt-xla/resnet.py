@@ -36,7 +36,7 @@ VARIANTS = [
 
 DATA_FORMAT = ["float32"]
 
-TTIR_FILE_PATH = "./model_dir/model_mlir/resnet_ttir.mlir"
+TTIR_FILE_PATH = "./model_dir/resnet_ttir.mlir"
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
