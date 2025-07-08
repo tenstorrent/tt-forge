@@ -40,7 +40,7 @@ DATA_FORMAT = ["float32"]
 # current_directory = os.getcwd()
 
 # TTIR_FILE_PATH = current_directory + "/model_dir/resnet_ttir.mlir"
-TTIR_FILE_PATH = "./resnet_ttir.mlir"
+TTIR_FILE_PATH = "./ttir.mlir"
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
