@@ -81,4 +81,4 @@ jobs:
         run: |
           source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          PYTHONPATH=$PYTHONPATH:$(pwd) python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
+          python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}

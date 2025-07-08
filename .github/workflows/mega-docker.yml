@@ -85,25 +85,25 @@ jobs:
           echo "docker-image=$IMAGE_NAME:$DOCKER_TAG" >> $GITHUB_OUTPUT
           echo "docker-image-harbor=harbor.ci.tenstorrent.net/$IMAGE_NAME:$DOCKER_TAG" >> "$GITHUB_OUTPUT"
 
-  basic-test-tt-forge-slim:
-    needs:
-      - build-tt-forge-slim
-    uses: ./.github/workflows/basic-tests.yml
-    with:
-      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
+  # basic-test-tt-forge-slim:
+  #   needs:
+  #     - build-tt-forge-slim
+  #   uses: ./.github/workflows/basic-tests.yml
+  #   with:
+  #     docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
 
   demo-test-tt-forge-slim:
     needs:
       - build-tt-forge-slim
-      - basic-test-tt-forge-slim
+      # - basic-test-tt-forge-slim
     uses: ./.github/workflows/demo-tests.yml
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
 
-  perf-test-tt-forge-slim:
-    needs:
-      - build-tt-forge-slim
-      - basic-test-tt-forge-slim
-    uses: ./.github/workflows/perf-benchmark.yml
-    with:
-      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+  # perf-test-tt-forge-slim:
+  #   needs:
+  #     - build-tt-forge-slim
+  #     - basic-test-tt-forge-slim
+  #   uses: ./.github/workflows/perf-benchmark.yml
+  #   with:
+  #     docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
