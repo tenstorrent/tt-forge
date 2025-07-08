@@ -74,4 +74,4 @@ python benchmark/benchmark.py -p tt-torch -m resnet -bs 8 -lp 32 -o forge-benchm
 # TT-XLA Compiler
 # ------------------------------------------------------- #
 # Resnet
-python benchmark/benchmark.py -p tt-xla -m resnet -bs 8 -lp 32 -o forge-benchmark-e2e-tt-xla-resnet50.json
+python benchmark/benchmark.py -p tt-xla -m resnet -bs 8 -lp 2 -o forge-benchmark-e2e-tt-xla-resnet50.json
