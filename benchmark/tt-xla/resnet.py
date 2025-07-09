@@ -75,8 +75,7 @@ def test_resnet(
     input_sample = device_put(input_sample, tt_device)
 
     # Preserve the TTIR file
-    serialize_function_to_mlir(framework_model.__call__, TTIR_FILE_PATH, input_sample)\
-
+    serialize_function_to_mlir(framework_model.__call__, TTIR_FILE_PATH, input_sample)
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
     # Warm up the model
