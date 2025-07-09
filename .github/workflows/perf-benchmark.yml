@@ -150,7 +150,7 @@ jobs:
         echo "Run perf benchmark"
         mkdir -p /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}
 
-        if [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
+        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
         fi
 
