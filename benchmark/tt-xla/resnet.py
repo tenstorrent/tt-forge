@@ -36,11 +36,7 @@ VARIANTS = [
 
 DATA_FORMAT = ["float32"]
 
-# import os
-# current_directory = os.getcwd()
-
-# TTIR_FILE_PATH = current_directory + "/model_dir/resnet_ttir.mlir"
-TTIR_FILE_PATH = "./ttir.mlir"
+TTIR_FILE_PATH = "./model_dir/resnet_ttir.mlir"
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
@@ -79,19 +75,12 @@ def test_resnet(
     input_sample = device_put(input_sample, tt_device)
 
     # Preserve the TTIR file
-    serialize_function_to_mlir(framework_model.__call__, TTIR_FILE_PATH, input_sample)
-
-    import os
-
-    # Example with a relative path
-    relative_path = TTIR_FILE_PATH
-    absolute_path = os.path.abspath(relative_path)
-    print(f"Absolute path for '{relative_path}': {absolute_path}")
+    serialize_function_to_mlir(framework_model.__call__, TTIR_FILE_PATH, input_sample)\
 
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
     # Warm up the model
-    res = compiled_fwd(input_sample, train=False, params=framework_model.params)
+    compiled_fwd(input_sample, train=False, params=framework_model.params)
     # Run the model
     start = time.time()
     for _ in tqdm(range(loop_count)):
