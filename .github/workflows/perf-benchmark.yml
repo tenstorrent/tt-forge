@@ -160,7 +160,7 @@ jobs:
         echo "Copy ttir.mlir to model_dir"
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           cp /__w/tt-forge/tt-forge/model_mlir/${{ matrix.build.name }}_ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
-        else
+        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
         fi
 
