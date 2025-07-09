@@ -1,6 +1,12 @@
 # How to use
 Build/install and activate the environment as you would for development on tt-torch: [Build Instructions](https://docs.tenstorrent.com/tt-torch/getting_started.html)
 
+Additional python dependencies may be required for some demos. The following set of requirements covers all demos.
+```
+pip install -r benchmark/tt-torch/requirements.txt
+pip install accelerate tabulate
+```
+
 From the project root, run
 ```
 python demos/tt-torch/resnet50_demo.py
