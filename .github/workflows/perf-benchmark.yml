@@ -158,7 +158,7 @@ jobs:
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
 
         echo "Copy ttir.mlir to model_dir"
-        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
+        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           cp /__w/tt-forge/tt-forge/model_mlir/${{ matrix.build.name }}_ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
         else
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
