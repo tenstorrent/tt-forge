@@ -164,4 +164,3 @@ runs:
               -d "{ \"query\": \"mutation { updateProjectV2ItemFieldValue(input: { projectId: \\\"${{ env.project_id }}\\\", itemId: \\\"${{ steps.get_item_id_by_issue_id.outputs.ITEM_ID }}\\\", fieldId: \\\"${{ env.field_id }}\\\", value: { date: \\\"$current_date\\\" } }) { clientMutationId } }\" }" \
               -X POST \
               "https://api.github.com/graphql"
-
