@@ -16,6 +16,8 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
+      - name: git checkout
+        uses: actions/checkout@v4
       - uses: ./.github/actions/issue-last-updated
         with:
           issue_number: ${{ github.event.issue.number }}
