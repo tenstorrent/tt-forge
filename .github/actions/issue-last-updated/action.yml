@@ -1,0 +1,166 @@
+name: "Issue Last Updated"
+description: "Update issue last updated date"
+inputs:
+  issue_number:
+    description: "Issue number"
+    required: true
+    type: string
+  GH_TOKEN:
+    description: "GitHub token"
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Set Environment Variables
+      run: |
+        echo "project_id=PVT_kwDOA9MHEM4AjeTl" >> $GITHUB_ENV
+        echo "field_id=PVTF_lADOA9MHEM4AjeTlzgiiU18" >> $GITHUB_ENV
+
+    - name: Get Issue ID
+      id: get_issue_id
+      run: |
+        issue_number=${{ inputs.issue_number }}
+        issue_details=$(curl -H "Authorization: Bearer ${{ inputs.GH_TOKEN }}" -s "https://api.github.com/repos/${{ github.repository }}/issues/$issue_number")
+        issue_id=$(echo "$issue_details" | jq -r '.node_id')
+        echo "issue_id=$issue_id" >> $GITHUB_ENV
+
+    - name: Get Item ID for Issue
+      id: get_item_id_by_issue_id
+      run: |
+        source $GITHUB_ENV
+
+        found_item_id=""
+        cursor=""
+        page_count=0
+
+        echo "Searching for issue ID: $issue_id in project: $project_id"
+
+        # Search through all pages to find the issue
+        while true; do
+          page_count=$((page_count + 1))
+          echo "Searching page $page_count..."
+
+          # Build the query with or without cursor
+          if [[ -z "$cursor" ]]; then
+            QUERY='query($projectId: ID!) {
+              node(id: $projectId) {
+                ... on ProjectV2 {
+                  items(first: 100) {
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
+                    nodes {
+                      id
+                      content {
+                        ... on Issue {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }'
+            JSON_PAYLOAD=$(jq -n \
+              --arg query "$QUERY" \
+              --arg projectId "$project_id" \
+              '{ query: $query, variables: { projectId: $projectId }}')
+          else
+            QUERY='query($projectId: ID!, $cursor: String!) {
+              node(id: $projectId) {
+                ... on ProjectV2 {
+                  items(first: 100, after: $cursor) {
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
+                    nodes {
+                      id
+                      content {
+                        ... on Issue {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }'
+            JSON_PAYLOAD=$(jq -n \
+              --arg query "$QUERY" \
+              --arg projectId "$project_id" \
+              --arg cursor "$cursor" \
+              '{ query: $query, variables: { projectId: $projectId, cursor: $cursor }}')
+          fi
+
+
+        # Make the GraphQL request
+        RESPONSE=$(curl -s -X POST -H "Authorization: Bearer ${{ inputs.GH_TOKEN }}" \
+                              -H "Content-Type: application/json" \
+                              -d "$JSON_PAYLOAD" \
+                              https://api.github.com/graphql)
+
+        #Check for errors
+        ERRORS=$(echo "$RESPONSE" | jq -r '.errors // empty')
+        if [[ -n "$ERRORS" && "$ERRORS" != "null" ]]; then
+          echo "GraphQL Error: $ERRORS"
+          exit 0
+        fi
+
+          # Look for the issue in current batch
+          ITEM_ID=$(echo "$RESPONSE" | jq -r --arg issue_id "$issue_id" \
+                      '.data.node.items.nodes[]? | select(.content.id==$issue_id) | .id')
+
+          if [[ -n "$ITEM_ID" && "$ITEM_ID" != "null" ]]; then
+            found_item_id="$ITEM_ID"
+            echo "Found ITEM_ID: $found_item_id"
+            break
+          fi
+
+          # Check if there are more pages
+          has_next_page=$(echo "$RESPONSE" | jq -r '.data.node.items.pageInfo.hasNextPage // false')
+          if [[ "$has_next_page" != "true" ]]; then
+            echo "Searched all $page_count pages. No more pages available."
+            break
+          fi
+
+          # Get cursor for next page
+          cursor=$(echo "$RESPONSE" | jq -r '.data.node.items.pageInfo.endCursor')
+          echo "Moving to next page with cursor: $cursor"
+
+          # Safety check to prevent infinite loops (optional failsafe)
+          if [[ $page_count -gt 100 ]]; then
+            echo "Searched 100 pages (10,000+ items). Stopping to prevent infinite loop."
+            echo "If you have more than 10,000 project items, consider optimizing your project structure."
+            break
+          fi
+        done
+
+        # If issue not found in project, exit with error
+        if [[ -z "$found_item_id" ]]; then
+          echo "Issue not found in project after searching all pages."
+          echo "The issue may not be added to this project yet."
+          echo "Please manually add the issue to the project first."
+          exit 0
+        fi
+
+        echo "ITEM_ID=$found_item_id" >> $GITHUB_OUTPUT
+
+    - name: Use Found ITEM_ID
+      if: steps.get_item_id_by_issue_id.outputs.ITEM_ID != ''
+      run: echo "The ITEM_ID is ${{ steps.get_item_id_by_issue_id.outputs.ITEM_ID }}"
+
+
+    - name: Update Project Field
+      if: steps.get_item_id_by_issue_id.outputs.ITEM_ID != ''
+      run: |
+        current_date=$(date +%Y-%m-%d)
+        curl -H "Authorization: Bearer ${{ inputs.GH_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "{ \"query\": \"mutation { updateProjectV2ItemFieldValue(input: { projectId: \\\"${{ env.project_id }}\\\", itemId: \\\"${{ steps.get_item_id_by_issue_id.outputs.ITEM_ID }}\\\", fieldId: \\\"${{ env.field_id }}\\\", value: { date: \\\"$current_date\\\" } }) { clientMutationId } }\" }" \
+              -X POST \
+              "https://api.github.com/graphql"
