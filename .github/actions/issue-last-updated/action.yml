@@ -15,11 +15,13 @@ runs:
   steps:
 
     - name: Set Environment Variables
+      shell: bash
       run: |
         echo "project_id=PVT_kwDOA9MHEM4AjeTl" >> $GITHUB_ENV
         echo "field_id=PVTF_lADOA9MHEM4AjeTlzgiiU18" >> $GITHUB_ENV
 
     - name: Get Issue ID
+      shell: bash
       id: get_issue_id
       run: |
         issue_number=${{ inputs.issue_number }}
@@ -28,6 +30,7 @@ runs:
         echo "issue_id=$issue_id" >> $GITHUB_ENV
 
     - name: Get Item ID for Issue
+      shell: bash
       id: get_item_id_by_issue_id
       run: |
         source $GITHUB_ENV
@@ -151,12 +154,14 @@ runs:
         echo "ITEM_ID=$found_item_id" >> $GITHUB_OUTPUT
 
     - name: Use Found ITEM_ID
+      shell: bash
       if: steps.get_item_id_by_issue_id.outputs.ITEM_ID != ''
       run: echo "The ITEM_ID is ${{ steps.get_item_id_by_issue_id.outputs.ITEM_ID }}"
 
 
     - name: Update Project Field
       if: steps.get_item_id_by_issue_id.outputs.ITEM_ID != ''
+      shell: bash
       run: |
         current_date=$(date +%Y-%m-%d)
         curl -H "Authorization: Bearer ${{ inputs.GH_TOKEN }}" \
