@@ -70,7 +70,7 @@ jobs:
           filter="$filter and (.name | contains(\"${{ inputs.test-filter }}\"))"
         fi
 
-        matrix=$(jq "[${filter})]" .github/workflows/perf-bench-matrix.json)
+        matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
         echo "Matrix: $matrix"
         if [ "$matrix" == "[]" ]; then
           echo "Error: No matching tests found in the matrix"
