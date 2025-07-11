@@ -8,10 +8,15 @@ inputs:
     description: "Branch name"
     required: false
 
+outputs:
+  run_head_sha:
+    description: "Head SHA of the workflow run"
+    value: ${{ steps.wait-workflow.outputs.run_head_sha }}
 runs:
   using: "composite"
   steps:
     - name: Wait for workflow run
+      id: wait-workflow
       shell: bash
       run: |
         workflow_name="${{ inputs.workflow_name }}"
@@ -24,7 +29,10 @@ runs:
         echo "Waiting for workflow run $workflow_name on branch $branch to complete"
         while [ -z "$run_id" ]; do
           run_id=$(gh run list --workflow="$workflow_name" --branch $branch -L 1 --json databaseId | jq -r '.[].databaseId')
+          run_head_sha=$(gh run list --workflow="$workflow_name" --branch $branch -L 1 --json headSha | jq -r '.[].headSha')
           sleep 1
         done
         gh run watch $run_id
         echo "Workflow run completed"
+        echo "run_head_sha=$run_head_sha"
+        echo "run_head_sha=$run_head_sha" >> $GITHUB_OUTPUT

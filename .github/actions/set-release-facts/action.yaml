@@ -63,9 +63,9 @@ outputs:
   build_release_tag:
     description: "Build release tag"
     value: ${{ steps.set-manifest.outputs.build_release_tag }}
-  build_find_workflow_branch:
+  build_release_find_workflow_branch:
     description: "Build find workflow branch"
-    value: ${{ steps.set-manifest.outputs.build_find_workflow_branch }}
+    value: ${{ steps.set-manifest.outputs.build_release_find_workflow_branch }}
   workflow_allow_failed:
     description: "Return run even if workflow has failed"
     value: ${{ steps.set-manifest.outputs.workflow_allow_failed }}
@@ -215,6 +215,9 @@ runs:
             # null out the commit to so e2e testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
             build_release_latest_branch_commit=""
+
+            # Used in testing to pick up the arfiacts from the main branch.
+            build_release_find_workflow_branch="main"
 
             # build_release_tag is a sanitized version tag for build_release action.
             # Tag sanitization only needs to happen for rc and stable release. See get-branches for more detail.
