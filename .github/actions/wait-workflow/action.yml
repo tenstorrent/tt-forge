@@ -38,12 +38,13 @@ runs:
         while [ -z "$match_run_id" ]; do
           sleep 10
           echo "Fetching runs for workflow $workflow_name on branch $branch"
-          runs=$(gh run list --workflow="$workflow_name" --branch $branch -L $loop_count --json databaseId,name)
+          runs=$(gh run list --workflow="$workflow_name" --branch $branch -L $loop_count --json databaseId,name,url)
           array_ptr=0
 
           while [[ $array_ptr -ne $loop_count ]]; do
             run_id=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].databaseId')
             run_name=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].name')
+            run_url=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].url')
             if [[ "$run_id" == 'null' || "$run_name" == 'null' ]]; then
               break
             fi
@@ -58,10 +59,12 @@ runs:
             echo "parent_run_id: $parent_run_id"
             echo "run_name: $run_name"
             echo "run_id: $run_id"
+            echo "run_url: $run_url"
 
             if [[ "$check_parent_run_id" == "$parent_run_id" ]]; then
               match_run_id=$run_id
               echo "Found matching run with parent_run_id: $parent_run_id"
+              echo "Workflow run url: $run_url"
               break
             fi
 
@@ -70,3 +73,4 @@ runs:
         done
         gh run watch --exit-status $match_run_id
         echo "Workflow run completed"
+        echo "Workflow run url: $run_url"
