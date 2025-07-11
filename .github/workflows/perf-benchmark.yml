@@ -80,7 +80,6 @@ jobs:
           echo "Error: No matching tests found in the matrix"
           exit 1
         fi
-        # matrix=$(echo "$matrix" | sed 's/^.\(.*\).$/\1/')
         echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
 
   run-perf-benchmarks:
