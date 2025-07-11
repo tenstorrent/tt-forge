@@ -49,7 +49,7 @@ jobs:
   filter-tests:
     runs-on: ubuntu-latest
     outputs:
-      benchmark-matix: ${{ steps.set-perf-benchmarks.outputs.perf-benchmarks }}
+      benchmark-matrix: ${{ steps.set-perf-benchmarks.outputs.perf-benchmarks }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matix) }}
+        build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
     runs-on:
       - ${{ matrix.build.runs-on }}
       - in-service
