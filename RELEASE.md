@@ -23,17 +23,17 @@
 
 ## Overview
 
-The release lifecycle is a series of automated workflows that manage the creation, promotion, and release of software versions for tt-forge repositories. The system handles the entire process from nightly builds to release candidates to stable releases with minimal manual intervention.
+The release lifecycle is a series of automated workflows that manage the creation, promotion, and release of software versions for TT-Forge repositories. The system handles the entire process from nightly builds to release candidates to stable releases with minimal manual intervention.
 
 ### Supported Repositories
 
 Currently this release process manages the release for the following repositories:
 
-- tt-forge
-- tt-forge-fe
-- tt-torch
-- tt-xla
-- tt-mlir
+- TT-Forge
+- TT-Forge-fe
+- TT-Torch
+- TT-Xla
+- TT-Mlir
 
 ### Workflow Diagram
 
@@ -109,7 +109,7 @@ Release branches represent stabilized versions of a forge project and follow a n
 
 #### Process Overview
 
-1. **Branch Creation:** A new branch is created with the format `release-X.Y` where X is the major version and Y is the minor version. These values are derived from tt-forge `.version` file.
+1. **Branch Creation:** A new branch is created with the format `release-X.Y` where X is the major version and Y is the minor version. These values are derived from TT-Forge `.version` file.
 
 2. **Commit Selection:** The system automatically selects the most suitable commit from a repository's main branch to use as the base for the release branch:
    - By default, it finds the most recent successful workflow set in [set-release-facts.yml](.github/workflows/set-release-facts.yml) run on the main branch
@@ -175,8 +175,8 @@ This [workflow](.github/workflows/test-nightly-releaser.yml) allows testing of a
 What this workflow does:
 
 - Generate builds from a repository's main branch
-- Tag builds with date-based versions (e.g., draft.tt-forge-fe.0.1.0dev20250708)
-- Simulate the publishing process with draft status so the github release page can be view in tt-forge repository.
+- Tag builds with date-based versions (e.g., draft.TT-Forge-fe.0.1.0dev20250708)
+- Simulate the publishing process with draft status so the github release page can be view in TT-Forge repository.
 
 What this workflow does not do:
 
@@ -200,7 +200,7 @@ What this workflow does:
 
 #### Release
 
-This [workflow](.github/workflows/release.yml) is the central orchestrator for all types of releases (nightly, RC, and stable) across tt-forge repositories. It is a reusable workflow that handles the entire release process from building artifacts to publishing them through various channels.
+This [workflow](.github/workflows/release.yml) is the central orchestrator for all types of releases (nightly, RC, and stable) across TT-Forge repositories. It is a reusable workflow that handles the entire release process from building artifacts to publishing them through various channels.
 
 What this workflow does:
 
@@ -234,7 +234,7 @@ What this action does:
   - Artifact handling parameters
   - Workflow configuration settings
 
-This centralized approach ensures consistent behavior across all repositories in the tt-forge ecosystem and simplifies maintenance of the release process.
+This centralized approach ensures consistent behavior across all repositories in the TT-Forge ecosystem and simplifies maintenance of the release process.
 
 
 #### Git Facts
@@ -265,11 +265,11 @@ What this action does:
 
 #### Get Repos
 
-This [action](.github/actions/get-repos/action.yml) retrieves a list of repositories from the tt-forge organization. It's useful for operations that need to iterate over multiple repositories, such as release processes or batch operations.
+This [action](.github/actions/get-repos/action.yml) retrieves a list of repositories from the TT-Forge organization. It's useful for operations that need to iterate over multiple repositories, such as release processes or batch operations.
 
 What this action does:
 
-- Fetches a list of repositories from the tt-forge organization
+- Fetches a list of repositories from the TT-Forge organization
 - Returns the list of repositories as an output
 
 #### Get Release Branches
@@ -353,7 +353,7 @@ What this action does:
 - Reports image sizes and layer information for transparency
 - Supports customization through build arguments
 
-Docker images provide a consistent environment for running tt-forge software, making it easier for users to get started without managing complex dependencies.
+Docker images provide a consistent environment for running TT-Forge software, making it easier for users to get started without managing complex dependencies.
 
 #### Publish Tenstorrent Pypi
 
@@ -406,7 +406,7 @@ What this action does:
 
 #### TT Forge Wheel
 
-This [action](.github/actions/tt-forge-wheel/action.yml) specifically handles the building of the tt-forge Python wheel package. It's a specialized action for creating the core package that integrates all tt-forge components.
+This [action](.github/actions/TT-Forge-wheel/action.yml) specifically handles the building of the TT-Forge Python wheel package. It's a specialized action for creating the core package that integrates all TT-Forge components.
 
 What this action does:
 
@@ -417,7 +417,7 @@ What this action does:
 
 ## Release Versioning Reference
 
-The tt-forge release system follows semantic versioning patterns with additional conventions for different release types:
+The TT-Forge release system follows semantic versioning patterns with additional conventions for different release types:
 
 ### Version Format
 
@@ -464,4 +464,4 @@ If the daily releaser is not updating versions as expected:
 
 ### Getting Help
 
-For additional assistance with release issues, contact the Forge DevEx team or file an issue on the tt-forge repository.
+For additional assistance with release issues, contact the Forge DevEx team or file an issue on the TT-Forge repository.
