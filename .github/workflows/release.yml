@@ -177,6 +177,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         with:
           workflow_name: "Basic tests"
+          parent_run_id: "${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.id }}"
           wait: true
           json_params: '{"docker-image": "${{ steps.docker-build-push.outputs.harbor_image_tag }}", "only_frontend": "${{ steps.set-release-facts.outputs.repo_short }}" }'
 
