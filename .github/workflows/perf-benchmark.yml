@@ -72,7 +72,7 @@ jobs:
 
         matrix=$(jq "[${filter})]" .github/workflows/perf-bench-matrix.json)
         echo "Matrix: $matrix"
-        echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
+        echo "perf-benchmarks='$matrix'" >> $GITHUB_OUTPUT
 
   run-perf-benchmarks:
     needs: filter-tests
