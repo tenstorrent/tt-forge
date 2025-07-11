@@ -275,7 +275,7 @@ flowchart TD
 
 - [tt-xla](https://github.com/tenstorrent/tt-xla)
   - Leverages a PJRT interface to integrate JAX (and in the future other frameworks), `tt-mlir` and Tenstorrent hardware. Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to `tt-mlir` compiler
-  - See [README](https://github.com/tenstorrent/tt-xla/blob/main/README.md) for an overview and getting started guide.
+  - See [docs pages](https://docs.tenstorrent.com/tt-xla) for an overview and getting started guide.
 
 
 ## [tt-mlir](https://github.com/tenstorrent/tt-mlir) Project
