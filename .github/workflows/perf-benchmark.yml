@@ -97,8 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: ${{ needs.filter-tests.outputs.benchmark-matix }}
-
+        build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matix) }}
     runs-on:
       - ${{ matrix.build.runs-on }}
       - in-service
