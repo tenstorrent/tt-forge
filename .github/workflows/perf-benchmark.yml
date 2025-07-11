@@ -76,6 +76,7 @@ jobs:
           echo "Error: No matching tests found in the matrix"
           exit 1
         fi
+        # matrix=$(echo "$matrix" | sed 's/^.\(.*\).$/\1/')
         echo "perf-benchmarks=\"$matrix\"" >> $GITHUB_OUTPUT
 
   run-perf-benchmarks:
@@ -96,8 +97,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: |
-          ${{ fromJson(needs.filter-tests.outputs.benchmark-matix) }}
+        build: ${{ needs.filter-tests.outputs.benchmark-matix }}
+
     runs-on:
       - ${{ matrix.build.runs-on }}
       - in-service
