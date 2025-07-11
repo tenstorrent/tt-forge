@@ -1,135 +1,56 @@
 # Getting Started with Forge Demos
 
-This document walks you through how to set up to run demo models using tt-forge. The following topics are covered:
+This document walks you through how to set up to run demo models using TT-Forge. The following topics are covered:
 
-* [Configuring Hardware](#configuring-hardware)
-* [Setting up the Docker Container](#setting-up-the-docker-container)
-* [Creating a Virtual Environment](#creating-a-virtual-environment)
-* [Installing a Wheel](#installing-a-wheel)
+* [Setting up a Front End to Run a Demo](#setting-up-a-front-end-to-run-a-demo)
 * [Running a Demo](#running-a-demo)
 * [Running Performance Benchmark Tests](#running-performance-benchmark-tests)
 
 > **NOTE:** If you encounter issues, please request assistance on the
->[tt-forge Issues](https://github.com/tenstorrent/tt-forge/issues) page.
+>[TT-Forge Issues](https://github.com/tenstorrent/tt-forge/issues) page.
 
 > **NOTE:** If you plan to do development work, please see the
 > build instructions for the repo you want to work with.
 
-## Configuring Hardware
+## Setting up a Front End to Run a Demo
+This section provides instructions for how to set up your frontend so you can run models from the TT-Forge repo.
 
-Configure your hardware with tt-installer:
+Before running one of the demos in TT-Forge, you must:
+1. Determine which frontend you want to use:
+   * [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
+   * [TT-Torch](https://github.com/tenstorrent/tt-torch)
+   * [TT-XLA](https://github.com/tenstorrent/tt-xla)
+2. Decide what setup you want to use for the frontend:
+   * Wheel
+   * Docker
+3. Follow the installation instructions from the repo for your selected setup method:
+   * [TT-Forge-FE Wheel](https://github.com/tenstorrent/tt-forge-fe/blob/main/docs/src/getting_started.md)
+   * [TT-Forge-FE Docker](https://github.com/tenstorrent/tt-forge-fe/blob/main/docs/src/getting_started_docker.md)
+   * [TT-Torch Wheel](https://github.com/tenstorrent/tt-torch/blob/main/docs/src/getting_started.md)
+   * [TT-Torch Docker](https://github.com/tenstorrent/tt-torch/blob/main/docs/src/getting_started_docker.md)
+   * [TT-XLA Wheel](https://github.com/tenstorrent/tt-xla/blob/main/docs/src/getting_started.md)
+   * [TT-XLA Docker](https://github.com/tenstorrent/tt-xla/blob/main/docs/src/getting_started_docker.md)
 
-```bash
-TT_SKIP_INSTALL_PODMAN=0 TT_SKIP_INSTALL_METALIUM_CONTAINER=0 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
-```
-
->**NOTE:** This walkthrough assumes that you use the [Quick Installation](https://docs.tenstorrent.com/getting-started/README.html#quick-installation) instructions. If you want to use the tools installed by this script, you must activate the virtual environment it sets up - ```source ~/.tenstorrent-venv/bin/activate```.
-
-## Setting up the Docker Container
-
-The simplest way to run models is to use the Docker image. You should have 50G free for the container.
-
-**Docker Image**: ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-base-ird-ubuntu-22-04
-
-To install, do the following:
-
-1. Install Docker if you do not already have it:
-
-```bash
-sudo apt update
-sudo apt install docker.io -y
-sudo systemctl start docker
-sudo systemctl enable docker
-```
-
-2. Test that Docker is installed:
-
-```bash
-docker --version
-```
-
-3. Add your user to the Docker group:
-
-```bash
-sudo usermod -aG docker $USER
-newgrp docker
-```
-
-4. Run the container using the docker image:
-
-```bash
-sudo docker run \
-  --rm \
-  -it \
-  --privileged \
-  --device /dev/tenstorrent/0 \
-  -v /dev/hugepages-1G:/dev/hugepages-1G \
-  --mount type=bind,source=/sys/devices/system/node,target=/sys/devices/system/node \
-  ghcr.io/tenstorrent/tt-forge-fe/tt-forge-fe-ird-ubuntu-22-04
-```
-
-## Creating a Virtual Environment
-It is recommended that you install a virtual environment for the wheel you want to work with. Wheels from different repos may have conflicting dependencies.
-
-Create a virtual environment:
-
-```bash
-python3 -m venv forge-venv
-source forge-venv/bin/activate
-```
-
-## Installing a Wheel
-This section walks you through downloading and installing a wheel. You can install the wheel wherever you would like if it's for running a model. If you want to do development work, you must clone the repo you want, navigate into it, and then set up the wheel.
-
-1. Make sure you activate the virtual environment you created in the last step.
-
-> **NOTE**: If you plan to do development work, before continuing with these instructions, clone the repo you plan to use, then navigate into the repo. If you are just running models, this step is not necessary.
-
-2. Download the wheel(s) you want to use from the [Tenstorrent Nightly Releases](https://github.com/tenstorrent/tt-forge/releases) page.
-
-For this walkthrough, tt-forge-fe is used. You need to install two wheels for set up:
-
-```bash
-pip install https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.dev20250514060212/forge-0.1.0.dev20250514060212-cp310-cp310-linux_x86_64.whl
-```
-
-```bash
-pip install https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.dev20250514060212/tvm-0.1.0.dev20250514060212-cp310-cp310-linux_x86_64.whl
-```
-
-> **NOTE:** The commands are examples, for the latest install link, go to the
-> [Tenstorrent Nightly Releases](https://github.com/tenstorrent/tt-forge/releases)
-> page. The generic download will be:
-> `https://github.com/tenstorrent/tt-forge/releases/download/nightly-0.1.0.devDATE/
-> NAMEOFWHEEL`
->
-> If you plan to work with wheels from different repositories, make a separate
-> environment for each one. Some wheels have conflicting dependencies.
+4. Return to this repo and follow the instructions in the [Running a Demo](#running-a-demo) section.
 
 ## Running a Demo
 
 To run a demo, do the following:
 
-1. Clone the tt-forge repo (alternatively, you can download the script for the model you want to try):
+1. Clone the TT-Forge repo (alternatively, you can download the script for the model you want to try):
 
 ```bash
 git clone https://github.com/tenstorrent/tt-forge.git
 ```
 
-2. Navigate to **tt-forge/demos/tt-forge-fe**.
+2. Navigate to the folder for the frontend you want:
+   * [TT-Forge-FE Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-fe)
+   * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch)
+   * [TT-XLA Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla)
 
-3. Choose one of the available demos. At this time, you can try:
+3. In this walkthrough, [**resnet_50_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) from the TT-Forge-FE folder is used.
 
-| Model | Model Type | Description | Demo Code |
-|-------|------------|-------------|------------|
-| MobileNetV2 | CNN | Lightweight convolutional neural network for efficient image classification | [`cnn/mobile_netv2_demo.py`](cnn/mobile_netv2_demo.py) |
-| ResNet-50 | CNN | Deep residual network for image classification | [`cnn/resnet_50_demo.py`](cnn/resnet_50_demo.py) |
-| ResNet-50 (ONNX) | CNN | Deep residual network for image classification using ONNX format | [`cnn/resnet_onnx_demo.py`](cnn/resnet_onnx_demo.py) |
-| BERT | NLP | Bidirectional Encoder Representations from Transformers for natural language understanding tasks | [`nlp/bert_demo.py`](nlp/bert_demo.py) |
-
-In this walkthrough, **resnet_50_demo.py** is used.
-
-4. Run the selected script. As an example, this walkthrough uses the [ResNet 50 Demo](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) script. Navigate to the root of the tt-forge repository and run the following commands:
+4. From the TT-Forge-FE folder for models, run the **resnet_50_demo.py** script. Navigate to the [main folder in the TT-Forge repository](https://github.com/tenstorrent/tt-forge/tree/main) and run the following commands:
 
 ```bash
 export PYTHONPATH=.
