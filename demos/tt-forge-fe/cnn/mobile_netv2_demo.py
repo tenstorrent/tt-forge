@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# MobileNetV1 Demo Script
+# MobileNetV2 Demo Script
 
 import forge
 from third_party.tt_forge_models.mobilenetv2.pytorch import ModelLoader
