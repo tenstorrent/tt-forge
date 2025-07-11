@@ -44,11 +44,11 @@ runs:
 
         # Always passed the parent_run_id so we can track child workflows using the run-name: parent_run_id: ${{ github.run_id }} in workflows.
         if [ -n "${{ inputs.parent_run_id }}" ]; then
-          parent_run_id="${{ inputs.parent_run_id }}"
+          parent_run_id=" ${{ inputs.parent_run_id }}"
         else
           current_workflow_run_id=${{ github.run_id }}
           time_prefix=$(date +%s%N)
-          parent_run_id="${current_workflow_run_id}-${time_prefix}"
+          parent_run_id=" ${current_workflow_run_id}-${time_prefix}"
         fi
         json_payload=$(jq -r -c --arg parent_run_id "$parent_run_id" '. += { "parent_run_id": $parent_run_id }' <<<"$json_params")
 

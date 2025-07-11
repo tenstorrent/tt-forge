@@ -20,7 +20,7 @@ runs:
         set -e
         workflow_name="${{ inputs.workflow_name }}"
         parent_run_id="${{ inputs.parent_run_id }}"
-        check_parent_run_id_regex="(?<=parent_run_id\:)"
+        check_parent_run_id_regex="(?<=parent_run_id\:\s)"
         check_parent_run_id_regex+="$parent_run_id"
 
         echo "parent_run_id: $parent_run_id"
