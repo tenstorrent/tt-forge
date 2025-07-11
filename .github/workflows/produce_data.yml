@@ -7,6 +7,7 @@ on:
       - "Performance benchmark"
       - "Build TT-Forge Docker Images"
       - "Demo tests"
+      - "Performance Benchmark External Trigger"
     types:
       - completed
 

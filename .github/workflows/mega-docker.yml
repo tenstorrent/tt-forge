@@ -101,11 +101,12 @@ jobs:
     with:
       docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image-harbor }}
 
-  perf-test-tt-forge-slim:
-    needs:
-      - build-tt-forge-slim
-      - basic-test-tt-forge-slim
-    uses: ./.github/workflows/perf-benchmark.yml
-    secrets: inherit
-    with:
-      docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}
+  # Uncomment the following lines to enable performance tests, disabled because lack of runners and old version of tt-forge-fe released
+  # perf-test-tt-forge-slim:
+  #   needs:
+  #     - build-tt-forge-slim
+  #     - basic-test-tt-forge-slim
+  #   uses: ./.github/workflows/perf-benchmark.yml
+  #   secrets: inherit
+  #   with:
+  #     docker-image: ${{ needs.build-tt-forge-slim.outputs.docker-image }}

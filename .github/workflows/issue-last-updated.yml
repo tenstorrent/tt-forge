@@ -1,0 +1,24 @@
+name: Update Project Date on Issue Update
+
+on:
+  issues:
+    types: [opened, edited, deleted, closed, reopened, assigned, unassigned, labeled, unlabeled]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions:
+  repository-projects: write
+  issues: read
+  contents: read
+
+jobs:
+  update_project_date:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/issue-last-updated
+        with:
+          issue_number: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ secrets.TT_FORGE_PROJECT }}
