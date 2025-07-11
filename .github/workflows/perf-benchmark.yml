@@ -70,7 +70,7 @@ jobs:
           filter="$filter and (.name | contains(\"${{ inputs.test-filter }}\"))"
         fi
 
-        matrix=$(jq "[${filter})]" .github/workflows/perf-benchmarks.json)
+        matrix=$(jq "[${filter})]" .github/workflows/perf-bench-matrix.json)
         echo "Matrix: $matrix"
         echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
 
