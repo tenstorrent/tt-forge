@@ -22,6 +22,10 @@ on:
         description: "Only run tests that contains"
         required: false
         type: string
+      update-wheel:
+        description: "Update wheel for the project"
+        required: false
+        type: boolean
   workflow_call:
     inputs:
       docker-image:
@@ -126,10 +130,10 @@ jobs:
         fi
 
     - name: Install upgraded wheel
-      if: ${{ inputs.project && inputs.run_id }}
+      if: ${{ (inputs.project && inputs.project==matrix.build.project && inputs.run_id) || inputs.update-wheel }}
       uses: ./.github/actions/install-wheel
       with:
-        project: ${{ inputs.project }}
+        project: ${{ matrix.build.project }}
         run_id: ${{ inputs.run_id }}
 
     - name: Fetch job id
@@ -153,7 +157,7 @@ jobs:
 
     # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
-      uses: dawidd6/action-download-artifact@v6
+      uses: dawidd6/action-download-artifact@v11
       with:
         workflow_conclusion: success
         workflow: on-push.yml

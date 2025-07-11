@@ -4,7 +4,7 @@ on:
   repository_dispatch:
     types: [trigger-workflow]
 
-run-name: 'Perf benchmark exiternal trigger for ${{ github.event.client_payload.project }} run_id ${{ github.event.client_payload.run_id }}'
+run-name: 'Perf benchmark exiternal trigger from ${{ github.event.client_payload.project }} run_id ${{ github.event.client_payload.run_id }}'
 
 jobs:
   receive_trigger:
