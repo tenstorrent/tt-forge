@@ -4,6 +4,8 @@ on:
   repository_dispatch:
     types: [trigger-workflow]
 
+run-name: 'Perf benchmark exiternal trigger from ${{ github.event.client_payload.project }} run_id ${{ github.event.client_payload.run_id }}'
+
 jobs:
   receive_trigger:
     uses: ./.github/workflows/perf-benchmark.yml
@@ -13,3 +15,4 @@ jobs:
       project: ${{ github.event.client_payload.project }}
       run_id: ${{ github.event.client_payload.run_id }}
       ref: ${{ github.event.client_payload.ref }}
+      test-filter: ${{ github.event.client_payload.test_filter }}

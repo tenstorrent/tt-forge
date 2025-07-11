@@ -9,7 +9,7 @@ inputs:
     type: string
   run_id:
     description: 'Run ID to install wheel for'
-    required: true
+    required: false
     type: string
 
 runs:
@@ -33,11 +33,27 @@ runs:
           echo "Unknown project: ${{ inputs.project }}"
           exit 1
         fi
+        if [ -z "${{ inputs.run_id }}" ]; then
+          echo "run_id is not set, download from latest succesful run in main"
+        fi
 
     - name: Download wheel
+      if: ${{ inputs.run_id && inputs.run_id != '' }}
       uses: dawidd6/action-download-artifact@v11
       with:
         run_id: ${{ inputs.run_id }}
+        name: "${{ steps.set-wheel-name.outputs.artifact }}"
+        name_is_regexp: false
+        repo: "tenstorrent/${{ inputs.project }}"
+        check_artifacts: true
+
+    - name: Download ttrt wheel
+      if: ${{ !inputs.run_id || inputs.run_id == '' }}
+      uses: dawidd6/action-download-artifact@v11
+      with:
+        workflow_conclusion: success
+        workflow: on-push.yml
+        branch: main
         name: "${{ steps.set-wheel-name.outputs.artifact }}"
         name_is_regexp: false
         repo: "tenstorrent/${{ inputs.project }}"
