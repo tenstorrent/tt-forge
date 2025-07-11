@@ -16,6 +16,12 @@ inputs:
     description: "Parameters to pass to workflow"
     required: false
 
+
+outputs:
+  run_head_sha:
+    description: "Head SHA of the workflow run"
+    value: ${{ steps.wait-workflow.outputs.run_head_sha }}
+
 runs:
   using: "composite"
   steps:
@@ -40,6 +46,7 @@ runs:
 
     - name: Wait for workflow run
       if: ${{ inputs.wait }}
+      id: wait-workflow
       uses: ./.github/actions/wait-workflow
       with:
         workflow_name: ${{ inputs.workflow_name }}

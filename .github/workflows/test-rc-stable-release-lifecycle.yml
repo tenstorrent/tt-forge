@@ -85,12 +85,15 @@ jobs:
           repo: 'tt-mlir'
 
   mock-successful-workflow-pre-release-branch:
+    outputs:
+      run_head_sha: ${{ steps.trigger-workflow.outputs.run_head_sha }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/trigger-workflow
+        id: trigger-workflow
         with:
           workflow_name: 'Mock Successful'
           wait: true
@@ -112,7 +115,7 @@ jobs:
       draft_slug_name: ${{ matrix.repo_short }}
       workflow_allow_failed: false
       workflow: 'Mock Successful'
-      branch: ${{ github.head_ref }}
+      commit: ${{ needs.mock-successful-workflow-pre-release-branch.outputs.run_head_sha }}
       ignore_artifacts: true
 
   get-release-branches:
