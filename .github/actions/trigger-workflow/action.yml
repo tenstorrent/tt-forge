@@ -30,7 +30,7 @@ runs:
       run: |
         json_params="{}"
         if [ -n "${{ inputs.json_params }}" ]; then
-          json_params="${{ inputs.json_params }}"
+          json_params='${{ inputs.json_params }}'
         fi
         branch=${{ inputs.branch }}
         if [ -z "$branch" ]; then
@@ -39,7 +39,7 @@ runs:
         fi
 
         # Always passed the parent_run_id so we can track child workflows using the run-name: parent_run_id: ${{ github.run_id }} in workflows.
-        time_prefix=$(date +%N)
+        time_prefix=$(date +%s%N)
         current_workflow_run_id=${{ github.run_id }}
         parent_run_id="${current_workflow_run_id}-${time_prefix}"
         json_payload=$(jq -r -c --arg parent_run_id "$parent_run_id" '. += { "parent_run_id": $parent_run_id }' <<<"$json_params")

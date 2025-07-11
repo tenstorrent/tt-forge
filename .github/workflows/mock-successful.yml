@@ -6,8 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       parent_run_id:
-        description: "Parent run id used to track child workflows in automation"
+        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
         required: false
+        type: string
+        default: ""
 
 jobs:
   mock-successful:

@@ -17,6 +17,7 @@ runs:
     - name: Wait for workflow run
       shell: bash
       run: |
+        set -e
         workflow_name="${{ inputs.workflow_name }}"
         parent_run_id="${{ inputs.parent_run_id }}"
 
@@ -61,5 +62,5 @@ runs:
             array_ptr=$((array_ptr+1))
           done
         done
-        gh run watch $match_run_id
+        gh run watch --exit-status $match_run_id
         echo "Workflow run completed"

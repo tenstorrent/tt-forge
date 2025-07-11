@@ -186,6 +186,7 @@ runs:
             artifact_download_glob='*ttmlir-wheel*'
             pip_wheel_names="ttmlir"
             skip_model_compatible_table="true"
+            skip_docker_build="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
