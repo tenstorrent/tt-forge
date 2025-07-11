@@ -72,7 +72,11 @@ jobs:
 
         matrix=$(jq "[${filter})]" .github/workflows/perf-bench-matrix.json)
         echo "Matrix: $matrix"
-        echo "perf-benchmarks='$matrix'" >> $GITHUB_OUTPUT
+        if [ "$matrix" == "[]" ]; then
+          echo "Error: No matching tests found in the matrix"
+          exit 1
+        fi
+        echo "perf-benchmarks=\"$matrix\"" >> $GITHUB_OUTPUT
 
   run-perf-benchmarks:
     needs: filter-tests
