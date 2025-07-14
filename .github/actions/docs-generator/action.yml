@@ -46,6 +46,19 @@ inputs:
     description: "Make latest"
     required: false
     type: boolean
+  workflow_run_status_symbol:
+    description: "Run status symbol"
+    required: false
+    type: string
+  workflow_run_url:
+    description: "Run URL"
+    required: false
+    type: string
+  git_log_fail_on_error:
+    description: "Fail on error"
+    required: true
+    type: boolean
+    default: true
 
 runs:
   using: "composite"
@@ -68,6 +81,25 @@ runs:
         fi
         echo "old_version=$old_version" >> $GITHUB_OUTPUT
         echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+    - name: Create model compatible table
+      if: ${{ steps.set-release-facts.outputs.skip_model_compatible_table == 'false' }}
+      working-directory: ./.github/scripts/model-compatible-table
+      env:
+        XML_ROOT: ${{ github.workspace }}/release/artifacts
+        FILE_OUTPUT: ${{ github.workspace }}/release/docs/readme_hardware_table.md
+        URL_SHAS: '{"${{ inputs.repo }}": "${{ inputs.latest_commit }}"}'
+      shell: bash
+      run: |
+        readme_path="${{ github.workspace }}/release/docs"
+        mkdir -p $readme_path
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        python main.py
+        # Clean up XML files
+        find ${{ github.workspace }}/release/artifacts -type f -iname "*.xml" -delete
+
     - name: Build Changelog
       id: github_release
       uses: mikepenz/release-changelog-builder-action@v5
@@ -80,7 +112,7 @@ runs:
         fetchReleaseInformation: true
         fetchReviewers: true
         fetchReviews: true
-        failOnError: true
+        failOnError: ${{ inputs.git_log_fail_on_error }}
         mode: "COMMIT"
         configurationJson: |
           {
@@ -156,12 +188,9 @@ runs:
             fi
         done
 
-        found_files=$(find ${{ github.workspace }}/release/artifacts -type f -exec basename {} \;)
-        download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
-
-        echo "found_files=$found_files"
-        echo "download_list_files=$download_list_files"
         echo "pip_install_instructions=$pip_install_instructions"
+        # Generate Docker instructions
+
         docker_instructions="ghcr.io/tenstorrent/${{ inputs.repo_short }}-slim:${{ inputs.new_version_tag }}<br>"
         docker_instructions+="<br>More detailed instructions can be found in the [Getting Started](https://docs.tenstorrent.com/${{ inputs.repo_short }}) docker section<br>"
         echo "docker_instructions=$docker_instructions"
@@ -171,11 +200,9 @@ runs:
         :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo_short }})
         #### Install via pip
           $pip_install_instructions
-        #### Test status: ${{ fromJson(inputs.workflow_job_json).run-status-symbol }}
-        #### Workflow run: ${{ fromJson(inputs.workflow_job_json).run-url }}
+        #### Test status: ${{ inputs.workflow_run_status_symbol }}
+        #### Workflow run: ${{ inputs.workflow_run_url }}
         ${{ steps.github_release.outputs.changelog }}
-        #### Files:
-          $download_list_files
         EOF
 
         else
@@ -186,11 +213,18 @@ runs:
           $pip_install_instructions
         #### Docker container
           $docker_instructions
-        #### Test status: ${{ fromJson(inputs.workflow_job_json).run-status-symbol }}
-        #### Workflow run: ${{ fromJson(inputs.workflow_job_json).run-url }}
+        #### Test status: ${{ inputs.workflow_run_status_symbol }}
+        #### Workflow run: ${{ inputs.workflow_run_url }}
         ${{ steps.github_release.outputs.changelog }}
-        #### Files:
-          $download_list_files
         EOF
 
+        fi
+
+    - name: doc helper
+      shell: bash
+      id: doc_helper
+      run: |
+        # Used to add model compatible table to readme at the bottom of the document
+        if [[ -f ${{ github.workspace }}/release/docs/readme_hardware_table.md ]]; then
+          cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
         fi

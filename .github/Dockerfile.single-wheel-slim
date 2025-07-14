@@ -3,8 +3,8 @@ FROM ubuntu:22.04
 SHELL ["/bin/bash", "-c"]
 
 ARG WHL_VERSION
-ARG PIP_WHEEL_NAMES
 ARG REPO_SHORT
+ARG WHEEL_FILES_PATH
 
 LABEL org.opencontainers.image.source=https://github.com/tenstorrent/${REPO_SHORT}
 LABEL org.opencontainers.image.description=${REPO_SHORT}
@@ -50,9 +50,10 @@ WORKDIR /home/forge
 
 # Switch to forge user for remaining operations
 USER forge
-COPY --chmod=0755 .github/scripts/install_wheels.sh .
-
-# Install all wheels
-RUN PIP_WHEEL_NAMES="$PIP_WHEEL_NAMES" WHL_VERSION="$WHL_VERSION" ./install_wheels.sh && rm -f install_wheels.sh
+RUN --mount=type=bind,source=$WHEEL_FILES_PATH,target=/wheels \
+    ls -la /wheels && \
+    for wheel in /wheels/*.whl; do \
+      pip install "$wheel" --no-cache-dir; \
+    done
 
 CMD ["/bin/bash"]

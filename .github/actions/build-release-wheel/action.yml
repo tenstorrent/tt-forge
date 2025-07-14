@@ -1,5 +1,5 @@
-name: "Build Release"
-description: "Build Release"
+name: "Build Wheel Release"
+description: "Build Wheel Release"
 inputs:
   repo:
     description: "Repo name"
@@ -43,12 +43,18 @@ outputs:
   release-artifacts-id:
     description: "release artifacts"
     value: ${{ steps.release-artifacts.outputs.artifact-id }}
-  run-conclusion:
-    description: 'Workflow run conclusion'
-    value: ${{ steps.find_workflow_build_release.outputs.run_conclusion }}
+  workflow_run_status_symbol:
+    description: 'Workflow run status symbol'
+    value: ${{ steps.find_workflow_build_release.outputs.run-status-symbol }}
+  workflow_run_url:
+    description: 'Workflow run URL'
+    value: ${{ steps.find_workflow_build_release.outputs.run-url }}
   target_commit:
     description: "Target commit"
     value: ${{ steps.find_workflow_build_release.outputs.run-commit-sha }}
+  wheel_files_path:
+    description: "Wheel files path"
+    value: ${{ steps.get-wheel-files.outputs.wheel_files_path }}
 
 runs:
   using: "composite"
@@ -103,47 +109,15 @@ runs:
       run: ./.github/scripts/wheel-version-updater.sh
       shell: bash
 
-    - name: Create model compatible table
-      if: ${{ steps.set-release-facts.outputs.skip_model_compatible_table == 'false' }}
-      working-directory: ./.github/scripts/model-compatible-table
-      env:
-        XML_ROOT: ${{ github.workspace }}/release/artifacts
-        FILE_OUTPUT: ${{ github.workspace }}/release/docs/readme_hardware_table.md
-        URL_SHAS: '{"${{ inputs.repo }}": "${{ steps.find_workflow_build_release.outputs.run-commit-sha }}"}'
+    - name: Get wheel files path
       shell: bash
+      id: get-wheel-files
       run: |
-        readme_path="${{ github.workspace }}/release/docs"
-        mkdir -p $readme_path
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
-        python main.py
-        # Clean up XML files
-        find ${{ github.workspace }}/release/artifacts -type f -iname "*.xml" -delete
-
-    - name: Generate docs
-      uses: ./.github/actions/docs-generator
-      with:
-        repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
-        workflow_job_json: "${{ toJSON(steps.find_workflow_build_release.outputs) }}"
-        release_type: ${{ inputs.release_type }}
-        current_release_tag_commit: ${{ inputs.current_release_tag_commit }}
-        latest_commit: ${{ steps.find_workflow_build_release.outputs.run-commit-sha }}
-        major_version: ${{ steps.set-release-facts.outputs.major_version }}
-        minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
-        new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
-        pip_wheel_names: ${{ steps.set-release-facts.outputs.pip_wheel_names }}
-        skip_docker_build: ${{ steps.set-release-facts.outputs.skip_docker_build }}
-        make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
-
-    - name: doc helper
-      shell: bash
-      id: doc_helper
-      run: |
-        # Used to add model compatible table to readme at the bottom of the document
-        if [[ -f ${{ github.workspace }}/release/docs/readme_hardware_table.md ]]; then
-          cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
-        fi
+        wheel_files_path=$(find "${{ github.workspace }}/release/artifacts" -type f -iname "*.whl" -exec dirname {} \; | sort -u | xargs -I{} realpath --relative-to="${{ github.workspace }}" {})
+        echo "wheel_files_path=${wheel_files_path}"
+        echo "In wheel files path:"
+        ls $wheel_files_path
+        echo "wheel_files_path=${wheel_files_path}" >> $GITHUB_OUTPUT
 
     - name: Store release artifacts
       uses: actions/upload-artifact@v4

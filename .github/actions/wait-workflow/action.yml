@@ -7,11 +7,19 @@ inputs:
   branch:
     description: "Branch name"
     required: false
+  parent_run_id:
+    description: "Parent run id that dispatched the workflow"
+    required: true
+  ignore_run_conclusion:
+    description: "Ignore run conclusion"
+    required: false
+    default: false
 
 outputs:
   run_head_sha:
     description: "Head SHA of the workflow run"
     value: ${{ steps.wait-workflow.outputs.run_head_sha }}
+
 runs:
   using: "composite"
   steps:
@@ -19,20 +27,66 @@ runs:
       id: wait-workflow
       shell: bash
       run: |
+        set -e
         workflow_name="${{ inputs.workflow_name }}"
+        parent_run_id="${{ inputs.parent_run_id }}"
+
+        echo "parent_run_id: $parent_run_id"
+        echo "workflow_name: $workflow_name"
+
         branch="${{ inputs.branch }}"
         if [ -z "$branch" ]; then
           # Get the current branch name. Usefully for PRs and branches
           branch=${{ github.head_ref || github.ref_name }}
         fi
 
-        echo "Waiting for workflow run $workflow_name on branch $branch to complete"
-        while [ -z "$run_id" ]; do
-          run_id=$(gh run list --workflow="$workflow_name" --branch $branch -L 1 --json databaseId | jq -r '.[].databaseId')
-          run_head_sha=$(gh run list --workflow="$workflow_name" --branch $branch -L 1 --json headSha | jq -r '.[].headSha')
-          sleep 1
+        loop_count=50
+        echo "Waiting for workflow run $workflow_name on branch $branch with parent_run_id $parent_run_id to complete"
+        while [ -z "$match_run_id" ]; do
+          sleep 10
+          echo "Fetching runs for workflow $workflow_name on branch $branch"
+          runs=$(gh run list --workflow="$workflow_name" --branch $branch -L $loop_count --json databaseId,name,headSha,url)
+          array_ptr=0
+
+          while [[ $array_ptr -ne $loop_count ]]; do
+            run_id=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].databaseId')
+            run_name=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].name')
+            run_head_sha=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].headSha')
+            run_url=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].url')
+            if [[ "$run_id" == 'null' || "$run_name" == 'null' ]]; then
+              break
+            fi
+
+            set +e
+            check_parent_run_id=$(echo $run_name| grep -o "$parent_run_id")
+            set -e
+
+            echo "Checking for parent_run_id match"
+            echo "array_ptr: $array_ptr"
+            echo "check_parent_run_id: $check_parent_run_id"
+            echo "parent_run_id: $parent_run_id"
+            echo "run_name: $run_name"
+            echo "run_id: $run_id"
+            echo "run_url: $run_url"
+
+            if [[ "$check_parent_run_id" == "$parent_run_id" ]]; then
+              match_run_id=$run_id
+              echo "Found matching run with parent_run_id: $parent_run_id"
+              echo "Workflow run url: $run_url"
+              break
+            fi
+
+            array_ptr=$((array_ptr+1))
+          done
         done
-        gh run watch $run_id
+        gh run watch $match_run_id ||
         echo "Workflow run completed"
+        echo "Workflow run url: $run_url"
+        run_conclusion=$(gh run view $match_run_id --json conclusion | jq -rc '.conclusion')
+        echo "run_conclusion=$run_conclusion"
+        if [[ "$run_conclusion" != "success" && "${{ inputs.ignore_run_conclusion }}" == "false" ]]; then
+          echo "Workflow run failed"
+          exit 1
+        fi
         echo "run_head_sha=$run_head_sha"
         echo "run_head_sha=$run_head_sha" >> $GITHUB_OUTPUT

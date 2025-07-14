@@ -80,10 +80,13 @@ runs:
           fi
 
           release_type="rc"
-          check_release_type=$(echo "$current_release_tag" | grep -oP '(?<=rc)\d+$')
-          echo "check_release_type=$check_release_type"
-          if [[ -z "$check_release_type" ]]; then
-              release_type="stable"
+
+          set +e
+          check_release_type_stable=$(echo "$current_release_tag" | grep -oP '\d\.\d\.\d$')
+          set -e
+          echo "check_release_type_stable=$check_release_type_stable"
+          if [[ -n "$check_release_type_stable" ]]; then
+            release_type="stable"
           fi
           echo "release_type=$release_type"
 
