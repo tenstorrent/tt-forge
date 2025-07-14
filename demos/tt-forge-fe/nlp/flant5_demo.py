@@ -4,7 +4,7 @@
 # FLAN-T5  Demo Script
 
 import forge
-from third_party.tt_forge_models.mgp_str_base.pytorch import ModelLoader
+from third_party.tt_forge_models.flan_t5.pytorch import ModelLoader
 
 # Load model and input
 loader = ModelLoader()
