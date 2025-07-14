@@ -1,7 +1,15 @@
 name: Mock Successful
+run-name: Mock Successful ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}
+
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      parent_run_id:
+        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
+        required: false
+        type: string
+        default: ""
 
 jobs:
   mock-successful:

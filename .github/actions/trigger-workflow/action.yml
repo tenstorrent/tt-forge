@@ -15,34 +15,55 @@ inputs:
   json_params:
     description: "Parameters to pass to workflow"
     required: false
+  parent_run_id:
+    description: "Optional Parent run id that dispatched the workflow"
+    required: false
+    default: ""
 
 
 outputs:
   run_head_sha:
     description: "Head SHA of the workflow run"
     value: ${{ steps.wait-workflow.outputs.run_head_sha }}
+  parent_run_id:
+    description: "Parent run id that dispatched the workflow"
+    value: ${{ steps.trigger-workflow.outputs.parent_run_id }}
 
 runs:
   using: "composite"
   steps:
     - name: Trigger workflow
+      id: trigger-workflow
       shell: bash
       run: |
+        json_params="{}"
+        if [ -n "${{ inputs.json_params }}" ]; then
+          json_params='${{ inputs.json_params }}'
+        fi
         branch=${{ inputs.branch }}
         if [ -z "$branch" ]; then
           # Get the current branch name. Usefully for PRs and branches
           branch=${{ github.head_ref || github.ref_name }}
         fi
-        echo "Triggering workflow: ${{ inputs.workflow_name }} on branch $branch"
-        workflow_name="${{ inputs.workflow_name }}"
-        if [ -n "${{ inputs.json_params }}" ]; then
-          echo '${{ inputs.json_params }}' | gh workflow run "$workflow_name" --ref $branch  --json
-        else
-          gh workflow run "$workflow_name" --ref $branch
-        fi
-        echo "Workflow run in progress"
-        echo "branch=$branch" >> $GITHUB_OUTPUT
 
+        # Always passed the parent_run_id so we can track child workflows using the run-name: parent_run_id: ${{ github.run_id }} in workflows.
+        if [ -n "${{ inputs.parent_run_id }}" ]; then
+          parent_run_id=" ${{ inputs.parent_run_id }}"
+        else
+          current_workflow_run_id=${{ github.run_id }}
+          time_prefix=$(date +%s%N)
+          parent_run_id=" ${current_workflow_run_id}-${time_prefix}"
+        fi
+        json_payload=$(jq -r -c --arg parent_run_id "$parent_run_id" '. += { "parent_run_id": $parent_run_id }' <<<"$json_params")
+
+        echo "Triggering workflow: ${{ inputs.workflow_name }} on branch $branch with parent_run_id:$parent_run_id"
+        workflow_name="${{ inputs.workflow_name }}"
+
+        echo "json_payload=$json_payload"
+        echo "$json_payload" | gh workflow run "$workflow_name" --ref $branch --json
+        echo "Workflow run ${{ inputs.workflow_name }} on branch $branch with parent_run_id:$parent_run_id"
+        echo "branch=$branch" >> $GITHUB_OUTPUT
+        echo "parent_run_id=$parent_run_id" >> $GITHUB_OUTPUT
 
     - name: Wait for workflow run
       if: ${{ inputs.wait }}
@@ -51,3 +72,4 @@ runs:
       with:
         workflow_name: ${{ inputs.workflow_name }}
         branch: ${{ steps.trigger-workflow.outputs.branch }}
+        parent_run_id: ${{ steps.trigger-workflow.outputs.parent_run_id }}

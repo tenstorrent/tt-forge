@@ -1,4 +1,5 @@
 name: Basic tests
+run-name: Basic tests ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}
 
 on:
   workflow_dispatch:
@@ -8,6 +9,17 @@ on:
         required: false
         type: string
         default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+      parent_run_id:
+        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
+        required: false
+        type: string
+        default: ""
+      only_frontend:
+        description: "Only run frontend tests"
+        required: false
+        type: string
+        default: ""
+
   workflow_call:
     inputs:
       docker-image:
@@ -16,23 +28,48 @@ on:
         type: string
 
 jobs:
-  demo-test:
-    name: Basic test ${{ matrix.frontend }} on ${{ matrix.runs-on }}
+  build_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      json_matrix: ${{ steps.set-matrix.outputs.json_matrix }}
+    steps:
+      - name: Set matrix
+        id: set-matrix
+        shell: bash
+        run: |
+          json_matrix="[]"
+          frontends="tt-forge-fe tt-torch tt-xla"
+          runs_on="tt-beta-ubuntu-2204-n150-large-stable tt-beta-ubuntu-2204-p150b-large-stable"
+
+          if [ -n "${{ inputs.only_frontend }}" ]; then
+            frontends="${{ inputs.only_frontend }}"
+          fi
+
+          for frontend in $frontends; do
+            for run_on in $runs_on; do
+              json_matrix=$(echo $json_matrix | jq -r -c --arg frontend "$frontend" --arg run_on "$run_on" '. += [{
+              "frontend": $frontend,
+              "run_on": $run_on
+              }]')
+            done
+          done
+
+          echo "json_matrix=$json_matrix"
+          echo "json_matrix=$json_matrix" >> $GITHUB_OUTPUT
+
+
+  basic-test:
+    name: Basic test ${{ matrix.frontend }} on ${{ matrix.run_on }}
+    needs: build_matrix
     strategy:
       fail-fast: false
       matrix:
-        runs-on:
-          - tt-beta-ubuntu-2204-n150-large-stable
-          - tt-beta-ubuntu-2204-p150b-large-stable
-        frontend:
-          - tt-forge-fe
-          - tt-torch
-          - tt-xla
+        include: ${{ fromJson(needs.build_matrix.outputs.json_matrix) }}
 
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.run_on }}
     container:
       image: ${{ inputs.docker-image }}
-      options: --device /dev/tenstorrent --user root
+      options: --device /dev/tenstorrent --user forge
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -42,11 +79,41 @@ jobs:
 
     steps:
       - name: Checkout repository
+        if: ${{ inputs.only_frontend == matrix.frontend || !inputs.only_frontend }}
         uses: actions/checkout@v4
+
+      - name: Fix HOME Directory
+        shell: bash
+        run: |
+          # Issue [HOME is overridden for containers](https://github.com/actions/runner/issues/863)
+          h=$(getent passwd $(id -un) | cut -d: -f6)
+          if [ "$h" = "$HOME" ]; then
+            echo "HOME fine: $HOME"
+            exit 0
+          fi
+          echo "HOME=$HOME was broken. Setting it to $h"
+          ls -ld $HOME
+          ls -ld $h
+          echo "USER: $USER"
+          echo "id: $(id)"
+          echo "HOME=$h" >> $GITHUB_ENV
 
       - name: Run tests for ${{ matrix.frontend }}
         shell: bash
+        env:
+          # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
+          TRACY_NO_INVARIANT_CHECK: 1
         run: |
-          source /home/forge/venv-${{ matrix.frontend }}/bin/activate
-          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
+          set -xe
+          if [ -z "${{ inputs.only_frontend }}" ]; then
+            echo "Using /home/forge/venv-${{ matrix.frontend }}"
+            source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
+          fi
+          whoami
+          pip list
+          which python
+          which pip
+          ls /home/forge/.local/lib/python3.10/site-packages
+          python -m site --user-site
           python basic_tests/${{ matrix.frontend }}/demo_test.py
