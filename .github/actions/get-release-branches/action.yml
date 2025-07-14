@@ -82,7 +82,7 @@ runs:
           release_type="rc"
 
           set +e
-          check_release_type_stable=$(echo "$current_release_tag" | grep -oP '\d.\d.\d$')
+          check_release_type_stable=$(echo "$current_release_tag" | grep -oP '\d\.\d\.\d$')
           set -e
           echo "check_release_type_stable=$check_release_type_stable"
           if [[ -n "$check_release_type_stable" ]]; then
