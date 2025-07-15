@@ -59,19 +59,19 @@ runs:
       shell: bash
       id: build
       run: |
-          IMAGE_NAME=${{ inputs.image_name }}
-          DOCKER_TAG=${{ inputs.docker_tag }}
+          IMAGE_NAME="${{ inputs.image_name }}"
+          DOCKER_TAG="${{ inputs.docker_tag }}"
+          BUILD_ARGS="${{ inputs.build_args }}"
           echo "IMAGE_NAME=$IMAGE_NAME"
           echo "DOCKER_TAG=$DOCKER_TAG"
+          echo "BUILD_ARGS=$BUILD_ARGS"
 
           # Check if image already exists and not forced to rebuild
           if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ inputs.force_rebuild }}" != "true" ]]; then
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
           else
             echo "Building image $IMAGE_NAME:$DOCKER_TAG"
-            docker build -f ${{ inputs.dockerfile }} \
-              ${{ inputs.build_args }} \
-              -t $IMAGE_NAME:$DOCKER_TAG .
+            docker build -f ${{ inputs.dockerfile }} $BUILD_ARGS -t $IMAGE_NAME:$DOCKER_TAG .
             docker push $IMAGE_NAME:$DOCKER_TAG
             echo "Docker image size:"
             docker images --format "{{.Size}}" $IMAGE_NAME:$DOCKER_TAG

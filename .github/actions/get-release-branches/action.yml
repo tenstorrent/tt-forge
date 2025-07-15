@@ -95,7 +95,7 @@ runs:
           if [[ "${{ inputs.ignore_update_check }}" == "false" ]]; then
             if [[ "${{ inputs.draft }}" == "false" ]]; then
               if [[ "$release_type" == "rc" ]]; then
-                # Bump RC version for release candidate branch
+                echo "Bump RC version for release candidate branch"
                 IFS='.' read -r major minor patch_rc <<< "$current_release_tag"
                 patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
                 echo "patch=$patch"
@@ -105,13 +105,13 @@ runs:
                 echo "new_rc_version=$new_rc_version"
                 new_version_tag="${major}.${minor}.${patch}rc$((new_rc_version))"
               else
-                # Bump Patch version for stable branch
+                echo "Bump Patch version for stable branch"
                 IFS='.' read -r major minor patch <<< "$current_release_tag"
                 new_version_tag="${major}.${minor}.$((patch+1))"
               fi
             else
               if [[ "$release_type" == "rc" ]]; then
-                # Bump RC version for release candidate branch
+                echo "Draft Bump RC version for release candidate branch"
                 IFS='.' read -r draft repo major minor patch_rc <<< "$current_release_tag"
                 patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
                 echo "patch=$patch"
@@ -121,7 +121,7 @@ runs:
                 echo "new_rc_version=$new_rc_version"
                 new_version_tag="${draft}.${repo}.${major}.${minor}.${patch}rc$((new_rc_version))"
               else
-                # Bump Patch version for stable branch
+                echo "Draft Bump Patch version for stable branch"
                 IFS='.' read -r draft repo major minor patch <<< "$current_release_tag"
                 new_version_tag="${draft}.${repo}.${major}.${minor}.$((patch+1))"
               fi

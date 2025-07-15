@@ -6,6 +6,10 @@ inputs:
     description: "Repo's short name"
     required: true
     type: string
+  repo_full:
+    description: "Repo's full name"
+    required: true
+    type: string
   workflow_job_json:
     description: ""
     required: true
@@ -18,20 +22,8 @@ inputs:
     description: ""
     required: true
     type: string
-  current_release_tag_commit:
-    description: ""
-    required: false
-    type: string
   release_type:
     description: "Release type"
-    required: true
-    type: string
-  major_version:
-    description: "Major version"
-    required: true
-    type: string
-  minor_version:
-    description: "Minor version"
     required: true
     type: string
   pip_wheel_names:
@@ -63,23 +55,66 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Get tags
+    - name: Get current tags
       id: get-tags
       shell: bash
       run: |
         new_version="${{ inputs.latest_commit }}"
-        old_version="${{ inputs.current_release_tag_commit }}"
+        new_version_tag="${{ inputs.new_version_tag }}"
 
-        if [[ -z "${old_version}" ]]; then
-          old_version="${{ inputs.latest_commit }}"
+        get_latest_nightly_prelease() {
+          echo "Get nightly pre-release version for release type: ${{ inputs.release_type }}"
+          current_version=$(gh release list -L 50 --repo ${{ inputs.repo_full }} --json tagName,isPrerelease,isDraft | jq -rc '[.[] | select(.isPrerelease==true and .isDraft==false) | select(.tagName | contains(".dev"))] | first | .tagName')
+        }
+        get_latest_rc_prelease() {
+          echo "Get rc pre-release version for release type: ${{ inputs.release_type }}"
+          current_version=$(gh release list -L 50 --repo ${{ inputs.repo_full }} --json tagName,isPrerelease,isDraft | jq -rc '[.[] | select(.isPrerelease==true and .isDraft==false) | select(.tagName | contains("rc"))] | first | .tagName')
+        }
+
+        get_latest_stable_released() {
+          echo "Get latest released version for release type: ${{ inputs.release_type }}"
+          set +e
+          current_version=$(gh release list -R ${{ inputs.repo_full }} -L 50 --json isLatest,tagName | jq -rc '[.[] | select(.isLatest==true)] | first | .tagName')
+          set -e
+        }
+
+        if [[ "${{ inputs.release_type }}" == "stable" ]]; then
+          get_latest_stable_released
+
+          # If there is no latest stable version, use the latest nightly pre-release version
+          if [[ "$current_version" == "null" ]]; then
+            get_latest_nightly_prelease
+          fi
+
+        elif [[ "${{ inputs.release_type }}" == "rc" ]]; then
+
+          set +e
+          check_rc_initial_release=$(echo "$new_version_tag" | grep -q "rc1" && echo "true" || echo "false")
+          echo "check_rc_initial_release=$check_rc_initial_release"
+          set -e
+
+          # If the tag is a new rc release, use the latest stable release
+          if [[ "$check_rc_initial_release" == "true" ]]; then
+            get_latest_stable_released
+          else
+            # If there is a existing rc release, use the latest rc release
+            get_latest_rc_prelease
+          fi
+
+          # If nothing can be found, use the latest nightly pre-release version
+          if [[ "$current_version" == "null" ]]; then
+            get_latest_nightly_prelease
+          fi
+
+        else
+          # Assuming nightly pre-release
+          get_latest_nightly_prelease
         fi
 
-        ## TODO: Add Logic here to compare current stable release to latest stable release. First stable will compare to RC
+        echo "current_version=$current_version"
+        echo "new_version=$new_version"
 
-        if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
-          old_version="${{ inputs.major_version }}.${{ inputs.minor_version }}.0.dev$(date -d "24 hours ago" '+%Y%m%d')"
-        fi
-        echo "old_version=$old_version" >> $GITHUB_OUTPUT
+        echo "current_version=$current_version" >> $GITHUB_OUTPUT
         echo "new_version=$new_version" >> $GITHUB_OUTPUT
 
     - name: Create model compatible table
@@ -106,7 +141,7 @@ runs:
       with:
         owner: tenstorrent
         repo: ${{ inputs.repo_short }}
-        fromTag: ${{ steps.get-tags.outputs.old_version }}
+        fromTag: ${{ steps.get-tags.outputs.current_version }}
         toTag: ${{ steps.get-tags.outputs.new_version }}
         fetchViaCommits: true
         fetchReleaseInformation: true

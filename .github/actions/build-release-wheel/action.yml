@@ -21,9 +21,6 @@ inputs:
   latest_branch_commit:
     description: "Latest branch commit"
     required: false
-  current_release_tag_commit:
-    description: "Current release tag commit"
-    required: false
   new_version_tag:
     description: "New version tag for wheel"
     required: false
@@ -100,6 +97,7 @@ runs:
         new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
         draft: ${{ inputs.draft }}
         release_type: ${{ inputs.release_type }}
+        repo_full: ${{ steps.set-release-facts.outputs.repo_full }}
 
     - name: Update Wheel version to ${{ steps.set-release-facts.outputs.build_release_tag }}
       if: ${{ inputs.repo != 'tenstorrent/tt-forge' }}
