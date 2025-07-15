@@ -33,6 +33,10 @@ inputs:
     type: string
     required: false
     default: ''
+  draft:
+    description: 'Draft mode'
+    type: boolean
+    default: false
 
 outputs:
   image_tag:
@@ -62,16 +66,19 @@ runs:
           IMAGE_NAME="${{ inputs.image_name }}"
           DOCKER_TAG="${{ inputs.docker_tag }}"
           BUILD_ARGS="${{ inputs.build_args }}"
+          DRAFT="${{ inputs.draft }}"
+          DOCKERFILE="${{ inputs.dockerfile }}"
           echo "IMAGE_NAME=$IMAGE_NAME"
           echo "DOCKER_TAG=$DOCKER_TAG"
           echo "BUILD_ARGS=$BUILD_ARGS"
+          echo "DRAFT=$DRAFT"
 
           # Check if image already exists and not forced to rebuild
-          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ inputs.force_rebuild }}" != "true" ]]; then
+          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "${{ inputs.force_rebuild }}" != "true" ]]; then
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
           else
             echo "Building image $IMAGE_NAME:$DOCKER_TAG"
-            docker build -f ${{ inputs.dockerfile }} $BUILD_ARGS -t $IMAGE_NAME:$DOCKER_TAG .
+            docker build -f $DOCKERFILE $BUILD_ARGS -t $IMAGE_NAME:$DOCKER_TAG .
             docker push $IMAGE_NAME:$DOCKER_TAG
             echo "Docker image size:"
             docker images --format "{{.Size}}" $IMAGE_NAME:$DOCKER_TAG
@@ -80,7 +87,7 @@ runs:
           fi
 
           TAGS="--tag $IMAGE_NAME:$DOCKER_TAG"
-          if [[ "${{ inputs.make_latest }}" == "true" ]]; then
+          if [[ "${{ inputs.make_latest }}" == "true" && "${{ inputs.draft }}" == "false" ]]; then
             TAGS+=" --tag $IMAGE_NAME:latest"
           fi
           echo "TAGS=${TAGS}"
