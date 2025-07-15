@@ -116,15 +116,16 @@ jobs:
         unique_artifact_suffix: ${{ needs.generate-seed.outputs.id }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
 
-    - name: Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}
+    - name: "${{ inputs.draft && 'Draft' || '' }} Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}"
       if: ${{ (steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.check-tag.outputs.exists == 'false') || (steps.set-release-facts.outputs.skip_docker_build == 'false' && inputs.overwrite_releases) }}
       id: docker-build-push
       uses: ./.github/actions/docker-build-push
       with:
         image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
-        docker_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
+        docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
         make_latest: false
         force_rebuild: ${{ inputs.overwrite_releases }}
+        draft: ${{ inputs.draft }}
         dockerfile: ".github/Dockerfile.single-wheel-slim"
         build_args: "--build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }} --build-arg WHEEL_FILES_PATH=${{ steps.build-release-wheel.outputs.wheel_files_path }}"
 
@@ -186,14 +187,16 @@ jobs:
           artifact-ids: ${{ needs.build-release.outputs.release-artifacts-id }}
           path: ${{ github.workspace }}/release
 
-      - name: Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}
+      - name: "${{ inputs.draft && 'Draft' || '' }} Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
         id: docker-build-push
         uses: ./.github/actions/docker-build-push
         with:
           image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
-          docker_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
+          docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
           make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
+          draft: ${{ inputs.draft }}
+          dockerfile: ".github/Dockerfile.single-wheel-slim"
 
       - uses: ./.github/actions/publish-tenstorrent-pypi
         # Skip Wheel PyPI upload in workflow test
