@@ -113,8 +113,6 @@ jobs:
         release_type: ${{ inputs.release_type }}
         branch: ${{ inputs.branch || 'main' }}
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
-        latest_branch_commit: ${{ steps.set-release-facts.outputs.build_release_latest_branch_commit }}
-        current_release_tag_commit: ${{ steps.set-release-facts.outputs.current_release_tag_commit }}
         unique_artifact_suffix: ${{ needs.generate-seed.outputs.id }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
 
@@ -213,13 +211,13 @@ jobs:
 
       - name: Generate docs
         uses: ./.github/actions/docs-generator
+        env:
+          GH_TOKEN: ${{ github.token }}
         with:
           repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
+          repo_full: ${{ steps.set-release-facts.outputs.repo_full }}
           release_type: ${{ inputs.release_type }}
-          current_release_tag_commit: ${{ inputs.current_release_tag_commit }}
           latest_commit: ${{ needs.build-release.outputs.target_commit }}
-          major_version: ${{ steps.set-release-facts.outputs.major_version }}
-          minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
           new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
           pip_wheel_names: ${{ steps.set-release-facts.outputs.pip_wheel_names }}
           skip_docker_build: ${{ steps.set-release-facts.outputs.skip_docker_build }}
