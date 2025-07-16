@@ -57,7 +57,7 @@ runs:
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        body_path: "${{ github.workspace }}/release/build-release-${{ inputs.repo_short }}${{ inputs.unique_artifact_suffix }}/docs/readme"
+        body_path: "${{ github.workspace }}/release/docs/readme"
         token: ${{ inputs.release_token }}
         name: ${{ steps.set-name.outputs.name }}
         tag_name: ${{ inputs.new_version_tag }}
@@ -68,4 +68,4 @@ runs:
         make_latest: ${{ inputs.draft == 'true' && 'false' || inputs.make_latest }}
         fail_on_unmatched_files: true
         files: |
-          ${{ github.workspace }}/release/build-release-${{ inputs.repo_short }}${{ inputs.unique_artifact_suffix }}/artifacts/**
+          ${{ github.workspace }}/release/build-release-${{ inputs.repo_short }}${{ inputs.unique_artifact_suffix }}/artifacts/**/*.whl

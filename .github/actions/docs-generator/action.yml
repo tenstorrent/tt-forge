@@ -6,6 +6,10 @@ inputs:
     description: "Repo's short name"
     required: true
     type: string
+  repo_full:
+    description: "Repo's full name"
+    required: true
+    type: string
   workflow_job_json:
     description: ""
     required: true
@@ -18,20 +22,8 @@ inputs:
     description: ""
     required: true
     type: string
-  current_release_tag_commit:
-    description: ""
-    required: false
-    type: string
   release_type:
     description: "Release type"
-    required: true
-    type: string
-  major_version:
-    description: "Major version"
-    required: true
-    type: string
-  minor_version:
-    description: "Minor version"
     required: true
     type: string
   pip_wheel_names:
@@ -46,41 +38,116 @@ inputs:
     description: "Make latest"
     required: false
     type: boolean
+  workflow_run_status_symbol:
+    description: "Run status symbol"
+    required: false
+    type: string
+  workflow_run_url:
+    description: "Run URL"
+    required: false
+    type: string
+  git_log_fail_on_error:
+    description: "Fail on error"
+    required: true
+    type: boolean
+    default: true
 
 runs:
   using: "composite"
   steps:
-    - name: Get tags
+    - name: Get current tags
       id: get-tags
       shell: bash
       run: |
         new_version="${{ inputs.latest_commit }}"
-        old_version="${{ inputs.current_release_tag_commit }}"
+        new_version_tag="${{ inputs.new_version_tag }}"
 
-        if [[ -z "${old_version}" ]]; then
-          old_version="${{ inputs.latest_commit }}"
+        get_latest_nightly_prelease() {
+          echo "Get nightly pre-release version for release type: ${{ inputs.release_type }}"
+          current_version=$(gh release list -L 50 --repo ${{ inputs.repo_full }} --json tagName,isPrerelease,isDraft | jq -rc '[.[] | select(.isPrerelease==true and .isDraft==false) | select(.tagName | contains(".dev"))] | first | .tagName')
+        }
+        get_latest_rc_prelease() {
+          echo "Get rc pre-release version for release type: ${{ inputs.release_type }}"
+          current_version=$(gh release list -L 50 --repo ${{ inputs.repo_full }} --json tagName,isPrerelease,isDraft | jq -rc '[.[] | select(.isPrerelease==true and .isDraft==false) | select(.tagName | contains("rc"))] | first | .tagName')
+        }
+
+        get_latest_stable_released() {
+          echo "Get latest released version for release type: ${{ inputs.release_type }}"
+          set +e
+          current_version=$(gh release list -R ${{ inputs.repo_full }} -L 50 --json isLatest,tagName | jq -rc '[.[] | select(.isLatest==true)] | first | .tagName')
+          set -e
+        }
+
+        if [[ "${{ inputs.release_type }}" == "stable" ]]; then
+          get_latest_stable_released
+
+          # If there is no latest stable version, use the latest nightly pre-release version
+          if [[ "$current_version" == "null" ]]; then
+            get_latest_nightly_prelease
+          fi
+
+        elif [[ "${{ inputs.release_type }}" == "rc" ]]; then
+
+          set +e
+          check_rc_initial_release=$(echo "$new_version_tag" | grep -q "rc1" && echo "true" || echo "false")
+          echo "check_rc_initial_release=$check_rc_initial_release"
+          set -e
+
+          # If the tag is a new rc release, use the latest stable release
+          if [[ "$check_rc_initial_release" == "true" ]]; then
+            get_latest_stable_released
+          else
+            # If there is a existing rc release, use the latest rc release
+            get_latest_rc_prelease
+          fi
+
+          # If nothing can be found, use the latest nightly pre-release version
+          if [[ "$current_version" == "null" ]]; then
+            get_latest_nightly_prelease
+          fi
+
+        else
+          # Assuming nightly pre-release
+          get_latest_nightly_prelease
         fi
 
-        ## TODO: Add Logic here to compare current stable release to latest stable release. First stable will compare to RC
+        echo "current_version=$current_version"
+        echo "new_version=$new_version"
 
-        if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
-          old_version="${{ inputs.major_version }}.${{ inputs.minor_version }}.0.dev$(date -d "24 hours ago" '+%Y%m%d')"
-        fi
-        echo "old_version=$old_version" >> $GITHUB_OUTPUT
+        echo "current_version=$current_version" >> $GITHUB_OUTPUT
         echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+    - name: Create model compatible table
+      if: ${{ steps.set-release-facts.outputs.skip_model_compatible_table == 'false' }}
+      working-directory: ./.github/scripts/model-compatible-table
+      env:
+        XML_ROOT: ${{ github.workspace }}/release/artifacts
+        FILE_OUTPUT: ${{ github.workspace }}/release/docs/readme_hardware_table.md
+        URL_SHAS: '{"${{ inputs.repo }}": "${{ inputs.latest_commit }}"}'
+      shell: bash
+      run: |
+        readme_path="${{ github.workspace }}/release/docs"
+        mkdir -p $readme_path
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        python main.py
+        # Clean up XML files
+        find ${{ github.workspace }}/release/artifacts -type f -iname "*.xml" -delete
+
     - name: Build Changelog
       id: github_release
       uses: mikepenz/release-changelog-builder-action@v5
       with:
         owner: tenstorrent
         repo: ${{ inputs.repo_short }}
-        fromTag: ${{ steps.get-tags.outputs.old_version }}
+        fromTag: ${{ steps.get-tags.outputs.current_version }}
         toTag: ${{ steps.get-tags.outputs.new_version }}
         fetchViaCommits: true
         fetchReleaseInformation: true
         fetchReviewers: true
         fetchReviews: true
-        failOnError: true
+        failOnError: ${{ inputs.git_log_fail_on_error }}
         mode: "COMMIT"
         configurationJson: |
           {
@@ -156,12 +223,9 @@ runs:
             fi
         done
 
-        found_files=$(find ${{ github.workspace }}/release/artifacts -type f -exec basename {} \;)
-        download_list_files=$( echo "$found_files" | sed "s/.*/<li>&/g" | xargs |  tr -d ' ')
-
-        echo "found_files=$found_files"
-        echo "download_list_files=$download_list_files"
         echo "pip_install_instructions=$pip_install_instructions"
+        # Generate Docker instructions
+
         docker_instructions="ghcr.io/tenstorrent/${{ inputs.repo_short }}-slim:${{ inputs.new_version_tag }}<br>"
         docker_instructions+="<br>More detailed instructions can be found in the [Getting Started](https://docs.tenstorrent.com/${{ inputs.repo_short }}) docker section<br>"
         echo "docker_instructions=$docker_instructions"
@@ -171,11 +235,9 @@ runs:
         :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo_short }})
         #### Install via pip
           $pip_install_instructions
-        #### Test status: ${{ fromJson(inputs.workflow_job_json).run-status-symbol }}
-        #### Workflow run: ${{ fromJson(inputs.workflow_job_json).run-url }}
+        #### Test status: ${{ inputs.workflow_run_status_symbol }}
+        #### Workflow run: ${{ inputs.workflow_run_url }}
         ${{ steps.github_release.outputs.changelog }}
-        #### Files:
-          $download_list_files
         EOF
 
         else
@@ -186,11 +248,18 @@ runs:
           $pip_install_instructions
         #### Docker container
           $docker_instructions
-        #### Test status: ${{ fromJson(inputs.workflow_job_json).run-status-symbol }}
-        #### Workflow run: ${{ fromJson(inputs.workflow_job_json).run-url }}
+        #### Test status: ${{ inputs.workflow_run_status_symbol }}
+        #### Workflow run: ${{ inputs.workflow_run_url }}
         ${{ steps.github_release.outputs.changelog }}
-        #### Files:
-          $download_list_files
         EOF
 
+        fi
+
+    - name: doc helper
+      shell: bash
+      id: doc_helper
+      run: |
+        # Used to add model compatible table to readme at the bottom of the document
+        if [[ -f ${{ github.workspace }}/release/docs/readme_hardware_table.md ]]; then
+          cat ${{ github.workspace }}/release/docs/readme_hardware_table.md >> ${{ github.workspace }}/release/docs/readme
         fi

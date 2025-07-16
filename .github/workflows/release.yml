@@ -75,10 +75,12 @@ jobs:
     needs: generate-seed
     name: "${{ inputs.draft && 'Draft' || '' }} Build Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
     outputs:
-      release-artifacts-id: ${{ steps.build-release.outputs.release-artifacts-id }}
-      run-conclusion: ${{ steps.build-release.outputs.run-conclusion }}
+      release-artifacts-id: ${{ steps.build-release-wheel.outputs.release-artifacts-id }}
       check-tag: ${{ steps.check-tag.outputs.exists }}
-      target_commit: ${{ steps.build-release.outputs.target_commit }}
+      target_commit: ${{ steps.build-release-wheel.outputs.target_commit }}
+      harbor_image_tag: ${{ steps.docker-build-push.outputs.harbor_image_tag }}
+      workflow_run_status_symbol: ${{ steps.build-release-wheel.outputs.workflow_run_status_symbol }}
+      workflow_run_url: ${{ steps.build-release-wheel.outputs.workflow_run_url }}
 
     runs-on: ubuntu-latest
     env:
@@ -101,26 +103,69 @@ jobs:
         tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
         repo: ${{ inputs.draft && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
 
-    - name: Build Release Artifacts
+    - name: Build Release Wheel
       if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && steps.set-release-facts.outputs.event_name == 'workflow_dispatch') || steps.check-tag.outputs.exists == 'false' }}
-      id: build-release
-      uses: ./.github/actions/build-release
+      id: build-release-wheel
+      uses: ./.github/actions/build-release-wheel
       with:
         draft: ${{ inputs.draft }}
         repo: ${{ steps.set-release-facts.outputs.repo_full }}
         release_type: ${{ inputs.release_type }}
         branch: ${{ inputs.branch || 'main' }}
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
-        latest_branch_commit: ${{ steps.set-release-facts.outputs.build_release_latest_branch_commit }}
-        current_release_tag_commit: ${{ steps.set-release-facts.outputs.current_release_tag_commit }}
         unique_artifact_suffix: ${{ needs.generate-seed.outputs.id }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
+
+    - name: "${{ inputs.draft && 'Draft' || '' }} Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}"
+      if: ${{ (steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.check-tag.outputs.exists == 'false') || (steps.set-release-facts.outputs.skip_docker_build == 'false' && inputs.overwrite_releases) }}
+      id: docker-build-push
+      uses: ./.github/actions/docker-build-push
+      with:
+        image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
+        docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+        make_latest: false
+        force_rebuild: ${{ inputs.overwrite_releases }}
+        draft: ${{ inputs.draft }}
+        dockerfile: ".github/Dockerfile.single-wheel-slim"
+        build_args: "--build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }} --build-arg WHEEL_FILES_PATH=${{ steps.build-release-wheel.outputs.wheel_files_path }}"
+
+  test-release:
+    name: "${{ inputs.draft && 'Draft' || '' }} Test Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
+    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
+    needs:
+      - build-release
+      - generate-seed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/set-release-facts
+        id: set-release-facts
+        with:
+          repo: ${{ inputs.repo }}
+          release_type: ${{ inputs.release_type }}
+          draft: ${{ inputs.draft }}
+          new_version_tag: ${{ inputs.new_version_tag }}
+
+      - name: Trigger Docker Basic test ${{ steps.set-release-facts.outputs.repo_short }}
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        uses: ./.github/actions/trigger-workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          workflow_name: "Basic tests"
+          parent_run_id: "${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.id }}"
+          wait: true
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "only_frontend": "${{ steps.set-release-facts.outputs.repo_short }}" }'
 
   publish-release:
     name: "${{ inputs.draft && 'Draft' || '' }} Publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
     if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
     needs:
       - build-release
+      - test-release
       - generate-seed
     runs-on: ubuntu-latest
     steps:
@@ -135,12 +180,29 @@ jobs:
           draft: ${{ inputs.draft }}
           new_version_tag: ${{ inputs.new_version_tag }}
 
+      - name: Download Release Artifacts
+        id: download-release-artifacts
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build-release.outputs.release-artifacts-id }}
+          path: ${{ github.workspace }}/release
+
+      - name: "${{ inputs.draft && 'Draft' || '' }} Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        id: docker-build-push
+        uses: ./.github/actions/docker-build-push
+        with:
+          image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
+          docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+          make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
+          draft: ${{ inputs.draft }}
+          dockerfile: ".github/Dockerfile.single-wheel-slim"
+
       - uses: ./.github/actions/publish-tenstorrent-pypi
         # Skip Wheel PyPI upload in workflow test
         if: ${{ !inputs.draft }}
         #if: ${{ !inputs.draft && '${{ github.head_ref || github.ref_name }}' == 'main' }}
         with:
-          release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
           release-artifacts-name: build-release-${{ inputs.repo_short }}
           release-artifacts-wheel-path: artifacts
           role-to-assume: ${{ secrets.PYPI_ROLE }}
@@ -150,24 +212,22 @@ jobs:
           repo: ${{ inputs.repo }}
           overwrite_releases: ${{ inputs.overwrite_releases }}
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Generate docs
+        uses: ./.github/actions/docs-generator
+        env:
+          GH_TOKEN: ${{ github.token }}
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ github.token }}
-
-      - name: Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}
-        if: ${{  !inputs.draft && steps.set-release-facts.outputs.skip_docker_build == 'false' }}
-        uses: ./.github/actions/docker-build-push
-        with:
-          # TODO: Need to expand the permissions of secrets.TT_FORGE_RELEASER to publish image under frontend repos
-          image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
-          docker_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
+          repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
+          repo_full: ${{ steps.set-release-facts.outputs.repo_full }}
+          release_type: ${{ inputs.release_type }}
+          latest_commit: ${{ needs.build-release.outputs.target_commit }}
+          new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
+          pip_wheel_names: ${{ steps.set-release-facts.outputs.pip_wheel_names }}
+          skip_docker_build: ${{ steps.set-release-facts.outputs.skip_docker_build }}
           make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
-          force_rebuild: ${{ inputs.overwrite_releases }}
-          dockerfile: ".github/Dockerfile.single-wheel-slim"
-          build_args: "--build-arg WHL_VERSION=${{ steps.set-release-facts.outputs.build_release_tag }} --build-arg PIP_WHEEL_NAMES='${{ steps.set-release-facts.outputs.pip_wheel_names }}' --build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }}"
+          workflow_run_status_symbol: ${{ needs.build-release.outputs.workflow_run_status_symbol }}
+          workflow_run_url: ${{ needs.build-release.outputs.workflow_run_url }}
+          git_log_fail_on_error: ${{ steps.set-release-facts.outputs.git_log_fail_on_error }}
 
       - uses: ./.github/actions/publish-github-release
         with:

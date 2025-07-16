@@ -2,9 +2,6 @@ name: "Publish Tenstorrent PyPI"
 description: "Publish Tenstorrent PyPI"
 
 inputs:
-  release-artifacts-id:
-    description: "Release artifacts id"
-    required: true
   release-artifacts-name:
     description: "Release artifacts name"
     required: true
@@ -39,11 +36,6 @@ runs:
       with:
         repo: ${{ inputs.repo }}
         new_version_tag: ${{ inputs.new_version_tag }}
-
-    - uses: actions/download-artifact@v4
-      with:
-        artifact-ids: ${{ inputs.release-artifacts-id }}
-        path: ${{ github.workspace }}/release
 
     - name: Set up Python
       uses: actions/setup-python@v4

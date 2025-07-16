@@ -33,10 +33,29 @@ inputs:
     type: string
     required: false
     default: ''
+  draft:
+    description: 'Draft mode'
+    type: boolean
+    default: false
+
+outputs:
+  image_tag:
+    description: 'Image tag'
+    value: ${{ steps.build.outputs.image_tag }}
+  harbor_image_tag:
+    description: 'Harbor image tag'
+    value: ${{ steps.build.outputs.harbor_image_tag }}
 
 runs:
   using: "composite"
   steps:
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ github.token }}
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -44,19 +63,22 @@ runs:
       shell: bash
       id: build
       run: |
-          IMAGE_NAME=${{ inputs.image_name }}
-          DOCKER_TAG=${{ inputs.docker_tag }}
+          IMAGE_NAME="${{ inputs.image_name }}"
+          DOCKER_TAG="${{ inputs.docker_tag }}"
+          BUILD_ARGS="${{ inputs.build_args }}"
+          DRAFT="${{ inputs.draft }}"
+          DOCKERFILE="${{ inputs.dockerfile }}"
           echo "IMAGE_NAME=$IMAGE_NAME"
           echo "DOCKER_TAG=$DOCKER_TAG"
+          echo "BUILD_ARGS=$BUILD_ARGS"
+          echo "DRAFT=$DRAFT"
 
           # Check if image already exists and not forced to rebuild
-          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "$GITHUB_REF_NAME" != "main" ]] && [[ "${{ inputs.force_rebuild }}" != "true" ]]; then
+          if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "${{ inputs.force_rebuild }}" != "true" ]]; then
             echo "Image $IMAGE_NAME:$DOCKER_TAG already exists, skipping build"
           else
             echo "Building image $IMAGE_NAME:$DOCKER_TAG"
-            docker build -f ${{ inputs.dockerfile }} \
-              ${{ inputs.build_args }} \
-              -t $IMAGE_NAME:$DOCKER_TAG .
+            docker build -f $DOCKERFILE $BUILD_ARGS -t $IMAGE_NAME:$DOCKER_TAG .
             docker push $IMAGE_NAME:$DOCKER_TAG
             echo "Docker image size:"
             docker images --format "{{.Size}}" $IMAGE_NAME:$DOCKER_TAG
@@ -65,9 +87,15 @@ runs:
           fi
 
           TAGS="--tag $IMAGE_NAME:$DOCKER_TAG"
-          if [[ "${{ inputs.make_latest }}" == "true" ]]; then
+          if [[ "${{ inputs.make_latest }}" == "true" && "${{ inputs.draft }}" == "false" ]]; then
             TAGS+=" --tag $IMAGE_NAME:latest"
           fi
           echo "TAGS=${TAGS}"
-          set -x
           docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG $TAGS
+
+          image_tag="$IMAGE_NAME:$DOCKER_TAG"
+          harbor_image_tag="harbor.ci.tenstorrent.net/${image_tag}"
+          echo "image_tag=$image_tag"
+          echo "harbor_image_tag=$harbor_image_tag"
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
+          echo "harbor_image_tag=$harbor_image_tag" >> $GITHUB_OUTPUT

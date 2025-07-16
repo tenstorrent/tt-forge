@@ -80,10 +80,13 @@ runs:
           fi
 
           release_type="rc"
-          check_release_type=$(echo "$current_release_tag" | grep -oP '(?<=rc)\d+$')
-          echo "check_release_type=$check_release_type"
-          if [[ -z "$check_release_type" ]]; then
-              release_type="stable"
+
+          set +e
+          check_release_type_stable=$(echo "$current_release_tag" | grep -oP '\d\.\d\.\d$')
+          set -e
+          echo "check_release_type_stable=$check_release_type_stable"
+          if [[ -n "$check_release_type_stable" ]]; then
+            release_type="stable"
           fi
           echo "release_type=$release_type"
 
@@ -92,7 +95,7 @@ runs:
           if [[ "${{ inputs.ignore_update_check }}" == "false" ]]; then
             if [[ "${{ inputs.draft }}" == "false" ]]; then
               if [[ "$release_type" == "rc" ]]; then
-                # Bump RC version for release candidate branch
+                echo "Bump RC version for release candidate branch"
                 IFS='.' read -r major minor patch_rc <<< "$current_release_tag"
                 patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
                 echo "patch=$patch"
@@ -102,13 +105,13 @@ runs:
                 echo "new_rc_version=$new_rc_version"
                 new_version_tag="${major}.${minor}.${patch}rc$((new_rc_version))"
               else
-                # Bump Patch version for stable branch
+                echo "Bump Patch version for stable branch"
                 IFS='.' read -r major minor patch <<< "$current_release_tag"
                 new_version_tag="${major}.${minor}.$((patch+1))"
               fi
             else
               if [[ "$release_type" == "rc" ]]; then
-                # Bump RC version for release candidate branch
+                echo "Draft Bump RC version for release candidate branch"
                 IFS='.' read -r draft repo major minor patch_rc <<< "$current_release_tag"
                 patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
                 echo "patch=$patch"
@@ -118,7 +121,7 @@ runs:
                 echo "new_rc_version=$new_rc_version"
                 new_version_tag="${draft}.${repo}.${major}.${minor}.${patch}rc$((new_rc_version))"
               else
-                # Bump Patch version for stable branch
+                echo "Draft Bump Patch version for stable branch"
                 IFS='.' read -r draft repo major minor patch <<< "$current_release_tag"
                 new_version_tag="${draft}.${repo}.${major}.${minor}.$((patch+1))"
               fi

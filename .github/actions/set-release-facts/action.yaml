@@ -63,9 +63,9 @@ outputs:
   build_release_tag:
     description: "Build release tag"
     value: ${{ steps.set-manifest.outputs.build_release_tag }}
-  build_find_workflow_branch:
+  build_release_find_workflow_branch:
     description: "Build find workflow branch"
-    value: ${{ steps.set-manifest.outputs.build_find_workflow_branch }}
+    value: ${{ steps.set-manifest.outputs.build_release_find_workflow_branch }}
   workflow_allow_failed:
     description: "Return run even if workflow has failed"
     value: ${{ steps.set-manifest.outputs.workflow_allow_failed }}
@@ -105,6 +105,9 @@ outputs:
   skip_docker_build:
     description: "Skip docker build"
     value: ${{ steps.set-manifest.outputs.skip_docker_build }}
+  git_log_fail_on_error:
+    description: "Fail on error"
+    value: ${{ steps.set-manifest.outputs.git_log_fail_on_error }}
 
 runs:
   using: "composite"
@@ -138,6 +141,7 @@ runs:
         ignore_artifacts="false"
         skip_model_compatible_table="false"
         skip_docker_build="false"
+        git_log_fail_on_error="true"
 
         # Tag & Release Defaults
 
@@ -186,6 +190,7 @@ runs:
             artifact_download_glob='*ttmlir-wheel*'
             pip_wheel_names="ttmlir"
             skip_model_compatible_table="true"
+            skip_docker_build="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
@@ -216,6 +221,9 @@ runs:
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
             build_release_latest_branch_commit=""
 
+            # Used in testing to pick up the arfiacts from the main branch.
+            build_release_find_workflow_branch="main"
+
             # build_release_tag is a sanitized version tag for build_release action.
             # Tag sanitization only needs to happen for rc and stable release. See get-branches for more detail.
 
@@ -224,10 +232,14 @@ runs:
                 set +e
                 build_release_tag="$(echo "${new_version_tag}" | grep -oP '\d+\.\d+\.\d+')"
                 set -e
+                # Set to false for draft releases since we don't want to fail on error the RC & Stable Lifecycle test
+                git_log_fail_on_error="false"
             elif [[ "${{ inputs.release_type }}" == "rc" ]]; then
                 set +e
                 build_release_tag="$(echo "${new_version_tag}" | grep -oP '\d+\.\d+\.\d+rc\d+')"
                 set -e
+                # Set to false for draft releases since we don't want to fail on error the RC & Stable Lifecycle test
+                git_log_fail_on_error="false"
             else
                 build_release_tag="${new_version_tag}"
             fi
@@ -265,6 +277,7 @@ runs:
         echo "skip_model_compatible_table=$skip_model_compatible_table"
         echo "ignore_docker_instructions=$ignore_docker_instructions"
         echo "skip_docker_build=$skip_docker_build"
+        echo "git_log_fail_on_error=$git_log_fail_on_error"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -295,3 +308,4 @@ runs:
         echo "skip_model_compatible_table=$skip_model_compatible_table" >> $GITHUB_OUTPUT
         echo "ignore_docker_instructions=$ignore_docker_instructions" >> $GITHUB_OUTPUT
         echo "skip_docker_build=$skip_docker_build" >> $GITHUB_OUTPUT
+        echo "git_log_fail_on_error=$git_log_fail_on_error" >> $GITHUB_OUTPUT

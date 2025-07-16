@@ -13,6 +13,10 @@ inputs:
     description: "New version tag for wheel"
     required: true
     type: string
+  repo_full:
+    description: "Repo's full name"
+    required: true
+    type: string
 
 runs:
   using: "composite"
@@ -31,20 +35,9 @@ runs:
       shell: bash
       run: |
         NEW_VERSION_TAG=${{ inputs.new_version_tag }}
-        if [[ ${{ inputs.draft }} == 'true' ]]; then
+        if [[ "${{ inputs.draft }}" == "true" ]]; then
           # Take the last nightly release tag. Used for draft and workflow testing
-          n=0
-          until [ "$n" -ge 5 ]
-          do
-            set +e
-            NEW_VERSION_TAG=$(curl -s https://api.github.com/repos/tenstorrent/tt-mlir/releases | jq -r 'map(select(.name | contains(".dev"))) | first  | .tag_name')
-            set -e
-            if [[ -n "$NEW_VERSION_TAG" ]]; then
-              break
-            fi
-            n=$((n+1))
-            sleep 1
-          done
+          NEW_VERSION_TAG=$(gh release list -L 50 --repo ${{ inputs.repo_full }} --json tagName,isPrerelease,isDraft | jq -rc '[.[] | select(.isPrerelease==true and .isDraft==false) | select(.tagName | contains(".dev"))] | first | .tagName')
         fi
         echo "NEW_VERSION_TAG=$NEW_VERSION_TAG"
         echo "NEW_VERSION_TAG=$NEW_VERSION_TAG" >> $GITHUB_OUTPUT
