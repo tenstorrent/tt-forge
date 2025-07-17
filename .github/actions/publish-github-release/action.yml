@@ -48,12 +48,19 @@ runs:
       id: set-name
       shell: bash
       run: |
+        unique_artifacts_suffix="${{ inputs.unique_artifact_suffix }}"
         release_type="${{ inputs.release_type }}"
         if [[ "$release_type" == "stable" ]]; then
           echo "name=Beta ${{ inputs.new_version_tag }}" >> $GITHUB_OUTPUT
         else
           echo "name=${release_type^} ${{ inputs.new_version_tag }}" >> $GITHUB_OUTPUT
         fi
+        if [[ "${{ inputs.draft }}" != "true" ]]; then
+          unique_artifacts_suffix=""
+        fi
+        echo "unique_artifacts_suffix=$unique_artifacts_suffix"
+        echo "unique_artifacts_suffix=$unique_artifacts_suffix" >> $GITHUB_OUTPUT
+
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
       with:
@@ -68,4 +75,4 @@ runs:
         make_latest: ${{ inputs.draft == 'true' && 'false' || inputs.make_latest }}
         fail_on_unmatched_files: true
         files: |
-          ${{ github.workspace }}/release/build-release-${{ inputs.repo_short }}${{ inputs.unique_artifact_suffix }}/artifacts/**/*.whl
+          ${{ github.workspace }}/release/build-release-${{ inputs.repo_short }}${{ steps.set-name.outputs.unique_artifacts_suffix }}/artifacts/**/*.whl

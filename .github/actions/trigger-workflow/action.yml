@@ -7,7 +7,7 @@ inputs:
     required: true
   wait:
     description: "Wait for workflow run to complete"
-    required: true
+    required: false
     default: true
   branch:
     description: "Branch name"
@@ -19,12 +19,18 @@ inputs:
     description: "Optional Parent run id that dispatched the workflow"
     required: false
     default: ""
-
+  wait_for_run_url:
+    description: "Wait only for run url"
+    required: false
+    default: false
 
 outputs:
   run_head_sha:
     description: "Head SHA of the workflow run"
     value: ${{ steps.wait-workflow.outputs.run_head_sha }}
+  run_url:
+    description: "Run url of the workflow run"
+    value: ${{ steps.wait-workflow.outputs.run_url }}
   parent_run_id:
     description: "Parent run id that dispatched the workflow"
     value: ${{ steps.trigger-workflow.outputs.parent_run_id }}
@@ -66,7 +72,7 @@ runs:
         echo "parent_run_id=$parent_run_id" >> $GITHUB_OUTPUT
 
     - name: Wait for workflow run
-      if: ${{ inputs.wait }}
+      if: ${{ inputs.wait_for_run_url == 'true' || inputs.wait == 'true' }}
       id: wait-workflow
       uses: ./.github/actions/wait-workflow
       with:

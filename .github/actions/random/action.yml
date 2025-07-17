@@ -18,9 +18,6 @@ runs:
       id: random
       shell: bash
       run: |
-        # Keep empty for production runs
-        if [ "${{ inputs.draft }}" == "true" ]; then
-          id="$(date +%s)"
-        fi
+        id="$(date +%s)"
         echo "id=$id"
         echo "id=$id" >> $GITHUB_OUTPUT

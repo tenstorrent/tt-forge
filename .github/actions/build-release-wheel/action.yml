@@ -117,9 +117,20 @@ runs:
         ls $wheel_files_path
         echo "wheel_files_path=${wheel_files_path}" >> $GITHUB_OUTPUT
 
+    - name: use unique artifact suffix
+      id: use-unique-artifact-suffix
+      shell: bash
+      run: |
+        unique_artifact_suffix="${{ inputs.unique_artifact_suffix }}"
+        if [[ "${{ inputs.draft }}" != "true" ]]; then
+          unique_artifact_suffix=""
+        fi
+        echo "unique_artifact_suffix=$unique_artifact_suffix"
+        echo "unique_artifact_suffix=$unique_artifact_suffix" >> $GITHUB_OUTPUT
+
     - name: Store release artifacts
       uses: actions/upload-artifact@v4
       id: release-artifacts
       with:
-        name: build-release-${{ steps.set-release-facts.outputs.repo_short }}${{ inputs.unique_artifact_suffix }}
+        name: build-release-${{ steps.set-release-facts.outputs.repo_short }}${{ steps.use-unique-artifact-suffix.outputs.unique_artifact_suffix }}
         path: ${{ github.workspace }}/release/**
