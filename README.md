@@ -26,7 +26,7 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 - [TT-TVM](https://github.com/tenstorrent/tt-tvm)
 
 -----
-# What is this Repo?
+# What Is This Repo?
 This repository is the central hub for the tt-forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Please file any issues with questions or feedback you may have [here](https://github.com/tenstorrent/tt-forge/issues).
 
 # Getting Started Guide
