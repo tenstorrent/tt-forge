@@ -51,6 +51,14 @@ inputs:
     required: true
     type: boolean
     default: true
+  docker_basic_test_run_url:
+    description: "Docker Basic test run URL"
+    required: false
+    type: string
+  docker_demo_test_run_url:
+    description: "Docker Demo test run URL"
+    required: false
+    type: string
 
 runs:
   using: "composite"
@@ -226,7 +234,7 @@ runs:
         echo "pip_install_instructions=$pip_install_instructions"
         # Generate Docker instructions
 
-        docker_instructions="ghcr.io/tenstorrent/${{ inputs.repo_short }}-slim:${{ inputs.new_version_tag }}<br>"
+        docker_instructions="docker pull ghcr.io/tenstorrent/${{ inputs.repo_short }}-slim:${{ inputs.new_version_tag }}<br>"
         docker_instructions+="<br>More detailed instructions can be found in the [Getting Started](https://docs.tenstorrent.com/${{ inputs.repo_short }}) docker section<br>"
         echo "docker_instructions=$docker_instructions"
 
@@ -235,8 +243,10 @@ runs:
         :green_book: [Getting started](https://docs.tenstorrent.com/${{ inputs.repo_short }})
         #### Install via pip
           $pip_install_instructions
-        #### Test status: ${{ inputs.workflow_run_status_symbol }}
-        #### Workflow run: ${{ inputs.workflow_run_url }}
+        #### Tests:
+        - Workflow:
+          - Run link: ${{ inputs.workflow_run_url }}
+          - Status: ${{ inputs.workflow_run_status_symbol }}
         ${{ steps.github_release.outputs.changelog }}
         EOF
 
@@ -248,8 +258,13 @@ runs:
           $pip_install_instructions
         #### Docker container
           $docker_instructions
-        #### Test status: ${{ inputs.workflow_run_status_symbol }}
-        #### Workflow run: ${{ inputs.workflow_run_url }}
+        #### Tests:
+        - Workflow:
+          - Run link: ${{ inputs.workflow_run_url }}
+          - Status: ${{ inputs.workflow_run_status_symbol }}
+        - Docker:
+          - Basic: ${{ inputs.docker_basic_test_run_url }}
+          - Demo: ${{ inputs.docker_demo_test_run_url }}
         ${{ steps.github_release.outputs.changelog }}
         EOF
 

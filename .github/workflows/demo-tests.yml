@@ -1,4 +1,5 @@
 name: Demo tests
+run-name: Demo tests ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}
 
 on:
   workflow_dispatch:
@@ -8,6 +9,26 @@ on:
         required: false
         type: string
         default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+      parent_run_id:
+        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
+        required: false
+        type: string
+        default: ""
+      project-filter:
+        description: "Project filter"
+        required: false
+        type: choice
+        options:
+          - tt-forge-fe
+          - tt-torch
+          - tt-xla
+          - All
+        default: All
+      test-filter:
+        description: "Only run tests that contains"
+        required: false
+        type: string
+        default: ""
   workflow_call:
     inputs:
       docker-image:
@@ -16,34 +37,65 @@ on:
         type: string
 
 jobs:
+  set-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix-json.outputs.matrix }}
+      matrix_skip: ${{ steps.set-matrix-json.outputs.matrix_skip }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Filter Matrix
+      id: set-matrix-json
+      shell: bash
+      run: |
+        matrix_skip="false"
+        # Start with a basic filter that selects all items
+        filter='.[] | select(true'
+
+        # Add frontend filter if specified
+        if [ "${{ inputs.project-filter }}" != "All" ]; then
+          project="${{ inputs.project-filter }}"
+          filter="$filter and .frontend == \"$project\""
+        fi
+
+        # Add test name filter if specified
+        if [ -n "${{ inputs.test-filter }}" ]; then
+          filter="$filter and .name == \"${{ inputs.test-filter }}\""
+        fi
+
+        # Close the select statement
+        filter="$filter)"
+
+        echo "filter=$filter"
+
+        # Apply the filter to the matrix JSON file
+        matrix=$(jq -c "[${filter}]" .github/workflows/models-matrix.json)
+
+        # Check if any tests matched our filter criteria
+        if [ "$matrix" == "[]" ]; then
+          echo "Error: No matching tests found in the matrix"
+          matrix_skip="true"
+        fi
+
+        echo "matrix=$matrix"
+        echo "matrix_skip=$matrix_skip"
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT
+        echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
+
   demo-test:
-    name: Demo ${{ matrix.demos.frontend }} ${{ matrix.demos.demo }} on ${{ matrix.runs-on }}
+    if: ${{ needs.set-matrix.outputs.matrix_skip == 'false' }}
+    needs: set-matrix
+    name: Demo ${{ matrix.frontend }} ${{ matrix.name }} on ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
-        runs-on:
-          - tt-beta-ubuntu-2204-n150-large-stable
-          - tt-beta-ubuntu-2204-p150b-large-stable
-        demos:
-          - { "frontend": "tt-forge-fe", "demo": "cnn/mobile_netv2_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_50_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "cnn/resnet_onnx_demo.py" }
-          - { "frontend": "tt-forge-fe", "demo": "nlp/bert_demo.py" }
-          - { "frontend": "tt-torch", "demo": "resnet50_benchmark.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
-          - { "frontend": "tt-torch", "demo": "resnet50_demo.py", pyreq: "loguru requests transformers datasets torchvision pytest tabulate" }
-          - { "frontend": "tt-xla", "demo": "/albert_base_v2/demo.py", "pyreq_file": "true" }
-          - { "frontend": "tt-xla", "demo": "/gpt2/demo.py", "pyreq_file": "true" }
-          - { "frontend": "tt-xla", "demo": "/opt_125m/demo.py", "pyreq_file": "true" }
-        include:
-          - demos: { "frontend": "tt-torch", "demo": "llama_7b_pipeline_parallel.py", pyreq: "loguru requests transformers==4.52.4 datasets torchvision pytest tabulate accelerate" }
-            runs-on: tt-beta-ubuntu-2204-n300-large-stable
-          - demos: { "frontend": "tt-torch", "demo": "llama3.2_generate_demo.py", pyreq: "transformers==4.52.4" }
-            runs-on: tt-beta-ubuntu-2204-n150-large-stable
+        include: ${{ fromJson(needs.set-matrix.outputs.matrix) }}
 
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.runs-on && format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.runs-on) }}
     container:
       image: ${{ inputs.docker-image }}
-      options: --device /dev/tenstorrent --user root
+      options: --device /dev/tenstorrent
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -58,28 +110,107 @@ jobs:
           fetch-depth: 0  # Fetch all history for all branches and tags
           submodules: 'recursive'
 
+      - name: Fix HOME Directory
+        shell: bash
+        run: |
+          # Issue [HOME is overridden for containers](https://github.com/actions/runner/issues/863)
+          h=$(getent passwd $(id -un) | cut -d: -f6)
+          if [ "$h" = "$HOME" ]; then
+            echo "HOME fine: $HOME"
+            exit 0
+          fi
+          echo "HOME=$HOME was broken. Setting it to $h"
+          ls -ld $HOME
+          ls -ld $h
+          echo "USER: $USER"
+          echo "id: $(id)"
+          echo "HOME=$h" >> $GITHUB_ENV
+
       - name: Install system and python dependencies
         shell: bash
         run: |
-          if [ -n "${{ matrix.demos.libreq }}" ]; then
-            apt-get install -y -qq --no-install-recommends ${{ matrix.demos.libreq }}
+          if [ -n "${{ matrix.libreq }}" ]; then
+            apt-get install -y -qq --no-install-recommends ${{ matrix.libreq }}
           fi
 
-          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
-          if [ -n "${{ matrix.demos.pyreq }}" ]; then
-            pip install ${{ matrix.demos.pyreq }}
+          if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
+            echo "Using /home/forge/venv-${{ matrix.frontend }}"
+            source /home/forge/venv-${{ matrix.frontend }}/bin/activate
           fi
-          if [ "${{ matrix.demos.pyreq_file }}" == "true" ]; then
-            REQUIREMENTS_PATH=$(dirname demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }})
+
+          if [ -n "${{ matrix.pyreq }}" ]; then
+            pip install ${{ matrix.pyreq }}
+          fi
+
+          if [ "${{ matrix.pyreq_file }}" == "true" ]; then
+            REQUIREMENTS_PATH=$(dirname demos/${{ matrix.frontend }}/${{ matrix.path }})
             pip install -r $REQUIREMENTS_PATH/requirements.txt
           fi
 
-      - name: Run ${{ matrix.demos.frontend }} demo ${{ matrix.demos.demo }}
+      - name: Run ${{ matrix.frontend }} demo ${{ matrix.name }}
         shell: bash
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_HOME: /mnt/dockercache/huggingface
+          HF_HOME: /home/forge/huggingface
+          # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
+          TRACY_NO_INVARIANT_CHECK: 1
         run: |
-          source /home/forge/venv-${{ matrix.demos.frontend }}/bin/activate
-          pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          PYTHONPATH=$PYTHONPATH:$(pwd) python demos/${{ matrix.demos.frontend }}/${{ matrix.demos.demo }}
+          if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
+            echo "Using /home/forge/venv-${{ matrix.frontend }}"
+            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
+            source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+          fi
+
+          third_party_models="$(realpath third_party)"
+          demo_folder=$(dirname demos/${{ matrix.frontend }}/${{ matrix.path }})
+          cd $demo_folder
+          ln -s $third_party_models third_party
+          demo_file=$(basename "${{ matrix.path }}")
+          python $demo_file
+
+
+  fail-notify:
+    if: always()
+    needs:
+      - demo-test
+    runs-on: ubuntu-latest
+    outputs:
+      is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
+      failed: ${{ steps.check.outputs.failure }}
+      is-draft: ${{ steps.draft-check.outputs.IS_DRAFT }}
+    steps:
+      - name: Check if branch is main
+        id: branch-check
+        run: echo "IS_MAIN=$(if [ '${{ github.ref }}' == 'refs/heads/main' ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+      - name: Check draft
+        id: draft-check
+        run: |
+          parent_run_id="${{ inputs.parent_run_id }}"
+          set +e
+          draft_check="$(echo "$parent_run_id" | grep 'draft')"
+          set -e
+          echo "IS_DRAFT=$(if [ -z "$draft_check" ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+      - name: Check if the needed jobs succeeded or failed
+        id: check
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: demo-test
+
+  fail-send-msg:
+    if: always()
+    needs:
+      - fail-notify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Fail Notification
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' }}
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Demo tests ${{ matrix.frontend }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "channel": "C088QN7E0R3"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}

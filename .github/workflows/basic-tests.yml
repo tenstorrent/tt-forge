@@ -14,11 +14,16 @@ on:
         required: false
         type: string
         default: ""
-      only_frontend:
-        description: "Only run frontend tests"
+      project-filter:
+        description: "Project filter"
         required: false
-        type: string
-        default: ""
+        type: choice
+        options:
+          - tt-forge-fe
+          - tt-torch
+          - tt-xla
+          - All
+        default: All
 
   workflow_call:
     inputs:
@@ -41,8 +46,8 @@ jobs:
           frontends="tt-forge-fe tt-torch tt-xla"
           runs_on="tt-beta-ubuntu-2204-n150-large-stable tt-beta-ubuntu-2204-p150b-large-stable"
 
-          if [ -n "${{ inputs.only_frontend }}" ]; then
-            frontends="${{ inputs.only_frontend }}"
+          if [ -n "${{ inputs.project-filter }}" ]; then
+            frontends="${{ inputs.project-filter }}"
           fi
 
           for frontend in $frontends; do
@@ -105,7 +110,7 @@ jobs:
           TRACY_NO_INVARIANT_CHECK: 1
         run: |
           set -xe
-          if [ -z "${{ inputs.only_frontend }}" ]; then
+          if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
             echo "Using /home/forge/venv-${{ matrix.frontend }}"
             source /home/forge/venv-${{ matrix.frontend }}/bin/activate
             pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
