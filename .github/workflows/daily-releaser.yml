@@ -115,7 +115,6 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: release-nightly
 
   fail-send-msg:
     if: always()
@@ -124,12 +123,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Fail Notification
-        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' }}
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && github.event_name == 'schedule' }}
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
             {
-              "text": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "text": "Daily Releaser failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
               "channel": "C088QN7E0R3"
             }
         env:

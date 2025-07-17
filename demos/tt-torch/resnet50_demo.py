@@ -31,7 +31,7 @@ def main(run_interactive):
     headers = ["Top 5 Predictions"]
     topk = 5
 
-    DEFAULT_IMAGE = "demos/tt-torch/000000039769.jpg"
+    DEFAULT_IMAGE = "000000039769.jpg"
 
     def process_image(img_path):
         if img_path == "":

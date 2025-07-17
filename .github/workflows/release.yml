@@ -61,15 +61,14 @@ jobs:
 
   generate-seed:
     outputs:
-      id: ${{ steps.random.outputs.id }}
+      random-seed: ${{ steps.random.outputs.id }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - uses: ./.github/actions/random
+    - name: Generate random seed
+      uses: ./.github/actions/random
       id: random
-      with:
-        draft: ${{ inputs.draft }}
 
   build-release:
     needs: generate-seed
@@ -113,7 +112,7 @@ jobs:
         release_type: ${{ inputs.release_type }}
         branch: ${{ inputs.branch || 'main' }}
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
-        unique_artifact_suffix: ${{ needs.generate-seed.outputs.id }}
+        unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
 
     - name: "${{ inputs.draft && 'Draft' || '' }} Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}"
@@ -130,6 +129,9 @@ jobs:
         build_args: "--build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }} --build-arg WHEEL_FILES_PATH=${{ steps.build-release-wheel.outputs.wheel_files_path }}"
 
   test-release:
+    outputs:
+      docker_basic_test_run_url: ${{ steps.trigger-basic-test.outputs.run_url }}
+      docker_demo_test_run_url: ${{ steps.trigger-demo-test.outputs.run_url }}
     name: "${{ inputs.draft && 'Draft' || '' }} Test Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
     if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
     needs:
@@ -151,14 +153,37 @@ jobs:
 
       - name: Trigger Docker Basic test ${{ steps.set-release-facts.outputs.repo_short }}
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        id: trigger-basic-test
         uses: ./.github/actions/trigger-workflow
         env:
           GH_TOKEN: ${{ github.token }}
         with:
           workflow_name: "Basic tests"
-          parent_run_id: "${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.id }}"
-          wait: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "only_frontend": "${{ steps.set-release-facts.outputs.repo_short }}" }'
+          parent_run_id: "basic-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+          wait: false
+          wait_for_run_url: true
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}" }'
+
+      - name: Trigger Docker Demo test ${{ steps.set-release-facts.outputs.repo_short }}
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        uses: ./.github/actions/trigger-workflow
+        id: trigger-demo-test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          workflow_name: "Demo tests"
+          parent_run_id: "demo-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
+          wait_for_run_url: true
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_demo_filter }}" }'
+
+      - name: Wait for Basic tests
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        uses: ./.github/actions/wait-workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          parent_run_id: ${{ steps.trigger-basic-test.outputs.parent_run_id }}
 
   publish-release:
     name: "${{ inputs.draft && 'Draft' || '' }} Publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
@@ -228,6 +253,8 @@ jobs:
           workflow_run_status_symbol: ${{ needs.build-release.outputs.workflow_run_status_symbol }}
           workflow_run_url: ${{ needs.build-release.outputs.workflow_run_url }}
           git_log_fail_on_error: ${{ steps.set-release-facts.outputs.git_log_fail_on_error }}
+          docker_basic_test_run_url: ${{ needs.test-release.outputs.docker_basic_test_run_url }}
+          docker_demo_test_run_url: ${{ needs.test-release.outputs.docker_demo_test_run_url }}
 
       - uses: ./.github/actions/publish-github-release
         with:
@@ -240,7 +267,7 @@ jobs:
           repo_short: ${{ inputs.repo_short }}
           prerelease: ${{ inputs.prerelease || steps.set-release-facts.outputs.prerelease }}
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
-          unique_artifact_suffix: ${{ needs.generate-seed.outputs.id }}
+          unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
           make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
 
       - uses: ./.github/actions/push-tag

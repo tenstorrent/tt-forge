@@ -25,7 +25,7 @@ from collections import OrderedDict
 warnings.filterwarnings("ignore")
 import time
 
-with open("demos/tt-torch/imagenet2012.json", "r") as f:
+with open("imagenet2012.json", "r") as f:
     IMAGENET2012_CLASSES = json.load(f, object_pairs_hook=OrderedDict)
 
 # Load DeiT model and processor

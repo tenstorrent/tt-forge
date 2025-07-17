@@ -14,11 +14,18 @@ inputs:
     description: "Ignore run conclusion"
     required: false
     default: false
+  wait_for_run_url:
+    description: "Wait only for run url"
+    required: false
+    default: false
 
 outputs:
   run_head_sha:
     description: "Head SHA of the workflow run"
     value: ${{ steps.wait-workflow.outputs.run_head_sha }}
+  run_url:
+    description: "Run url of the workflow run"
+    value: ${{ steps.wait-workflow.outputs.run_url }}
 
 runs:
   using: "composite"
@@ -79,14 +86,20 @@ runs:
             array_ptr=$((array_ptr+1))
           done
         done
-        gh run watch $match_run_id ||
-        echo "Workflow run completed"
-        echo "Workflow run url: $run_url"
-        run_conclusion=$(gh run view $match_run_id --json conclusion | jq -rc '.conclusion')
-        echo "run_conclusion=$run_conclusion"
-        if [[ "$run_conclusion" != "success" && "${{ inputs.ignore_run_conclusion }}" == "false" ]]; then
-          echo "Workflow run failed"
-          exit 1
+        if [[ "${{ inputs.wait_for_run_url }}" == "true" ]]; then
+          echo "Workflow run url: $run_url"
+        else
+          gh run watch $match_run_id
+          echo "Workflow run completed"
+          echo "Workflow run url: $run_url"
+          run_conclusion=$(gh run view $match_run_id --json conclusion | jq -rc '.conclusion')
+          echo "run_conclusion=$run_conclusion"
+          if [[ "$run_conclusion" != "success" && "${{ inputs.ignore_run_conclusion }}" == "false" ]]; then
+            echo "Workflow run failed"
+            exit 1
+          fi
         fi
         echo "run_head_sha=$run_head_sha"
+        echo "run_url=$run_url"
         echo "run_head_sha=$run_head_sha" >> $GITHUB_OUTPUT
+        echo "run_url=$run_url" >> $GITHUB_OUTPUT

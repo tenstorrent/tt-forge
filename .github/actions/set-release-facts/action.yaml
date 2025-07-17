@@ -108,6 +108,13 @@ outputs:
   git_log_fail_on_error:
     description: "Fail on error"
     value: ${{ steps.set-manifest.outputs.git_log_fail_on_error }}
+  test_demo_filter:
+    description: "Test demo filter"
+    value: ${{ steps.set-manifest.outputs.test_demo_filter }}
+  test_demo_wait:
+    description: "Test demo wait"
+    value: ${{ steps.set-manifest.outputs.test_demo_wait }}
+
 
 runs:
   using: "composite"
@@ -142,6 +149,8 @@ runs:
         skip_model_compatible_table="false"
         skip_docker_build="false"
         git_log_fail_on_error="true"
+        test_demo_filter=""
+        test_demo_wait="false"
 
         # Tag & Release Defaults
 
@@ -216,6 +225,9 @@ runs:
         # REF: https://packaging.python.org/en/latest/discussions/versioning/#valid-version-numbers
         if [[ "${{ inputs.draft }}" == "true" ]]; then
             prerelease="true"
+            # Wait for the demo test to complete only for draft releases and run only one test
+            test_demo_filter="opt_125m"
+            test_demo_wait="true"
 
             # null out the commit to so e2e testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
@@ -278,6 +290,8 @@ runs:
         echo "ignore_docker_instructions=$ignore_docker_instructions"
         echo "skip_docker_build=$skip_docker_build"
         echo "git_log_fail_on_error=$git_log_fail_on_error"
+        echo "test_demo_filter=$test_demo_filter"
+        echo "test_demo_wait=$test_demo_wait"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -309,3 +323,5 @@ runs:
         echo "ignore_docker_instructions=$ignore_docker_instructions" >> $GITHUB_OUTPUT
         echo "skip_docker_build=$skip_docker_build" >> $GITHUB_OUTPUT
         echo "git_log_fail_on_error=$git_log_fail_on_error" >> $GITHUB_OUTPUT
+        echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
+        echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
