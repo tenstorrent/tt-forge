@@ -189,7 +189,10 @@ jobs:
           set +e
           draft_check="$(echo "$parent_run_id" | grep 'draft')"
           set -e
-          echo "IS_DRAFT=$(if [ -z "$draft_check" ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+          echo "draft_check=$draft_check"
+          IS_DRAFT="$(if [ -n "$draft_check" ]; then echo true; else echo false; fi)"
+          echo "IS_DRAFT=$IS_DRAFT"
+          echo "IS_DRAFT=$IS_DRAFT" >> $GITHUB_OUTPUT
       - name: Check if the needed jobs succeeded or failed
         id: check
         uses: re-actors/alls-green@release/v1
