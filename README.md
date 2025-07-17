@@ -16,7 +16,7 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 
 -----
 # Quick Links
-- [Getting Started / How to Run a Model](docs/src/getting_started.md)
+- [Getting Started / How to Run a Model](https://docs.tenstorrent.com/tt-forge/getting_started.html)
 - [Interactive Tenstorrent Software Diagram](#interactive-tenstorrent-sofware-architecture-diagram)
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
 - [TT-Torch](https://github.com/tenstorrent/tt-torch)
@@ -266,16 +266,16 @@ flowchart TD
 ### Current AI Framework Front End Projects
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
   - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([TT-TVM](https://github.com/tenstorrent/tt-tvm)).
-  - See [docs pages](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html) for an overview and getting started guide.
+  - See the [TT-Forge-FE docs pages](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html) for an overview and getting started guide.
 
 - [TT-Torch](https://github.com/tenstorrent/tt-torch)
 
   - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to TT-MLIR. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
-  - See [docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide.
+  - See the [TT-Torch docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide.
 
 - [TT-XLA](https://github.com/tenstorrent/tt-xla)
   - Leverages a PJRT interface to integrate JAX (and in the future other frameworks), TT-MLIR and Tenstorrent hardware. Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to TT-MLIR compiler
-  - See [README](https://docs.tenstorrent.com/tt-xla) for an overview and getting started guide.
+  - See the [TT-XLA docs pages](https://docs.tenstorrent.com/tt-xla) for an overview and getting started guide.
 
 
 ## [TT-MLIR](https://github.com/tenstorrent/tt-mlir) Project

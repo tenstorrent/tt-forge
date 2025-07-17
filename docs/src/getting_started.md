@@ -20,16 +20,18 @@ Before running one of the demos in TT-Forge, you must:
    * [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
    * [TT-Torch](https://github.com/tenstorrent/tt-torch)
    * [TT-XLA](https://github.com/tenstorrent/tt-xla)
+
 2. Decide what setup you want to use for the frontend:
    * Wheel
    * Docker
+
 3. Follow the installation instructions from the repo for your selected setup method:
-   * [TT-Forge-FE Wheel](https://github.com/tenstorrent/tt-forge-fe/blob/main/docs/src/getting_started.md)
-   * [TT-Forge-FE Docker](https://github.com/tenstorrent/tt-forge-fe/blob/main/docs/src/getting_started_docker.md)
-   * [TT-Torch Wheel](https://github.com/tenstorrent/tt-torch/blob/main/docs/src/getting_started.md)
-   * [TT-Torch Docker](https://github.com/tenstorrent/tt-torch/blob/main/docs/src/getting_started_docker.md)
-   * [TT-XLA Wheel](https://github.com/tenstorrent/tt-xla/blob/main/docs/src/getting_started.md)
-   * [TT-XLA Docker](https://github.com/tenstorrent/tt-xla/blob/main/docs/src/getting_started_docker.md)
+   * [TT-Forge-FE Wheel](https://docs.tenstorrent.com/tt-forge-fe/getting_started.html)
+   * [TT-Forge-FE Docker](https://docs.tenstorrent.com/tt-forge-fe/getting_started_docker.html)
+   * [TT-Torch Wheel](https://docs.tenstorrent.com/tt-torch/getting_started.html)
+   * [TT-Torch Docker](https://docs.tenstorrent.com/tt-torch/getting_started_docker.html)
+   * [TT-XLA Wheel](https://docs.tenstorrent.com/tt-xla/getting_started.html)
+   * [TT-XLA Docker](https://docs.tenstorrent.com/tt-xla/getting_started_docker.html)
 
 4. Return to this repo and follow the instructions in the [Running a Demo](#running-a-demo) section.
 
@@ -75,7 +77,7 @@ To run performance benchmarks for all models, you need to install additional lib
 
    **Example:**
 
-   If you want to test a model from `tt-torch` project, you would run:
+   If you want to test a model from the TT-Torch project, you would run:
 
    ```bash
    pip install -r benchmark/tt-torch/requirements.txt
