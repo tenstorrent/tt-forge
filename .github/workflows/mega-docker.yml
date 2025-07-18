@@ -43,7 +43,7 @@ jobs:
       - name: Set daily tag
         shell: bash
         run: |
-          DAILY_TAG=dev$(date +'%Y%m%d')
+          DAILY_TAG=dev$(date +'%Y%m%d')-test-unified
           echo "daily_tag=${DAILY_TAG}" >> $GITHUB_ENV
 
       - name: Build and push tt-forge-slim
