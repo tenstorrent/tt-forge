@@ -5,13 +5,14 @@
 
 - [Overview](#overview)
   - [Supported Repositories](#supported-repositories)
-  - [Workflow Diagram](#workflow-diagram)
-- [Core Release Processes](#core-release-processes)
+  - [Quick Start Release Guide](#quick-start-release-guide)
+  - [Release Flow Diagram](#release-flow-diagram)
   - [Daily Releaser](#daily-releaser)
   - [Creating a Release Branch & Initial RC](#creating-a-release-branch--initial-rc)
   - [Promoting a Release Candidate to Stable](#promoting-a-release-candidate-to-stable)
 - [Maintainer's Guide](#maintainers-guide)
   - [Testing Workflows](#testing)
+  - [Core Release Processes](#core-release-processes)
   - [Common Workflows](#common-workflows)
   - [Common Actions](#common-actions)
   - [Unique Actions](#unique-actions)
@@ -35,7 +36,41 @@ Currently this release process manages the release for the following repositorie
 - TT-Xla
 - TT-Mlir
 
-### Workflow Diagram
+### Quick Start Release Guide
+
+#### Create a Release Branch and Initial RC
+
+##### Prerequisites
+
+- A successful workflow run for that repository's commit that produced a wheel artifact
+
+##### Creation
+1. Trigger the [create-version-branches.yml](.github/workflows/create-version-branches.yml) workflow manually through the GitHub Actions UI
+2. Specify the target repository, commit, workflow override if needed
+
+#### Promote a Release Candidate to Beta
+
+##### Prerequisites
+
+- A successful workflow on the latest commit of a release branch (e.g. release-0.1) that produced a wheel artifact and an RC tag
+
+##### Promotion
+1. Trigger the [promote-release.yml](.github/workflows/promote-release.yml) workflow manually through the GitHub Actions UI
+2. Specify the target repository, release branch, workflow override if needed
+
+#### Promote Beta to Stable
+
+##### Prerequisites
+
+- A thoroughly tested RC/Beta release that is ready for production use
+- The latest commit on the release branch matches the commit of the RC/Beta tag
+
+##### Promotion
+1. Trigger the [promote-stable.yml](.github/workflows/promote-stable.yml) workflow manually through the GitHub Actions UI
+2. Specify the target repository and the release branch name
+3. The workflow will create a stable version tag (removing the RC suffix) and mark the release as latest
+
+### Release Flow Diagram
 
 ```mermaid
 graph TD
@@ -72,19 +107,101 @@ graph TD
 
 
     %% Common Release Path
-    A1[Release]
-    A1 --> B1[Build Release]
-    B1 --> |Check workflow && uplift artifacts & create docs| C1[Publish Release]
-    C1 --> D1[Publish to TT PyPI]
-    D1 --> E1[Build Docker Image]
-    E1 --> F1[Create GitHub Release & Tag Commit Version]
+    subgraph A1[Release]
+        subgraph A7a[Build Release]
+            A7b[Check workflow]
+            A7c[Uplift artifacts]
+            A7d[Re-version wheel]
+            A7e[Build docker image]
+            A7b --> A7c --> A7d --> A7e
+        end
+
+        subgraph A8[Test Release]
+            A8a[Docker Basic Test]
+            A8b[Async Docker Demo Test]
+            A8a --> A8b
+        end
+
+        subgraph A9[Publish Release]
+            A9a[Tag Docker to Latest if GH Latest]
+            A9b[Publish to TT-PyPI]
+            A9c[Generate docs]
+            A9d[Create GitHub Release & Tag Commit]
+            A9a --> A9b --> A9c --> A9d
+        end
+
+        A7a --> A8 --> A9
+    end
 
 ```
 
+## Maintainer's Guide
+
+> This section provides detailed information for maintainers of the TT-Forge release process, including workflow descriptions, testing procedures, and common actions reference.
+
+### Testing
+
+#### Docker Basic Test
+
+This [workflow](.github/workflows/basic-tests.yml) runs simple tests across different frontends to verify the basic functionality of a Docker image. It provides quick validation that the image works as expected on supported hardware configurations.
+
+What this workflow does:
+
+- Tests multiple frontends (tt-forge-fe, tt-torch, tt-xla) against the provided Docker image
+- Runs tests on different hardware configurations (N150 and P150B boards)
+- Activates the appropriate Python virtual environment for each frontend
+- Executes basic test scripts to validate core functionality
+- Reports success or failure for each frontend/hardware combination
+
+The workflow can be triggered manually with options to specify a particular Docker image and to filter by project/frontend.
+
+#### Docker Demo Test
+
+This [workflow](.github/workflows/demo-tests.yml) runs more comprehensive demonstration tests across the supported frontends to verify the functionality of Docker images with real-world examples. These tests are more extensive than the basic tests and may include model inference.
+
+What this workflow does:
+
+- Configures a test matrix based on frontends and available demo tests
+- Supports filtering by frontend (tt-forge-fe, tt-torch, tt-xla) and test name
+- Runs tests on specific hardware configurations based on the test requirements
+- Automatically installs required system dependencies and Python packages
+- Executes demo scripts that demonstrate the full functionality of each frontend
+- Handles complex test environments with model downloads and configuration
+- Reports detailed success or failure information with Slack notifications for failures on the main branch
+
+Demo tests represent the async testing portion of the release process, providing confidence that the release works with real-world use cases.
+
+#### Test Nightly Releaser
+
+This [workflow](.github/workflows/test-nightly-releaser.yml) allows testing of a nightly release process without triggering actual production nightly releases. This workflow verifies that the nightly build workflow functions correctly across all repositories.
+
+What this workflow does:
+
+- Generate builds from a repository's main branch
+- Tag builds with date-based versions (e.g., draft.TT-Forge-fe.0.1.0dev20250708)
+- Simulate the publishing process with draft status so the github release page can be view in TT-Forge repository.
+
+What this workflow does not do:
+
+- Publish to PyPI
+- Build Docker images
+
+#### Test RC/Stable Release Lifecycle
+
+This [workflow](.github/workflows/test-rc-stable-release-lifecycle.yml) allows testing of the RC to stable release promotion process without triggering actual production releases. This workflow verifies that the RC to stable build workflow functions correctly. Currently we only use tt-mlir for this test.
+
+What this workflow does:
 
 
+- Uses create version branch tag to create the tag initial tag (e.g., 0.1.0rc1) and a draft release of RC1
+- Simulates a user commit and workflow success on release branch (e.g draft-tt-mlir.0.1.0rc1)
+- Runs update release branch to create RC2 and a draft release of RC2
+- Promote the RC2 to stable and create a stable draft release (e.g draft-tt-mlir.0.1.0)
 
-## Core Release Processes
+
+### Core Release Processes
+
+> This section details the primary workflows that drive the TT-Forge release lifecycle, including daily releases, branch creation, and promotion processes. These workflows form the backbone of the release automation system shown in the [Release Flow Diagram](#release-flow-diagram).
 
 ### Daily Releaser
 
@@ -161,41 +278,6 @@ To promote a release candidate to stable:
 3. Specify the target repository and the release branch name
 
 > **Note:** Once promoted to stable, the release branch continues to be monitored by the daily releaser for patch updates (e.g., `X.Y.1`, `X.Y.2`) as needed.
-
-
-## Maintainer's Guide
-
-
-### Testing
-
-#### Test Nightly Releaser
-
-This [workflow](.github/workflows/test-nightly-releaser.yml) allows testing of a nightly release process without triggering actual production nightly releases. This workflow verifies that the nightly build workflow functions correctly across all repositories.
-
-What this workflow does:
-
-- Generate builds from a repository's main branch
-- Tag builds with date-based versions (e.g., draft.TT-Forge-fe.0.1.0dev20250708)
-- Simulate the publishing process with draft status so the github release page can be view in TT-Forge repository.
-
-What this workflow does not do:
-
-- Publish to PyPI
-- Build Docker images
-
-#### Test RC/Stable Release Lifecycle
-
-This [workflow](.github/workflows/test-rc-stable-release-lifecycle.yml) allows testing of the RC to stable release promotion process without triggering actual production releases. This workflow verifies that the RC to stable build workflow functions correctly. Currently we only use tt-mlir for this test.
-
-What this workflow does:
-
-
-- Uses create version branch tag to create the tag initial tag (e.g., 0.1.0rc1) and a draft release of RC1
-- Simulates a user commit and workflow success on release branch (e.g draft-tt-mlir.0.1.0rc1)
-- Runs update release branch to create RC2 and a draft release of RC2
-- Promote the RC2 to stable and create a stable draft release (e.g draft-tt-mlir.0.1.0)
-
-
 ### Common Workflows
 
 #### Release
@@ -461,6 +543,16 @@ If the daily releaser is not updating versions as expected:
 1. **Workflow Status**: Ensure workflows on the release branch are completing successfully
 2. **Commit Detection**: Verify that new commits have been made to the release branch
 3. **Branch Format**: Confirm the branch follows the `release-X.Y` naming convention
+
+#### Version Progression Example
+
+A typical version progression for a release might look like:
+
+1. Development: `0.1.0.dev20250708` (nightly build from main branch)
+2. Initial RC: `0.1.0rc1` (created when release branch is made)
+3. Updated RC: `0.1.0rc2` (after fixes on release branch)
+4. Stable: `0.1.0` (promoted from RC2)
+5. Patch: `0.1.1` (after bug fixes on stable release branch)
 
 ### Getting Help
 
