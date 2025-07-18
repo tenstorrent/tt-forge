@@ -212,7 +212,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "Demo tests ${{ matrix.frontend }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "text": "Demo tests ${{ inputs.project-filter }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
               "channel": "C088QN7E0R3"
             }
         env:
