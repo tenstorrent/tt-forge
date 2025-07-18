@@ -89,6 +89,7 @@ def test_yolo_v9(
     compiled_model = forge.compile(
         framework_model, sample_inputs=input_sample, module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save("out.ttnn")
 
     # Run for the first time to warm up the model, it will be done by verify function.
     # This is required to get accurate performance numbers.

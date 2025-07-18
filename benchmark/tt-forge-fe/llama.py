@@ -103,6 +103,7 @@ def test_llama_prefill(
     # This is the part of the model needed for prefill; model without the last Linear layer (lm_head)
     model_decoder = model.get_decoder()
     compiled_decoder = forge.compile(model_decoder, sample_inputs=input_ids)
+    compiled_decoder.save("out.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()

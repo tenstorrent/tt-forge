@@ -107,6 +107,7 @@ def test_mnist_linear(
     fw_out = framework_model(*inputs)
 
     compiled_model = forge.compile(framework_model, sample_inputs=inputs)
+    compiled_model.save("out.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()

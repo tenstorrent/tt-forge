@@ -120,6 +120,7 @@ def test_resnet_hf(
     compiler_cfg.enable_optimization_passes = True
     compiler_cfg.mlir_config = mlir_config
     compiled_model = forge.compile(framework_model, inputs[0], compiler_cfg=compiler_cfg)
+    compiled_model.save("out.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
