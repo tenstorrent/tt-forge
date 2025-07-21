@@ -220,7 +220,7 @@ runs:
 
         # Testing Overrides
 
-        # Different tags exist for e2e testing for draft releases/test workflow. This is to guard against overwriting releases
+        # Different tags exist for integration testing for draft releases/test workflow. This is to guard against overwriting releases
         # We also can't use the draft style tag below since it won't work when we do a wheel re-version
         # REF: https://packaging.python.org/en/latest/discussions/versioning/#valid-version-numbers
         if [[ "${{ inputs.draft }}" == "true" ]]; then
@@ -229,8 +229,9 @@ runs:
             test_demo_filter="opt_125m"
             test_demo_wait="true"
 
-            # null out the commit to so e2e testing can pick up the arfiacts from the repo.
+            # null out the commit to so integration testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
+            # Since this is null, it will pick up the artifacts based on branch
             build_release_latest_branch_commit=""
 
             # Used in testing to pick up the arfiacts from the main branch.
