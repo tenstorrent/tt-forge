@@ -43,28 +43,31 @@ WORKDIR /home/forge
 # Switch to forge user for remaining operations
 USER forge
 
-RUN python -m venv venv-unified
-
-# Create and activate virtual environment for tt-forge-fe, install whl
-RUN FRONTEND=tt-forge-fe && \
+RUN python -m venv venv-unified && \
     source venv-unified/bin/activate && \
-    WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
-    pip install https://pypi.eng.aws.tenstorrent.com/tt-forge-fe/tt_forge_fe-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
-    pip install https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+    pip install tt-forge==0.2.0.dev20250718 --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && \
     pip cache purge && rm -rf ~/.cache/pip
 
-# Create and activate virtual environment for tt-torch, install whl
-RUN FRONTEND=tt-torch && \
-    source venv-unified/bin/activate && \
-    WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
-    pip install https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
-    pip cache purge && rm -rf ~/.cache/pip
+# # Create and activate virtual environment for tt-forge-fe, install whl
+# RUN FRONTEND=tt-forge-fe && \
+#     source venv-unified/bin/activate && \
+#     WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
+#     pip install https://pypi.eng.aws.tenstorrent.com/tt-forge-fe/tt_forge_fe-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+#     pip install https://pypi.eng.aws.tenstorrent.com/tt-tvm/tt_tvm-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+#     pip cache purge && rm -rf ~/.cache/pip
 
-# Create and activate virtual environment for tt-xla, install whl
-RUN FRONTEND=tt-xla && \
-    source venv-unified/bin/activate && \
-    WHL_VERSION=$(pip index versions pjrt-plugin-tt -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
-    pip install https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl && \
-    pip cache purge && rm -rf ~/.cache/pip
+# # Create and activate virtual environment for tt-torch, install whl
+# RUN FRONTEND=tt-torch && \
+#     source venv-unified/bin/activate && \
+#     WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
+#     pip install https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+#     pip cache purge && rm -rf ~/.cache/pip
+
+# # Create and activate virtual environment for tt-xla, install whl
+# RUN FRONTEND=tt-xla && \
+#     source venv-unified/bin/activate && \
+#     WHL_VERSION=$(pip index versions pjrt-plugin-tt -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
+#     pip install https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl && \
+#     pip cache purge && rm -rf ~/.cache/pip
 
 CMD ["/bin/bash"]
