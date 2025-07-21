@@ -110,6 +110,7 @@ jobs:
         draft: ${{ inputs.draft }}
         repo: ${{ steps.set-release-facts.outputs.repo_full }}
         release_type: ${{ inputs.release_type }}
+        latest_branch_commit: ${{ steps.set-release-facts.outputs.build_release_latest_branch_commit }}
         branch: ${{ inputs.branch || 'main' }}
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
         unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
