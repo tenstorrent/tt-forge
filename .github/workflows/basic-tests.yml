@@ -115,7 +115,7 @@ jobs:
           #   source /home/forge/venv-${{ matrix.frontend }}/bin/activate
           #   pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           # fi
-          echo "Using /home/forge/venv-unified"
-          source /home/forge/venv-unified/bin/activate
+          # echo "Using /home/forge/venv-unified"
+          # source /home/forge/venv-unified/bin/activate
           pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           python basic_tests/${{ matrix.frontend }}/demo_test.py

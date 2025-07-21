@@ -43,9 +43,12 @@ WORKDIR /home/forge
 # Switch to forge user for remaining operations
 USER forge
 
-RUN python -m venv venv-unified && \
-    source venv-unified/bin/activate && \
-    pip install tt-forge==0.2.0.dev20250718 --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && \
+# RUN python -m venv venv-unified && \
+#     source venv-unified/bin/activate && \
+#     pip install tt-forge==0.2.0.dev20250718 --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && \
+#     pip cache purge && rm -rf ~/.cache/pip
+
+RUN pip install tt-forge==0.2.0.dev20250718 --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && \
     pip cache purge && rm -rf ~/.cache/pip
 
 # # Create and activate virtual environment for tt-forge-fe, install whl
