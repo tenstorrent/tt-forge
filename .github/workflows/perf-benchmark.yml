@@ -213,6 +213,7 @@ jobs:
 
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
+          export TRACY_NO_INVARIANT_CHECK=1
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
