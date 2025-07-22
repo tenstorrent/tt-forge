@@ -288,7 +288,7 @@ def benchmark(config: dict):
     task = config["task"]
     data_format = config["data_format"]
 
-    return test_vovnet_osmr(
+    return test_vovnet_timm(
         training=training,
         batch_size=batch_size,
         input_size=input_size,
