@@ -1,0 +1,334 @@
+# Compare Workflow Runs
+#
+# This workflow compares two GitHub Actions workflow runs and generates a detailed
+# comparison report showing job statuses, failed steps, and differences between runs.
+#
+# PREREQUISITES:
+# - A Personal Access Token (PAT) with 'actions:read' scope for cross-repository access
+# - The PAT should be stored as a repository secret named 'GH_TOKEN'
+# - The PAT needs access to all repositories you want to compare
+#
+# USAGE:
+# 1. Go to the Actions tab in your repository
+# 2. Select "Compare Workflow Runs" workflow
+# 3. Click "Run workflow"
+# 4. Fill in the required inputs:
+#    - Repository: Select from tenstorrent/tt-forge-fe, tenstorrent/tt-torch,
+#                  tenstorrent/tt-xla, or tenstorrent/tt-forge
+#    - Pipeline name: Name of the workflow to compare (default: "Nightly Tests")
+#    - Pipeline IDs: Two comma-separated workflow run IDs (e.g., "12345,67890")
+# 5. Run the workflow and check the summary for the comparison report
+#
+# FINDING WORKFLOW RUN IDs:
+# - Go to the target repository's Actions tab
+# - Find the workflow runs you want to compare
+# - The run ID is in the URL: https://github.com/owner/repo/actions/runs/RUN_ID
+#
+# OUTPUT:
+# - Markdown report displayed in workflow summary
+# - Comparison report artifact available for download
+# - Summary statistics (passed/failed/skipped/cancelled counts)
+# - Failed jobs comparison table with links to specific jobs
+# - Newly failed jobs (passed in run 1, failed in run 2)
+#
+# EXAMPLE:
+# Repository: tenstorrent/tt-forge
+# Pipeline name: Nightly Tests
+# Pipeline IDs: 11234567890,11234567891
+
+name: Compare Workflow Runs
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Repository to compare runs from'
+        required: true
+        type: choice
+        default: 'tenstorrent/tt-torch'
+        options:
+          - 'tenstorrent/tt-forge-fe'
+          - 'tenstorrent/tt-torch'
+          - 'tenstorrent/tt-xla'
+          - 'tenstorrent/tt-forge'
+      pipeline_name:
+        description: 'Pipeline name to compare'
+        required: false
+        type: string
+        default: 'Nightly Tests'
+      pipeline_ids:
+        description: 'Comma-separated pipeline run IDs (e.g., 12345,67890)'
+        required: true
+        type: string
+
+jobs:
+  compare-runs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Validate inputs
+        id: validate
+        run: |
+          # Set default values when triggered by push (inputs will be empty)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            REPOSITORY="tenstorrent/tt-torch"
+            PIPELINE_NAME="Nightly Tests"
+            PIPELINE_IDS="16440516028,16408474514"
+            echo "Using default values for push trigger:"
+            echo "Repository: $REPOSITORY"
+            echo "Pipeline name: $PIPELINE_NAME"
+            echo "Pipeline IDs: $PIPELINE_IDS"
+          else
+            REPOSITORY="${{ inputs.repository }}"
+            PIPELINE_NAME="${{ inputs.pipeline_name }}"
+            PIPELINE_IDS="${{ inputs.pipeline_ids }}"
+          fi
+
+          IFS=',' read -ra RUN_IDS <<< "$PIPELINE_IDS"
+          if [ ${#RUN_IDS[@]} -ne 2 ]; then
+            echo "Error: Exactly 2 pipeline run IDs must be provided"
+            exit 1
+          fi
+
+          RUN_ID_1=$(echo "${RUN_IDS[0]}" | xargs)
+          RUN_ID_2=$(echo "${RUN_IDS[1]}" | xargs)
+
+          echo "run_id_1=$RUN_ID_1" >> $GITHUB_OUTPUT
+          echo "run_id_2=$RUN_ID_2" >> $GITHUB_OUTPUT
+          echo "pipeline_name=$PIPELINE_NAME" >> $GITHUB_OUTPUT
+
+          # Extract repository owner and name
+          REPO_OWNER=$(echo "$REPOSITORY" | cut -d'/' -f1)
+          REPO_NAME=$(echo "$REPOSITORY" | cut -d'/' -f2)
+
+          echo "repo_owner=$REPO_OWNER" >> $GITHUB_OUTPUT
+          echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
+
+      - name: Fetch workflow run data
+        id: fetch_data
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          REPO_OWNER="${{ steps.validate.outputs.repo_owner }}"
+          REPO_NAME="${{ steps.validate.outputs.repo_name }}"
+          RUN_ID_1="${{ steps.validate.outputs.run_id_1 }}"
+          RUN_ID_2="${{ steps.validate.outputs.run_id_2 }}"
+          CURRENT_REPO="${{ github.repository }}"
+
+          # Check if we're accessing a different repository
+          if [ "$REPO_OWNER/$REPO_NAME" != "$CURRENT_REPO" ]; then
+            if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+              echo "Error: Cross-repository access requires GH_TOKEN secret"
+              echo "Please create a Personal Access Token with 'actions:read' scope and add it as a repository secret named 'GH_TOKEN'"
+              exit 1
+            fi
+            echo "Using cross-repository access for $REPO_OWNER/$REPO_NAME"
+          else
+            echo "Accessing current repository $CURRENT_REPO"
+          fi
+
+          echo "Fetching data for run $RUN_ID_1..."
+          if ! gh api "repos/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID_1" > run1_data.json; then
+            echo "Error: Failed to fetch run $RUN_ID_1. Check if the run ID exists and you have access to the repository."
+            exit 1
+          fi
+
+          if ! gh api "repos/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID_1/jobs" > run1_jobs.json; then
+            echo "Error: Failed to fetch jobs for run $RUN_ID_1"
+            exit 1
+          fi
+
+          echo "Fetching data for run $RUN_ID_2..."
+          if ! gh api "repos/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID_2" > run2_data.json; then
+            echo "Error: Failed to fetch run $RUN_ID_2. Check if the run ID exists and you have access to the repository."
+            exit 1
+          fi
+
+          if ! gh api "repos/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID_2/jobs" > run2_jobs.json; then
+            echo "Error: Failed to fetch jobs for run $RUN_ID_2"
+            exit 1
+          fi
+
+          # Verify runs exist and get basic info
+          RUN1_NAME=$(jq -r '.name' run1_data.json)
+          RUN2_NAME=$(jq -r '.name' run2_data.json)
+          RUN1_STATUS=$(jq -r '.status' run1_data.json)
+          RUN2_STATUS=$(jq -r '.status' run2_data.json)
+          RUN1_CONCLUSION=$(jq -r '.conclusion' run1_data.json)
+          RUN2_CONCLUSION=$(jq -r '.conclusion' run2_data.json)
+
+          echo "run1_name=$RUN1_NAME" >> $GITHUB_OUTPUT
+          echo "run2_name=$RUN2_NAME" >> $GITHUB_OUTPUT
+          echo "run1_status=$RUN1_STATUS" >> $GITHUB_OUTPUT
+          echo "run2_status=$RUN2_STATUS" >> $GITHUB_OUTPUT
+          echo "run1_conclusion=$RUN1_CONCLUSION" >> $GITHUB_OUTPUT
+          echo "run2_conclusion=$RUN2_CONCLUSION" >> $GITHUB_OUTPUT
+
+      - name: Generate comparison report
+        id: generate_report
+        run: |
+          REPO_OWNER="${{ steps.validate.outputs.repo_owner }}"
+          REPO_NAME="${{ steps.validate.outputs.repo_name }}"
+          RUN_ID_1="${{ steps.validate.outputs.run_id_1 }}"
+          RUN_ID_2="${{ steps.validate.outputs.run_id_2 }}"
+
+          # Create markdown report
+          cat > comparison_report.md << 'EOF'
+          # Workflow Run Comparison Report
+
+          ## Run Information
+
+          | Run | ID | Name | Status | Conclusion |
+          |-----|----|----- |--------|------------|
+          | Run 1 | [${{ steps.validate.outputs.run_id_1 }}](https://github.com/${{ inputs.repository }}/actions/runs/${{ steps.validate.outputs.run_id_1 }}) | ${{ steps.fetch_data.outputs.run1_name }} | ${{ steps.fetch_data.outputs.run1_status }} | ${{ steps.fetch_data.outputs.run1_conclusion }} |
+          | Run 2 | [${{ steps.validate.outputs.run_id_2 }}](https://github.com/${{ inputs.repository }}/actions/runs/${{ steps.validate.outputs.run_id_2 }}) | ${{ steps.fetch_data.outputs.run2_name }} | ${{ steps.fetch_data.outputs.run2_status }} | ${{ steps.fetch_data.outputs.run2_conclusion }} |
+
+          EOF
+
+          # Process job data and generate statistics
+          python3 << 'PYTHON_SCRIPT'
+          import json
+          import sys
+
+          # Load job data
+          with open('run1_jobs.json', 'r') as f:
+              run1_jobs = json.load(f)
+
+          with open('run2_jobs.json', 'r') as f:
+              run2_jobs = json.load(f)
+
+          # Create job mappings
+          run1_job_map = {job['name']: job for job in run1_jobs['jobs']}
+          run2_job_map = {job['name']: job for job in run2_jobs['jobs']}
+
+          # Count statistics for each run
+          def count_statuses(jobs):
+              counts = {'success': 0, 'failure': 0, 'cancelled': 0, 'skipped': 0, 'in_progress': 0}
+              for job in jobs['jobs']:
+                  conclusion = job.get('conclusion', 'in_progress')
+                  if conclusion == 'success':
+                      counts['success'] += 1
+                  elif conclusion == 'failure':
+                      counts['failure'] += 1
+                  elif conclusion == 'cancelled':
+                      counts['cancelled'] += 1
+                  elif conclusion == 'skipped':
+                      counts['skipped'] += 1
+                  else:
+                      counts['in_progress'] += 1
+              return counts
+
+          run1_counts = count_statuses(run1_jobs)
+          run2_counts = count_statuses(run2_jobs)
+
+          # Generate summary statistics
+          with open('comparison_report.md', 'a') as f:
+              f.write("## Summary Statistics\n\n")
+              f.write("| Status | Run 1 | Run 2 |\n")
+              f.write("|--------|-------|-------|\n")
+              f.write(f"| ✅ Passed | {run1_counts['success']} | {run2_counts['success']} |\n")
+              f.write(f"| ❌ Failed | {run1_counts['failure']} | {run2_counts['failure']} |\n")
+              f.write(f"| ⏭️ Skipped | {run1_counts['skipped']} | {run2_counts['skipped']} |\n")
+              f.write(f"| ⏸️ Cancelled | {run1_counts['cancelled']} | {run2_counts['cancelled']} |\n")
+              f.write(f"| 🔄 In Progress | {run1_counts['in_progress']} | {run2_counts['in_progress']} |\n\n")
+
+          # Find failed jobs in run 1 and compare with run 2
+          failed_jobs_run1 = [job for job in run1_jobs['jobs'] if job.get('conclusion') == 'failure']
+
+          if failed_jobs_run1:
+              with open('comparison_report.md', 'a') as f:
+                  f.write("## Failed Jobs Comparison\n\n")
+                  f.write("Jobs that failed in Run 1 and their status in Run 2:\n\n")
+                  f.write("| Job Name | Run 1 Status | Run 2 Status | Failed Step (Run 1) | Job Link (Run 1) |\n")
+                  f.write("|----------|--------------|--------------|---------------------|-------------------|\n")
+
+                  for job in failed_jobs_run1:
+                      job_name = job['name']
+                      run1_status = "❌ Failed"
+
+                      # Get status in run 2
+                      if job_name in run2_job_map:
+                          run2_job = run2_job_map[job_name]
+                          run2_conclusion = run2_job.get('conclusion', 'in_progress')
+                          if run2_conclusion == 'success':
+                              run2_status = "✅ Passed"
+                          elif run2_conclusion == 'failure':
+                              run2_status = "❌ Failed"
+                          elif run2_conclusion == 'skipped':
+                              run2_status = "⏭️ Skipped"
+                          elif run2_conclusion == 'cancelled':
+                              run2_status = "⏸️ Cancelled"
+                          else:
+                              run2_status = "🔄 In Progress"
+                      else:
+                          run2_status = "❓ Not Found"
+
+                      # Find failed step in run 1
+                      failed_step = "Unknown"
+                      if 'steps' in job:
+                          for step in job['steps']:
+                              if step.get('conclusion') == 'failure':
+                                  failed_step = step['name']
+                                  break
+
+                      job_url = job['html_url']
+
+                      f.write(f"| {job_name} | {run1_status} | {run2_status} | {failed_step} | [View Job]({job_url}) |\n")
+          else:
+              with open('comparison_report.md', 'a') as f:
+                  f.write("## Failed Jobs Comparison\n\n")
+                  f.write("✅ No failed jobs found in Run 1!\n\n")
+
+          # Find jobs that failed in run 2 but passed in run 1
+          failed_jobs_run2 = [job for job in run2_jobs['jobs'] if job.get('conclusion') == 'failure']
+          newly_failed = []
+
+          for job in failed_jobs_run2:
+              job_name = job['name']
+              if job_name in run1_job_map and run1_job_map[job_name].get('conclusion') == 'success':
+                  newly_failed.append(job)
+
+          if newly_failed:
+              with open('comparison_report.md', 'a') as f:
+                  f.write("## Newly Failed Jobs\n\n")
+                  f.write("Jobs that passed in Run 1 but failed in Run 2:\n\n")
+                  f.write("| Job Name | Run 1 Status | Run 2 Status | Failed Step (Run 2) | Job Link (Run 2) |\n")
+                  f.write("|----------|--------------|--------------|---------------------|-------------------|\n")
+
+                  for job in newly_failed:
+                      job_name = job['name']
+                      run1_status = "✅ Passed"
+                      run2_status = "❌ Failed"
+
+                      # Find failed step in run 2
+                      failed_step = "Unknown"
+                      if 'steps' in job:
+                          for step in job['steps']:
+                              if step.get('conclusion') == 'failure':
+                                  failed_step = step['name']
+                                  break
+
+                      job_url = job['html_url']
+
+                      f.write(f"| {job_name} | {run1_status} | {run2_status} | {failed_step} | [View Job]({job_url}) |\n")
+
+          PYTHON_SCRIPT
+
+      - name: Display comparison report
+        run: |
+          echo "## Workflow Run Comparison Report" >> $GITHUB_STEP_SUMMARY
+          cat comparison_report.md >> $GITHUB_STEP_SUMMARY
+
+          echo "Comparison report generated successfully!"
+          echo "Check the workflow summary for detailed comparison results."
+
+      - name: Upload comparison report
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-comparison-report
+          path: comparison_report.md
+          retention-days: 30
