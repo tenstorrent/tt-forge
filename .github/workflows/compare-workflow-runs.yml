@@ -212,19 +212,26 @@ jobs:
               run2_jobs = json.load(f)
 
           # Create job mappings with normalized names for comparison
+          print("\n=== DEBUG: Creating job mappings ===")
           run1_job_map = {}
           run1_normalized_map = {}
+          print(f"Run 1 has {len(run1_jobs['jobs'])} jobs:")
           for job in run1_jobs['jobs']:
               run1_job_map[job['name']] = job
               normalized_name = normalize_job_name(job['name'])
               run1_normalized_map[normalized_name] = job
+              print(f"  - Original: '{job['name']}'")
+              print(f"    Normalized: '{normalized_name}'")
 
           run2_job_map = {}
           run2_normalized_map = {}
+          print(f"\nRun 2 has {len(run2_jobs['jobs'])} jobs:")
           for job in run2_jobs['jobs']:
               run2_job_map[job['name']] = job
               normalized_name = normalize_job_name(job['name'])
               run2_normalized_map[normalized_name] = job
+              print(f"  - Original: '{job['name']}'")
+              print(f"    Normalized: '{normalized_name}'")
 
           # Count statistics for each run
           def count_statuses(jobs):
@@ -259,6 +266,9 @@ jobs:
 
           # Find failed jobs in run 1 and compare with run 2
           failed_jobs_run1 = [job for job in run1_jobs['jobs'] if job.get('conclusion') == 'failure']
+          print(f"\n=== DEBUG: Found {len(failed_jobs_run1)} failed jobs in Run 1 ===")
+          for job in failed_jobs_run1:
+              print(f"  - Failed job: '{job['name']}'")
 
           if failed_jobs_run1:
               with open('comparison_report.md', 'a') as f:
@@ -270,17 +280,31 @@ jobs:
                   for job in failed_jobs_run1:
                       job_name = job['name']
                       run1_status = "❌ Failed"
+                      print(f"\n=== DEBUG: Processing failed job '{job_name}' ===")
 
                       # Get status in run 2 using normalized job names
                       run2_job_url = "N/A"
                       normalized_job_name = normalize_job_name(job_name)
+                      print(f"  Normalized name: '{normalized_job_name}'")
 
                       # First try exact match, then normalized match
                       run2_job = None
-                      if job_name in run2_job_map:
+                      exact_match = job_name in run2_job_map
+                      normalized_match = normalized_job_name in run2_normalized_map
+                      print(f"  Exact match found: {exact_match}")
+                      print(f"  Normalized match found: {normalized_match}")
+
+                      if exact_match:
                           run2_job = run2_job_map[job_name]
-                      elif normalized_job_name in run2_normalized_map:
+                          print(f"  Using exact match: '{job_name}'")
+                      elif normalized_match:
                           run2_job = run2_normalized_map[normalized_job_name]
+                          print(f"  Using normalized match: '{normalized_job_name}'")
+                          print(f"  Matched to Run 2 job: '{run2_job['name']}'")
+                      else:
+                          print(f"  No match found for '{job_name}' (normalized: '{normalized_job_name}')")
+                          print(f"  Available Run 2 job names: {list(run2_job_map.keys())[:5]}...")  # Show first 5
+                          print(f"  Available normalized names: {list(run2_normalized_map.keys())[:5]}...")  # Show first 5
 
                       if run2_job:
                           run2_conclusion = run2_job.get('conclusion', 'in_progress')
@@ -313,48 +337,6 @@ jobs:
               with open('comparison_report.md', 'a') as f:
                   f.write("## Failed Jobs Comparison\n\n")
                   f.write("✅ No failed jobs found in Run 1!\n\n")
-
-          # Find jobs that failed in run 2 but passed in run 1
-          failed_jobs_run2 = [job for job in run2_jobs['jobs'] if job.get('conclusion') == 'failure']
-          newly_failed = []
-
-          for job in failed_jobs_run2:
-              job_name = job['name']
-              normalized_job_name = normalize_job_name(job_name)
-
-              # Check if this job passed in run 1 (exact match or normalized match)
-              run1_job = None
-              if job_name in run1_job_map:
-                  run1_job = run1_job_map[job_name]
-              elif normalized_job_name in run1_normalized_map:
-                  run1_job = run1_normalized_map[normalized_job_name]
-
-              if run1_job and run1_job.get('conclusion') == 'success':
-                  newly_failed.append(job)
-
-          if newly_failed:
-              with open('comparison_report.md', 'a') as f:
-                  f.write("## Newly Failed Jobs\n\n")
-                  f.write("Jobs that passed in Run 1 but failed in Run 2:\n\n")
-                  f.write("| Job Name | Run 1 Status | Run 2 Status | Failed Step (Run 2) | Job Link (Run 2) |\n")
-                  f.write("|----------|--------------|--------------|---------------------|-------------------|\n")
-
-                  for job in newly_failed:
-                      job_name = job['name']
-                      run1_status = "✅ Passed"
-                      run2_status = "❌ Failed"
-
-                      # Find failed step in run 2
-                      failed_step = "Unknown"
-                      if 'steps' in job:
-                          for step in job['steps']:
-                              if step.get('conclusion') == 'failure':
-                                  failed_step = step['name']
-                                  break
-
-                      job_url = job['html_url']
-
-                      f.write(f"| {job_name} | {run1_status} | {run2_status} | {failed_step} | [View Job]({job_url}) |\n")
 
           PYTHON_SCRIPT
 
