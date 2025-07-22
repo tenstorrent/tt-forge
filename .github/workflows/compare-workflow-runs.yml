@@ -201,6 +201,7 @@ jobs:
               normalized = normalized.replace('wormhole_b0', 'n150')
               # Replace blackhole with p150b
               normalized = normalized.replace('blackhole', 'p150b')
+              print(f"Normalized job name: {job_name} -> {normalized}")
               return normalized
 
           # Load job data
