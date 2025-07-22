@@ -224,11 +224,7 @@ runs:
         pip_install_instructions=""
         pip_wheel_names="${{ inputs.pip_wheel_names }}"
         for wheel_name in $pip_wheel_names; do
-            if [[ "${{ inputs.make_latest }}" == "true" ]]; then
-                pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
-            else
-                pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
-            fi
+            pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
         done
 
         echo "pip_install_instructions=$pip_install_instructions"
