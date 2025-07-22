@@ -58,7 +58,7 @@ runs:
         check_artifacts: true
 
     - name: Download latest wheel
-      if: failed() ||(!inputs.run_id || inputs.run_id == '')
+      if: failure() ||(!inputs.run_id || inputs.run_id == '')
       uses: dawidd6/action-download-artifact@v11
       with:
         workflow_conclusion: success
