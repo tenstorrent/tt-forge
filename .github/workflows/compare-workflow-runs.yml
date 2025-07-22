@@ -177,15 +177,15 @@ jobs:
           RUN_ID_2="${{ steps.validate.outputs.run_id_2 }}"
 
           # Create markdown report
-          cat > comparison_report.md << 'EOF'
+          cat > comparison_report.md << EOF
           # Workflow Run Comparison Report
 
           ## Run Information
 
           | Run | ID | Name | Status | Conclusion |
           |-----|----|----- |--------|------------|
-          | Run 1 | [${{ steps.validate.outputs.run_id_1 }}](https://github.com/${{ inputs.repository }}/actions/runs/${{ steps.validate.outputs.run_id_1 }}) | ${{ steps.fetch_data.outputs.run1_name }} | ${{ steps.fetch_data.outputs.run1_status }} | ${{ steps.fetch_data.outputs.run1_conclusion }} |
-          | Run 2 | [${{ steps.validate.outputs.run_id_2 }}](https://github.com/${{ inputs.repository }}/actions/runs/${{ steps.validate.outputs.run_id_2 }}) | ${{ steps.fetch_data.outputs.run2_name }} | ${{ steps.fetch_data.outputs.run2_status }} | ${{ steps.fetch_data.outputs.run2_conclusion }} |
+          | Run 1 | [$RUN_ID_1](https://github.com/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID_1) | ${{ steps.fetch_data.outputs.run1_name }} | ${{ steps.fetch_data.outputs.run1_status }} | ${{ steps.fetch_data.outputs.run1_conclusion }} |
+          | Run 2 | [$RUN_ID_2](https://github.com/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_ID_2) | ${{ steps.fetch_data.outputs.run2_name }} | ${{ steps.fetch_data.outputs.run2_status }} | ${{ steps.fetch_data.outputs.run2_conclusion }} |
 
           EOF
 
@@ -194,6 +194,15 @@ jobs:
           import json
           import sys
 
+          def normalize_job_name(job_name):
+              """Normalize job names for comparison by replacing similar hardware names"""
+              normalized = job_name
+              # Replace wormhole_b0 with n150
+              normalized = normalized.replace('wormhole_b0', 'n150')
+              # Replace blackhole with p150b
+              normalized = normalized.replace('blackhole', 'p150b')
+              return normalized
+
           # Load job data
           with open('run1_jobs.json', 'r') as f:
               run1_jobs = json.load(f)
@@ -201,9 +210,20 @@ jobs:
           with open('run2_jobs.json', 'r') as f:
               run2_jobs = json.load(f)
 
-          # Create job mappings
-          run1_job_map = {job['name']: job for job in run1_jobs['jobs']}
-          run2_job_map = {job['name']: job for job in run2_jobs['jobs']}
+          # Create job mappings with normalized names for comparison
+          run1_job_map = {}
+          run1_normalized_map = {}
+          for job in run1_jobs['jobs']:
+              run1_job_map[job['name']] = job
+              normalized_name = normalize_job_name(job['name'])
+              run1_normalized_map[normalized_name] = job
+
+          run2_job_map = {}
+          run2_normalized_map = {}
+          for job in run2_jobs['jobs']:
+              run2_job_map[job['name']] = job
+              normalized_name = normalize_job_name(job['name'])
+              run2_normalized_map[normalized_name] = job
 
           # Count statistics for each run
           def count_statuses(jobs):
@@ -243,17 +263,27 @@ jobs:
               with open('comparison_report.md', 'a') as f:
                   f.write("## Failed Jobs Comparison\n\n")
                   f.write("Jobs that failed in Run 1 and their status in Run 2:\n\n")
-                  f.write("| Job Name | Run 1 Status | Run 2 Status | Failed Step (Run 1) | Job Link (Run 1) |\n")
-                  f.write("|----------|--------------|--------------|---------------------|-------------------|\n")
+                  f.write("| Job Name | Run 1 Status | Run 2 Status | Failed Step (Run 1) | Job Link (Run 1) | Job Link (Run 2) |\n")
+                  f.write("|----------|--------------|--------------|---------------------|-------------------|-------------------|\n")
 
                   for job in failed_jobs_run1:
                       job_name = job['name']
                       run1_status = "❌ Failed"
 
-                      # Get status in run 2
+                      # Get status in run 2 using normalized job names
+                      run2_job_url = "N/A"
+                      normalized_job_name = normalize_job_name(job_name)
+
+                      # First try exact match, then normalized match
+                      run2_job = None
                       if job_name in run2_job_map:
                           run2_job = run2_job_map[job_name]
+                      elif normalized_job_name in run2_normalized_map:
+                          run2_job = run2_normalized_map[normalized_job_name]
+
+                      if run2_job:
                           run2_conclusion = run2_job.get('conclusion', 'in_progress')
+                          run2_job_url = f"[View Job]({run2_job['html_url']})"
                           if run2_conclusion == 'success':
                               run2_status = "✅ Passed"
                           elif run2_conclusion == 'failure':
@@ -277,7 +307,7 @@ jobs:
 
                       job_url = job['html_url']
 
-                      f.write(f"| {job_name} | {run1_status} | {run2_status} | {failed_step} | [View Job]({job_url}) |\n")
+                      f.write(f"| {job_name} | {run1_status} | {run2_status} | {failed_step} | [View Job]({job_url}) | {run2_job_url} |\n")
           else:
               with open('comparison_report.md', 'a') as f:
                   f.write("## Failed Jobs Comparison\n\n")
@@ -289,7 +319,16 @@ jobs:
 
           for job in failed_jobs_run2:
               job_name = job['name']
-              if job_name in run1_job_map and run1_job_map[job_name].get('conclusion') == 'success':
+              normalized_job_name = normalize_job_name(job_name)
+
+              # Check if this job passed in run 1 (exact match or normalized match)
+              run1_job = None
+              if job_name in run1_job_map:
+                  run1_job = run1_job_map[job_name]
+              elif normalized_job_name in run1_normalized_map:
+                  run1_job = run1_normalized_map[normalized_job_name]
+
+              if run1_job and run1_job.get('conclusion') == 'success':
                   newly_failed.append(job)
 
           if newly_failed:
