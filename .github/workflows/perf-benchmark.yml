@@ -125,6 +125,10 @@ jobs:
 
     runs-on: ${{ inputs.sh-runner && format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
 
+    env:
+      # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
+      TRACY_NO_INVARIANT_CHECK: 1
+
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
@@ -213,7 +217,6 @@ jobs:
 
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
-          export TRACY_NO_INVARIANT_CHECK=1
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
