@@ -201,6 +201,7 @@ def read_args():
         "-ts", "--task", default="na", help="Task to benchmark, i.e. classification, segmentation, etc. Default is 'na'"
     )
     parser.add_argument("-df", "--data_format", default="float32", help="Data format i.e. float32, bfloat16, etc.")
+    parser.add_argument("-r", "--run_origin", default="tt-forge", help="Repo where the benchmark is run from.")
 
     args = parser.parse_args()
 
@@ -227,6 +228,7 @@ def read_args():
     config["output"] = args.output
     config["task"] = args.task
     config["data_format"] = args.data_format
+    config["run_origin"] = args.run_origin
 
     return config
 
@@ -251,7 +253,7 @@ def main():
 
         # Run the benchmark
         results = run_benchmark(config)
-        results["project"] = "tt-forge/" + config["project"]
+        results["project"] = config["run_origin"] + "/" + config["project"]
         results["model_rawname"] = config["model"]
 
         # Save the results
