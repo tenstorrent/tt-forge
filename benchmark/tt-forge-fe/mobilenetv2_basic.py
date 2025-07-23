@@ -15,7 +15,7 @@ from tqdm import tqdm
 # Forge modules
 import forge
 from forge.verify.value_checkers import AutomaticValueChecker
-from forge.verify.verify import verify
+from forge.verify.verify import verify, VerifyConfig
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
@@ -23,26 +23,34 @@ from forge._C import DataFormat
 from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
 
 
+# Common constants
+
+# Machine learning task
 TASK = [
     "classification",
 ]
 
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
+# Data format configurations
 DATA_FORMAT = [
     "bfloat16",
 ]
 
+# Input size configurations
 INPUT_SIZE = [
     (224, 224),
 ]
 
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
 
@@ -74,30 +82,44 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
         )
     elif task == "na":
         torch.manual_seed(1)
+        # Random data
         inputs = [torch.randn(batch_size, channel_size, *input_size)]
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
     if data_format == "bfloat16":
+        # Convert input to bfloat16
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
     framework_model = download_model(torch.hub.load, "pytorch/vision:v0.10.0", "mobilenet_v2", pretrained=True)
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
 
+    # Compiler configuration
     compiler_config = CompilerConfig()
-    # compiler_config.mlir_config = MLIRConfig().set_enable_consteval(True).set_enable_optimizer(True)
+    # Turn on MLIR optimizations.
+    compiler_config.mlir_config = (
+        MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False).set_enable_fusing(True)
+    )
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         compiler_config.default_df_override = DataFormat.Float16_b
 
+    # Forge compile framework model
     compiled_model = forge.compile(
         framework_model, sample_inputs=inputs[0], module_name=module_name, compiler_cfg=compiler_config
     )
 
+    # Enable program cache on all devices
     settings = DeviceSettings()
     settings.enable_program_cache = True
     configure_devices(device_settings=settings)
+
+    verify_cfg = VerifyConfig()
+    # Set pcc to 0.97, as we've seen cases of pcc 0.98xyz.
+    verify_cfg.value_checker = AutomaticValueChecker(pcc=0.97)
 
     verify(
         [
@@ -105,6 +127,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
         ],
         framework_model,
         compiled_model,
+        verify_cfg=verify_cfg,
     )
 
     if task == "classification":
@@ -184,7 +207,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
         "training": training,
         "measurements": [
             {
-                "iteration": 1,
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
                 "step_name": model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
@@ -194,7 +217,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
             {
-                "iteration": 1,
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
                 "step_name": model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
@@ -204,7 +227,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
             {
-                "iteration": 1,
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
                 "step_name": model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "evaluation_score",

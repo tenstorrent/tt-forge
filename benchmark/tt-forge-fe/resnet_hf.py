@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Built-in modules
+import os
 import pytest
 import time
+
 import socket
 from datetime import datetime
 from tqdm import tqdm
@@ -12,9 +14,12 @@ from tqdm import tqdm
 # Third-party modules
 import torch
 from transformers import ResNetForImageClassification
+from tqdm import tqdm
 
 # Forge modules
 import forge
+from forge.verify.config import VerifyConfig
+from forge.verify.verify import verify
 from forge.verify.value_checkers import AutomaticValueChecker
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge._C import DataFormat
@@ -22,35 +27,41 @@ from forge.config import CompilerConfig, MLIRConfig
 
 from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
 
+# Common constants
+
+# Machine learning task
 TASK = [
     "classification",
 ]
 
+# Target evaluation score for classification tasks, given as a percentage (e.g., 75.0 for 75%)
+EVALUATION_SCORE_TARGET = 75.0
+
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
+# Data format configurations
 DATA_FORMAT = [
     "bfloat16",
 ]
 
+# Input size configurations
 INPUT_SIZE = [
     (224, 224),
 ]
 
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
 VARIANTS = [
     "microsoft/resnet-50",
-]
-
-MLIR_CONFIG_OVERRIDES = [
-    None,
-    "override-conv2d-config=conv2d_81.dc.conv2d.2=shard_layout#height_sharded,conv2d_97.dc.conv2d.2=shard_layout#height_sharded",
 ]
 
 
@@ -58,10 +69,9 @@ MLIR_CONFIG_OVERRIDES = [
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
+@pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
-@pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-@pytest.mark.parametrize("mlir_config_overrides", MLIR_CONFIG_OVERRIDES, ids=MLIR_CONFIG_OVERRIDES)
 def test_resnet_hf(
     variant,
     channel_size,
@@ -70,14 +80,11 @@ def test_resnet_hf(
     loop_count,
     task,
     data_format,
-    mlir_config_overrides,
     training,
 ):
 
     if training:
         pytest.skip("Training is not supported")
-
-    module_name = "ResNetForImageClassificationConfig"
 
     if task == "classification":
         inputs, labels = load_benchmark_dataset(
@@ -90,6 +97,7 @@ def test_resnet_hf(
         )
     elif task == "na":
         torch.manual_seed(1)
+        # Random data
         inputs = [torch.rand(batch_size, channel_size, *input_size)]
     else:
         raise ValueError(f"Unsupported task: {task}.")
@@ -97,6 +105,7 @@ def test_resnet_hf(
     if data_format == "bfloat16":
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
+    # Load framework model
     if data_format == "bfloat16":
         framework_model = download_model(
             ResNetForImageClassification.from_pretrained, variant, return_dict=False, torch_dtype=torch.bfloat16
@@ -105,21 +114,27 @@ def test_resnet_hf(
     else:
         framework_model = download_model(ResNetForImageClassification.from_pretrained, variant, return_dict=False)
 
+    # Compile model
     compiler_cfg = CompilerConfig()
     if data_format == "bfloat16":
         compiler_cfg.default_df_override = DataFormat.Float16_b
 
     # Turn on MLIR optimizations.
-    mlir_config = (
-        MLIRConfig().set_enable_optimizer(True).set_enable_fusing(True).set_enable_memory_layout_analysis(True)
+    compiler_cfg.mlir_config = (
+        MLIRConfig()
+        .set_enable_optimizer(True)
+        .set_enable_fusing(True)
+        .set_enable_fusing_conv2d_with_multiply_pattern(True)
+        .set_enable_memory_layout_analysis(False)
     )
-    if mlir_config_overrides:
-        mlir_config.set_custom_config(mlir_config_overrides)
+
+    # TODO: Remove this line when the issue with reinitialization is resolved.
+    os.environ["TT_METAL_FORCE_REINIT"] = "1"
 
     # Enable Forge FE optimizations
     compiler_cfg.enable_optimization_passes = True
-    compiler_cfg.mlir_config = mlir_config
-    compiled_model = forge.compile(framework_model, inputs[0], compiler_cfg=compiler_cfg)
+
+    compiled_model = forge.compile(framework_model, sample_inputs=inputs[0], compiler_cfg=compiler_cfg)
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -174,12 +189,25 @@ def test_resnet_hf(
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
     print(f"| Machine name: {machine_name}")
-    print(f"| Total execution time: : {total_time}")
+    print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+    print(f"| Evaluation score: {evaluation_score}")
     print(f"| Batch size: {batch_size}")
+    print(f"| Data format: {data_format}")
     print(f"| Input size: {input_size}")
+    print(f"| Channel size: {channel_size}")
     print("====================================================================")
+
+    if task == "classification":
+        if evaluation_score <= EVALUATION_SCORE_TARGET:
+            raise ValueError(f"Evaluation score {evaluation_score} is less than the target {EVALUATION_SCORE_TARGET}.")
+    elif task == "na":
+        fw_out = framework_model(inputs[-1])[0]
+        co_out = co_out.to("cpu")
+        AutomaticValueChecker(pcc=0.95).check(fw_out=fw_out, co_out=co_out)
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
 
     result = {
         "model": model_name,
@@ -188,13 +216,13 @@ def test_resnet_hf(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": "f32",  # This is we call dataformat, it should be generic, too, but for this test we don't experiment with it
+        "precision": data_format,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",
         "input_sequence_length": -1,  # When this value is negative, it means it is not applicable
         "output_sequence_length": -1,  # When this value is negative, it means it is not applicable
-        "image_dimension": f"{input_size[0]}x{input_size[1]}",
+        "image_dimension": f"{channel_size}x{input_size[0]}x{input_size[1]}",
         "perf_analysis": False,
         "training": training,
         "measurements": [
@@ -204,7 +232,7 @@ def test_resnet_hf(
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
-                "target": -1,  # This value is negative, because we don't have a target value.
+                "target": -1,
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
@@ -214,7 +242,17 @@ def test_resnet_hf(
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
-                "target": -1,  # This value is negative, because we don't have a target value.
+                "target": -1,
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "evaluation_score",
+                "value": evaluation_score,
+                "target": EVALUATION_SCORE_TARGET,  # This is the target evaluation score.
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
@@ -232,6 +270,10 @@ def test_resnet_hf(
 
 
 def benchmark(config: dict):
+    """
+    Run the resnet benchmark.
+    This function is a placeholder for the actual benchmark implementation.
+    """
     variant = VARIANTS[0]
     channel_size = CHANNEL_SIZE[0]
     input_size = INPUT_SIZE[0]
@@ -239,7 +281,6 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     task = config.get("task", "na")
     data_format = config.get("data_format", DATA_FORMAT[0])
-    mlir_config_overrides = config.get("mlir_config_overrides", MLIR_CONFIG_OVERRIDES[0])
     training = config.get("training", False)
 
     return test_resnet_hf(
@@ -250,6 +291,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         task=task,
         data_format=data_format,
-        mlir_config_overrides=mlir_config_overrides,
         training=training,
     )

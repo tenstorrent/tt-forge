@@ -67,14 +67,6 @@ on:
           description: 'Name of repo eg. tt-forge-fe'
           required: false
           default: ''
-        draft:
-          type: boolean
-          default: true
-          description: Put PR in draft mode for testing
-        delete-drafts:
-          type: boolean
-          default: true
-          description: Delete drafts
 
 permissions:
   pages: write

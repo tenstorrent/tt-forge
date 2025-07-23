@@ -2,15 +2,18 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
+# Built-in modules
 import pytest
 import time
 import socket
 from datetime import datetime
 
+# Third-party modules
 import torch
 from tqdm import tqdm
 from transformers import ViTForImageClassification
 
+# Forge modules
 import forge
 from forge.verify.value_checkers import AutomaticValueChecker
 from forge.verify.verify import verify
@@ -21,38 +24,47 @@ from forge._C import DataFormat
 from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
 
 
+# Common constants
+
+# Machine learning task
 TASK = [
     "classification",
 ]
 
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
+# Data format configurations
 DATA_FORMAT = [
     "bfloat16",
 ]
 
+# Input size configurations
 INPUT_SIZE = [
     (224, 224),
 ]
 
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
+# Variants for image classification
 VARIANTS = [
     "google/vit-large-patch16-224",
 ]
 
 
-@pytest.mark.parametrize("variant", VARIANTS, ids=[f"variant={item}" for item in VARIANTS])
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
+@pytest.mark.parametrize("variant", VARIANTS, ids=[f"variant={item}" for item in VARIANTS])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_vit_base(training, batch_size, input_size, channel_size, loop_count, variant, task, data_format):
@@ -82,21 +94,26 @@ def test_vit_base(training, batch_size, input_size, channel_size, loop_count, va
         raise ValueError(f"Unsupported task: {task}")
 
     if data_format == "bfloat16":
+        # Convert input to bfloat16
         inputs = [input.to(torch.bfloat16) for input in inputs]
 
     # Load the model from Hugging Face
     framework_model = download_model(ViTForImageClassification.from_pretrained, variant, return_dict=False)
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
 
+    # Compiler configuration
     compiler_config = CompilerConfig()
     # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.
     # # Turn on MLIR optimizations.
     # compiler_config.mlir_config = MLIRConfig().set_enable_consteval(True).set_enable_optimizer(True)
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         compiler_config.default_df_override = DataFormat.Float16_b
 
+    # Forge compile framework model
     compiled_model = forge.compile(
         framework_model, sample_inputs=inputs[0], module_name=module_name, compiler_cfg=compiler_config
     )

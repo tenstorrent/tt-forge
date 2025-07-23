@@ -1,36 +1,31 @@
 name: Clean up release tests
+description: Clean up release test workflow artifacts every day
 on:
   workflow_call:
   workflow_dispatch:
   workflow_run:
     workflows:
-      - "Test Release RC/Stable Lifecycle"
-      - "Test Nightly Releaser"
+      - "Daily Releaser"
     types:
       - completed
 
 
 jobs:
-  delete-drafts:
+  clean-up-release-tests:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Wait for workflow run Test Release RC/Stable Lifecycle
-        uses: ./.github/actions/wait-workflow
-        with:
-          workflow_name: "Test Release RC/Stable Lifecycle"
-      - name: Wait for workflow run Test Nightly Releaser
-        uses: ./.github/actions/wait-workflow
-        with:
-          workflow_name: "Test Nightly Releaser"
       - name: Delete drafts releases
         uses: hugo19941994/delete-draft-releases@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
-      - name: Delete draft-*-release-*.* branches
-        uses: dawidd6/action-delete-branch@v3
+      - uses: snok/container-retention-policy@v3.0.0
         with:
-          github_token: ${{ secrets.TT_FORGE_RELEASER }}
-          prefix: draft-*-release-*.*
-      - uses: fabriziocacicia/delete-tags-without-release-action@v0.1.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+          account: tenstorrent
+          token: ${{ secrets.GH_TOKEN }}
+          image-names: "tt-*-slim"
+          image-tags: "draft.tt-*.dev*"
+          tag-selection: "tagged"
+          dry-run: false
+          cut-off: 1h
