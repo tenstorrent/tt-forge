@@ -48,6 +48,11 @@ on:
         description: 'Override release facts workflow'
         required: false
         default: ''
+      workflow_allow_failed:
+        description: "Ignore if workflow has failed"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   pages: write
@@ -115,6 +120,7 @@ jobs:
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
         unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
+        workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
 
     - name: "${{ inputs.draft && 'Draft' || '' }} Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}"
       if: ${{ (steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.check-tag.outputs.exists == 'false') || (steps.set-release-facts.outputs.skip_docker_build == 'false' && inputs.overwrite_releases) }}

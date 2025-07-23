@@ -102,7 +102,7 @@ jobs:
       with:
         repo: ${{ steps.set-release-facts.outputs.draft == 'true' && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
         draft: ${{steps.set-release-facts.outputs.draft == 'true' || false }}
-        workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
+        workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
         draft_slug_name: ${{ inputs.draft_slug_name || '' }}
         workflow: ${{ inputs.workflow || steps.set-release-facts.outputs.workflow }}
@@ -132,3 +132,4 @@ jobs:
       latest_branch_commit: ${{ needs.create-version-branch.outputs.latest_branch_commit }}
       current_release_tag_commit: ${{ needs.create-version-branch.outputs.current_release_tag_commit }}
       override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
+      workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
