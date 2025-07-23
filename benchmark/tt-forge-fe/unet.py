@@ -5,10 +5,12 @@
 import pytest
 import time
 import socket
+import json
 from datetime import datetime
 from tqdm import tqdm
 
 import torch
+import torch.nn as nn
 from pytorchcv.model_provider import get_model as ptcv_get_model
 
 import forge
@@ -44,10 +46,10 @@ VARIANTS = [
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_unet(
     training,
@@ -63,6 +65,7 @@ def test_unet(
 
     module_name = "UNet"
 
+    # Create random inputs
     input_sample = [
         torch.randn(
             batch_size,
@@ -79,7 +82,7 @@ def test_unet(
 
     compiler_config = CompilerConfig()
     compiler_config.enable_optimization_passes = True
-    compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(True).set_enable_consteval(True)
+    compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False)
 
     if data_format == "bfloat16":
         input_sample = [input.to(torch.bfloat16) for input in input_sample]
@@ -213,15 +216,3 @@ def benchmark(config: dict):
         data_format=data_format,
         variant=variant,
     )
-
-
-if __name__ == "__main__":
-    config = {
-        "training": False,
-        "batch_size": 2,
-        "loop_count": 1,
-        "data_format": "bfloat16",
-        "variant": "unet_cityscapes",
-    }
-    result = benchmark(config)
-    print(result)
