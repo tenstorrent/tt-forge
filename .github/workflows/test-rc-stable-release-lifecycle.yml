@@ -206,3 +206,37 @@ jobs:
       draft: true
       repo: ${{ matrix.repo }}
       release_branch: ${{ matrix.branch }}
+
+  delete-draft-artifacts:
+    if: always()
+    needs:
+      - promote-stable
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        if: ${{ inputs.delete-drafts || true }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Delete test tags
+        if: ${{ inputs.delete-drafts || true }}
+        run: |
+          set +e
+          draft_tags=$(git tag -l | grep -oP "^draft\.tt-\w+\.\d\.\d\.\d.*" | xargs)
+          set -e
+          echo "draft_tags=$draft_tags"
+          if [ -n "$draft_tags" ]; then
+            git push origin --delete $draft_tags
+          fi
+      - name: Delete draft branch branches
+        if: ${{ inputs.delete-drafts || true }}
+        run: |
+          set +e
+          draft_branches=$(git branch -r | grep -oP "(?<=origin\/)draft-tt-\w+-release-\d\.\d$" | xargs)
+          set -e
+          echo "draft_branches=$draft_branches"
+          if [ -n "$draft_branches" ]; then
+            git push origin --delete $draft_branches
+          fi
