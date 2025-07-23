@@ -155,6 +155,12 @@ jobs:
           # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
           TRACY_NO_INVARIANT_CHECK: 1
         run: |
+          # install tree and show tree of home/forge
+          apt-get update || true
+          apt-get install -y tree || true
+          echo "Tree of /home/forge"
+          tree /home/forge || true
+
           if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
             echo "Using /home/forge/venv-${{ matrix.frontend }}"
             pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
