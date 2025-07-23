@@ -108,7 +108,7 @@ def get_data_loader(input_loc, batch_size, iterations):
                 examples = []
 
     if len(files) == 0:
-        files_raw = iter(load_dataset("imagenet-1k", split="validation", streaming=True, trust_remote_code=True))
+        files_raw = iter(load_dataset("imagenet-1k", split="validation", streaming=True))
         files = []
         sample_count = batch_size * iterations
         for _ in range(sample_count):
