@@ -121,7 +121,11 @@ def test_resnet_hf(
 
     # Turn on MLIR optimizations.
     compiler_cfg.mlir_config = (
-        MLIRConfig().set_enable_optimizer(True).set_enable_fusing(True).set_enable_memory_layout_analysis(False)
+        MLIRConfig()
+        .set_enable_optimizer(True)
+        .set_enable_fusing(True)
+        .set_enable_fusing_conv2d_with_multiply_pattern(True)
+        .set_enable_memory_layout_analysis(False)
     )
 
     # TODO: Remove this line when the issue with reinitialization is resolved.
