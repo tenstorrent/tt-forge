@@ -45,7 +45,7 @@ python benchmark/benchmark.py -p tt-forge-fe -m segformer -bs 1 -df float32 -lp 
 python benchmark/benchmark.py -p tt-forge-fe -m vit -ts classification -bs 1 -df float32 -lp 32 -o orge-benchmark-e2e-tt-forge-fe-vit_base.json
 
 # Vovnet OSMR
-python benchmark/benchmark.py -p tt-forge-fe -m vovnet -ts classification -bs 16 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-vovnet_osmr.json
+python benchmark/benchmark.py -p tt-forge-fe -m vovnet -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-vovnet_osmr.json
 
 # Yolo4
 python benchmark/benchmark.py -p tt-forge-fe -m yolo_v4 -ts na -bs 1 -df bfloat16 -lp 32 -o orge-benchmark-e2e-tt-forge-fe-yolo_v4.json
