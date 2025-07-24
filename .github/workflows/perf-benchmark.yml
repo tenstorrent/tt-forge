@@ -34,7 +34,7 @@ on:
     inputs:
       docker-image:
         description: "Docker image used in tests"
-        required: true
+        required: false
         default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
         type: string
       project:
@@ -105,6 +105,14 @@ jobs:
           exit 1
         fi
         echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
+
+        # Set up the summary for the job
+        echo "### Perf benchmarks inputs" >> $GITHUB_JOB_STEP_SUMMARY
+        echo "Project(s): $project" >> $GITHUB_JOB_STEP_SUMMARY
+        echo "Test filter: ${inputs.test-filter}" >> $GITHUB_JOB_STEP_SUMMARY
+        echo "Run ID source: ${inputs.run_id_source}" >> $GITHUB_JOB_STEP_SUMMARY
+        echo "Run ID: ${inputs.run_id}" >> $GITHUB_JOB_STEP_SUMMARY
+        echo "Shared runner: ${inputs.sh-runner}" >> $GITHUB_JOB_STEP_SUMMARY
 
   run-perf-benchmarks:
     needs: filter-tests
