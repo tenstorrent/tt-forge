@@ -109,10 +109,10 @@ jobs:
         # Set up the summary for the job
         echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
         echo "Project(s): $project" >> $GITHUB_STEP_SUMMARY
-        echo "Test filter: ${inputs.test-filter}" >> $GITHUB_STEP_SUMMARY
-        echo "Run ID source: ${inputs.run_id_source}" >> $GITHUB_STEP_SUMMARY
-        echo "Run ID: ${inputs.run_id}" >> $GITHUB_STEP_SUMMARY
-        echo "Shared runner: ${inputs.sh-runner}" >> $GITHUB_STEP_SUMMARY
+        echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
+        echo "Run ID source: ${{ inputs.run_id_source }}" >> $GITHUB_STEP_SUMMARY
+        echo "Run ID: ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY
+        echo "Shared runner: ${{ inputs.sh-runner }}" >> $GITHUB_STEP_SUMMARY
 
   run-perf-benchmarks:
     needs: filter-tests
