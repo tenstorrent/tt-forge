@@ -273,6 +273,18 @@ jobs:
     #       ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
     #     fi
 
+        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
+          echo "Dump ttir to report"
+          cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+        fi
+
+        if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
+          echo "Dump ttnn to report"
+          ttrt read --section mlir ${{ matrix.build.name }}.ttnn > ttnn_dump.json 2>&1
+          python extract_mlir.py ttnn_dump.json ttnn.mlir
+          cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+        fi
+
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4
       if: success() || failure()
