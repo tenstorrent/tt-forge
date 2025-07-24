@@ -35,6 +35,11 @@ on:
         description: "Docker image used in tests"
         required: true
         type: string
+      project-filter:
+        description: "Project filter"
+        type: string
+        required: false
+        default: "All"
 
 jobs:
   set-matrix:
