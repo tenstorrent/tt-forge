@@ -35,6 +35,7 @@ on:
       docker-image:
         description: "Docker image used in tests"
         required: true
+        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
         type: string
       project:
         description: "Project(s) to launch tests (space separated)"
@@ -69,6 +70,10 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        repository: 'tenstorrent/tt-forge'
+        fetch-depth: 1
+        ref: ${{ inputs.ref || github.ref }}
     - name: Filter Matrix
       id: set-perf-benchmarks
       shell: bash
@@ -128,6 +133,7 @@ jobs:
     env:
       # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
       TRACY_NO_INVARIANT_CHECK: 1
+      DOCKER_CACHE_ROOT: /mnt/dockercache
 
     name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
