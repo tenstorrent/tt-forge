@@ -256,11 +256,25 @@ jobs:
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
         echo "save artifacts"
         ttrt query --save-artifacts
-        if [ -z "${{ matrix.build.allow-fail }}" ]; then
-          ./benchmark/compile_and_run.sh ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          echo "Running ttrt perf for tt-forge-fe"
+          chmod ugo+x ./benchmark/ttrt_perf.sh
+          ./benchmark/ttrt_perf.sh out.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
         else
           ./benchmark/compile_and_run.sh ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
         fi
+
+    - name: Debug sleep
+      if: failure()
+      run: |
+        echo "Sleeping for 10 minutes to allow debugging"
+        sleep 600
+
+    - name: Debug sleep
+      if: failure()
+      run: |
+        echo "Sleeping for 10 minutes to allow debugging"
+        sleep 600
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4

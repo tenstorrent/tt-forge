@@ -119,6 +119,7 @@ def test_segformer(
     compiled_model = forge.compile(
         framework_model, sample_inputs=input_sample, module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save("out.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
