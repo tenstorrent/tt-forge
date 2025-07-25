@@ -111,6 +111,7 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
     compiled_model = forge.compile(
         framework_model, sample_inputs=inputs[0], module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save("out.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()

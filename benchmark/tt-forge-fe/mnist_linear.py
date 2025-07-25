@@ -107,9 +107,8 @@ def test_mnist_linear(
     framework_model = MNISTLinear(input_size=input_size, hidden_size=hidden_size)
     fw_out = framework_model(*inputs)
 
-    compiler_cfg = CompilerConfig()
-    compiler_cfg.mlir_config = MLIRConfig().set_enable_optimizer(True)
-    compiled_model = forge.compile(framework_model, sample_inputs=inputs, compiler_cfg=compiler_cfg)
+    compiled_model = forge.compile(framework_model, sample_inputs=inputs)
+    compiled_model.save("out.ttnn")
 
     # Enable program cache on all devices
     # TODO: enable the program cache - when the optimizer is enabled, running with program cache is not working.
