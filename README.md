@@ -44,7 +44,7 @@ tt-forge is composed of various projects ranging from front ends to support popu
 ![Tenstorrent Software Overview](docs/public/images/tt-sw-overview.png)
 
 ### Interactive Tenstorrent Sofware Architecture Diagram
-Overview of Tenstorrent's Opensource AI software ecosystem.
+Overview of Tenstorrent's Open source AI software ecosystem.
 Click on components to navigate to their repositories:
 
 ```mermaid
@@ -292,7 +292,7 @@ The compiler employs various optimization passes, including layout transformatio
 
 ### TT-MLIR Tools and Capabilities
 
-- ttmlir-opt: This tool is used to run the TT-MLIR compiler passes on **.mlir** source files and is central to developing and testing the cmpiler.​
+- ttmlir-opt: This tool is used to run the TT-MLIR compiler passes on **.mlir** source files and is central to developing and testing the compiler.​
 
 - ttmlir-translate: ttmlir-translate allows us to ingest something (e.g., code) into MLIR compiler, and produce something (e.g., executable binary, or even code again) from MLIR compiler.​
 
