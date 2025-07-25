@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 echo "Running ttrt perf on $1"
-ttrt perf $1
+ttrt perf $1 --ignore-version
 if [ $? -ne 0 ]; then
     echo "Error: TTRT perf command failed."
     exit 1
