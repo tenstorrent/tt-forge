@@ -13,7 +13,7 @@ import jax
 
 from transformers import FlaxResNetForImageClassification
 from jax import device_put
-from ttxla_tools import serialize_function_to_mlir
+from ttxla_tools import serialize_function_to_binary
 
 
 BATCH_SIZE = [
@@ -36,7 +36,7 @@ VARIANTS = [
 
 DATA_FORMAT = ["float32"]
 
-TTIR_FILE_PATH = "./ttir.mlir"
+BINARY_FILE_PATH = "./out.ttnn"
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
@@ -75,7 +75,7 @@ def test_resnet(
     input_sample = device_put(input_sample, tt_device)
 
     # Preserve the TTIR file
-    serialize_function_to_mlir(framework_model.__call__, TTIR_FILE_PATH, input_sample)
+    serialize_function_to_binary(framework_model.__call__, BINARY_FILE_PATH, input_sample)
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
     # Warm up the model
