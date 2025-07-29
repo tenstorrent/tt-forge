@@ -240,11 +240,6 @@ jobs:
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ttir.mlir
         fi
 
-        echo "Remove system descriptor from ttir"
-        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
-          python benchmark/device_perf.py -ct ttir.mlir
-        fi
-
     - name: Install and run TTRT
       shell: bash
       run: |
@@ -255,16 +250,14 @@ jobs:
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
         echo "Save artifacts"
         ttrt query --save-artifacts
-        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-          ./benchmark/compile_and_run.sh ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        else
+        if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
           chmod ugo+x ./benchmark/ttrt_perf.sh
-          ./benchmark/ttrt_perf.sh out.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+          ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
         fi
 
         echo "Dump ttir to report"
         if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
-          cp ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
 
     - name: Upload Perf Report

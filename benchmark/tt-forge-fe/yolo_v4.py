@@ -59,6 +59,7 @@ def test_yolo_v4(
     channel_size,
     loop_count,
     data_format,
+    model_name,
 ):
     """
     This function creates a basic Yolo8 model for image classification task using PyTorch.
@@ -106,7 +107,7 @@ def test_yolo_v4(
     compiled_model = forge.compile(
         framework_model, sample_inputs=input_sample, module_name=module_name, compiler_cfg=compiler_config
     )
-    compiled_model.save("out.ttnn")
+    compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -131,7 +132,7 @@ def test_yolo_v4(
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "YOLOv4"
+    full_model_name = "YOLOv4"
     model_type = "Detection, Random Input Data"
     dataset_name = "YOLOv4, Random Data"
     num_layers = -1  # When this value is negative, it means it is not applicable
@@ -139,7 +140,7 @@ def test_yolo_v4(
     print("====================================================================")
     print("| YOLOv4 Benchmark Results:                                        |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -154,9 +155,9 @@ def test_yolo_v4(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -172,7 +173,7 @@ def test_yolo_v4(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -182,7 +183,7 @@ def test_yolo_v4(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -215,6 +216,7 @@ def benchmark(config: dict):
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     data_format = config["data_format"]
+    model_name = config["model"]
 
     return test_yolo_v4(
         training=training,
@@ -223,4 +225,5 @@ def benchmark(config: dict):
         channel_size=channel_size,
         loop_count=loop_count,
         data_format=data_format,
+        model_name=model_name,
     )
