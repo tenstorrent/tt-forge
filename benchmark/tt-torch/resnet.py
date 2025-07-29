@@ -69,7 +69,7 @@ def test_resnet_hf(
     channel_size,
     loop_count,
     variant,
-    module_name="resnet",
+    model_name,
 ):
 
     if training:
@@ -91,7 +91,7 @@ def test_resnet_hf(
     cc.enable_consteval = True
     cc.consteval_parameters = True
     cc.save_mlir_override = "TTIR"
-    cc.model_name = module_name
+    cc.model_name = model_name
 
     options = BackendOptions()
     options.compiler_config = cc
@@ -117,14 +117,14 @@ def test_resnet_hf(
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "Resnet 50 HF"
+    full_model_name = "Resnet 50 HF"
     model_type = "Classification"
     if task == "classification":
         model_type += ", ImageNet-1K"
         dataset_name = "ImageNet-1K"
     elif task == "na":
         model_type += ", Random Input Data"
-        dataset_name = model_name + ", Random Data"
+        dataset_name = full_model_name + ", Random Data"
     else:
         raise ValueError(f"Unsupported task: {task}.")
     num_layers = 50  # Number of layers in the model, in this case 50 layers
@@ -132,7 +132,7 @@ def test_resnet_hf(
     print("====================================================================")
     print("| Resnet Benchmark Results:                                        |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -148,9 +148,9 @@ def test_resnet_hf(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -166,7 +166,7 @@ def test_resnet_hf(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -176,7 +176,7 @@ def test_resnet_hf(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -186,7 +186,7 @@ def test_resnet_hf(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "evaluation_score",
                 "value": evaluation_score,
@@ -215,7 +215,7 @@ def benchmark(config: dict):
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     variant = variants[0]
-    module_name = config.get("model", "resnet")
+    model_name = config["model"]
 
     return test_resnet_hf(
         training=training,
@@ -224,5 +224,5 @@ def benchmark(config: dict):
         channel_size=channel_size,
         loop_count=loop_count,
         variant=variant,
-        module_name=module_name,
+        model_name=model_name,
     )

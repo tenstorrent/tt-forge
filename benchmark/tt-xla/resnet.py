@@ -13,7 +13,7 @@ import jax
 
 from transformers import FlaxResNetForImageClassification
 from jax import device_put
-from ttxla_tools import serialize_function_to_mlir
+from ttxla_tools import serialize_function_to_binary
 
 
 BATCH_SIZE = [
@@ -36,8 +36,6 @@ VARIANTS = [
 
 DATA_FORMAT = ["float32"]
 
-TTIR_FILE_PATH = "./model_dir/tt-xla/resnet/ttir.mlir"
-
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
@@ -54,6 +52,7 @@ def test_resnet(
     loop_count,
     data_format,
     training,
+    model_name,
 ):
 
     if training:
@@ -75,7 +74,7 @@ def test_resnet(
     input_sample = device_put(input_sample, tt_device)
 
     # Preserve the TTIR file
-    serialize_function_to_mlir(framework_model.__call__, TTIR_FILE_PATH, input_sample)
+    serialize_function_to_binary(framework_model.__call__, f"{model_name}.ttnn", input_sample)
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
     # Warm up the model
@@ -93,11 +92,11 @@ def test_resnet(
 
     task = "na"
     samples_per_sec = total_samples / total_time
-    model_name = "Resnet 50 HF"
+    full_model_name = "Resnet 50 HF"
     model_type = "Classification"
     if task == "na":
         model_type += ", Random Input Data"
-        dataset_name = model_name + ", Random Data"
+        dataset_name = full_model_name + ", Random Data"
     else:
         raise ValueError(f"Unsupported task: {task}.")
     num_layers = 50  # Number of layers in the model, in this case 50 layers
@@ -105,7 +104,7 @@ def test_resnet(
     print("====================================================================")
     print("| Resnet Benchmark Results:                                        |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -120,9 +119,9 @@ def test_resnet(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -138,7 +137,7 @@ def test_resnet(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -148,7 +147,7 @@ def test_resnet(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -178,6 +177,7 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     data_format = config["data_format"]
     variant = VARIANTS[0]
+    model_name = config["model"]
 
     return test_resnet(
         variant=variant,
@@ -187,4 +187,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         data_format=data_format,
         training=training,
+        model_name=model_name,
     )

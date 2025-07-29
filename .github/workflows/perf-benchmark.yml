@@ -226,9 +226,6 @@ jobs:
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
-        echo "Run perf benchmark"
-        mkdir -p ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}
-
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
         fi
@@ -236,15 +233,12 @@ jobs:
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
 
-        echo "Copy ttir.mlir to model_dir"
+        echo "Copy dumped ttir to ttir.mlir"
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-          cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
+          cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ttir.mlir
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
+          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ttir.mlir
         fi
-
-        echo "Remove system descriptor from ttir"
-        python benchmark/device_perf.py -ct ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
 
     - name: Install and run TTRT
       shell: bash
@@ -254,12 +248,16 @@ jobs:
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
         pip install ttrt-whl-tracy/ttrt*.whl --upgrade
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-        echo "save artifacts"
+        echo "Save artifacts"
         ttrt query --save-artifacts
-        if [ -z "${{ matrix.build.allow-fail }}" ]; then
-          ./benchmark/compile_and_run.sh ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        else
-          ./benchmark/compile_and_run.sh ./model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+        if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
+          chmod ugo+x ./benchmark/ttrt_perf.sh
+          ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        fi
+
+        echo "Dump ttir to report"
+        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
+          cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
 
     - name: Upload Perf Report
