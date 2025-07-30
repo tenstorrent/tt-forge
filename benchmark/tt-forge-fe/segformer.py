@@ -67,6 +67,7 @@ def test_segformer(
     loop_count,
     variant,
     data_format,
+    model_name,
 ):
     """
     This function creates a basic Segformer model for image classification task using PyTorch.
@@ -119,6 +120,7 @@ def test_segformer(
     compiled_model = forge.compile(
         framework_model, sample_inputs=input_sample, module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -143,7 +145,7 @@ def test_segformer(
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "Segformer"
+    full_model_name = "Segformer"
     model_type = "Classification, Random Input Data"
     dataset_name = "Segformer, Random Data"
     num_layers = 54  # Number of layers in the model, in this case number of convolutional layers
@@ -151,7 +153,7 @@ def test_segformer(
     print("====================================================================")
     print("| Segformer Benchmark Results:                                     |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -166,9 +168,9 @@ def test_segformer(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -184,7 +186,7 @@ def test_segformer(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -194,7 +196,7 @@ def test_segformer(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -228,6 +230,7 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     variant = VARIANTS[0]
     data_format = config["data_format"]
+    model_name = config["model"]
 
     return test_segformer(
         training=training,
@@ -237,4 +240,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         variant=variant,
         data_format=data_format,
+        model_name=model_name,
     )

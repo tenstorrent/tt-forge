@@ -83,6 +83,7 @@ def test_llama_prefill(
     batch_size,
     model_path,
     loop_count,
+    model_name,
 ):
 
     if training:
@@ -109,7 +110,8 @@ def test_llama_prefill(
 
     # This is the part of the model needed for prefill; model without the last Linear layer (lm_head)
     model_decoder = model.get_decoder()
-    compiled_decoder = forge.compile(model_decoder, sample_inputs=input_ids, compiler_cfg=compiler_config)
+    compiled_decoder = forge.compile(model_decoder, sample_inputs=input_ids)
+    compiled_decoder.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -142,7 +144,7 @@ def test_llama_prefill(
     total_tokens = input_size * loop_count
 
     tokens_per_sec = total_tokens / total_time
-    model_name = "Llama Prefill"
+    full_model_name = "Llama Prefill"
     model_type = "Text Generation, Random Text Data"
     dataset_name = "Llama, Random Data"
     num_layers = -1  # Number of layers in the model is not relevant here.
@@ -155,7 +157,7 @@ def test_llama_prefill(
     print("====================================================================")
     print("| Llama Benchmark Results:                                         |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -167,9 +169,9 @@ def test_llama_prefill(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{input_size}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{input_size}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -185,7 +187,7 @@ def test_llama_prefill(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_tokens",
                 "value": total_tokens,
@@ -195,7 +197,7 @@ def test_llama_prefill(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -222,5 +224,8 @@ def benchmark(config: dict):
     batch_size = config["batch_size"]
     model_path = MODEL_PATH[1]
     loop_count = config["loop_count"]
+    model_name = config["model"]
 
-    return test_llama_prefill(training=training, batch_size=batch_size, model_path=model_path, loop_count=loop_count)
+    return test_llama_prefill(
+        training=training, batch_size=batch_size, model_path=model_path, loop_count=loop_count, model_name=model_name
+    )

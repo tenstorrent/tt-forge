@@ -1,4 +1,5 @@
 name: Promote Stable Release
+run-name: "Promote Stable Release for ${{ inputs.repo }} ${{ inputs.release_branch }}"
 
 on:
   workflow_dispatch:
