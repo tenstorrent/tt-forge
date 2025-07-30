@@ -159,6 +159,7 @@ jobs:
           HF_HOME: /home/forge/huggingface
           # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
           TRACY_NO_INVARIANT_CHECK: 1
+          IRD_LF_CACHE: varsity.IRD_LF_CACHE
         run: |
           if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
             echo "Using /home/forge/venv-${{ matrix.frontend }}"
