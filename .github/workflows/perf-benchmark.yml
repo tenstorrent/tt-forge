@@ -240,6 +240,11 @@ jobs:
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ttir.mlir
         fi
 
+        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
+          echo "Dump ttir to report"
+          cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+        fi
+
     - name: Install and run TTRT
       shell: bash
       run: |
@@ -253,11 +258,6 @@ jobs:
         if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
           chmod ugo+x ./benchmark/ttrt_perf.sh
           ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        fi
-
-        echo "Dump ttir to report"
-        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
-          cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
 
     - name: Upload Perf Report
