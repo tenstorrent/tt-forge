@@ -245,6 +245,16 @@ jobs:
           cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
 
+        echo "Dump ttnn to report"
+        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+          cp ./model_flatbuffer/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
+        fi
+        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
+          ttrt read --section mlir ${{ matrix.build.name }}.ttnn > ttnn_dump.json 2>&1
+          python extract_mlir.py ttnn_dump.json ttnn.mlir
+          cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+        fi
+
     - name: Install and run TTRT
       shell: bash
       run: |
@@ -255,10 +265,8 @@ jobs:
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
         echo "Save artifacts"
         ttrt query --save-artifacts
-        if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
-          chmod ugo+x ./benchmark/ttrt_perf.sh
-          ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        fi
+        chmod ugo+x ./benchmark/ttrt_perf.sh
+        ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4
