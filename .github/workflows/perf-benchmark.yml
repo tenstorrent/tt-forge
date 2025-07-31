@@ -128,7 +128,7 @@ jobs:
         - /usr/local/bin:/usr/local/bin
         - /mnt/dockercache:/mnt/dockercache
 
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     # tt-torch reqs are not needed by tt-torch, but rather by benchmarking infra, should be moved elsewhere: https://github.com/tenstorrent/tt-forge/issues/177
     strategy:
