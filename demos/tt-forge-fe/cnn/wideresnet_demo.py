@@ -18,4 +18,4 @@ compiled_model = forge.compile(model, sample_inputs=[inputs])
 output = compiled_model(inputs)
 
 # Post-process the output
-loader.print_cls_results(output)
+loader.post_processing(output)
