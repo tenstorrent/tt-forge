@@ -57,6 +57,7 @@ runs:
       id: fetch_run_id
       run: |
         loop_count=300
+        # Prefer commit id over branch when supplied
         if [[ -n "${{ inputs.override_release_fact_workflow }}" ]]; then
           if [[ -n "${{ inputs.commit }}" ]]; then
             echo "Search the lastest $loop_count workflow runs on commit: ${{ inputs.commit }}" on workflow: ${{ inputs.override_release_fact_workflow }}

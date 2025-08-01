@@ -26,14 +26,23 @@ on:
         description: "Update wheel for the project"
         required: false
         type: boolean
+      sh-runner:
+        description: "Run on shared runner"
+        required: false
+        type: boolean
   workflow_call:
     inputs:
       docker-image:
         description: "Docker image used in tests"
-        required: true
+        required: false
+        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
         type: string
       project:
-        description: "Project where to find new version of wheel"
+        description: "Project(s) to launch tests (space separated)"
+        required: false
+        type: string
+      run_id_source:
+        description: "Repo source for provided workflow run ID"
         required: false
         type: string
       run_id:
@@ -48,6 +57,10 @@ on:
         description: "Only run tests that contains"
         required: false
         type: string
+      sh-runner:
+        description: "Run on shared runner"
+        required: false
+        type: boolean
 
 jobs:
   filter-tests:
@@ -57,18 +70,29 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        repository: 'tenstorrent/tt-forge'
+        fetch-depth: 1
+        ref: ${{ inputs.ref || github.ref }}
     - name: Filter Matrix
       id: set-perf-benchmarks
       shell: bash
       run: |
         if [ "${{ inputs.project-filter }}" == "All" ]; then
-          project=""
+          project="tt-forge-fe tt-torch tt-xla"
         else
           project="${{ inputs.project || inputs.project-filter }}"
         fi
+
         filter='.[] | select(true'
+
         if [ -n "$project" ]; then
-          filter="$filter and .project == \"$project\""
+          pa=($project)
+          f="false"
+          for p in "${pa[@]}"; do
+            f="$f or .project == \"$p\""
+          done
+          filter="$filter and ($f)"
         fi
         if [ -n "${{ inputs.test-filter }}" ]; then
           filter="$filter and (.name | contains(\"${{ inputs.test-filter }}\"))"
@@ -82,10 +106,18 @@ jobs:
         fi
         echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
 
+        # Set up the summary for the job
+        echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
+        echo "Project(s): $project" >> $GITHUB_STEP_SUMMARY
+        echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
+        echo "Run ID source: ${{ inputs.run_id_source }}" >> $GITHUB_STEP_SUMMARY
+        echo "Run ID: ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY
+        echo "Shared runner: ${{ inputs.sh-runner }}" >> $GITHUB_STEP_SUMMARY
+
   run-perf-benchmarks:
     needs: filter-tests
     container:
-      image: ${{ inputs.docker-image }}
+      image: ${{ inputs.sh-runner && format('harbor.ci.tenstorrent.net/{0}', inputs.docker-image) || inputs.docker-image }}
       options: --device /dev/tenstorrent --user root
       volumes:
         - /dev/hugepages:/dev/hugepages
@@ -96,22 +128,29 @@ jobs:
         - /usr/local/bin:/usr/local/bin
         - /mnt/dockercache:/mnt/dockercache
 
+    timeout-minutes: 60
+
     # tt-torch reqs are not needed by tt-torch, but rather by benchmarking infra, should be moved elsewhere: https://github.com/tenstorrent/tt-forge/issues/177
     strategy:
       fail-fast: false
       matrix:
         build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
-    runs-on:
-      - ${{ matrix.build.runs-on }}
-      - in-service
 
-    name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+    runs-on: ${{ inputs.sh-runner && format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
+
+    env:
+      # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
+      TRACY_NO_INVARIANT_CHECK: 1
+      DOCKER_CACHE_ROOT: /mnt/dockercache
+
+    name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
     - uses: actions/checkout@v4
       with:
-          fetch-depth: 1
-          ref: ${{ inputs.ref || github.ref }}
+        repository: 'tenstorrent/tt-forge'
+        fetch-depth: 1
+        ref: ${{ inputs.ref || github.ref }}
 
     - name: Install system and python dependencies
       shell: bash
@@ -129,17 +168,18 @@ jobs:
         fi
 
     - name: Install upgraded wheel
-      if: ${{ (inputs.project && inputs.project==matrix.build.project && inputs.run_id) || inputs.update-wheel }}
+      if: (inputs.project && inputs.run_id) || inputs.update-wheel
       uses: ./.github/actions/install-wheel
       with:
         project: ${{ matrix.build.project }}
         run_id: ${{ inputs.run_id }}
+        run_id_source: ${{ inputs.run_id_source }}
 
     - name: Fetch job id
       id: fetch-job-id
       uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
       with:
-        job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ matrix.build.runs-on }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+        job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
 
     - name: Set reusable strings
       id: strings
@@ -186,42 +226,42 @@ jobs:
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
-        echo "Run perf benchmark"
-        mkdir -p /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}
-
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
-        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
 
-        echo "Copy ttir.mlir to model_dir"
+        echo "Copy dumped ttir to ttir.mlir"
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-          cp /__w/tt-forge/tt-forge/model_mlir/${{ matrix.build.name }}_ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
+          cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ttir.mlir
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
+          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ttir.mlir
         fi
 
-        echo "Remove system descriptor from ttir"
-        python benchmark/device_perf.py -ct /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir.mlir
-
-    - name: Install and run TTRT
-      shell: bash
-      run: |
-        python -m venv ttrt-venv
-        source ttrt-venv/bin/activate
-        apt-get install -y -qq --no-install-recommends libtbb12
-        apt-get install -y -qq --no-install-recommends libcapstone4
-        pip install ttrt-whl-tracy/ttrt*.whl --force-reinstall
-        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-        echo "save artifacts"
-        ttrt query --save-artifacts
-        if [ -z "${{ matrix.build.allow-fail }}" ]; then
-          ./benchmark/compile_and_run.sh /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        else
-          ./benchmark/compile_and_run.sh /__w/tt-forge/tt-forge/model_dir/${{ matrix.build.project }}/${{ matrix.build.name }}/ttir_out.mlir ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
+          echo "Dump ttir to report"
+          cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
+
+    # @todo: Enable TTRT perf benchmark
+    # Uncomment the following section to enable TTRT performance benchmarking, when the issue with TTRT is resolved.
+    # The issue: https://github.com/tenstorrent/tt-forge/issues/311
+    # - name: Install and run TTRT
+    #   shell: bash
+    #   run: |
+    #     python -m venv ttrt-venv
+    #     source ttrt-venv/bin/activate
+    #     apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
+    #     pip install ttrt-whl-tracy/ttrt*.whl --upgrade
+    #     pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+    #     echo "Save artifacts"
+    #     ttrt query --save-artifacts
+    #     if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
+    #       chmod ugo+x ./benchmark/ttrt_perf.sh
+    #       ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+    #     fi
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4

@@ -21,6 +21,7 @@ from forge.verify.config import VerifyConfig
 from forge.verify.value_checkers import AutomaticValueChecker
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.verify.verify import verify
+from forge.config import CompilerConfig, MLIRConfig
 
 
 # Common constants
@@ -93,6 +94,7 @@ def test_mnist_linear(
     input_size,
     hidden_size,
     loop_count,
+    model_name,
     # arch,
     # dataformat,
     # math_fidelity,
@@ -106,27 +108,27 @@ def test_mnist_linear(
     framework_model = MNISTLinear(input_size=input_size, hidden_size=hidden_size)
     fw_out = framework_model(*inputs)
 
-    compiled_model = forge.compile(framework_model, sample_inputs=inputs)
+    compiler_cfg = CompilerConfig()
+    compiler_cfg.mlir_config = MLIRConfig().set_enable_optimizer(True)
+    compiled_model = forge.compile(framework_model, sample_inputs=inputs, compiler_cfg=compiler_cfg)
+    compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
-    settings = DeviceSettings()
-    settings.enable_program_cache = True
-    configure_devices(device_settings=settings)
+    # TODO: enable the program cache - when the optimizer is enabled, running with program cache is not working.
+    # settings = DeviceSettings()
+    # settings.enable_program_cache = True
+    # configure_devices(device_settings=settings)
 
-    # Run for the first time to warm up the model.
+    # Run for the first time to warm up the model, it will be done by verify function.
     # This is required to get accurate performance numbers.
-    co_out = compiled_model(*inputs)
+    verify(inputs, framework_model, compiled_model)
     start = time.time()
     for _ in range(loop_count):
         co_out = compiled_model(*inputs)
     end = time.time()
 
-    verify(
-        inputs,
-        framework_model,
-        compiled_model,
-        verify_cfg=VerifyConfig(value_checker=AutomaticValueChecker(pcc=0.95)),
-    )
+    co_out = [co.to("cpu") for co in co_out]
+    AutomaticValueChecker().check(fw_out=fw_out, co_out=co_out[0])
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
@@ -134,7 +136,7 @@ def test_mnist_linear(
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "MNIST Linear"
+    full_model_name = "MNIST Linear"
     model_type = "Classification, Random Input Data"
     num_layers = 2  # Number of layers in the model, in this case 2 Linear hidden layers
     dataset_name = "MNIST, Random Data"
@@ -142,12 +144,12 @@ def test_mnist_linear(
     print("====================================================================")
     print("| MNIST Benchmark Results:                                         |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
     print(f"| Machine name: {machine_name}")
-    print(f"| Total execution time: : {total_time}")
+    print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
     print(f"| Batch size: {batch_size}")
@@ -157,9 +159,9 @@ def test_mnist_linear(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{model_name}_{batch_size}_{input_size}_{hidden_size}",
+        "run_type": f"{full_model_name}_{batch_size}_{input_size}_{hidden_size}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -175,7 +177,7 @@ def test_mnist_linear(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -185,7 +187,7 @@ def test_mnist_linear(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -207,7 +209,6 @@ def test_mnist_linear(
 
 
 def benchmark(config: dict):
-    print("Running MNIST Linear benchmark.")
 
     training = config["training"]
     batch_size = config["batch_size"]
@@ -215,6 +216,7 @@ def benchmark(config: dict):
 
     input_size = MNIST_INPUT_FEATURE_SIZE if config["input_size"] is None else config["input_size"]
     hidden_size = MNIIST_HIDDEN_SIZE if config["hidden_size"] is None else config["hidden_size"]
+    model_name = config["model"]
 
     return test_mnist_linear(
         training=training,
@@ -222,4 +224,5 @@ def benchmark(config: dict):
         input_size=input_size,
         hidden_size=hidden_size,
         loop_count=loop_count,
+        model_name=model_name,
     )

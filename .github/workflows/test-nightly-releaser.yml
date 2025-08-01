@@ -27,6 +27,8 @@ on:
         - '.github/actions/publish-github-release/**'
         - '.github/actions/docker-build-push/**'
         - '.github/workflows/test-nightly-releaser.yml'
+        - '.github/workflows/demo-tests.yml'
+        - '.github/workflows/basic-tests.yml'
         - '.github/scripts/pyproject.toml'
         - '.github/scripts/template-setup.py'
     pull_request:
@@ -54,6 +56,8 @@ on:
         - '.github/actions/publish-tenstorrent-pypi/**'
         - '.github/actions/docker-build-push/**'
         - '.github/actions/publish-github-release/**'
+        - '.github/workflows/demo-tests.yml'
+        - '.github/workflows/basic-tests.yml'
         - '.github/workflows/test-nightly-releaser.yml'
         - '.github/scripts/pyproject.toml'
         - '.github/scripts/template-setup.py'
@@ -63,14 +67,6 @@ on:
           description: 'Name of repo eg. tt-forge-fe'
           required: false
           default: ''
-        draft:
-          type: boolean
-          default: true
-          description: Put PR in draft mode for testing
-        delete-drafts:
-          type: boolean
-          default: true
-          description: Delete drafts
 
 permissions:
   pages: write

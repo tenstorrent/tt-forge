@@ -48,6 +48,11 @@ on:
         description: 'Override release facts workflow'
         required: false
         default: ''
+      workflow_allow_failed:
+        description: "Ignore if workflow has failed"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   pages: write
@@ -110,10 +115,12 @@ jobs:
         draft: ${{ inputs.draft }}
         repo: ${{ steps.set-release-facts.outputs.repo_full }}
         release_type: ${{ inputs.release_type }}
+        latest_branch_commit: ${{ steps.set-release-facts.outputs.build_release_latest_branch_commit }}
         branch: ${{ inputs.branch || 'main' }}
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
         unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
+        workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
 
     - name: "${{ inputs.draft && 'Draft' || '' }} Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}"
       if: ${{ (steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.check-tag.outputs.exists == 'false') || (steps.set-release-facts.outputs.skip_docker_build == 'false' && inputs.overwrite_releases) }}
@@ -212,31 +219,6 @@ jobs:
           artifact-ids: ${{ needs.build-release.outputs.release-artifacts-id }}
           path: ${{ github.workspace }}/release
 
-      - name: "${{ inputs.draft && 'Draft' || '' }} Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
-        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
-        id: docker-build-push
-        uses: ./.github/actions/docker-build-push
-        with:
-          image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
-          docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
-          make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
-          draft: ${{ inputs.draft }}
-          dockerfile: ".github/Dockerfile.single-wheel-slim"
-
-      - uses: ./.github/actions/publish-tenstorrent-pypi
-        # Skip Wheel PyPI upload in workflow test
-        if: ${{ !inputs.draft }}
-        #if: ${{ !inputs.draft && '${{ github.head_ref || github.ref_name }}' == 'main' }}
-        with:
-          release-artifacts-name: build-release-${{ inputs.repo_short }}
-          release-artifacts-wheel-path: artifacts
-          role-to-assume: ${{ secrets.PYPI_ROLE }}
-          region: ${{ secrets.PYPI_REGION }}
-          bucket: ${{ secrets.PYPI_BUCKET }}
-          new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
-          repo: ${{ inputs.repo }}
-          overwrite_releases: ${{ inputs.overwrite_releases }}
-
       - name: Generate docs
         uses: ./.github/actions/docs-generator
         env:
@@ -255,6 +237,32 @@ jobs:
           git_log_fail_on_error: ${{ steps.set-release-facts.outputs.git_log_fail_on_error }}
           docker_basic_test_run_url: ${{ needs.test-release.outputs.docker_basic_test_run_url }}
           docker_demo_test_run_url: ${{ needs.test-release.outputs.docker_demo_test_run_url }}
+
+      - uses: ./.github/actions/publish-tenstorrent-pypi
+        # Skip Wheel PyPI upload in workflow test
+        if: ${{ !inputs.draft }}
+        #if: ${{ !inputs.draft && '${{ github.head_ref || github.ref_name }}' == 'main' }}
+        with:
+          release-artifacts-name: build-release-${{ inputs.repo_short }}
+          release-artifacts-wheel-path: artifacts
+          role-to-assume: ${{ secrets.PYPI_ROLE }}
+          region: ${{ secrets.PYPI_REGION }}
+          bucket: ${{ secrets.PYPI_BUCKET }}
+          new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
+          repo: ${{ inputs.repo }}
+          overwrite_releases: ${{ inputs.overwrite_releases }}
+
+
+      - name: "${{ inputs.draft && 'Draft' || '' }} Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+        id: docker-build-push
+        uses: ./.github/actions/docker-build-push
+        with:
+          image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
+          docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+          make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
+          draft: ${{ inputs.draft }}
+          dockerfile: ".github/Dockerfile.single-wheel-slim"
 
       - uses: ./.github/actions/publish-github-release
         with:

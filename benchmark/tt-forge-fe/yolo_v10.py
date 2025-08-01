@@ -2,46 +2,55 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
+# Built-in modules
 import pytest
 import time
 import socket
 from datetime import datetime
 
+# Third-party modules
 import torch
 
+# Forge modules
 import forge
 from forge.verify.value_checkers import AutomaticValueChecker
 from forge.verify.verify import verify
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
-
 from benchmark.utils import YoloWrapper
 
 
+# Common constants
+
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
+# Data format configurations
 DATA_FORMAT = [
     "bfloat16",
 ]
 
+# Input size configurations
 INPUT_SIZE = [
     (640, 640),
 ]
 
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
 
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_yolo_v10(
     training,
@@ -50,6 +59,7 @@ def test_yolo_v10(
     channel_size,
     loop_count,
     data_format,
+    model_name,
 ):
     """
     This function creates a basic Yolo8 model for image classification task using PyTorch.
@@ -61,6 +71,7 @@ def test_yolo_v10(
 
     module_name = "YOLOv10"
 
+    # Create random inputs
     input_sample = [
         torch.randn(
             batch_size,
@@ -71,24 +82,33 @@ def test_yolo_v10(
     ]
 
     if data_format == "bfloat16":
+        # Convert input to bfloat16
         input_sample = [input.to(torch.bfloat16) for input in input_sample]
 
     # Load YOLO model weights, initialize and load model
     url = "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov10x.pt"
     framework_model = YoloWrapper(url)
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
 
-    compiler_config = CompilerConfig(enable_optimization_passes=True)
-    # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.
+    # Compiler configuration
+    compiler_config = CompilerConfig()
+
     # Turn on MLIR optimizations.
-    # compiler_config.mlir_config = MLIRConfig().set_enable_consteval(True).set_enable_optimizer(True)
+    compiler_config.mlir_config = (
+        MLIRConfig().set_enable_fusing(True).set_enable_optimizer(True).set_enable_memory_layout_analysis(False)
+    )
+
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         compiler_config.default_df_override = DataFormat.Float16_b
 
+    # Forge compile framework model
     compiled_model = forge.compile(
         framework_model, sample_inputs=input_sample, module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -113,7 +133,7 @@ def test_yolo_v10(
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "YOLOv10"
+    full_model_name = "YOLOv10"
     model_type = "Detection, Random Input Data"
     dataset_name = "YOLOv10, Random Data"
     num_layers = -1  # When this value is negative, it means it is not applicable
@@ -121,7 +141,7 @@ def test_yolo_v10(
     print("====================================================================")
     print("| YOLOv10 Benchmark Results:                                       |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -136,9 +156,9 @@ def test_yolo_v10(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -154,7 +174,7 @@ def test_yolo_v10(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -164,7 +184,7 @@ def test_yolo_v10(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -197,6 +217,7 @@ def benchmark(config: dict):
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     data_format = config["data_format"]
+    model_name = config["model"]
 
     return test_yolo_v10(
         training=training,
@@ -205,4 +226,5 @@ def benchmark(config: dict):
         channel_size=channel_size,
         loop_count=loop_count,
         data_format=data_format,
+        model_name=model_name,
     )

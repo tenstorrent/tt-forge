@@ -11,6 +11,10 @@ inputs:
     description: 'Run ID to install wheel for'
     required: false
     type: string
+  run_id_source:
+    description: "Repo source for provided workflow run ID"
+    required: false
+    type: string
 
 runs:
   using: 'composite'
@@ -23,7 +27,7 @@ runs:
           echo "artifact=forge-wheel" >> $GITHUB_OUTPUT
           echo "wheel_name=tt_*" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-torch" ]; then
-          echo "artifact=install-artifacts-release" >> $GITHUB_OUTPUT
+          echo "artifact=install-artifacts" >> $GITHUB_OUTPUT
           echo "wheel_name=wheels/tt_*" >> $GITHUB_OUTPUT
           echo "untar='true'" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-xla" ]; then
@@ -36,19 +40,25 @@ runs:
         if [ -z "${{ inputs.run_id }}" ]; then
           echo "run_id is not set, download from latest succesful run in main"
         fi
+        if [ -z "${{ inputs.run_id_source }}" ]; then
+          echo "run_id_source is not set, using project repository"
+          echo "run_id_source=${{ inputs.project }}" >> $GITHUB_OUTPUT
+        else
+          echo "run_id_source=${{ inputs.run_id_source }}" >> $GITHUB_OUTPUT
+        fi
 
-    - name: Download wheel
-      if: ${{ inputs.run_id && inputs.run_id != '' }}
+    - name: Download wheel from run_id
+      if: inputs.run_id && inputs.run_id != ''
       uses: dawidd6/action-download-artifact@v11
       with:
         run_id: ${{ inputs.run_id }}
         name: "${{ steps.set-wheel-name.outputs.artifact }}"
         name_is_regexp: false
-        repo: "tenstorrent/${{ inputs.project }}"
+        repo: "tenstorrent/${{ steps.set-wheel-name.outputs.run_id_source }}"
         check_artifacts: true
 
-    - name: Download ttrt wheel
-      if: ${{ !inputs.run_id || inputs.run_id == '' }}
+    - name: Download latest wheel
+      if: failure() ||(!inputs.run_id || inputs.run_id == '')
       uses: dawidd6/action-download-artifact@v11
       with:
         workflow_conclusion: success

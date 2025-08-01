@@ -5,10 +5,12 @@
 import pytest
 import time
 import socket
+import json
 from datetime import datetime
 from tqdm import tqdm
 
 import torch
+import torch.nn as nn
 from pytorchcv.model_provider import get_model as ptcv_get_model
 
 import forge
@@ -44,10 +46,10 @@ VARIANTS = [
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_unet(
     training,
@@ -57,12 +59,14 @@ def test_unet(
     loop_count,
     data_format,
     variant,
+    model_name,
 ):
     if training:
         pytest.skip("Training is not supported")
 
     module_name = "UNet"
 
+    # Create random inputs
     input_sample = [
         torch.randn(
             batch_size,
@@ -79,7 +83,7 @@ def test_unet(
 
     compiler_config = CompilerConfig()
     compiler_config.enable_optimization_passes = True
-    compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(True).set_enable_consteval(True)
+    compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False)
 
     if data_format == "bfloat16":
         input_sample = [input.to(torch.bfloat16) for input in input_sample]
@@ -94,6 +98,7 @@ def test_unet(
     compiled_model = forge.compile(
         framework_model, sample_inputs=input_sample, module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -119,7 +124,7 @@ def test_unet(
 
     samples_per_sec = total_samples / total_time
 
-    model_name = module_name
+    full_model_name = module_name
     model_type = Task.IMAGE_SEGMENTATION
     dataset_name = "Random data"
     num_layers = -1  # Not applicable for UNet
@@ -127,7 +132,7 @@ def test_unet(
     print("====================================================================")
     print("| UNet Benchmark Results:                                          |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -142,9 +147,9 @@ def test_unet(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -159,7 +164,7 @@ def test_unet(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -169,7 +174,7 @@ def test_unet(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -203,6 +208,7 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     data_format = config["data_format"]
     variant = config.get("variant", VARIANTS[0])
+    model_name = config["model"]
 
     return test_unet(
         training=training,
@@ -212,16 +218,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         data_format=data_format,
         variant=variant,
+        model_name=model_name,
     )
-
-
-if __name__ == "__main__":
-    config = {
-        "training": False,
-        "batch_size": 2,
-        "loop_count": 1,
-        "data_format": "bfloat16",
-        "variant": "unet_cityscapes",
-    }
-    result = benchmark(config)
-    print(result)

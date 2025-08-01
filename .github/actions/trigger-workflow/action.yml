@@ -79,3 +79,4 @@ runs:
         workflow_name: ${{ inputs.workflow_name }}
         branch: ${{ steps.trigger-workflow.outputs.branch }}
         parent_run_id: ${{ steps.trigger-workflow.outputs.parent_run_id }}
+        wait_for_run_url: ${{ inputs.wait_for_run_url }}

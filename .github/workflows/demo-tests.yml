@@ -35,6 +35,11 @@ on:
         description: "Docker image used in tests"
         required: true
         type: string
+      project-filter:
+        description: "Project filter"
+        type: string
+        required: false
+        default: "All"
 
 jobs:
   set-matrix:
@@ -154,6 +159,7 @@ jobs:
           HF_HOME: /home/forge/huggingface
           # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
           TRACY_NO_INVARIANT_CHECK: 1
+          IRD_LF_CACHE: varsity.IRD_LF_CACHE
         run: |
           if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
             echo "Using /home/forge/venv-${{ matrix.frontend }}"
@@ -189,7 +195,10 @@ jobs:
           set +e
           draft_check="$(echo "$parent_run_id" | grep 'draft')"
           set -e
-          echo "IS_DRAFT=$(if [ -z "$draft_check" ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+          echo "draft_check=$draft_check"
+          IS_DRAFT="$(if [ -n "$draft_check" ]; then echo true; else echo false; fi)"
+          echo "IS_DRAFT=$IS_DRAFT"
+          echo "IS_DRAFT=$IS_DRAFT" >> $GITHUB_OUTPUT
       - name: Check if the needed jobs succeeded or failed
         id: check
         uses: re-actors/alls-green@release/v1
@@ -209,7 +218,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "Demo tests ${{ matrix.frontend }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "text": "Demo tests ${{ inputs.project-filter }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
               "channel": "C088QN7E0R3"
             }
         env:

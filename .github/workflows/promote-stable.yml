@@ -1,4 +1,5 @@
 name: Promote Stable Release
+run-name: "Promote Stable Release for ${{ inputs.repo }} ${{ inputs.release_branch }}"
 
 on:
   workflow_dispatch:
@@ -21,6 +22,11 @@ on:
         required: false
         type: string
         default: ''
+      workflow_allow_failed:
+        description: "Ignore if workflow has failed"
+        required: false
+        type: boolean
+        default: false
 
 
   workflow_call:
@@ -43,6 +49,11 @@ on:
         required: false
         type: string
         default: ''
+      workflow_allow_failed:
+        description: "Ignore if workflow has failed"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   pages: write
@@ -119,3 +130,4 @@ jobs:
       latest_branch_commit: ${{ needs.get-facts.outputs.latest_branch_commit }}
       current_release_tag_commit: ${{ needs.get-facts.outputs.current_release_tag_commit }}
       override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
+      workflow_allow_failed: ${{ inputs.workflow_allow_failed }}

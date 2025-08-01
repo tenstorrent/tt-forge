@@ -2,15 +2,18 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
+# Built-in modules
 import pytest
 import time
 import socket
 from datetime import datetime
 
+# Third-party modules
 import torch
 from tqdm import tqdm
 from transformers import ViTForImageClassification
 
+# Forge modules
 import forge
 from forge.verify.value_checkers import AutomaticValueChecker
 from forge.verify.verify import verify
@@ -21,41 +24,50 @@ from forge._C import DataFormat
 from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
 
 
+# Common constants
+
+# Machine learning task
 TASK = [
     "classification",
 ]
 
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
+# Data format configurations
 DATA_FORMAT = [
     "bfloat16",
 ]
 
+# Input size configurations
 INPUT_SIZE = [
     (224, 224),
 ]
 
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
+# Variants for image classification
 VARIANTS = [
     "google/vit-large-patch16-224",
 ]
 
 
-@pytest.mark.parametrize("variant", VARIANTS, ids=[f"variant={item}" for item in VARIANTS])
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
+@pytest.mark.parametrize("variant", VARIANTS, ids=[f"variant={item}" for item in VARIANTS])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-def test_vit_base(training, batch_size, input_size, channel_size, loop_count, variant, task, data_format):
+def test_vit_base(training, batch_size, input_size, channel_size, loop_count, variant, task, data_format, model_name):
     """
     Test the ViT base benchmark function.
     It is used for benchmarking purposes.
@@ -82,24 +94,30 @@ def test_vit_base(training, batch_size, input_size, channel_size, loop_count, va
         raise ValueError(f"Unsupported task: {task}")
 
     if data_format == "bfloat16":
+        # Convert input to bfloat16
         inputs = [input.to(torch.bfloat16) for input in inputs]
 
     # Load the model from Hugging Face
     framework_model = download_model(ViTForImageClassification.from_pretrained, variant, return_dict=False)
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
 
+    # Compiler configuration
     compiler_config = CompilerConfig()
     # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.
     # # Turn on MLIR optimizations.
     # compiler_config.mlir_config = MLIRConfig().set_enable_consteval(True).set_enable_optimizer(True)
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         compiler_config.default_df_override = DataFormat.Float16_b
 
+    # Forge compile framework model
     compiled_model = forge.compile(
         framework_model, sample_inputs=inputs[0], module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -143,20 +161,20 @@ def test_vit_base(training, batch_size, input_size, channel_size, loop_count, va
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "ViT Base"
+    full_model_name = "ViT Base"
     model_type = "Classification"
     if task == "classification":
         model_type += ", ImageNet-1K"
         dataset_name = "ImageNet-1K"
     elif task == "na":
         model_type += ", Random Input Data"
-        dataset_name = model_name + ", Random Data"
+        dataset_name = full_model_name + ", Random Data"
     num_layers = 1  # Number of layers in the model, in this case number of convolutional layers
 
     print("====================================================================")
     print("| ViT Benchmark Results:                                           |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -172,9 +190,9 @@ def test_vit_base(training, batch_size, input_size, channel_size, loop_count, va
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -190,7 +208,7 @@ def test_vit_base(training, batch_size, input_size, channel_size, loop_count, va
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -200,7 +218,7 @@ def test_vit_base(training, batch_size, input_size, channel_size, loop_count, va
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -210,7 +228,7 @@ def test_vit_base(training, batch_size, input_size, channel_size, loop_count, va
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "evaluation_score",
                 "value": evaluation_score,
@@ -245,6 +263,7 @@ def benchmark(config: dict):
     variant = VARIANTS[0]
     task = config["task"]
     data_format = config["data_format"]
+    model_name = config["model"]
 
     return test_vit_base(
         training=training,
@@ -255,4 +274,5 @@ def benchmark(config: dict):
         variant=variant,
         task=task,
         data_format=data_format,
+        model_name=model_name,
     )

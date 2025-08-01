@@ -22,34 +22,42 @@ from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
 
 
+# Common constants
+
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
+# Data format configurations
 DATA_FORMAT = [
     "bfloat16",
 ]
 
+# Input size configurations
 INPUT_SIZE = [
     (512, 512),
 ]
 
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
+# Variants for image classification
 VARIANTS = [
     "nvidia/mit-b0",
 ]
 
 
-@pytest.mark.parametrize("variant", VARIANTS, ids=[f"variant={item}" for item in VARIANTS])
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
+@pytest.mark.parametrize("variant", VARIANTS, ids=[f"variant={item}" for item in VARIANTS])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_segformer(
     training,
@@ -59,6 +67,7 @@ def test_segformer(
     loop_count,
     variant,
     data_format,
+    model_name,
 ):
     """
     This function creates a basic Segformer model for image classification task using PyTorch.
@@ -70,6 +79,7 @@ def test_segformer(
 
     module_name = "Segformer"
 
+    # Create random inputs
     input_sample = [
         torch.randn(
             batch_size,
@@ -79,6 +89,11 @@ def test_segformer(
         )
     ]
 
+    if data_format == "bfloat16":
+        # Convert input to bfloat16
+        input_sample = [input.to(torch.bfloat16) for input in input_sample]
+
+    # Set model configurations
     config = SegformerConfig.from_pretrained(variant)
     config_dict = config.to_dict()
     config_dict["return_dict"] = False
@@ -87,18 +102,25 @@ def test_segformer(
     # Load the model from HuggingFace
     framework_model = SegformerForImageClassification.from_pretrained(variant, config=config)
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
-        input_sample = [input.to(torch.bfloat16) for input in input_sample]
     framework_model.eval()
 
+    # Compiler configuration
     compiler_config = CompilerConfig()
-    # compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(True)
+    # Turn on MLIR optimizations.
+    compiler_config.mlir_config = (
+        MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False).set_enable_fusing(True)
+    )
     if data_format == "bfloat16":
+        # Convert model to bfloat16
         compiler_config.default_df_override = DataFormat.Float16_b
 
+    # Forge compile framework model
     compiled_model = forge.compile(
         framework_model, sample_inputs=input_sample, module_name=module_name, compiler_cfg=compiler_config
     )
+    compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     settings = DeviceSettings()
@@ -123,7 +145,7 @@ def test_segformer(
     total_samples = batch_size * loop_count
 
     samples_per_sec = total_samples / total_time
-    model_name = "Segformer"
+    full_model_name = "Segformer"
     model_type = "Classification, Random Input Data"
     dataset_name = "Segformer, Random Data"
     num_layers = 54  # Number of layers in the model, in this case number of convolutional layers
@@ -131,7 +153,7 @@ def test_segformer(
     print("====================================================================")
     print("| Segformer Benchmark Results:                                     |")
     print("--------------------------------------------------------------------")
-    print(f"| Model: {model_name}")
+    print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
     print(f"| Dataset name: {dataset_name}")
     print(f"| Date: {date}")
@@ -146,9 +168,9 @@ def test_segformer(
     print("====================================================================")
 
     result = {
-        "model": model_name,
+        "model": full_model_name,
         "model_type": model_type,
-        "run_type": f"{'_'.join(model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
+        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
@@ -164,7 +186,7 @@ def test_segformer(
         "measurements": [
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
@@ -174,7 +196,7 @@ def test_segformer(
             },
             {
                 "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": model_name,
+                "step_name": full_model_name,
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
@@ -208,6 +230,7 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     variant = VARIANTS[0]
     data_format = config["data_format"]
+    model_name = config["model"]
 
     return test_segformer(
         training=training,
@@ -217,4 +240,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         variant=variant,
         data_format=data_format,
+        model_name=model_name,
     )

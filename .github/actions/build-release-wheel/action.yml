@@ -35,6 +35,11 @@ inputs:
     required: false
     type: string
     default: ''
+  workflow_allow_failed:
+    description: "Ignore if workflow has failed"
+    required: false
+    type: boolean
+    default: false
 
 outputs:
   release-artifacts-id:
@@ -73,7 +78,7 @@ runs:
         repo: ${{ inputs.repo }}
         branch: ${{ steps.set-release-facts.outputs.build_release_find_workflow_branch }}
         workflow: ${{ steps.set-release-facts.outputs.workflow }}
-        workflow_allow_failed: ${{ steps.set-release-facts.outputs.workflow_allow_failed }}
+        workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ steps.set-release-facts.outputs.workflow_result_in_job }}
         commit: ${{ inputs.latest_branch_commit }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
