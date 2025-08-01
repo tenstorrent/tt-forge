@@ -128,7 +128,7 @@ jobs:
         - /usr/local/bin:/usr/local/bin
         - /mnt/dockercache:/mnt/dockercache
 
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     # tt-torch reqs are not needed by tt-torch, but rather by benchmarking infra, should be moved elsewhere: https://github.com/tenstorrent/tt-forge/issues/177
     strategy:
@@ -240,25 +240,28 @@ jobs:
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ttir.mlir
         fi
 
-    - name: Install and run TTRT
-      shell: bash
-      run: |
-        python -m venv ttrt-venv
-        source ttrt-venv/bin/activate
-        apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
-        pip install ttrt-whl-tracy/ttrt*.whl --upgrade
-        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-        echo "Save artifacts"
-        ttrt query --save-artifacts
-        if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
-          chmod ugo+x ./benchmark/ttrt_perf.sh
-          ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-        fi
-
-        echo "Dump ttir to report"
         if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
+          echo "Dump ttir to report"
           cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
+
+    # @todo: Enable TTRT perf benchmark
+    # Uncomment the following section to enable TTRT performance benchmarking, when the issue with TTRT is resolved.
+    # The issue: https://github.com/tenstorrent/tt-forge/issues/311
+    # - name: Install and run TTRT
+    #   shell: bash
+    #   run: |
+    #     python -m venv ttrt-venv
+    #     source ttrt-venv/bin/activate
+    #     apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
+    #     pip install ttrt-whl-tracy/ttrt*.whl --upgrade
+    #     pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+    #     echo "Save artifacts"
+    #     ttrt query --save-artifacts
+    #     if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
+    #       chmod ugo+x ./benchmark/ttrt_perf.sh
+    #       ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
+    #     fi
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4
