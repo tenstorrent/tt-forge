@@ -27,7 +27,7 @@ runs:
           echo "artifact=forge-wheel" >> $GITHUB_OUTPUT
           echo "wheel_name=tt_*" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-torch" ]; then
-          echo "artifact=install-artifacts" >> $GITHUB_OUTPUT
+          echo "artifact=install-artifacts-release" >> $GITHUB_OUTPUT
           echo "wheel_name=wheels/tt_*" >> $GITHUB_OUTPUT
           echo "untar='true'" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-xla" ]; then
