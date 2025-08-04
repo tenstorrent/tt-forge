@@ -186,7 +186,7 @@ runs:
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
                 workflow="On push"
             fi
-            artifact_download_glob='*{install-artifacts,test-reports-models-}*'
+            artifact_download_glob='*{install-artifacts-release,test-reports-models-}*'
             artifact_cleanup_file_glob='*torchvision*'
             artifact_cleanup_folder_glob='*install-artifacts-debug*'
             pip_wheel_names="tt-torch"
