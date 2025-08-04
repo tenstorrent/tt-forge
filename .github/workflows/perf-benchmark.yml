@@ -194,13 +194,23 @@ jobs:
     # - name: Git safe dir
     #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
 
+    - name: Find workflow run ID for ttrt wheel download
+      id: find-run
+      run: |
+        RUN_ID=$(curl -s \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?status=success&branch=main&per_page=1" \
+          | jq -r '.workflow_runs[0].id')
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "Workflow URL: https://github.com/tenstorrent/tt-mlir/actions/runs/$RUN_ID"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
       uses: dawidd6/action-download-artifact@v11
       with:
-        workflow_conclusion: success
-        workflow: on-push.yml
-        branch: main
+        run_id: ${{ steps.find-run.outputs.run_id }}
         name: "(ttrt-whl|install-artifacts)-tracy"
         name_is_regexp: true
         repo: tenstorrent/tt-mlir
