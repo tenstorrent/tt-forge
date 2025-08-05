@@ -2,3 +2,4 @@ venv
 *.whl
 *.pyc
 __pycache__/**
+.vscode/**

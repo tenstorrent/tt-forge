@@ -29,7 +29,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout target repo
-      if: ${{ !inputs.draft }}
+      if: ${{ inputs.draft == 'false' }}
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.repo }}
@@ -175,4 +175,4 @@ runs:
 
     # Recheckout forge repo to fix side effects for clean up job
     - uses: actions/checkout@v4
-      if: ${{ !inputs.draft }}
+      if: ${{ inputs.draft == 'false' }}
