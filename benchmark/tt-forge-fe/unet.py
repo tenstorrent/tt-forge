@@ -81,9 +81,12 @@ def test_unet(
     else:
         raise ValueError(f"Unsupported UNet variant: {variant}")
 
+    OPTIMIZER_ENABLED = True
     compiler_config = CompilerConfig()
     compiler_config.enable_optimization_passes = True
-    compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False)
+    compiler_config.mlir_config = (
+        MLIRConfig().set_enable_optimizer(OPTIMIZER_ENABLED).set_enable_memory_layout_analysis(False)
+    )
 
     if data_format == "bfloat16":
         input_sample = [input.to(torch.bfloat16) for input in input_sample]
@@ -101,8 +104,9 @@ def test_unet(
     compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
+    PROGRAM_CACHE_ENABLED = True
     settings = DeviceSettings()
-    settings.enable_program_cache = True
+    settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     configure_devices(device_settings=settings)
 
     # Run for the first time to warm up the model, it will be done by verify function.
@@ -153,7 +157,9 @@ def test_unet(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": data_format,
+        "data_format": data_format,
+        "optimizer_enabled": OPTIMIZER_ENABLED,
+        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
         "dataset_name": dataset_name,
         "profile_name": "",
         "input_sequence_length": -1,  # When this value is negative, it means it is not applicable

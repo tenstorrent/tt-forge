@@ -121,9 +121,10 @@ def test_resnet_hf(
         compiler_cfg.default_df_override = DataFormat.Float16_b
 
     # Turn on MLIR optimizations.
+    OPTIMIZER_ENABLED = True
     compiler_cfg.mlir_config = (
         MLIRConfig()
-        .set_enable_optimizer(True)
+        .set_enable_optimizer(OPTIMIZER_ENABLED)
         .set_enable_fusing(True)
         .set_enable_fusing_conv2d_with_multiply_pattern(True)
         .set_enable_memory_layout_analysis(True)
@@ -138,8 +139,9 @@ def test_resnet_hf(
     compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
+    PROGRAM_CACHE_ENABLED = True
     settings = DeviceSettings()
-    settings.enable_program_cache = True
+    settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     configure_devices(device_settings=settings)
 
     # Run for the first time to warm up the model. This is required to get accurate performance numbers.
@@ -217,7 +219,9 @@ def test_resnet_hf(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": data_format,
+        "data_format": data_format,
+        "optimizer_enabled": OPTIMIZER_ENABLED,
+        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",

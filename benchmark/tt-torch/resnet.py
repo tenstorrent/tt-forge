@@ -87,6 +87,8 @@ def test_resnet_hf(
     framework_model = framework_model.to(dtype=torch.bfloat16)
     framework_model.eval()
 
+    OPTIMIZER_ENABLED = False  # tt-torch doesn't use MLIRConfig optimizer
+    PROGRAM_CACHE_ENABLED = False  # tt-torch doesn't use program cache settings
     cc = CompilerConfig()
     cc.enable_consteval = True
     cc.consteval_parameters = True
@@ -154,7 +156,9 @@ def test_resnet_hf(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": data_format,
+        "data_format": data_format,
+        "optimizer_enabled": OPTIMIZER_ENABLED,
+        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",

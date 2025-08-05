@@ -107,10 +107,14 @@ def test_segformer(
     framework_model.eval()
 
     # Compiler configuration
+    OPTIMIZER_ENABLED = True
     compiler_config = CompilerConfig()
     # Turn on MLIR optimizations.
     compiler_config.mlir_config = (
-        MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False).set_enable_fusing(True)
+        MLIRConfig()
+        .set_enable_optimizer(OPTIMIZER_ENABLED)
+        .set_enable_memory_layout_analysis(False)
+        .set_enable_fusing(True)
     )
     if data_format == "bfloat16":
         # Convert model to bfloat16
@@ -123,8 +127,9 @@ def test_segformer(
     compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
+    PROGRAM_CACHE_ENABLED = True
     settings = DeviceSettings()
-    settings.enable_program_cache = True
+    settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     configure_devices(device_settings=settings)
 
     # Run for the first time to warm up the model, it will be done by verify function.
@@ -174,7 +179,9 @@ def test_segformer(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": data_format,
+        "data_format": data_format,
+        "optimizer_enabled": OPTIMIZER_ENABLED,
+        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",

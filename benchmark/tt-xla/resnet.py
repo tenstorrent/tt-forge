@@ -58,6 +58,8 @@ def test_resnet(
     if training:
         pytest.skip("Training is not supported")
 
+    OPTIMIZER_ENABLED = False
+    PROGRAM_CACHE_ENABLED = False
     tt_device = jax.devices("tt")[0]
     with jax.default_device(jax.devices("cpu")[0]):
         # Instantiating the model seems to also run it in op by op mode once for whatver reason, also do that on the CPU
@@ -125,7 +127,9 @@ def test_resnet(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": data_format,
+        "data_format": data_format,
+        "optimizer_enabled": OPTIMIZER_ENABLED,
+        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",

@@ -103,10 +103,11 @@ def test_llama_prefill(
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
     # Compiler configuration
+    OPTIMIZER_ENABLED = False
     compiler_config = CompilerConfig()
     # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.
     # Turn on MLIR optimizations.
-    # compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(True)
+    # compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(OPTIMIZER_ENABLED)
 
     # This is the part of the model needed for prefill; model without the last Linear layer (lm_head)
     model_decoder = model.get_decoder()
@@ -114,8 +115,9 @@ def test_llama_prefill(
     compiled_decoder.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
+    PROGRAM_CACHE_ENABLED = True
     settings = DeviceSettings()
-    settings.enable_program_cache = True
+    settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     configure_devices(device_settings=settings)
 
     # Prefill Phase - Process the initial prompt on device
@@ -175,7 +177,9 @@ def test_llama_prefill(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": "f32",  # This is we call dataformat, it should be generic, too, but for this test we don't experiment with it
+        "data_format": "f32",  # This is we call dataformat, it should be generic, too, but for this test we don't experiment with it
+        "optimizer_enabled": OPTIMIZER_ENABLED,
+        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",

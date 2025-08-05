@@ -117,12 +117,16 @@ def test_vovnet_timm(
         framework_model = framework_model.to(torch.bfloat16)
 
     # Compiler configuration
+    OPTIMIZER_ENABLED = True
     compiler_config = CompilerConfig()
     if data_format == "bfloat16":
         compiler_config.default_df_override = DataFormat.Float16_b
     # # Turn on MLIR optimizations.
     compiler_config.mlir_config = (
-        MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False).set_enable_fusing(True)
+        MLIRConfig()
+        .set_enable_optimizer(OPTIMIZER_ENABLED)
+        .set_enable_memory_layout_analysis(False)
+        .set_enable_fusing(True)
     )
 
     # Forge compile framework model
@@ -132,8 +136,9 @@ def test_vovnet_timm(
     compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
+    PROGRAM_CACHE_ENABLED = True
     settings = DeviceSettings()
-    settings.enable_program_cache = True
+    settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     configure_devices(device_settings=settings)
 
     if task == "classification":
@@ -222,7 +227,9 @@ def test_vovnet_timm(
         "config": {"model_size": "small"},
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": data_format,
+        "data_format": data_format,
+        "optimizer_enabled": OPTIMIZER_ENABLED,
+        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",
