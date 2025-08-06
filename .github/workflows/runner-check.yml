@@ -3,12 +3,13 @@ name: Check Repository Runners
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *' # Every day at 6am
+    - cron: '0 */4 * * *' # Every 4 hours
 
 jobs:
   list-runners:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Find new offline runners in tt-forge
         id: tt-forge
         uses: ./.github/actions/offline-runners
@@ -62,7 +63,7 @@ jobs:
             echo "New offline runners in tt-mlir: ${{ steps.tt-mlir.outputs.new_runners }}" | tee -a "$output_file"
           fi
           if [ -s "$output_file" ]; then
-            echo "send_msg={\"text\": $(cat "$output_file" | jq -Rs .)" >> $GITHUB_OUTPUT
+            echo "send_msg={\"text\": $(cat "$output_file" | jq -Rs .)}" >> $GITHUB_OUTPUT
             echo "## Found new offline runners" >> $GITHUB_STEP_SUMMARY
             cat "$output_file" >> $GITHUB_STEP_SUMMARY
           fi
