@@ -7,6 +7,7 @@ jobs:
   list-runners:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Find new offline runners in tt-forge
         id: tt-forge
         uses: ./.github/actions/offline-runners
