@@ -38,6 +38,10 @@ runs:
           fi
         done
         echo "new runners: ${new_runners[*]}"
-        gh api repos/tenstorrent/tt-forge/actions/variables/runners_${repo_name} --method PUT \
-          -f name="runners_${repo_name}" -f value="$(IFS=' '; echo "${offline_runners[*]}")"
+        # Save offline runners to a file and update the repository variable using gh variable set
+        nr=$(IFS=' '; echo "${offline_runners[*]}")
+        if [ -z "$nr" ]; then
+          nr=" "
+        fi
+        gh variable set runners_${repo_name} --repo tenstorrent/tt-forge --body "$nr"
         echo "new_runners=$(IFS=' '; echo "${new_runners[*]}")" >> $GITHUB_OUTPUT
