@@ -1,0 +1,39 @@
+name: 'Find New Offline Runners'
+description: 'Finds new offline runners in a repository'
+
+inputs:
+  repo:
+    description: 'Repository name'
+    required: true
+    type: string
+  token:
+    description: 'GitHub token for authentication'
+    required: true
+    type: string
+
+outputs:
+  new_runners:
+    description: 'New offline runners not previously saved'
+    value: ${{ steps.offline-runners.outputs.new_runners }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Find new offline runners in repository
+      id: offline-runners
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        repo_name=$(echo "${{ inputs.repo }}" | tr '-' '_')
+        offline_runners=($(gh api repos/tenstorrent/${{ inputs.repo }}/actions/runners --jq '.runners[] | select(.status == "offline") | .name'))
+        saved_runners=($(gh api repos/tenstorrent/tt-forge/actions/variables/runners_${repo_name} --jq '.value'))
+        new_runners=()
+        for runner in "${offline_runners[@]}"; do
+          if [[ ! " ${saved_runners[@]} " =~ " ${runner} " ]]; then
+            new_runners+=("$runner")
+          fi
+        done
+        gh api repos/tenstorrent/tt-forge/actions/variables/runners_${repo_name} --method PUT \
+          -f name="runners_${repo_name}" -f value="$(IFS=' '; echo "${offline_runners[*]}")"
+        echo "new_runners=$(IFS=' '; echo "${new_runners[*]}")" >> $GITHUB_OUTPUT
