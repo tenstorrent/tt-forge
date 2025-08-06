@@ -61,7 +61,7 @@ jobs:
             echo "New offline runners in tt-mlir: ${{ steps.tt-mlir.outputs.new_runners }}" | tee -a "$output_file"
           fi
           if [ -s "$output_file" ]; then
-            echo "send_msg={\"text\": $(cat "$output_file" | jq -Rs .)" >> $GITHUB_OUTPUT
+            echo "send_msg={\"text\": $(cat "$output_file" | jq -Rs .)}" >> $GITHUB_OUTPUT
             echo "## Found new offline runners" >> $GITHUB_STEP_SUMMARY
             cat "$output_file" >> $GITHUB_STEP_SUMMARY
           fi
