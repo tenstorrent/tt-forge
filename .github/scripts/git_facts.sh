@@ -5,7 +5,7 @@
 
 
 # Used for get release branch and create version branch
-current_release_tag=$(git tag --merged origin/$branch --sort=creatordate | grep -P '\d+.\d+\.\d+' | tail -n 1)
+current_release_tag=$(git tag --merged origin/$branch --sort=taggerdate | grep -P '\d+.\d+\.\d+' | tail -n 1)
 current_release_tag_commit=$(git show-ref -s $current_release_tag)
 # Failed if tag is not found in branch
 git branch -a --contains $current_release_tag | grep -q "remotes/origin/$branch" || { echo "Could not find tag $current_release_tag in branch $branch"; exit 1; }

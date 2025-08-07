@@ -264,6 +264,15 @@ jobs:
           draft: ${{ inputs.draft }}
           dockerfile: ".github/Dockerfile.single-wheel-slim"
 
+      - uses: ./.github/actions/push-annotated-git-tag
+        if: ${{ inputs.release_type != 'nightly' }}
+        with:
+          repo: ${{ inputs.repo }}
+          draft: ${{ inputs.draft }}
+          GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+          new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
+          commit: ${{ inputs.latest_branch_commit }}
+
       - uses: ./.github/actions/publish-github-release
         with:
           draft: ${{ inputs.draft }}
@@ -278,12 +287,3 @@ jobs:
           unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
           make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
 
-      - uses: ./.github/actions/push-tag
-        # Used for testing since draft release to do not create tags.
-        if: ${{ inputs.release_type != 'nightly' && inputs.draft }}
-        with:
-          repo: ${{ inputs.repo }}
-          draft: ${{ inputs.draft }}
-          GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
-          new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
-          commit: ${{ inputs.latest_branch_commit }}
