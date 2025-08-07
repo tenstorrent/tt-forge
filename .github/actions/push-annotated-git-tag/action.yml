@@ -36,6 +36,10 @@ runs:
       id: get-release-branch
       run: |
         git clean -xdf
+        # Configure git user identity for creating annotated tags
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
         if [ $(git tag -l "${{ inputs.new_version_tag }}") ]; then
           echo "Tag ${{ inputs.new_version_tag }} already exists"
         else
