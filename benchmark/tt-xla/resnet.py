@@ -60,6 +60,8 @@ def test_resnet(
 
     OPTIMIZER_ENABLED = False
     PROGRAM_CACHE_ENABLED = False
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    TRACE_ENABLED = False
     tt_device = jax.devices("tt")[0]
     with jax.default_device(jax.devices("cpu")[0]):
         # Instantiating the model seems to also run it in op by op mode once for whatver reason, also do that on the CPU
@@ -124,12 +126,16 @@ def test_resnet(
         "model": full_model_name,
         "model_type": model_type,
         "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
-        "config": {"model_size": "small"},
+        "config": {
+            "model_size": "small",
+            "optimizer_enabled": OPTIMIZER_ENABLED,
+            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+            "trace_enabled": TRACE_ENABLED,
+        },
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "data_format": data_format,
-        "optimizer_enabled": OPTIMIZER_ENABLED,
-        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+        "precision": data_format,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",

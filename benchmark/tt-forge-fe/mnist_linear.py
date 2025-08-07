@@ -109,6 +109,8 @@ def test_mnist_linear(
     fw_out = framework_model(*inputs)
 
     OPTIMIZER_ENABLED = True
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = False  # mnist_linear.py doesn't use set_enable_memory_layout_analysis
+    TRACE_ENABLED = False
     compiler_cfg = CompilerConfig()
     compiler_cfg.mlir_config = MLIRConfig().set_enable_optimizer(OPTIMIZER_ENABLED)
     compiled_model = forge.compile(framework_model, sample_inputs=inputs, compiler_cfg=compiler_cfg)
@@ -164,12 +166,16 @@ def test_mnist_linear(
         "model": full_model_name,
         "model_type": model_type,
         "run_type": f"{full_model_name}_{batch_size}_{input_size}_{hidden_size}",
-        "config": {"model_size": "small"},
+        "config": {
+            "model_size": "small",
+            "optimizer_enabled": OPTIMIZER_ENABLED,
+            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+            "trace_enabled": TRACE_ENABLED,
+        },
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "data_format": "f32",  # This is we call dataformat, it should be generic, too, but for this test we don't experiment with it
-        "optimizer_enabled": OPTIMIZER_ENABLED,
-        "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+        "precision": "f32",  # This is we call dataformat, it should be generic, too, but for this test we don't experiment with it
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",
