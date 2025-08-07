@@ -217,6 +217,16 @@ jobs:
         check_artifacts: true
         path: ./
 
+    - name: Install ttrt
+      shell: bash
+      run: |
+        echo "Install ttrt"
+        python -m venv ttrt-venv
+        source ttrt-venv/bin/activate
+        apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
+        pip install ttrt-whl-tracy/ttrt*.whl --upgrade
+        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+
     - name: Untar ttmlir install directory
       shell: bash
       run: |
@@ -257,18 +267,17 @@ jobs:
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           cp ./model_flatbuffer/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
         fi
-        ttrt read --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json
-        python extract_mlir.py ttnn_dump.json ttnn.mlir
+        source ttrt-venv/bin/activate
+        echo "Run ttrt read"
+        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json > /dev/null 2>&1
+        echo "Extract MLIR from ttnn"
+        python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
         cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
 
-    - name: Install and run TTRT
+    - name: Run Device Perf
       shell: bash
       run: |
-        python -m venv ttrt-venv
         source ttrt-venv/bin/activate
-        apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
-        pip install ttrt-whl-tracy/ttrt*.whl --upgrade
-        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
         echo "Save artifacts"
         ttrt query --save-artifacts
         chmod ugo+x ./benchmark/ttrt_perf.sh
