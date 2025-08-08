@@ -78,7 +78,9 @@ def test_resnet(
     input_sample = device_put(input_sample, tt_device)
 
     # Preserve the TTIR file
-    serialize_function_to_binary(framework_model.__call__, f"{model_name}.ttnn", input_sample)
+    serialize_function_to_binary(
+        framework_model.__call__, f"{model_name}.ttnn", input_sample, params=framework_model.params
+    )
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
     # Warm up the model
