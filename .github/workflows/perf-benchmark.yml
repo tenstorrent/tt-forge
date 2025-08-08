@@ -274,6 +274,24 @@ jobs:
         python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
         cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
 
+    - name: Upload TTIR MLIR separately
+      id: upload-ttir-mlir
+      uses: actions/upload-artifact@v4
+      if: success() || failure()
+      with:
+        name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+        compression-level: 0
+
+    - name: Upload TTNN MLIR separately
+      id: upload-ttnn-mlir
+      uses: actions/upload-artifact@v4
+      if: success() || failure()
+      with:
+        name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+        compression-level: 0
+
     - name: Run Device Perf
       shell: bash
       run: |
@@ -283,6 +301,14 @@ jobs:
         chmod ugo+x ./benchmark/ttrt_perf.sh
         echo "Run ttrt perf"
         ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+
+    - name: Add MLIR URLs to perf report
+      shell: bash
+      run: |
+        PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
+        TTIR_URL=${{ steps.upload-ttir-mlir.outputs.artifact-url }}
+        TTNN_URL=${{ steps.upload-ttnn-mlir.outputs.artifact-url }}
+        python benchmark/add_mlir_urls.py "$PERF_REPORT_FILE" "$TTIR_URL" "$TTNN_URL"
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4
