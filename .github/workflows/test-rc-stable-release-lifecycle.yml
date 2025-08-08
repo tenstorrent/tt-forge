@@ -148,14 +148,14 @@ jobs:
           draft: true
           ignore_update_check: true
 
-  first-commit-successful:
+  first-commit-successful-pre-release-branch:
     needs:
       - get-release-branches
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
-    name: ${{ matrix.repo_short }} First Commit Successful
+    name: ${{ matrix.repo_short }} First RC Commit Successful
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -176,7 +176,7 @@ jobs:
   release-rc-first-commit-observed:
     needs:
       - get-repos
-      - first-commit-successful
+      - first-commit-successful-pre-release-branch
     strategy:
       fail-fast: false
       matrix:
@@ -188,7 +188,6 @@ jobs:
       draft: true
       repo: ${{ matrix.repo }}
       overwrite_releases: false
-
 
   promote-stable:
     needs:
@@ -207,10 +206,52 @@ jobs:
       repo: ${{ matrix.repo }}
       release_branch: ${{ matrix.branch }}
 
+  first-commit-successful-stable-branch:
+    needs:
+      - get-release-branches
+      - promote-stable
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} First StablePatch Commit Successful
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add random test file
+        uses: ./.github/actions/add-commit
+        with:
+          branch: ${{ matrix.branch }}
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/trigger-workflow
+        with:
+          workflow_name: 'Mock Successful'
+          wait: true
+          branch: ${{ matrix.branch }}
+
+  release-stable-first-commit-observed:
+    needs:
+      - get-repos
+      - first-commit-successful-stable-branch
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+    uses: ./.github/workflows/update-releases.yml
+    secrets: inherit
+    name: ${{ matrix.repo_short }} Update Stable on observed first commit
+    with:
+      draft: true
+      repo: ${{ matrix.repo }}
+      overwrite_releases: false
+
+
   delete-draft-artifacts:
     if: always()
     needs:
-      - promote-stable
+      - release-stable-first-commit-observed
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}

@@ -1,7 +1,5 @@
-
-
-name: "Create RC branch"
-description: "Create RC branch"
+name: "Create Annotated Git Tag"
+description: "Create Annotated Git Tag"
 inputs:
   repo:
     description: "Repo name"
@@ -31,21 +29,27 @@ runs:
       with:
         repository: ${{ inputs.repo }}
         token: ${{ inputs.GH_TOKEN }}
-        ref: ${{ inputs.branch }}
         fetch-depth: 0
 
-    - name: Create/Get Release Branch
+    - name: Create Annotated Git Tag
       shell: bash
       id: get-release-branch
       run: |
-        git clean -xdf
+        # Configure git user identity for creating annotated tags
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
         if [ $(git tag -l "${{ inputs.new_version_tag }}") ]; then
           echo "Tag ${{ inputs.new_version_tag }} already exists"
         else
-          git tag ${{ inputs.new_version_tag }} ${{ inputs.commit }}
-          git push origin --tags
+          echo "Creating annotated git tag ${{ inputs.new_version_tag }} on commit ${{ inputs.commit }}"
+          # TODO: needs a org secret gpg key to sign the tag
+          # https://github.com/tenstorrent/tt-forge-internal/issues/9
+          #git tag -s -a ${{ inputs.new_version_tag }} -m "${{ inputs.new_version_tag }}" ${{ inputs.commit }}
+          #git tag -v ${{ inputs.new_version_tag }}
+          git tag  -a ${{ inputs.new_version_tag }} -m "${{ inputs.new_version_tag }}" ${{ inputs.commit }}
+          git push origin ${{ inputs.new_version_tag }}
         fi
-
 
     # Recheckout forge repo to fix side effects for clean up job
     - uses: actions/checkout@v4
