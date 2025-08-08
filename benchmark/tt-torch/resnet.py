@@ -87,6 +87,10 @@ def test_resnet_hf(
     framework_model = framework_model.to(dtype=torch.bfloat16)
     framework_model.eval()
 
+    OPTIMIZER_ENABLED = False
+    PROGRAM_CACHE_ENABLED = False
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    TRACE_ENABLED = False
     cc = CompilerConfig()
     cc.enable_consteval = True
     cc.consteval_parameters = True
@@ -151,7 +155,13 @@ def test_resnet_hf(
         "model": full_model_name,
         "model_type": model_type,
         "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
-        "config": {"model_size": "small"},
+        "config": {
+            "model_size": "small",
+            "optimizer_enabled": OPTIMIZER_ENABLED,
+            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+            "trace_enabled": TRACE_ENABLED,
+        },
         "num_layers": num_layers,
         "batch_size": batch_size,
         "precision": data_format,

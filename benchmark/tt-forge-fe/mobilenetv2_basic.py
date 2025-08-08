@@ -98,10 +98,16 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
     framework_model.eval()
 
     # Compiler configuration
+    OPTIMIZER_ENABLED = True
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    TRACE_ENABLED = False
     compiler_config = CompilerConfig()
     # Turn on MLIR optimizations.
     compiler_config.mlir_config = (
-        MLIRConfig().set_enable_optimizer(True).set_enable_memory_layout_analysis(False).set_enable_fusing(True)
+        MLIRConfig()
+        .set_enable_optimizer(OPTIMIZER_ENABLED)
+        .set_enable_memory_layout_analysis(MEMORY_LAYOUT_ANALYSIS_ENABLED)
+        .set_enable_fusing(True)
     )
     if data_format == "bfloat16":
         # Convert model to bfloat16
@@ -114,8 +120,9 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
     compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
+    PROGRAM_CACHE_ENABLED = True
     settings = DeviceSettings()
-    settings.enable_program_cache = True
+    settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     configure_devices(device_settings=settings)
 
     verify_cfg = VerifyConfig()
@@ -194,7 +201,13 @@ def test_mobilenetv2_basic(training, batch_size, input_size, channel_size, loop_
         "model": full_model_name,
         "model_type": model_type,
         "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
-        "config": {"model_size": "small"},
+        "config": {
+            "model_size": "small",
+            "optimizer_enabled": OPTIMIZER_ENABLED,
+            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+            "trace_enabled": TRACE_ENABLED,
+        },
         "num_layers": num_layers,
         "batch_size": batch_size,
         "precision": data_format,

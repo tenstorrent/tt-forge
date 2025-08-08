@@ -121,12 +121,15 @@ def test_resnet_hf(
         compiler_cfg.default_df_override = DataFormat.Float16_b
 
     # Turn on MLIR optimizations.
+    OPTIMIZER_ENABLED = True
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
+    TRACE_ENABLED = False
     compiler_cfg.mlir_config = (
         MLIRConfig()
-        .set_enable_optimizer(True)
+        .set_enable_optimizer(OPTIMIZER_ENABLED)
         .set_enable_fusing(True)
         .set_enable_fusing_conv2d_with_multiply_pattern(True)
-        .set_enable_memory_layout_analysis(True)
+        .set_enable_memory_layout_analysis(MEMORY_LAYOUT_ANALYSIS_ENABLED)
     )
 
     # TODO: Remove this line when the issue with reinitialization is resolved.
@@ -138,8 +141,9 @@ def test_resnet_hf(
     compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
+    PROGRAM_CACHE_ENABLED = True
     settings = DeviceSettings()
-    settings.enable_program_cache = True
+    settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     configure_devices(device_settings=settings)
 
     # Run for the first time to warm up the model. This is required to get accurate performance numbers.
@@ -214,7 +218,13 @@ def test_resnet_hf(
         "model": full_model_name,
         "model_type": model_type,
         "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
-        "config": {"model_size": "small"},
+        "config": {
+            "model_size": "small",
+            "optimizer_enabled": OPTIMIZER_ENABLED,
+            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+            "trace_enabled": TRACE_ENABLED,
+        },
         "num_layers": num_layers,
         "batch_size": batch_size,
         "precision": data_format,
