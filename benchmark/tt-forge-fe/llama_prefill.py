@@ -21,47 +21,22 @@ import forge
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig
 from forge.verify.compare import compare_with_golden
+from forge._C import DataFormat
 
 
-# llama.utils.utils
-from transformers import LlamaConfig, LlamaForCausalLM, AutoTokenizer
-from peft import LoraConfig, get_peft_model
-
-
-def load_model(model_path="openlm-research/open_llama_3b", **kwargs):
-    # Default config values
-    config = LlamaConfig.from_pretrained(model_path)
-
-    # Use defaults or values from kwargs
-    config.return_dict = kwargs.get("return_dict", False)
-    config.use_cache = kwargs.get("use_cache", False)
-    config.output_attentions = kwargs.get("output_attentions", False)
-    config.output_hidden_states = kwargs.get("output_hidden_states", False)
-    if "num_hidden_layers" in kwargs:
-        config.num_hidden_layers = kwargs["num_hidden_layers"]
-
-    # Load the model
-    framework_model = LlamaForCausalLM.from_pretrained(model_path, device_map="auto", config=config)
-    framework_model.eval()
-
-    use_lora = kwargs.get("use_lora", False)
-    if use_lora:
-        lora_r = kwargs.get("lora_r", 4)
-        lora_alpha = kwargs.get("lora_alpha", 8)
-        lora_config = LoraConfig(r=lora_r, lora_alpha=lora_alpha, task_type="CAUSAL_LM")
-        framework_model = get_peft_model(framework_model, lora_config)
-
-    # Using AutoTokenizer for default tokenizers for both openllama and llama 3.2
-    use_fast = kwargs.get("use_fast", True)
-    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=use_fast)
-
-    return framework_model, tokenizer
+# Utils
+from .utils import load_model
 
 
 # Common constants
 
 # Model path
-MODEL_PATH = ["openlm-research/open_llama_3b", "meta-llama/Llama-3.2-1B"]
+MODEL_PATH = ["meta-llama/Llama-3.2-1B", "openlm-research/open_llama_3b"]
+
+# Data format configurations
+DATA_FORMAT = [
+    "bfloat16",
+]
 
 # Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
@@ -77,14 +52,24 @@ def prefil_on_cpu(model, input_ids):
 
 
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 @pytest.mark.parametrize("model_path", MODEL_PATH, ids=["_".join(item.split("/")) for item in MODEL_PATH])
 def test_llama_prefill(
     training,
     batch_size,
     model_path,
     loop_count,
+    data_format,
     model_name,
 ):
+
+    if data_format == "bfloat16":
+        torch_dtype = torch.bfloat16
+        data_format_override = DataFormat.Float16_b
+        compiler_cfg = CompilerConfig(default_df_override=data_format_override)
+    else:
+        torch_dtype = torch.float32
+        compiler_cfg = CompilerConfig()
 
     if training:
         pytest.skip("Training is not supported")
@@ -97,6 +82,7 @@ def test_llama_prefill(
 
     # Load Llama model and tokenizer
     model, tokenizer = load_model(model_path, return_dict=True)
+    model = model.to(torch_dtype)
 
     # Prepare input sentence
     prompt = "Q: What is the largest animal?\nA:"
@@ -106,14 +92,13 @@ def test_llama_prefill(
     OPTIMIZER_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
-    compiler_config = CompilerConfig()
     # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.
     # Turn on MLIR optimizations.
     # compiler_config.mlir_config = MLIRConfig().set_enable_optimizer(OPTIMIZER_ENABLED)
 
     # This is the part of the model needed for prefill; model without the last Linear layer (lm_head)
     model_decoder = model.get_decoder()
-    compiled_decoder = forge.compile(model_decoder, sample_inputs=input_ids)
+    compiled_decoder = forge.compile(model_decoder, sample_inputs=input_ids, compiler_cfg=compiler_cfg)
     compiled_decoder.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
@@ -185,7 +170,7 @@ def test_llama_prefill(
         },
         "num_layers": num_layers,
         "batch_size": batch_size,
-        "precision": "f32",  # This is we call dataformat, it should be generic, too, but for this test we don't experiment with it
+        "precision": data_format,
         # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",
@@ -232,10 +217,16 @@ def benchmark(config: dict):
 
     training = config["training"]
     batch_size = config["batch_size"]
-    model_path = MODEL_PATH[1]
+    model_path = MODEL_PATH[0]
     loop_count = config["loop_count"]
     model_name = config["model"]
+    data_format = config["data_format"]
 
     return test_llama_prefill(
-        training=training, batch_size=batch_size, model_path=model_path, loop_count=loop_count, model_name=model_name
+        training=training,
+        batch_size=batch_size,
+        model_path=model_path,
+        loop_count=loop_count,
+        model_name=model_name,
+        data_format=data_format,
     )
