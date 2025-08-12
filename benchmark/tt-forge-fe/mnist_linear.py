@@ -59,6 +59,9 @@ DATAFORMAT = []
 MATH_FIDELITY = []
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
+# Fix seed for reproducibility
+torch.manual_seed(42)
+
 
 # Model definition
 class MNISTLinear(nn.Module):
