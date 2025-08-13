@@ -97,7 +97,7 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.set-matrix.outputs.matrix) }}
 
-    runs-on: ${{ matrix.runs-on && format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.runs-on) }}
+    runs-on: ${{ matrix.runs-on && format('tt-ubuntu-2204-{0}-stable', matrix.runs-on) }}
     container:
       image: ${{ inputs.docker-image }}
       options: --device /dev/tenstorrent
