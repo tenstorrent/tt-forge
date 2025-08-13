@@ -1,0 +1,69 @@
+name: "Create Annotated Git Tag"
+description: "Create Annotated Git Tag"
+inputs:
+  repo:
+    description: "Repo name"
+    required: true
+  draft:
+    description: "Draft release"
+    required: false
+    default: false
+  GH_TOKEN:
+    description: "GitHub token"
+    required: true
+  commit:
+    description: "Commit hash"
+    required: true
+  new_version_tag:
+    description: "New version tag"
+    required: true
+  gpg_private_key:
+    description: "GPG private key for signing tags"
+    required: false
+  gpg_passphrase:
+    description: "GPG passphrase"
+    required: false
+
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Checkout target repo
+      if: ${{  inputs.draft == 'false' }}
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repo }}
+        token: ${{ inputs.GH_TOKEN }}
+        fetch-depth: 0
+
+    - name: Import GPG key
+      uses: crazy-max/ghaction-import-gpg@v6
+      with:
+        gpg_private_key: ${{ inputs.gpg_private_key }}
+        passphrase: ${{ inputs.gpg_passphrase }}
+        trust_level: 5
+        git_committer_email: "jmcgrath@tenstorrent.com"
+        git_committer_name: "John McGrath"
+        git_user_signingkey: true
+        git_commit_gpgsign: true
+        git_tag_gpgsign: true
+
+    - name: Create Annotated Git Tag
+      shell: bash
+      id: get-release-branch
+      run: |
+        # Configure git user identity for creating annotated tags
+
+        if [ $(git tag -l "${{ inputs.new_version_tag }}") ]; then
+          echo "Tag ${{ inputs.new_version_tag }} already exists"
+        else
+          echo "Creating annotated git tag ${{ inputs.new_version_tag }} on commit ${{ inputs.commit }}"
+          git tag -s -a ${{ inputs.new_version_tag }} -m "${{ inputs.new_version_tag }}" ${{ inputs.commit }}
+          git tag -v ${{ inputs.new_version_tag }}
+          git push origin ${{ inputs.new_version_tag }}
+        fi
+
+    # Recheckout forge repo to fix side effects for clean up job
+    - uses: actions/checkout@v4
+      if: ${{  inputs.draft == 'false' }}

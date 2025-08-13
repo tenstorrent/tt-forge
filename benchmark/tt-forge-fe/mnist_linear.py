@@ -59,6 +59,9 @@ DATAFORMAT = []
 MATH_FIDELITY = []
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
+# Fix seed for reproducibility
+torch.manual_seed(42)
+
 
 # Model definition
 class MNISTLinear(nn.Module):
@@ -108,15 +111,19 @@ def test_mnist_linear(
     framework_model = MNISTLinear(input_size=input_size, hidden_size=hidden_size)
     fw_out = framework_model(*inputs)
 
+    OPTIMIZER_ENABLED = True
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = False  # mnist_linear.py doesn't use set_enable_memory_layout_analysis
+    TRACE_ENABLED = False
     compiler_cfg = CompilerConfig()
-    compiler_cfg.mlir_config = MLIRConfig().set_enable_optimizer(True)
+    compiler_cfg.mlir_config = MLIRConfig().set_enable_optimizer(OPTIMIZER_ENABLED)
     compiled_model = forge.compile(framework_model, sample_inputs=inputs, compiler_cfg=compiler_cfg)
     compiled_model.save(f"{model_name}.ttnn")
 
     # Enable program cache on all devices
     # TODO: enable the program cache - when the optimizer is enabled, running with program cache is not working.
+    PROGRAM_CACHE_ENABLED = False
     # settings = DeviceSettings()
-    # settings.enable_program_cache = True
+    # settings.enable_program_cache = PROGRAM_CACHE_ENABLED
     # configure_devices(device_settings=settings)
 
     # Run for the first time to warm up the model, it will be done by verify function.
@@ -162,7 +169,13 @@ def test_mnist_linear(
         "model": full_model_name,
         "model_type": model_type,
         "run_type": f"{full_model_name}_{batch_size}_{input_size}_{hidden_size}",
-        "config": {"model_size": "small"},
+        "config": {
+            "model_size": "small",
+            "optimizer_enabled": OPTIMIZER_ENABLED,
+            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+            "trace_enabled": TRACE_ENABLED,
+        },
         "num_layers": num_layers,
         "batch_size": batch_size,
         "precision": "f32",  # This is we call dataformat, it should be generic, too, but for this test we don't experiment with it

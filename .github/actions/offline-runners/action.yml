@@ -1,0 +1,47 @@
+name: 'Find New Offline Runners'
+description: 'Finds new offline runners in a repository'
+
+inputs:
+  repo:
+    description: 'Repository name'
+    required: true
+    type: string
+  token:
+    description: 'GitHub token for authentication'
+    required: true
+    type: string
+
+outputs:
+  new_runners:
+    description: 'New offline runners not previously saved'
+    value: ${{ steps.offline-runners.outputs.new_runners }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Find new offline runners in repository
+      id: offline-runners
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        repo_name=$(echo "${{ inputs.repo }}" | tr '-' '_')
+        echo "repo name: $repo_name"
+        offline_runners=($(gh api repos/tenstorrent/${{ inputs.repo }}/actions/runners --jq '.runners[] | select(.status == "offline") | .name'))
+        echo "offline runners: ${offline_runners[*]}"
+        saved_runners=($(gh api repos/tenstorrent/tt-forge/actions/variables/runners_${repo_name} --jq '.value'))
+        echo "saved runners: ${saved_runners[*]}"
+        new_runners=()
+        for runner in "${offline_runners[@]}"; do
+          if [[ ! " ${saved_runners[@]} " =~ " ${runner} " ]]; then
+            new_runners+=("$runner")
+          fi
+        done
+        echo "new runners: ${new_runners[*]}"
+        # Save offline runners to a file and update the repository variable using gh variable set
+        nr=$(IFS=' '; echo "${offline_runners[*]}")
+        if [ -z "$nr" ]; then
+          nr=" "
+        fi
+        gh variable set runners_${repo_name} --repo tenstorrent/tt-forge --body "$nr"
+        echo "new_runners=$(IFS=' '; echo "${new_runners[*]}")" >> $GITHUB_OUTPUT

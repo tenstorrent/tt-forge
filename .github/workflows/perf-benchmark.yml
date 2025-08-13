@@ -136,14 +136,14 @@ jobs:
       matrix:
         build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
 
-    runs-on: ${{ inputs.sh-runner && format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
+    runs-on: ${{ inputs.sh-runner && format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.build.runs-on) || fromJson(format('["{0}-perf", "in-service"]', matrix.build.runs-on)) }}
 
     env:
       # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
       TRACY_NO_INVARIANT_CHECK: 1
       DOCKER_CACHE_ROOT: /mnt/dockercache
 
-    name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+    name: "${{matrix.build.project }}-${{matrix.build.name }} benchmark (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
     steps:
 
     - uses: actions/checkout@v4
@@ -179,7 +179,7 @@ jobs:
       id: fetch-job-id
       uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
       with:
-        job_name: "run-perf-benchmarks ${{matrix.build.project }}-${{matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+        job_name: "${{matrix.build.project }}-${{matrix.build.name }} benchmark (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
 
     - name: Set reusable strings
       id: strings
@@ -194,18 +194,38 @@ jobs:
     # - name: Git safe dir
     #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
 
+    - name: Find workflow run ID for ttrt wheel download
+      id: find-run
+      run: |
+        RUN_ID=$(curl -s \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?status=success&branch=main&per_page=1" \
+          | jq -r '.workflow_runs[0].id')
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "Workflow URL: https://github.com/tenstorrent/tt-mlir/actions/runs/$RUN_ID"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
       uses: dawidd6/action-download-artifact@v11
       with:
-        workflow_conclusion: success
-        workflow: on-push.yml
-        branch: main
+        run_id: ${{ steps.find-run.outputs.run_id }}
         name: "(ttrt-whl|install-artifacts)-tracy"
         name_is_regexp: true
         repo: tenstorrent/tt-mlir
         check_artifacts: true
         path: ./
+
+    - name: Install ttrt
+      shell: bash
+      run: |
+        echo "Install ttrt"
+        python -m venv ttrt-venv
+        source ttrt-venv/bin/activate
+        apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
+        pip install ttrt-whl-tracy/ttrt*.whl --upgrade
+        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
 
     - name: Untar ttmlir install directory
       shell: bash
@@ -228,40 +248,41 @@ jobs:
 
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
+          export TT_TORCH_SAVE_BINARY=1
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
 
-        echo "Copy dumped ttir to ttir.mlir"
-        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-          cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ttir.mlir
-        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ttir.mlir
-        fi
-
         if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
           echo "Dump ttir to report"
-          cp ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+            cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+            cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          fi
         fi
 
-    # @todo: Enable TTRT perf benchmark
-    # Uncomment the following section to enable TTRT performance benchmarking, when the issue with TTRT is resolved.
-    # The issue: https://github.com/tenstorrent/tt-forge/issues/311
-    # - name: Install and run TTRT
-    #   shell: bash
-    #   run: |
-    #     python -m venv ttrt-venv
-    #     source ttrt-venv/bin/activate
-    #     apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
-    #     pip install ttrt-whl-tracy/ttrt*.whl --upgrade
-    #     pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-    #     echo "Save artifacts"
-    #     ttrt query --save-artifacts
-    #     if [ "${{ matrix.build.project }}" != "tt-torch" ]; then
-    #       chmod ugo+x ./benchmark/ttrt_perf.sh
-    #       ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
-    #     fi
+        echo "Dump ttnn to report"
+        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+          cp ./model_flatbuffer/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
+        fi
+        source ttrt-venv/bin/activate
+        echo "Run ttrt read"
+        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json > /dev/null 2>&1
+        echo "Extract MLIR from ttnn"
+        python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
+        cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+
+    - name: Run Device Perf
+      shell: bash
+      run: |
+        source ttrt-venv/bin/activate
+        echo "Save artifacts"
+        ttrt query --save-artifacts
+        chmod ugo+x ./benchmark/ttrt_perf.sh
+        echo "Run ttrt perf"
+        ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
 
     - name: Upload Perf Report
       uses: actions/upload-artifact@v4
