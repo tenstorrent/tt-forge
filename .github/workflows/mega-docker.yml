@@ -1,4 +1,4 @@
-name: Build TT-Forge Docker Images
+name: Nightly Release & Tests
 
 on:
   workflow_dispatch:
