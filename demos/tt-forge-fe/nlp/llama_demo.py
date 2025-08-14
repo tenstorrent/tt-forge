@@ -11,6 +11,7 @@ from third_party.tt_forge_models.llama.causal_lm.pytorch import (
 )
 from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
 
+
 class TextModelWrapper(torch.nn.Module):
     def __init__(self, model, text_embedding=None):
         super().__init__()
@@ -40,7 +41,7 @@ tokenizer = loader._load_tokenizer()
 framework_model = TextModelWrapper(model=model, text_embedding=model.model.embed_tokens)
 
 # Prepare inputs
-input_dict, seq_len = loader.load_inputs()
+input_dict = loader.load_inputs()
 inputs = [input_dict["input_ids"], input_dict["attention_mask"]]
 
 # Compile the model with Forge
