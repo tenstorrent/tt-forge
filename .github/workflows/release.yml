@@ -198,7 +198,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          workflow_name: "Demo tests"
+          workflow_name: "demo-tests.yml"
           parent_run_id: "demo-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-metadata.outputs.random-seed }}"
           wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
           wait_for_run_url: true
