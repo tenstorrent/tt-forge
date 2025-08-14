@@ -185,7 +185,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          workflow_name: "Basic tests"
+          workflow_name: "basic-tests.yml"
           parent_run_id: "basic-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-metadata.outputs.random-seed }}"
           wait: false
           wait_for_run_url: true
