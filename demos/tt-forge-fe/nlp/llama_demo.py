@@ -11,6 +11,7 @@ from third_party.tt_forge_models.llama.causal_lm.pytorch import (
 )
 from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
 
+
 class TextModelWrapper(torch.nn.Module):
     def __init__(self, model, text_embedding=None):
         super().__init__()
@@ -30,34 +31,52 @@ class TextModelWrapper(torch.nn.Module):
         return logits
 
 
-# Select the LLaMA 3 Causal LM variant
-LLAMA_VARIANT = CausalLMVariant.LLAMA_3_2_1B
+def llama_casuallm_demo(variant):
 
-# Load model and tokenizer
-loader = CausalLMLoader(variant=LLAMA_VARIANT)
-model = loader.load_model()
-tokenizer = loader._load_tokenizer()
-framework_model = TextModelWrapper(model=model, text_embedding=model.model.embed_tokens)
+    # Load model and tokenizer
+    loader = CausalLMLoader(variant=variant)
+    model = loader.load_model()
+    tokenizer = loader._load_tokenizer()
+    framework_model = TextModelWrapper(model=model, text_embedding=model.model.embed_tokens)
 
-# Prepare inputs
-input_dict, seq_len = loader.load_inputs()
-inputs = [input_dict["input_ids"], input_dict["attention_mask"]]
+    # Prepare inputs
+    input_dict = loader.load_inputs()
+    inputs = [input_dict["input_ids"], input_dict["attention_mask"]]
 
-# Compile the model with Forge
-compiled_model = forge.compile(
-    framework_model,
-    sample_inputs=inputs,
-)
+    # Compile the model with Forge
+    compiled_model = forge.compile(
+        framework_model,
+        sample_inputs=inputs,
+    )
 
-# Verify correctness
-verify(inputs, framework_model, compiled_model)
+    # Verify correctness
+    verify(inputs, framework_model, compiled_model)
 
-# Generate output
-generated_text = loader.decode_output(
-    model=compiled_model,
-    inputs=inputs,
-    tokenizer=tokenizer,
-    seq_len=seq_len,
-    max_new_tokens=512,
-)
-print(generated_text)
+    # Generate output
+    generated_text = loader.decode_output(
+        model=compiled_model,
+        inputs=inputs,
+        tokenizer=tokenizer,
+        seq_len=seq_len,
+        max_new_tokens=512,
+    )
+    print(generated_text)
+
+
+if __name__ == "__main__":
+
+    demo_cases = [
+        CausalLMVariant.LLAMA_3_2_1B,
+        CausalLMVariant.LLAMA_3_2_1B_INSTRUCT,
+        CausalLMVariant.LLAMA_3_8B,
+        CausalLMVariant.LLAMA_3_8B_INSTRUCT,
+        CausalLMVariant.LLAMA_3_1_8B,
+        CausalLMVariant.LLAMA_3_1_8B_INSTRUCT,
+        CausalLMVariant.LLAMA_3_2_3B,
+        CausalLMVariant.LLAMA_3_2_3B_INSTRUCT,
+        CausalLMVariant.HUGGYLLAMA_7B,
+    ]
+
+    # Run each demo case
+    for variant in demo_cases:
+        llama_casuallm_demo(variant)
