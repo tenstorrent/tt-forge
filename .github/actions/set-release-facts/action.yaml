@@ -111,6 +111,12 @@ outputs:
   version_repo_ref:
     description: "New nightly version repo ref"
     value: ${{ steps.set-manifest.outputs.version_repo_ref }}
+  test_basic_runner_filter:
+    description: "Test basic runner filter"
+    value: ${{ steps.set-manifest.outputs.test_basic_runner_filter }}
+  test_basic_project_filter:
+    description: "Test basic project filter"
+    value: ${{ steps.set-manifest.outputs.test_basic_project_filter }}
 
 
 runs:
@@ -149,6 +155,8 @@ runs:
         version_repo_ref="${repo_full}"
         # Used to filter runner type in the basic tests workflow.
         test_basic_runner_filter="All"
+        # Used to filter project type in the basic tests workflow.
+        test_basic_project_filter="All"
 
         # Tag & Release Defaults
 
@@ -225,8 +233,12 @@ runs:
             # Wait for the demo test to complete only for draft releases and run only one test
             test_demo_filter="opt_125m"
             test_demo_wait="true"
+
             # Use only the n150 runner for draft releases since this is the most available runner in CIv2.
             test_basic_runner_filter="tt-ubuntu-2204-n150-stable"
+
+            # Use only the xla project for draft releases testing to reduce CIv2 usage.
+            test_basic_project_filter="tt-xla"
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
@@ -291,6 +303,8 @@ runs:
         echo "test_demo_filter=$test_demo_filter"
         echo "test_demo_wait=$test_demo_wait"
         echo "version_repo_ref=$version_repo_ref"
+        echo "test_basic_runner_filter=$test_basic_runner_filter"
+        echo "test_basic_project_filter=$test_basic_project_filter"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -323,3 +337,5 @@ runs:
         echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
         echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
         echo "version_repo_ref=$version_repo_ref" >> $GITHUB_OUTPUT
+        echo "test_basic_runner_filter=$test_basic_runner_filter" >> $GITHUB_OUTPUT
+        echo "test_basic_project_filter=$test_basic_project_filter" >> $GITHUB_OUTPUT
