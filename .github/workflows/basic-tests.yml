@@ -1,4 +1,5 @@
 name: Basic tests
+# Force GitHub to re-parse workflow name
 run-name: Basic tests ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}
 
 on:
