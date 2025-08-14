@@ -9,7 +9,7 @@ from third_party.tt_forge_models.llama.causal_lm.pytorch import (
     ModelLoader as CausalLMLoader,
     ModelVariant as CausalLMVariant,
 )
-
+from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
 
 class TextModelWrapper(torch.nn.Module):
     def __init__(self, model, text_embedding=None):
