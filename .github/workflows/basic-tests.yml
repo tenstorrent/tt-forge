@@ -22,6 +22,7 @@ on:
           - tt-forge-fe
           - tt-torch
           - tt-xla
+          - skip
           - All
         default: All
       runner-filter:
@@ -54,6 +55,10 @@ jobs:
           json_matrix="[]"
           frontends="tt-forge-fe tt-torch tt-xla"
           runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
+
+          if [ "${{ inputs.project-filter }}" == "skip" ]; then
+            exit 0
+          fi
 
           if [ "${{ inputs.runner-filter }}" != "All" ]; then
             runs_on="${{ inputs.runner-filter }}"

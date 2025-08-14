@@ -237,8 +237,11 @@ runs:
             # Use only the n150 runner for draft releases since this is the most available runner in CIv2.
             test_basic_runner_filter="tt-ubuntu-2204-n150-stable"
 
-            # Use only the xla project for draft releases testing to reduce CIv2 usage.
-            test_basic_project_filter="tt-xla"
+            # Skip is used to skip the project filter in the basic tests workflow. Only allow xla to be tested to reduce CIv2 usage.
+            test_basic_project_filter="skip"
+            if [[ "$repo_short" == "tt-xla" ]]; then
+                test_basic_project_filter="tt-xla"
+            fi
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
