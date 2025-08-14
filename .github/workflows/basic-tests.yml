@@ -88,11 +88,11 @@ jobs:
   basic-test:
     if: ${{ needs.set-matrix.outputs.matrix_skip == 'false' }}
     name: Basic test ${{ matrix.frontend }} on ${{ matrix.run_on }}
-    needs: build_matrix
+    needs: set-matrix
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.build_matrix.outputs.json_matrix) }}
+        include: ${{ fromJson(needs.set-matrix.outputs.json_matrix) }}
 
     runs-on: ${{ matrix.run_on }}
     container:
