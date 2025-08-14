@@ -44,7 +44,7 @@ jobs:
         run: |
           json_matrix="[]"
           frontends="tt-forge-fe tt-torch tt-xla"
-          runs_on="tt-beta-ubuntu-2204-n150-large-stable tt-beta-ubuntu-2204-p150b-large-stable"
+          runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
 
           if [ -n "${{ inputs.project-filter }}" ]; then
             frontends="${{ inputs.project-filter }}"
