@@ -1,5 +1,3 @@
-import torch
-
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -11,7 +9,6 @@ from third_party.tt_forge_models.llama.causal_lm.pytorch import (
     ModelLoader as CausalLMLoader,
     ModelVariant as CausalLMVariant,
 )
-from huggingface_hub import login
 
 
 class TextModelWrapper(torch.nn.Module):
