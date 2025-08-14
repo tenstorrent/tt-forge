@@ -145,8 +145,10 @@ runs:
         git_log_fail_on_error="true"
         test_demo_filter=""
         test_demo_wait="false"
-        # Used to reference version in the nightly version workflow. Only changes when a repo only has nightly releases.
+        # Used to reference different repo's stable version from a in the nightly version workflow. Useful when a repo only has a nightly release and no stable release.
         version_repo_ref="${repo_full}"
+        # Used to filter runner type in the basic tests workflow.
+        test_basic_runner_filter="All"
 
         # Tag & Release Defaults
 
@@ -223,6 +225,8 @@ runs:
             # Wait for the demo test to complete only for draft releases and run only one test
             test_demo_filter="opt_125m"
             test_demo_wait="true"
+            # Use only the n150 runner for draft releases since this is the most available runner in CIv2.
+            test_basic_runner_filter="tt-ubuntu-2204-n150-stable"
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
