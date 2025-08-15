@@ -15,6 +15,10 @@ inputs:
     description: "Repo source for provided workflow run ID"
     required: false
     type: string
+  venv_bin:
+    description: "Repo source for provided workflow run ID"
+    required: false
+    type: string
 
 runs:
   using: 'composite'
@@ -77,4 +81,5 @@ runs:
     - name: Install wheel
       shell: bash
       run: |
+        source ${{ inputs.venv_bin }}
         pip install ${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade

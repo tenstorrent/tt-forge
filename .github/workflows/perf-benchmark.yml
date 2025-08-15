@@ -174,6 +174,7 @@ jobs:
         project: ${{ matrix.build.project }}
         run_id: ${{ inputs.run_id }}
         run_id_source: ${{ inputs.run_id_source }}
+        venv_bin: /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
     - name: Fetch job id
       id: fetch-job-id
@@ -259,13 +260,6 @@ jobs:
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
-
-        echo "second run"
-
-        python benchmark/benchmark.py -p tt-forge-fe -m resnet_hf -ts classification -bs 8 -df bfloat16 -lp 32 > benchmark_reports/resnet50_hf_mine_l1.log 2>&1
-
-        echo "custom perf log start"
-        cat benchmark_reports/resnet50_hf_mine_l1.log
 
         echo "perf log start"
         cat ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json
