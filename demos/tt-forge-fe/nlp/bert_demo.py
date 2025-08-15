@@ -4,7 +4,7 @@
 # Bert Demo Script
 
 import forge
-from third_party.tt_forge_models.bert.pytorch import ModelLoader
+from third_party.tt_forge_models.bert.question_answering.pytorch import ModelLoader
 from transformers.modeling_outputs import QuestionAnsweringModelOutput
 
 # Load model and input
