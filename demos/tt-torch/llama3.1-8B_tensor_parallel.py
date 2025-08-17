@@ -62,7 +62,7 @@ def apply_tensor_parallel_sharding_causal(causal_model: LlamaForCausalLM, mesh: 
     parallelism.
     """
     # Move model to XLA device first
-    causal_model = causal_model.to(torch_xla.device())
+    causal_model.to(torch_xla.device())
 
     # Shard the base model first
     apply_tensor_parallel_sharding_base(causal_model.model, mesh)
@@ -189,10 +189,10 @@ def run_inference_comparison():
     print("\n=== Token Validation ===")
     print("Input Prompt: ", PROMPT)
     print(f"CPU Reference output text: {reference_text}")
-    print(f"CPU Reference output token: {reference_next_token}")
+    print(f"CPU Reference output token: {reference_next_token.item()}")
     print(f"Tensor parallel output text: {tp_text}")
-    print(f"Tensor parallel output token: {tp_next_token}")
-    assert reference_next_token == tp_next_token, "ERROR: Output tokens differ"
+    print(f"Tensor parallel output token: {tp_next_token.item()}")
+    assert reference_next_token.item() == tp_next_token.item(), "ERROR: Output tokens differ"
 
     print("\n=== PCC Validation on hidden states ===")
     # Compare outputs
