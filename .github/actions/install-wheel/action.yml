@@ -16,7 +16,7 @@ inputs:
     required: false
     type: string
   venv_bin_path:
-    description: "Path to the venv wheel will get installed in"
+    description: "Path to the venv the wheel will get installed in"
     required: false
     type: string
 
