@@ -258,9 +258,9 @@ jobs:
         if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
           echo "Dump ttir to report"
           if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-            cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+            cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir-${{ steps.fetch-job-id.outputs.job_id }}.mlir
           elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-            cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+            cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir-${{ steps.fetch-job-id.outputs.job_id }}.mlir
           fi
         fi
 
@@ -273,7 +273,7 @@ jobs:
         ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json > /dev/null 2>&1
         echo "Extract MLIR from ttnn"
         python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
-        cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+        cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn-${{ steps.fetch-job-id.outputs.job_id }}.mlir
 
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
@@ -281,7 +281,7 @@ jobs:
       if: success() || failure()
       with:
         name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
-        path: ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttir-${{ steps.fetch-job-id.outputs.job_id }}.mlir
         compression-level: 0
 
     - name: Upload TTNN MLIR separately
@@ -290,7 +290,7 @@ jobs:
       if: success() || failure()
       with:
         name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
-        path: ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttnn-${{ steps.fetch-job-id.outputs.job_id }}.mlir
         compression-level: 0
 
     - name: Run Device Perf
