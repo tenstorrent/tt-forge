@@ -267,7 +267,7 @@ jobs:
       - uses: ./.github/actions/push-annotated-git-tag
         if: ${{ !(inputs.release_type == 'nightly' && inputs.draft == true) }}
         with:
-          repo: ${{ inputs.repo }}
+          repo: ${{ steps.set-release-facts.outputs.repo_full }}
           draft: ${{ inputs.draft }}
           GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
           new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
