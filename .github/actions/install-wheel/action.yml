@@ -15,6 +15,10 @@ inputs:
     description: "Repo source for provided workflow run ID"
     required: false
     type: string
+  venv_bin_path:
+    description: "Path to the venv the wheel will get installed in"
+    required: false
+    type: string
 
 runs:
   using: 'composite'
@@ -77,4 +81,7 @@ runs:
     - name: Install wheel
       shell: bash
       run: |
+        if [ -n "${{ inputs.venv_bin_path }}" ]; then
+          source ${{ inputs.venv_bin_path }}
+        fi
         pip install ${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade

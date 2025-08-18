@@ -25,7 +25,7 @@ jobs:
           { project: "tt-xla", run_id: "16044326176", wheel_name: "pjrt[-_]" }
         ]
 
-    runs-on: n150
+    runs-on: tt-ubuntu-2204-n150-stable
     steps:
       - name: Setup Python environment
         uses: actions/setup-python@v4
