@@ -202,7 +202,7 @@ jobs:
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_" )
         pip freeze | grep "$project_name"
-        version=$(pip freeze | grep "$project_name" | awk -F'-' '{print $2}')
+        version=$(pip freeze | grep -oP "tt_forge_fe.*?-\K[0-9]+\.[0-9]+\.[0-9]+\.dev[0-9]+")
         echo "version: $version"
         mlir_sha=""
 
