@@ -200,7 +200,8 @@ jobs:
       shell: bash
       run: |
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
-        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_" )
+        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
+        echo "project_name: $project_name"
         pip freeze
         pip freeze | grep "xla"
         pip freeze | grep "$project_name"
