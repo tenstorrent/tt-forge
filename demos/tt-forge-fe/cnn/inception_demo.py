@@ -1,14 +1,14 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# Segformer Demo Script
+# Inception Demo Script
 
 import sys
 import forge
-from third_party.tt_forge_models.segformer.pytorch import ModelLoader, ModelVariant
+from third_party.tt_forge_models.inception.pytorch import ModelLoader, ModelVariant
 
 
-def run_segformer_demo_case(variant):
+def run_inception_demo_case(variant):
 
     # Load Model and inputs
     loader = ModelLoader(variant=variant)
@@ -22,7 +22,7 @@ def run_segformer_demo_case(variant):
     output = compiled_model(inputs)
 
     # Post-process and display results
-    loader.post_processing(output)
+    loader.print_cls_results(output)
 
     print("=" * 60, flush=True)
 
@@ -30,15 +30,11 @@ def run_segformer_demo_case(variant):
 if __name__ == "__main__":
 
     demo_cases = [
-        # SegFormer variants
-        ModelVariant.MIT_B0,
-        ModelVariant.MIT_B1,
-        ModelVariant.MIT_B2,
-        ModelVariant.MIT_B3,
-        ModelVariant.MIT_B4,
-        ModelVariant.MIT_B5,
+        # TIMM variants
+        ModelVariant.INCEPTION_V4,
+        ModelVariant.INCEPTION_V4_TF_IN1K,
     ]
 
     # Run each demo case
     for variant in demo_cases:
-        run_segformer_demo_case(variant)
+        run_inception_demo_case(variant)
