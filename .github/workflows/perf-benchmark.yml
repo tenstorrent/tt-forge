@@ -210,7 +210,7 @@ jobs:
           wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
           echo "log after cmakelists download"
           ls -l
-          mlir_sha=$(grep "TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+')
+          mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
         elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
           mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
             grep '"sha"' | head -1 | cut -d'"' -f4)
