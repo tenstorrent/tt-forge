@@ -201,6 +201,8 @@ jobs:
       run: |
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_" )
+        pip freeze
+        pip freeze | grep "xla"
         pip freeze | grep "$project_name"
         version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
         echo "version: $version"
