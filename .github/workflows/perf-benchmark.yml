@@ -197,6 +197,7 @@ jobs:
 
     - name: Find workflow run ID for ttrt wheel download
       id: find-run
+      shell: bash
       run: |
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_" )
