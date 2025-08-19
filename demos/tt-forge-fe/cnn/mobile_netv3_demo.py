@@ -31,10 +31,10 @@ if __name__ == "__main__":
 
     demo_cases = [
         # TORCH_HUB variants
-        # ModelVariant.MOBILENET_V3_LARGE,
+        ModelVariant.MOBILENET_V3_LARGE,
         ModelVariant.MOBILENET_V3_SMALL,
         # TIMM variants
-        # ModelVariant.MOBILENET_V3_LARGE_100_TIMM,
+        ModelVariant.MOBILENET_V3_LARGE_100_TIMM,
         ModelVariant.MOBILENET_V3_SMALL_100_TIMM,
     ]
 
