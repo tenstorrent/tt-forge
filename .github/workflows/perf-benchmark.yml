@@ -200,14 +200,16 @@ jobs:
       shell: bash
       run: |
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
+
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
         if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
           project_name="pjrt_plugin_tt"
         fi
+
         version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
         echo "Wheel version: $version"
-        mlir_sha=""
 
+        mlir_sha=""
         if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
           wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
           mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
@@ -215,7 +217,6 @@ jobs:
           mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
             grep '"sha"' | head -1 | cut -d'"' -f4)
         fi
-
         echo "Mlir commit sha: $mlir_sha"
 
         RUN_ID=$(curl -s \
