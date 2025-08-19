@@ -201,9 +201,11 @@ jobs:
       run: |
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
+        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          project_name="pjrt_plugin_tt"
+        fi
         echo "project_name: $project_name"
         pip freeze
-        pip freeze | grep "xla"
         pip freeze | grep "$project_name"
         version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
         echo "version: $version"
