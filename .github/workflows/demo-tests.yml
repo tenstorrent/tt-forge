@@ -163,8 +163,8 @@ jobs:
         run: |
           if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
             echo "Using /home/forge/venv-${{ matrix.frontend }}"
-            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
             source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           fi
 
           third_party_models="$(realpath third_party)"
