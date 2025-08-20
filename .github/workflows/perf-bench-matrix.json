@@ -12,6 +12,6 @@
   { "runs-on": "n150", "project": "tt-forge-fe", "name": "yolo_v8",           "dir": "YOLOv8",                       "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na",             "libreq": "libgl1-mesa-glx libglib2.0-0" },
   { "runs-on": "n150", "project": "tt-forge-fe", "name": "yolo_v9",           "dir": "YOLOv9",                       "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na",             "libreq": "libgl1-mesa-glx libglib2.0-0" },
   { "runs-on": "n150", "project": "tt-forge-fe", "name": "yolo_v10",          "dir": "YOLOv10",                      "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na",             "libreq": "libgl1-mesa-glx libglib2.0-0" },
-  { "runs-on": "n150", "project": "tt-torch",    "name": "resnet",            "dir": "",                             "bs": 8,  "lp": 32, "df": "default",  "ts": "na", "pyreq": "loguru requests transformers datasets==3.6.0 torchvision pytest ultralytics", "libreq": "libgl1-mesa-glx libglib2.0-0" },
+  { "runs-on": "n150", "project": "tt-torch",    "name": "resnet",            "dir": "",                             "bs": 8,  "lp": 32, "df": "default",  "ts": "na", "pyreq": "loguru requests transformers datasets==3.6.0 torch==2.7.0 torchvision pytest ultralytics", "libreq": "libgl1-mesa-glx libglib2.0-0" },
   { "runs-on": "n150", "project": "tt-xla",      "name": "resnet",            "dir": "",                             "bs": 8,  "lp": 4,  "df": "default",  "ts": "na", "pyreq": "pytest tqdm loguru requests transformers datasets flax torch" }
 ]
