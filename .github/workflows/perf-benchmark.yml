@@ -197,10 +197,31 @@ jobs:
 
     - name: Find workflow run ID for ttrt wheel download
       id: find-run
+      shell: bash
       run: |
+        source /home/forge/venv-${{ matrix.build.project }}/bin/activate
+
+        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
+        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          project_name="pjrt_plugin_tt"
+        fi
+
+        version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
+        echo "Wheel version: $version"
+
+        mlir_sha=""
+        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
+          mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
+        elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
+          mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
+            grep '"sha"' | head -1 | cut -d'"' -f4)
+        fi
+        echo "Mlir commit sha: $mlir_sha"
+
         RUN_ID=$(curl -s \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?status=success&branch=main&per_page=1" \
+          "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?status=success&head_sha=${mlir_sha}&per_page=1" \
           | jq -r '.workflow_runs[0].id')
         echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
         echo "Workflow URL: https://github.com/tenstorrent/tt-mlir/actions/runs/$RUN_ID"
