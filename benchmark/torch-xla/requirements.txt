@@ -1,0 +1,7 @@
+datasets
+loguru
+pytest
+torch
+torch-xla
+transformers
+ultralytics
