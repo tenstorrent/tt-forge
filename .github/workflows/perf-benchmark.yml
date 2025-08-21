@@ -206,14 +206,16 @@ jobs:
           project_name="pjrt_plugin_tt"
         fi
 
-        version=$(pip freeze | grep -oP "(?<=$(echo $project_name)-)[^-]+")
-        echo "Wheel version: $version"
-
+        version=""
         echo "Set version to commit sha if called from other repo"
         if [[ "${{ inputs.run_id }}" ]]; then
           version=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/tenstorrent/${{ matrix.build.project }}/actions/runs/${{ inputs.run_id }}" | jq -r '.head_sha')
+        else
+          version=$(pip freeze | grep -oP "(?<=$(echo $project_name)-)[^-]+")
         fi
+
+        echo "Wheel version: $version"
 
         mlir_sha=""
         if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
