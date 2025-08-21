@@ -85,6 +85,8 @@ jobs:
       repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
       branch_exists: ${{ steps.create-rc-branch.outputs.branch_exists }}
     runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -100,7 +102,7 @@ jobs:
       id: create-rc-branch
       uses: ./.github/actions/create-rc-branch
       with:
-        repo: ${{ steps.set-release-facts.outputs.draft == 'true' && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
+        repo_full: ${{ steps.set-release-facts.outputs.draft == 'true' && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
         draft: ${{steps.set-release-facts.outputs.draft == 'true' || false }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
@@ -109,8 +111,6 @@ jobs:
         branch: ${{ inputs.branch || github.head_ref }}
         ignore_artifacts: ${{ inputs.ignore_artifacts || false }}
         workflow_result_in_job: ${{ steps.set-release-facts.outputs.workflow_result_in_job }}
-        major_version: ${{ steps.set-release-facts.outputs.major_version }}
-        minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
         commit: ${{ inputs.commit }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
 

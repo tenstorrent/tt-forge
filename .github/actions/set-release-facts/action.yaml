@@ -72,12 +72,6 @@ outputs:
   build_release_latest_branch_commit:
     description: "Build release latest branch commit"
     value: ${{ steps.set-manifest.outputs.build_release_latest_branch_commit }}
-  major_version:
-    description: "Major version"
-    value: ${{ steps.set-manifest.outputs.major_version }}
-  minor_version:
-    description: "Minor version"
-    value: ${{ steps.set-manifest.outputs.minor_version }}
   prerelease:
     description: "Prerelease release"
     value: ${{ steps.set-manifest.outputs.prerelease }}
@@ -114,6 +108,15 @@ outputs:
   test_demo_wait:
     description: "Test demo wait"
     value: ${{ steps.set-manifest.outputs.test_demo_wait }}
+  version_repo_ref:
+    description: "New nightly version repo ref"
+    value: ${{ steps.set-manifest.outputs.version_repo_ref }}
+  test_basic_runner_filter:
+    description: "Test basic runner filter"
+    value: ${{ steps.set-manifest.outputs.test_basic_runner_filter }}
+  test_basic_project_filter:
+    description: "Test basic project filter"
+    value: ${{ steps.set-manifest.outputs.test_basic_project_filter }}
 
 
 runs:
@@ -125,7 +128,6 @@ runs:
       run: |
         # Set release facts based on repo
         set -e
-        source .version
 
         # All Repo Defaults
 
@@ -143,14 +145,18 @@ runs:
         draft="${{ inputs.draft }}"
         event_name="${{ github.event_name }}"
         make_latest="false"
-        major_version=$MAJOR
-        minor_version=$MINOR
         ignore_artifacts="false"
         skip_model_compatible_table="false"
         skip_docker_build="false"
         git_log_fail_on_error="true"
         test_demo_filter=""
         test_demo_wait="false"
+        # Used to reference different repo's stable version from a in the nightly version workflow. Useful when a repo only has a nightly release and no stable release.
+        version_repo_ref="${repo_full}"
+        # Used to filter runner type in the basic tests workflow.
+        test_basic_runner_filter="All"
+        # Used to filter project type in the basic tests workflow.
+        test_basic_project_filter="All"
 
         # Tag & Release Defaults
 
@@ -161,14 +167,12 @@ runs:
           prerelease="false"
           make_latest="true"
         elif [[ "${{ inputs.release_type }}" == "nightly" ]]; then
-          new_version_tag="${VERSION}.dev$(date +"%Y%m%d")"
           workflow_allow_failed="true"
           build_release_find_workflow_branch="main"
         fi
 
         gh_new_version_tag="${new_version_tag}"
         build_release_tag="${new_version_tag}"
-
 
         # Repo Specific Defaults
 
@@ -200,6 +204,7 @@ runs:
             pip_wheel_names="ttmlir"
             skip_model_compatible_table="true"
             skip_docker_build="true"
+            version_repo_ref="tenstorrent/tt-forge-fe"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
@@ -215,8 +220,8 @@ runs:
             skip_wheel_install="true"
             skip_model_compatible_table="true"
             skip_docker_build="true"
+            version_repo_ref="tenstorrent/tt-forge-fe"
         fi
-
 
         # Testing Overrides
 
@@ -228,6 +233,15 @@ runs:
             # Wait for the demo test to complete only for draft releases and run only one test
             test_demo_filter="opt_125m"
             test_demo_wait="true"
+
+            # Use only the n150 runner for draft releases since this is the most available runner in CIv2.
+            test_basic_runner_filter="tt-ubuntu-2204-n150-stable"
+
+            # Skip is used to skip the project filter in the basic tests workflow. Only allow xla to be tested to reduce CIv2 usage.
+            test_basic_project_filter="skip"
+            if [[ "$repo_short" == "tt-xla" ]]; then
+                test_basic_project_filter="tt-xla"
+            fi
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
@@ -282,8 +296,6 @@ runs:
         echo "build_release_tag=$build_release_tag"
         echo "build_release_find_workflow_branch=$build_release_find_workflow_branch"
         echo "build_release_latest_branch_commit=$build_release_latest_branch_commit"
-        echo "major_version=$major_version"
-        echo "minor_version=$minor_version"
         echo "prerelease=$prerelease"
         echo "draft=$draft"
         echo "make_latest=$make_latest"
@@ -293,6 +305,9 @@ runs:
         echo "git_log_fail_on_error=$git_log_fail_on_error"
         echo "test_demo_filter=$test_demo_filter"
         echo "test_demo_wait=$test_demo_wait"
+        echo "version_repo_ref=$version_repo_ref"
+        echo "test_basic_runner_filter=$test_basic_runner_filter"
+        echo "test_basic_project_filter=$test_basic_project_filter"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -313,8 +328,6 @@ runs:
         echo "build_release_tag=$build_release_tag" >> $GITHUB_OUTPUT
         echo "build_release_find_workflow_branch=$build_release_find_workflow_branch" >> $GITHUB_OUTPUT
         echo "workflow_allow_failed=$workflow_allow_failed" >> $GITHUB_OUTPUT
-        echo "major_version=$major_version" >> $GITHUB_OUTPUT
-        echo "minor_version=$minor_version" >> $GITHUB_OUTPUT
         echo "prerelease=$prerelease" >> $GITHUB_OUTPUT
         echo "draft=$draft" >> $GITHUB_OUTPUT
         echo "build_release_find_workflow_branch=$build_release_find_workflow_branch" >> $GITHUB_OUTPUT
@@ -326,3 +339,6 @@ runs:
         echo "git_log_fail_on_error=$git_log_fail_on_error" >> $GITHUB_OUTPUT
         echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
         echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
+        echo "version_repo_ref=$version_repo_ref" >> $GITHUB_OUTPUT
+        echo "test_basic_runner_filter=$test_basic_runner_filter" >> $GITHUB_OUTPUT
+        echo "test_basic_project_filter=$test_basic_project_filter" >> $GITHUB_OUTPUT
