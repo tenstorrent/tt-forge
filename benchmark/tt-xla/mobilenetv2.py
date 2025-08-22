@@ -67,6 +67,11 @@ def test_mobilenetv2_torch_xla(
     if training:
         pytest.skip("Training is not supported")
 
+    OPTIMIZER_ENABLED = False
+    PROGRAM_CACHE_ENABLED = False
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    TRACE_ENABLED = False
+
     module_name = "MobileNetV2TorchXLA"
 
     if task == "classification":
@@ -190,6 +195,10 @@ def test_mobilenetv2_torch_xla(
             "model_size": "small",
             "torch_xla_enabled": True,
             "openxla_backend": True,
+            "optimizer_enabled": OPTIMIZER_ENABLED,
+            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
+            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+            "trace_enabled": TRACE_ENABLED,
         },
         "num_layers": num_layers,
         "batch_size": batch_size,
