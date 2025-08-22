@@ -238,6 +238,7 @@ jobs:
 
     # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
+      if: ${{ !matrix.build.skip-device-perf }}
       uses: dawidd6/action-download-artifact@v11
       with:
         run_id: ${{ steps.find-run.outputs.run_id }}
@@ -249,6 +250,7 @@ jobs:
 
     - name: Install ttrt
       shell: bash
+      if: ${{ !matrix.build.skip-device-perf }}
       run: |
         echo "Install ttrt"
         python -m venv ttrt-venv
@@ -258,6 +260,7 @@ jobs:
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
 
     - name: Untar ttmlir install directory
+      if: ${{ !matrix.build.skip-device-perf }}
       shell: bash
       run: |
         mv install-artifacts-tracy/ install/
