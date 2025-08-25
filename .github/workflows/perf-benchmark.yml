@@ -238,6 +238,7 @@ jobs:
 
     # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
+      if: ${{ !matrix.build.skip-device-perf }}
       uses: dawidd6/action-download-artifact@v11
       with:
         run_id: ${{ steps.find-run.outputs.run_id }}
@@ -249,6 +250,7 @@ jobs:
 
     - name: Install ttrt
       shell: bash
+      if: ${{ !matrix.build.skip-device-perf }}
       run: |
         echo "Install ttrt"
         python -m venv ttrt-venv
@@ -259,6 +261,7 @@ jobs:
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
 
     - name: Untar ttmlir install directory
+      if: ${{ !matrix.build.skip-device-perf }}
       shell: bash
       run: |
         mv install-artifacts-tracy/ install/
@@ -285,6 +288,12 @@ jobs:
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
 
+    - name: Dump ttir and ttnn to report
+      if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
+      shell: bash
+      run: |
+        source /home/forge/venv-${{ matrix.build.project }}/bin/activate
+
         if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
           echo "Dump ttir to report"
           if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
@@ -308,7 +317,7 @@ jobs:
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
       uses: actions/upload-artifact@v4
-      if: success() || failure()
+      if: ${{ !matrix.build.skip-ttir-dump }}
       with:
         name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
@@ -317,13 +326,14 @@ jobs:
     - name: Upload TTNN MLIR separately
       id: upload-ttnn-mlir
       uses: actions/upload-artifact@v4
-      if: success() || failure()
+      if: ${{ !matrix.build.skip-ttnn-dump }}
       with:
         name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
         compression-level: 0
 
     - name: Run Device Perf
+      if: ${{ !matrix.build.skip-device-perf }}
       shell: bash
       run: |
         source ttrt-venv/bin/activate
@@ -337,8 +347,8 @@ jobs:
       shell: bash
       run: |
         PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
-        TTIR_URL=${{ steps.upload-ttir-mlir.outputs.artifact-url }}
-        TTNN_URL=${{ steps.upload-ttnn-mlir.outputs.artifact-url }}
+        TTIR_URL="${{ !matrix.build.skip-ttir-dump && steps.upload-ttir-mlir.outputs.artifact-url || '' }}"
+        TTNN_URL="${{ !matrix.build.skip-ttnn-dump && steps.upload-ttnn-mlir.outputs.artifact-url || '' }}"
         python benchmark/add_mlir_urls.py "$PERF_REPORT_FILE" "$TTIR_URL" "$TTNN_URL"
 
     - name: Upload Perf Report
