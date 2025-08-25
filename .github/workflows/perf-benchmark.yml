@@ -253,6 +253,7 @@ jobs:
         echo "Install ttrt"
         python -m venv ttrt-venv
         source ttrt-venv/bin/activate
+        apt-get update -y -qq
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
         pip install ttrt-whl-tracy/ttrt*.whl --upgrade
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
