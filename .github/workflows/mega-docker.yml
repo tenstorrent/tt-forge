@@ -20,7 +20,7 @@ jobs:
 
   build-tt-forge-slim:
     name: Build tt-forge-slim Docker Image
-    runs-on: ubuntu-latest
+    runs-on: tt-ubuntu-2204-large-stable
     outputs:
       docker-image: ${{ steps.build.outputs.docker-image }}
       docker-image-harbor: ${{ steps.build.outputs.docker-image-harbor }}
