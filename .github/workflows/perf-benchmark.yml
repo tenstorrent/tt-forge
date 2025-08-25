@@ -212,7 +212,7 @@ jobs:
           version=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/tenstorrent/${{ matrix.build.project }}/actions/runs/${{ inputs.run_id }}" | jq -r '.head_sha')
         else
-          version=$(pip freeze | grep -oP "(?<=$(echo $project_name)-)[^-]+")
+          version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
         fi
 
         echo "Wheel version: $version"
