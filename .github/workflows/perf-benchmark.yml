@@ -208,11 +208,11 @@ jobs:
 
         version=""
         echo "Set version to commit sha if called from other repo"
-        if [[ "${{ inputs.run_id }}" ]]; then
+        if [[ -n "${{ inputs.run_id }}" ]]; then
           version=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/tenstorrent/${{ matrix.build.project }}/actions/runs/${{ inputs.run_id }}" | jq -r '.head_sha')
         else
-          version=$(pip freeze | grep -oP "(?<=$(echo $project_name)-)[^-]+")
+          version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
         fi
 
         echo "Wheel version: $version"
@@ -229,7 +229,7 @@ jobs:
 
         RUN_ID=$(curl -s \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?status=success&head_sha=${mlir_sha}&per_page=1" \
+          "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?head_sha=${mlir_sha}&per_page=1" \
           | jq -r '.workflow_runs[0].id')
         echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
         echo "Workflow URL: https://github.com/tenstorrent/tt-mlir/actions/runs/$RUN_ID"
@@ -253,6 +253,7 @@ jobs:
         echo "Install ttrt"
         python -m venv ttrt-venv
         source ttrt-venv/bin/activate
+        apt-get update -y -qq
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
         pip install ttrt-whl-tracy/ttrt*.whl --upgrade
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
