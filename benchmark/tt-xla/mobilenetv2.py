@@ -16,8 +16,10 @@ import torch_xla.core.xla_model as xm
 from transformers import MobileNetV2ForSemanticSegmentation
 from tqdm import tqdm
 
-import utils
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
+from benchmark.utils import load_benchmark_dataset, evaluate_classification
+
+os.environ["PJRT_DEVICE"] = "TT"
+os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 # Common constants
 
@@ -117,7 +119,6 @@ def test_mobilenetv2_torch_xla(
     # Move first input to device for verification
     device_input = inputs[0].to(device)
 
-    # Verify model works
     with torch.no_grad():
         fw_out = framework_model(device_input)
         if hasattr(fw_out, "logits"):
