@@ -3,8 +3,8 @@
 name: "Create RC branch"
 description: "Create RC branch"
 inputs:
-  repo:
-    description: "Repo name"
+  repo_full:
+    description: "Repo full name"
     required: true
   draft:
     description: "Draft release"
@@ -39,12 +39,6 @@ inputs:
     description: "Set that workflow result is job result"
     default: ""
     required: false
-  major_version:
-    description: "Major version"
-    required: false
-  minor_version:
-    description: "Minor version"
-    required: false
   override_release_fact_workflow:
     description: "Ignore release facts workflow"
     required: false
@@ -71,6 +65,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo_full }}
+        release_type: ${{ inputs.release_type }}
+        draft: ${{ inputs.draft || false }}
 
     - name: Create new branch and tag
       id: create-rc-branch
@@ -78,8 +79,10 @@ runs:
       run: |
         # Get the latest release branch and create a new semver bumped release branch in frontend repos
 
+        ./.github/scripts/get_version.sh "${{ steps.set-release-facts.outputs.version_repo_ref }}"
+        source .rendered_version
         branch_prefix="release"
-        tag_prefix="${{ inputs.major_version }}.${{ inputs.minor_version }}.0"
+        tag_prefix="${MAJOR}.${MINOR}.0"
 
         if [ "${{ inputs.draft }}" == "true" ]; then
             branch_prefix="draft-${{ inputs.draft_slug_name }}-release"
@@ -87,7 +90,7 @@ runs:
         fi
 
         tag_name="${tag_prefix}rc1"
-        branch_name="${branch_prefix}-${{ inputs.major_version }}.${{ inputs.minor_version }}"
+        branch_name="${branch_prefix}-${MAJOR}.${MINOR}"
 
         echo "branch_name=$branch_name"
         echo "tag_name=$tag_name"
@@ -101,7 +104,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
       with:
-        repo: ${{ inputs.repo }}
+        repo: ${{ inputs.repo_full }}
         branch: ${{ inputs.branch || 'main' }}
         workflow: ${{ inputs.workflow || steps.set-release-facts.outputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
@@ -114,7 +117,7 @@ runs:
       uses: actions/checkout@v4
       if: ${{ inputs.draft == 'false' }}
       with:
-        repository: ${{ inputs.repo }}
+        repository: ${{ inputs.repo_full }}
         token: ${{ inputs.GH_TOKEN }}
         ref: ${{ steps.find_workflow.outputs.run-commit-sha }}
         fetch-depth: 0
@@ -137,7 +140,7 @@ runs:
             git checkout -b $branch ${{ steps.find_workflow.outputs.run-commit-sha }}
             git push origin $branch
         else
-            echo "Release branch: $branch already exists. If you need to recreate a new branch for RC release, please delete the existing branch: ${branch}, the tag: ${tag_name}, and the GH release: ${tag_name} on repo: ${{ inputs.repo }}. Then start this process again"
+            echo "Release branch: $branch already exists. If you need to recreate a new branch for RC release, please delete the existing branch: ${branch}, the tag: ${tag_name}, and the GH release: ${tag_name} on repo: ${{ inputs.repo_full }}. Then start this process again"
             branch_exists=true
         fi
 

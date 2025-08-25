@@ -70,13 +70,13 @@ jobs:
       current_release_tag: ${{ steps.git-facts.outputs.current_release_tag }}
       current_release_tag_commit: ${{ steps.git-facts.outputs.current_release_tag_commit }}
       repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
-      major_version: ${{ steps.set-release-facts.outputs.major_version }}
-      minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
       release_tag_equals_latest_commit: ${{ steps.git-facts.outputs.release_tag_equals_latest_commit }}
       new_version_tag: ${{ steps.verify-release-candidate.outputs.new_version_tag }}
 
     name: Get Release Facts
     runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -106,11 +106,15 @@ jobs:
             echo "current_release_tag=$current_release_tag"
             exit 1
         fi
-        new_version_tag="${{ steps.set-release-facts.outputs.major_version }}.${{ steps.set-release-facts.outputs.minor_version }}.0"
+
+        ./.github/scripts/get_version.sh "${{ steps.set-release-facts.outputs.version_repo_ref }}"
+        source .rendered_version
+        new_version_tag="${MAJOR}.${MINOR}.0"
 
         if [ "${{ inputs.draft }}" == "true" ]; then
             new_version_tag="draft.${{ steps.set-release-facts.outputs.repo_short }}.${new_version_tag}"
         fi
+
         echo "new_version_tag=$new_version_tag"
         echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
 

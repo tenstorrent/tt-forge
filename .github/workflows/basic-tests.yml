@@ -22,6 +22,16 @@ on:
           - tt-forge-fe
           - tt-torch
           - tt-xla
+          - skip
+          - All
+        default: All
+      runner-filter:
+        description: "Runner filter"
+        required: false
+        type: choice
+        options:
+          - tt-ubuntu-2204-n150-stable
+          - tt-ubuntu-2204-p150b-stable
           - All
         default: All
 
@@ -33,10 +43,11 @@ on:
         type: string
 
 jobs:
-  build_matrix:
+  set-matrix:
     runs-on: ubuntu-latest
     outputs:
       json_matrix: ${{ steps.set-matrix.outputs.json_matrix }}
+      matrix_skip: ${{ steps.set-matrix.outputs.matrix_skip }}
     steps:
       - name: Set matrix
         id: set-matrix
@@ -45,8 +56,17 @@ jobs:
           json_matrix="[]"
           frontends="tt-forge-fe tt-torch tt-xla"
           runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
+          matrix_skip="false"
 
-          if [ -n "${{ inputs.project-filter }}" ]; then
+          if [ "${{ inputs.project-filter }}" == "skip" ]; then
+            matrix_skip="true"
+          fi
+
+          if [ "${{ inputs.runner-filter }}" != "All" ]; then
+            runs_on="${{ inputs.runner-filter }}"
+          fi
+
+          if [ "${{ inputs.project-filter }}" != "All" ]; then
             frontends="${{ inputs.project-filter }}"
           fi
 
@@ -60,16 +80,19 @@ jobs:
           done
 
           echo "json_matrix=$json_matrix"
-          echo "json_matrix=$json_matrix" >> $GITHUB_OUTPUT
+          echo "matrix_skip=$matrix_skip"
 
+          echo "json_matrix=$json_matrix" >> $GITHUB_OUTPUT
+          echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
 
   basic-test:
+    if: ${{ needs.set-matrix.outputs.matrix_skip == 'false' }}
     name: Basic test ${{ matrix.frontend }} on ${{ matrix.run_on }}
-    needs: build_matrix
+    needs: set-matrix
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.build_matrix.outputs.json_matrix) }}
+        include: ${{ fromJson(needs.set-matrix.outputs.json_matrix) }}
 
     runs-on: ${{ matrix.run_on }}
     container:

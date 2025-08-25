@@ -64,19 +64,39 @@ permissions:
 
 jobs:
 
-  generate-seed:
+  generate-metadata:
     outputs:
       random-seed: ${{ steps.random.outputs.id }}
+      new_nightly_version_tag: ${{ steps.generate-nightly-version.outputs.new_nightly_version_tag }}
     runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        release_type: ${{ inputs.release_type }}
+        draft: ${{ inputs.draft || false }}
     - name: Generate random seed
       uses: ./.github/actions/random
       id: random
+    - name: Generate Nightly Version
+      id: generate-nightly-version
+      if: ${{ inputs.release_type == 'nightly' }}
+      shell: bash
+      run: |
+        ./.github/scripts/get_version.sh "${{ steps.set-release-facts.outputs.version_repo_ref }}"
+        source .rendered_version
+        new_nightly_version_tag="${MAJOR}.${MINOR}.${PATCH}.dev$(date +"%Y%m%d")"
+        echo "new_nightly_version_tag=$new_nightly_version_tag"
+        echo "new_nightly_version_tag=$new_nightly_version_tag" >> $GITHUB_OUTPUT
 
   build-release:
-    needs: generate-seed
+    needs: generate-metadata
     name: "${{ inputs.draft && 'Draft' || '' }} Build Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
     outputs:
       release-artifacts-id: ${{ steps.build-release-wheel.outputs.release-artifacts-id }}
@@ -97,7 +117,7 @@ jobs:
         repo: ${{ inputs.repo }}
         release_type: ${{ inputs.release_type }}
         draft: ${{ inputs.draft }}
-        new_version_tag: ${{ inputs.new_version_tag }}
+        new_version_tag: ${{ inputs.new_version_tag || needs.generate-metadata.outputs.new_nightly_version_tag }}
         latest_branch_commit: ${{ inputs.latest_branch_commit }}
 
     - uses: mukunku/tag-exists-action@v1.6.0
@@ -118,7 +138,7 @@ jobs:
         latest_branch_commit: ${{ steps.set-release-facts.outputs.build_release_latest_branch_commit }}
         branch: ${{ inputs.branch || 'main' }}
         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
-        unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
+        unique_artifact_suffix: ${{ needs.generate-metadata.outputs.random-seed }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
 
@@ -143,7 +163,7 @@ jobs:
     if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
     needs:
       - build-release
-      - generate-seed
+      - generate-metadata
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -156,7 +176,7 @@ jobs:
           repo: ${{ inputs.repo }}
           release_type: ${{ inputs.release_type }}
           draft: ${{ inputs.draft }}
-          new_version_tag: ${{ inputs.new_version_tag }}
+          new_version_tag: ${{ inputs.new_version_tag || needs.generate-metadata.outputs.new_nightly_version_tag }}
 
       - name: Trigger Docker Basic test ${{ steps.set-release-facts.outputs.repo_short }}
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
@@ -165,11 +185,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          workflow_name: "Basic tests"
-          parent_run_id: "basic-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+          workflow_name: "basic-tests.yml"
+          parent_run_id: "basic-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-metadata.outputs.random-seed }}"
           wait: false
           wait_for_run_url: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}" }'
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.test_basic_project_filter }}", "runner-filter": "${{ steps.set-release-facts.outputs.test_basic_runner_filter }}" }'
 
       - name: Trigger Docker Demo test ${{ steps.set-release-facts.outputs.repo_short }}
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
@@ -178,8 +198,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          workflow_name: "Demo tests"
-          parent_run_id: "demo-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+          workflow_name: "demo-tests.yml"
+          parent_run_id: "demo-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-metadata.outputs.random-seed }}"
           wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
           wait_for_run_url: true
           json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_demo_filter }}" }'
@@ -198,7 +218,7 @@ jobs:
     needs:
       - build-release
       - test-release
-      - generate-seed
+      - generate-metadata
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -210,7 +230,7 @@ jobs:
           repo: ${{ inputs.repo }}
           release_type: ${{ inputs.release_type }}
           draft: ${{ inputs.draft }}
-          new_version_tag: ${{ inputs.new_version_tag }}
+          new_version_tag: ${{ inputs.new_version_tag || needs.generate-metadata.outputs.new_version_tag }}
 
       - name: Download Release Artifacts
         id: download-release-artifacts
@@ -286,5 +306,5 @@ jobs:
           repo_short: ${{ inputs.repo_short }}
           prerelease: ${{ inputs.prerelease || steps.set-release-facts.outputs.prerelease }}
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
-          unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
+          unique_artifact_suffix: ${{ needs.generate-metadata.outputs.random-seed }}
           make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
