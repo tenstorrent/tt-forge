@@ -346,3 +346,18 @@ def reset_seeds():
     torch.manual_seed(0)
     if tf is not None:
         tf.random.set_seed(0)
+
+
+def measure_cpu_fps(model, input):
+    warmup_iterations = 256
+    measure_iterations = 128
+    # Warm up
+    for i in range(warmup_iterations):
+        model(input)
+
+    # Measure fps
+    start = time.time()
+    for i in range(measure_iterations):
+        model(input)
+    end = time.time()
+    return measure_iterations / (end - start)

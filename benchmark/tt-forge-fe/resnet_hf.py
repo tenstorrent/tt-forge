@@ -25,7 +25,7 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge._C import DataFormat
 from forge.config import CompilerConfig, MLIRConfig
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
+from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps
 
 # Common constants
 
@@ -82,6 +82,7 @@ def test_resnet_hf(
     data_format,
     training,
     model_name,
+    measure_cpu,
 ):
 
     if training:
@@ -114,6 +115,14 @@ def test_resnet_hf(
         framework_model = framework_model.to(dtype=torch.bfloat16)
     else:
         framework_model = download_model(ResNetForImageClassification.from_pretrained, variant, return_dict=False)
+
+    if measure_cpu:
+        # Use batch size 1
+        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
+        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
+        print(f"CPU FPS: {cpu_fps}")
+    else:
+        cpu_fps = -1.0
 
     # Compile model
     compiler_cfg = CompilerConfig()
@@ -267,6 +276,16 @@ def test_resnet_hf(
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,  # This is the target evaluation score.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -294,7 +313,8 @@ def benchmark(config: dict):
     data_format = config.get("data_format", DATA_FORMAT[0])
     training = config.get("training", False)
     model_name = config["model"]
-
+    measure_cpu = config["measure_cpu"]
+    
     return test_resnet_hf(
         variant=variant,
         channel_size=channel_size,
@@ -305,4 +325,5 @@ def benchmark(config: dict):
         data_format=data_format,
         training=training,
         model_name=model_name,
+        measure_cpu=measure_cpu,
     )
