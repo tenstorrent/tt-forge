@@ -208,7 +208,7 @@ jobs:
 
         version=""
         echo "Set version to commit sha if called from other repo"
-        if [[ "${{ inputs.run_id }}" ]]; then
+        if [[ -n "${{ inputs.run_id }}" ]]; then
           version=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/tenstorrent/${{ matrix.build.project }}/actions/runs/${{ inputs.run_id }}" | jq -r '.head_sha')
         else
