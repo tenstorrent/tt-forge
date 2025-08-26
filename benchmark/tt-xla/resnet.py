@@ -1,59 +1,74 @@
 # SPDX-FileCopyrightText: (c) 2025 Tenstorrent AI ULC
-
+#
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
+# Built-in modules
+import os
 import time
-from datetime import datetime
 import socket
+import pytest
+from datetime import datetime
+
+# Third-party modules
+import torch
+import torch.nn as nn
+import torch_xla.core.xla_model as xm
 from tqdm import tqdm
 
-import jax.numpy as jnp
-import jax
+from benchmark.utils import load_benchmark_dataset, evaluate_classification
+from third_party.tt_forge_models.resnet.pytorch.loader import ModelLoader as ResNetLoader, ModelVariant as ResNetVariant
 
-from transformers import FlaxResNetForImageClassification
-from jax import device_put
-from ttxla_tools import serialize_function_to_binary
+os.environ["PJRT_DEVICE"] = "TT"
+os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
+# Common constants
 
+# Machine learning task
+TASK = [
+    "classification",
+]
+
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
+# Data format configurations
+DATA_FORMAT = [
+    "bfloat16",
+    "float32",
+]
+
+# Input size configurations
 INPUT_SIZE = [
     (224, 224),
 ]
 
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
+# Variants for image classification
 VARIANTS = [
     "microsoft/resnet-50",
 ]
 
-DATA_FORMAT = ["float32"]
 
-
-@pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
+@pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-@pytest.mark.parametrize("training", [False], ids=["training=False"])
-def test_resnet(
-    variant,
-    channel_size,
-    input_size,
-    batch_size,
-    loop_count,
-    data_format,
-    training,
-    model_name,
-):
+def test_resnet_torch_xla(training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name):
+    """
+    This function creates a ResNet model using PyTorch and torch-xla.
+    It is used for benchmarking purposes.
+    """
 
     if training:
         pytest.skip("Training is not supported")
@@ -62,53 +77,106 @@ def test_resnet(
     PROGRAM_CACHE_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
-    tt_device = jax.devices("tt")[0]
-    with jax.default_device(jax.devices("cpu")[0]):
-        # Instantiating the model seems to also run it in op by op mode once for whatver reason, also do that on the CPU
-        framework_model = FlaxResNetForImageClassification.from_pretrained(
-            variant,
-            from_pt=True,
+
+    module_name = "ResNetTorchXLA"
+
+    if task == "classification":
+        inputs, labels = load_benchmark_dataset(
+            task=task,
+            model_version="microsoft/resnet-50",
+            dataset_name="imagenet-1k",
+            split="validation",
+            batch_size=batch_size,
+            loop_count=loop_count,
         )
-        # Make sure to generate on the CPU, RNG requires an unsupported SHLO op
-        input_sample = jax.random.normal(
-            jax.random.PRNGKey(0), (batch_size, channel_size, input_size[0], input_size[1])
-        )
+    elif task == "na":
+        torch.manual_seed(1)
+        # Random data
+        inputs = [torch.randn(batch_size, channel_size, *input_size)]
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
 
-    framework_model.params = jax.tree_util.tree_map(lambda x: device_put(x, tt_device), framework_model.params)
-    input_sample = device_put(input_sample, tt_device)
+    if data_format == "bfloat16":
+        # Convert input to bfloat16
+        inputs = [item.to(torch.bfloat16) for item in inputs]
 
-    # Preserve the TTIR file
-    serialize_function_to_binary(
-        framework_model.__call__, f"{model_name}.ttnn", input_sample, params=framework_model.params
-    )
-    compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
+    # Load model using tt_forge_models
+    resnet_loader = ResNetLoader(ResNetVariant.RESNET_50_HF)
+    framework_model: nn.Module = resnet_loader.load_model()
 
-    # Warm up the model
-    compiled_fwd(input_sample, train=False, params=framework_model.params)
-    # Run the model
-    start = time.time()
-    for _ in tqdm(range(loop_count)):
-        compiled_fwd(input_sample, train=False, params=framework_model.params)
-    end = time.time()
+    if data_format == "bfloat16":
+        # Convert model to bfloat16
+        framework_model = framework_model.to(torch.bfloat16)
+    framework_model.eval()
+
+    # torch_xla compilation
+    framework_model.compile(backend="openxla")
+
+    # Connect the device
+    device = xm.xla_device()
+
+    # Move inputs and model to device
+    if data_format == "bfloat16":
+        framework_model = framework_model.to(device, dtype=torch.bfloat16)
+    else:
+        framework_model = framework_model.to(device)
+
+    # Move first input to device for verification
+    device_input = inputs[0].to(device)
+
+    with torch.no_grad():
+        fw_out = framework_model(device_input)
+        if hasattr(fw_out, "logits"):
+            fw_out = fw_out.logits
+
+    fw_out_cpu = fw_out.to("cpu")
+    print(f"Model verification - Output shape: {fw_out_cpu.shape}")
+    print(f"Model verification - Output (first 10 values): {fw_out_cpu.flatten()[:10]}")
+
+    if task == "classification":
+        predictions = []
+        start = time.time()
+        for i in tqdm(range(loop_count)):
+            device_input = inputs[i].to(device)
+            with torch.no_grad():
+                output = framework_model(device_input)
+                if hasattr(output, "logits"):
+                    output = output.logits
+                predictions.append(output.to("cpu"))
+        end = time.time()
+        predictions = torch.cat(predictions)
+        labels = torch.cat(labels)
+        evaluation_score = evaluate_classification(predictions, labels)
+    elif task == "na":
+        start = time.time()
+        for i in tqdm(range(loop_count)):
+            with torch.no_grad():
+                output = framework_model(device_input)
+        end = time.time()
+        evaluation_score = 0.0
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
     total_time = end - start
     total_samples = batch_size * loop_count
 
-    task = "na"
     samples_per_sec = total_samples / total_time
-    full_model_name = "Resnet 50 HF"
+    full_model_name = "ResNet Torch-XLA 50"
     model_type = "Classification"
-    if task == "na":
+    if task == "classification":
+        model_type += ", ImageNet-1K"
+        dataset_name = "ImageNet-1K"
+    elif task == "na":
         model_type += ", Random Input Data"
         dataset_name = full_model_name + ", Random Data"
     else:
         raise ValueError(f"Unsupported task: {task}.")
-    num_layers = 50  # Number of layers in the model, in this case 50 layers
+    num_layers = 50  # Number of layers in the model
 
     print("====================================================================")
-    print("| Resnet Benchmark Results:                                        |")
+    print("| ResNet Torch-XLA Benchmark Results:                             |")
     print("--------------------------------------------------------------------")
     print(f"| Model: {full_model_name}")
     print(f"| Model type: {model_type}")
@@ -118,6 +186,7 @@ def test_resnet(
     print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+    print(f"| Evaluation score: {evaluation_score}")
     print(f"| Batch size: {batch_size}")
     print(f"| Data format: {data_format}")
     print(f"| Input size: {input_size}")
@@ -130,6 +199,8 @@ def test_resnet(
         "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
         "config": {
             "model_size": "small",
+            "torch_xla_enabled": True,
+            "openxla_backend": True,
             "optimizer_enabled": OPTIMIZER_ENABLED,
             "program_cache_enabled": PROGRAM_CACHE_ENABLED,
             "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
@@ -138,7 +209,6 @@ def test_resnet(
         "num_layers": num_layers,
         "batch_size": batch_size,
         "precision": data_format,
-        # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",
         "input_sequence_length": -1,  # When this value is negative, it means it is not applicable
@@ -153,7 +223,7 @@ def test_resnet(
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_samples",
                 "value": total_samples,
-                "target": -1,
+                "target": -1,  # This value is negative, because we don't have a target value.
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
@@ -163,6 +233,16 @@ def test_resnet(
                 "step_warm_up_num_iterations": 0,
                 "measurement_name": "total_time",
                 "value": total_time,
+                "target": -1,  # This value is negative, because we don't have a target value.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "evaluation_score",
+                "value": evaluation_score,
                 "target": -1,
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
@@ -181,6 +261,10 @@ def test_resnet(
 
 
 def benchmark(config: dict):
+    """
+    Run the resnet torch-xla benchmark.
+    This function is a placeholder for the actual benchmark implementation.
+    """
 
     training = config["training"]
     batch_size = config["batch_size"]
@@ -188,16 +272,16 @@ def benchmark(config: dict):
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     data_format = config["data_format"]
-    variant = VARIANTS[0]
+    task = config["task"]
     model_name = config["model"]
 
-    return test_resnet(
-        variant=variant,
-        channel_size=channel_size,
-        input_size=input_size,
-        batch_size=batch_size,
-        loop_count=loop_count,
-        data_format=data_format,
+    return test_resnet_torch_xla(
         training=training,
+        batch_size=batch_size,
+        input_size=input_size,
+        channel_size=channel_size,
+        loop_count=loop_count,
+        task=task,
+        data_format=data_format,
         model_name=model_name,
     )

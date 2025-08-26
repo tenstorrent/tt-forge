@@ -10,13 +10,16 @@ import pytest
 from datetime import datetime
 
 # Third-party modules
-import timm
 import torch
 import torch.nn as nn
 import torch_xla.core.xla_model as xm
 from tqdm import tqdm
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
+from benchmark.utils import load_benchmark_dataset, evaluate_classification
+from third_party.tt_forge_models.efficientnet.pytorch.loader import (
+    ModelLoader as EfficientNetLoader,
+    ModelVariant as EfficientNetVariant,
+)
 
 os.environ["PJRT_DEVICE"] = "TT"
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
@@ -96,8 +99,9 @@ def test_efficientnet_torch_xla(
         # Convert input to bfloat16
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
-    # Load model using timm
-    framework_model: nn.Module = download_model(timm.create_model, "efficientnet_b0", pretrained=True)
+    # Load model using tt_forge_models
+    efficientnet_loader = EfficientNetLoader(EfficientNetVariant.TIMM_EFFICIENTNET_B0)
+    framework_model: nn.Module = efficientnet_loader.load_model()
 
     if data_format == "bfloat16":
         # Convert model to bfloat16
@@ -240,9 +244,9 @@ def test_efficientnet_torch_xla(
             },
         ],
         "device_info": {
-            "device_name": "TT",
+            "device_name": "",
             "galaxy": False,
-            "arch": "torch-xla",
+            "arch": "",
             "chips": 1,
         },
         "device_ip": None,

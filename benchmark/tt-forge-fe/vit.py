@@ -56,7 +56,7 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
 # Variants for image classification
 VARIANTS = [
-    "google/vit-large-patch16-224",
+    "google/vit-base-patch16-224",
 ]
 
 
