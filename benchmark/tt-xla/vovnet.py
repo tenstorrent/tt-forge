@@ -13,10 +13,10 @@ from datetime import datetime
 import torch
 import torch.nn as nn
 import torch_xla.core.xla_model as xm
-import timm
 from tqdm import tqdm
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
+from benchmark.utils import load_benchmark_dataset, evaluate_classification
+from third_party.tt_forge_models.vovnet.pytorch.loader import ModelLoader as VovNetLoader, ModelVariant as VovNetVariant
 
 os.environ["PJRT_DEVICE"] = "TT"
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
@@ -107,8 +107,9 @@ def test_vovnet_torch_xla(
     if data_format == "bfloat16":
         inputs = [input.to(torch.bfloat16) for input in inputs]
 
-    # Load model using timm
-    framework_model: nn.Module = download_model(timm.create_model, variant, pretrained=True)
+    # Load model using tt_forge_models
+    vovnet_loader = VovNetLoader(VovNetVariant.TIMM_VOVNET19B_DW_RAIN1K)
+    framework_model: nn.Module = vovnet_loader.load_model()
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(torch.bfloat16)
@@ -250,9 +251,9 @@ def test_vovnet_torch_xla(
             },
         ],
         "device_info": {
-            "device_name": "TT",
+            "device_name": "",
             "galaxy": False,
-            "arch": "torch-xla",
+            "arch": "",
             "chips": 1,
         },
         "device_ip": None,
