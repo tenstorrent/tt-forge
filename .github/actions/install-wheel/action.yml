@@ -84,7 +84,6 @@ runs:
     - name: Install wheel
       shell: bash
       run: |
-        ls -lah
         if [ -n "${{ inputs.venv_bin_path }}" ]; then
           source ${{ inputs.venv_bin_path }}
         fi
