@@ -122,7 +122,7 @@ def test_resnet_hf(
 
     # Turn on MLIR optimizations.
     OPTIMIZER_ENABLED = True
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
     compiler_cfg.mlir_config = (
         MLIRConfig()
