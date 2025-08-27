@@ -74,6 +74,7 @@ jobs:
         repository: 'tenstorrent/tt-forge'
         fetch-depth: 1
         ref: ${{ inputs.ref || github.ref }}
+        submodules: 'recursive'
     - name: Filter Matrix
       id: set-perf-benchmarks
       shell: bash
@@ -151,6 +152,7 @@ jobs:
         repository: 'tenstorrent/tt-forge'
         fetch-depth: 1
         ref: ${{ inputs.ref || github.ref }}
+        submodules: 'recursive'
 
     - name: Install system and python dependencies
       shell: bash
