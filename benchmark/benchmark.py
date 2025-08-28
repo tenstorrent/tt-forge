@@ -202,7 +202,7 @@ def read_args():
     )
     parser.add_argument("-df", "--data_format", default="float32", help="Data format i.e. float32, bfloat16, etc.")
     parser.add_argument("-r", "--run_origin", default="tt-forge", help="Repo where the benchmark is run from.")
-    parser.add_argument("-mc", "--measure_cpu", action="store_true", default=False, help="Measure CPU FPS.")
+    parser.add_argument("-mc", "--measure_cpu", action="store_true", default=True, help="Measure CPU FPS.")
     args = parser.parse_args()
 
     config = {}
