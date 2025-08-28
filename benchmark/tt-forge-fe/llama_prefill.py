@@ -61,6 +61,7 @@ def test_llama_prefill(
     loop_count,
     data_format,
     model_name,
+    measure_cpu,
 ):
 
     if data_format == "bfloat16":
@@ -83,6 +84,9 @@ def test_llama_prefill(
     # Load Llama model and tokenizer
     model, tokenizer = load_model(model_path, return_dict=True)
     model = model.to(torch_dtype)
+
+    # Skip CPU measurement for LLaMA models
+    cpu_fps = -1.0
 
     # Prepare input sentence
     prompt = "Q: What is the largest animal?\nA:"
@@ -200,6 +204,16 @@ def test_llama_prefill(
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,  # This is the target evaluation score.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -221,6 +235,7 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     model_name = config["model"]
     data_format = config["data_format"]
+    measure_cpu = config["measure_cpu"]
 
     return test_llama_prefill(
         training=training,
@@ -229,4 +244,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         model_name=model_name,
         data_format=data_format,
+        measure_cpu=measure_cpu,
     )
