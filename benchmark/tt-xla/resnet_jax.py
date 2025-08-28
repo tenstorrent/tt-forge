@@ -7,6 +7,12 @@ import time
 from datetime import datetime
 import socket
 from tqdm import tqdm
+from .utils import (
+    calculate_performance_metrics,
+    get_benchmark_metadata,
+    print_benchmark_results,
+    create_benchmark_result,
+)
 
 import jax.numpy as jnp
 import jax
@@ -91,91 +97,51 @@ def test_resnet(
         compiled_fwd(input_sample, train=False, params=framework_model.params)
     end = time.time()
 
-    date = datetime.now().strftime("%d-%m-%Y")
-    machine_name = socket.gethostname()
-    total_time = end - start
-    total_samples = batch_size * loop_count
+    metrics = calculate_performance_metrics(end - start, batch_size, loop_count)
+    metadata = get_benchmark_metadata()
 
     task = "na"
-    samples_per_sec = total_samples / total_time
     full_model_name = "Resnet 50 HF"
-    model_type = "Classification"
-    if task == "na":
-        model_type += ", Random Input Data"
-        dataset_name = full_model_name + ", Random Data"
-    else:
-        raise ValueError(f"Unsupported task: {task}.")
-    num_layers = 50  # Number of layers in the model, in this case 50 layers
+    model_type = "Classification, Random Input Data"
+    dataset_name = full_model_name + ", Random Data"
+    num_layers = 50
 
-    print("====================================================================")
-    print("| Resnet Benchmark Results:                                        |")
-    print("--------------------------------------------------------------------")
-    print(f"| Model: {full_model_name}")
-    print(f"| Model type: {model_type}")
-    print(f"| Dataset name: {dataset_name}")
-    print(f"| Date: {date}")
-    print(f"| Machine name: {machine_name}")
-    print(f"| Total execution time: {total_time}")
-    print(f"| Total samples: {total_samples}")
-    print(f"| Sample per second: {samples_per_sec}")
-    print(f"| Batch size: {batch_size}")
-    print(f"| Data format: {data_format}")
-    print(f"| Input size: {input_size}")
-    print(f"| Channel size: {channel_size}")
-    print("====================================================================")
+    print_benchmark_results(
+        model_title="Resnet",
+        full_model_name=full_model_name,
+        model_type=model_type,
+        dataset_name=dataset_name,
+        date=metadata["date"],
+        machine_name=metadata["machine_name"],
+        total_time=metrics["total_time"],
+        total_samples=metrics["total_samples"],
+        samples_per_sec=metrics["samples_per_sec"],
+        batch_size=batch_size,
+        data_format=data_format,
+        input_size=input_size,
+        channel_size=channel_size,
+    )
 
-    result = {
-        "model": full_model_name,
-        "model_type": model_type,
-        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
-        "config": {
-            "model_size": "small",
-            "optimizer_enabled": OPTIMIZER_ENABLED,
-            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
-            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
-            "trace_enabled": TRACE_ENABLED,
-        },
-        "num_layers": num_layers,
-        "batch_size": batch_size,
-        "precision": data_format,
-        # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
-        "dataset_name": dataset_name,
-        "profile_name": "",
-        "input_sequence_length": -1,  # When this value is negative, it means it is not applicable
-        "output_sequence_length": -1,  # When this value is negative, it means it is not applicable
-        "image_dimension": f"{channel_size}x{input_size[0]}x{input_size[1]}",
-        "perf_analysis": False,
-        "training": training,
-        "measurements": [
-            {
-                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": full_model_name,
-                "step_warm_up_num_iterations": 0,
-                "measurement_name": "total_samples",
-                "value": total_samples,
-                "target": -1,
-                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
-                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
-            },
-            {
-                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": full_model_name,
-                "step_warm_up_num_iterations": 0,
-                "measurement_name": "total_time",
-                "value": total_time,
-                "target": -1,
-                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
-                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
-            },
-        ],
-        "device_info": {
-            "device_name": "",
-            "galaxy": False,
-            "arch": "",
-            "chips": 1,
-        },
-        "device_ip": None,
-    }
+    result = create_benchmark_result(
+        full_model_name=full_model_name,
+        model_type=model_type,
+        dataset_name=dataset_name,
+        num_layers=num_layers,
+        batch_size=batch_size,
+        input_size=input_size,
+        loop_count=loop_count,
+        data_format=data_format,
+        training=training,
+        total_time=metrics["total_time"],
+        total_samples=metrics["total_samples"],
+        optimizer_enabled=OPTIMIZER_ENABLED,
+        program_cache_enabled=PROGRAM_CACHE_ENABLED,
+        memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        trace_enabled=TRACE_ENABLED,
+        torch_xla_enabled=False,
+        openxla_backend=False,
+        channel_size=channel_size,
+    )
 
     return result
 

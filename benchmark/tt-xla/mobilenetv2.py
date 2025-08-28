@@ -5,9 +5,7 @@
 # Built-in modules
 import os
 import time
-import socket
 import pytest
-from datetime import datetime
 
 # Third-party modules
 import torch
@@ -19,6 +17,13 @@ from benchmark.utils import load_benchmark_dataset, evaluate_classification, mea
 from third_party.tt_forge_models.mobilenetv2.pytorch.loader import (
     ModelLoader as MobileNetV2Loader,
     ModelVariant as MobileNetV2Variant,
+)
+from .utils import (
+    calculate_performance_metrics,
+    get_benchmark_metadata,
+    determine_model_type_and_dataset,
+    print_benchmark_results,
+    create_benchmark_result,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -76,8 +81,6 @@ def test_mobilenetv2_torch_xla(
     PROGRAM_CACHE_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
-
-    module_name = "MobileNetV2TorchXLA"
 
     if task == "classification":
         inputs, labels = load_benchmark_dataset(
@@ -163,116 +166,64 @@ def test_mobilenetv2_torch_xla(
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
-    date = datetime.now().strftime("%d-%m-%Y")
-    machine_name = socket.gethostname()
-    total_time = end - start
-    total_samples = batch_size * loop_count
+    metrics = calculate_performance_metrics(end - start, batch_size, loop_count)
+    metadata = get_benchmark_metadata()
 
-    samples_per_sec = total_samples / total_time
     full_model_name = "MobileNet V2 Torch-XLA"
-    model_type = "Classification"
-    if task == "classification":
-        model_type += ", ImageNet-1K"
-        dataset_name = "ImageNet-1K"
-    elif task == "na":
-        model_type += ", Random Input Data"
-        dataset_name = full_model_name + ", Random Data"
-    else:
-        raise ValueError(f"Unsupported task: {task}.")
-    num_layers = 54  # Number of layers in the model
+    model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
+    num_layers = 54
 
-    print("====================================================================")
-    print("| MobileNet V2 Torch-XLA Benchmark Results:                       |")
-    print("--------------------------------------------------------------------")
-    print(f"| Model: {full_model_name}")
-    print(f"| Model type: {model_type}")
-    print(f"| Dataset name: {dataset_name}")
-    print(f"| Date: {date}")
-    print(f"| Machine name: {machine_name}")
-    print(f"| Total execution time: {total_time}")
-    print(f"| Total samples: {total_samples}")
-    print(f"| Sample per second: {samples_per_sec}")
+    # Create custom measurements for CPU FPS
+    custom_measurements = [
+        {
+            "measurement_name": "cpu_fps",
+            "value": cpu_fps,
+            "target": -1,
+        }
+    ]
+
+    print_benchmark_results(
+        model_title="MobileNet V2 Torch-XLA",
+        full_model_name=full_model_name,
+        model_type=model_type,
+        dataset_name=dataset_name,
+        date=metadata["date"],
+        machine_name=metadata["machine_name"],
+        total_time=metrics["total_time"],
+        total_samples=metrics["total_samples"],
+        samples_per_sec=metrics["samples_per_sec"],
+        evaluation_score=evaluation_score,
+        batch_size=batch_size,
+        data_format=data_format,
+        input_size=input_size,
+        channel_size=channel_size,
+    )
+
+    # Add CPU FPS to the print output manually since it's not in the print function yet
     print(f"| CPU samples per second: {cpu_fps}")
-    print(f"| Evaluation score: {evaluation_score}")
-    print(f"| Batch size: {batch_size}")
-    print(f"| Data format: {data_format}")
-    print(f"| Input size: {input_size}")
-    print(f"| Channel size: {channel_size}")
-    print("====================================================================")
 
-    result = {
-        "model": full_model_name,
-        "model_type": model_type,
-        "run_type": f"{'_'.join(full_model_name.split())}_{batch_size}_{'_'.join([str(dim) for dim in input_size])}_{num_layers}_{loop_count}",
-        "config": {
-            "model_size": "small",
-            "torch_xla_enabled": True,
-            "openxla_backend": True,
-            "optimizer_enabled": OPTIMIZER_ENABLED,
-            "program_cache_enabled": PROGRAM_CACHE_ENABLED,
-            "memory_layout_analysis_enabled": MEMORY_LAYOUT_ANALYSIS_ENABLED,
-            "trace_enabled": TRACE_ENABLED,
-        },
-        "num_layers": num_layers,
-        "batch_size": batch_size,
-        "precision": data_format,
-        "dataset_name": dataset_name,
-        "profile_name": "",
-        "input_sequence_length": -1,  # When this value is negative, it means it is not applicable
-        "output_sequence_length": -1,  # When this value is negative, it means it is not applicable
-        "image_dimension": f"{channel_size}x{input_size[0]}x{input_size[1]}",
-        "perf_analysis": False,
-        "training": training,
-        "measurements": [
-            {
-                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": full_model_name,
-                "step_warm_up_num_iterations": 0,
-                "measurement_name": "total_samples",
-                "value": total_samples,
-                "target": -1,  # This value is negative, because we don't have a target value.
-                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
-                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
-            },
-            {
-                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": full_model_name,
-                "step_warm_up_num_iterations": 0,
-                "measurement_name": "total_time",
-                "value": total_time,
-                "target": -1,  # This value is negative, because we don't have a target value.
-                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
-                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
-            },
-            {
-                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": full_model_name,
-                "step_warm_up_num_iterations": 0,
-                "measurement_name": "evaluation_score",
-                "value": evaluation_score,
-                "target": -1,
-                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
-                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
-            },
-            {
-                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
-                "step_name": full_model_name,
-                "step_warm_up_num_iterations": 0,
-                "measurement_name": "cpu_fps",
-                "value": cpu_fps,
-                "target": -1,  # This is the target evaluation score.
-                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
-                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
-            },
-        ],
-        "device_info": {
-            "device_name": "",
-            "galaxy": False,
-            "arch": "",
-            "chips": 1,
-        },
-        "device_ip": None,
-    }
+    result = create_benchmark_result(
+        full_model_name=full_model_name,
+        model_type=model_type,
+        dataset_name=dataset_name,
+        num_layers=num_layers,
+        batch_size=batch_size,
+        input_size=input_size,
+        loop_count=loop_count,
+        data_format=data_format,
+        training=training,
+        total_time=metrics["total_time"],
+        total_samples=metrics["total_samples"],
+        evaluation_score=evaluation_score,
+        custom_measurements=custom_measurements,
+        optimizer_enabled=OPTIMIZER_ENABLED,
+        program_cache_enabled=PROGRAM_CACHE_ENABLED,
+        memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        trace_enabled=TRACE_ENABLED,
+        torch_xla_enabled=True,
+        openxla_backend=True,
+        channel_size=channel_size,
+    )
 
     return result
 
