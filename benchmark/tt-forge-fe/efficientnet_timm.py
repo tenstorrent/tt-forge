@@ -22,7 +22,7 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
+from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps
 
 
 # Common constants
@@ -63,7 +63,9 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-def test_efficientnet_timm(training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name):
+def test_efficientnet_timm(
+    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
+):
     """
     Test the efficientnet_timm benchmark function.
     This function is a placeholder for the actual test implementation.
@@ -99,6 +101,13 @@ def test_efficientnet_timm(training, batch_size, input_size, channel_size, loop_
         # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
+
+    if measure_cpu:
+        # Use batch size 1
+        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
+        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
+    else:
+        cpu_fps = -1.0
 
     # Compiler configuration
     OPTIMIZER_ENABLED = True
@@ -198,6 +207,7 @@ def test_efficientnet_timm(training, batch_size, input_size, channel_size, loop_
     print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+    print(f"| CPU samples per second: {cpu_fps}")
     print(f"| Evaluation score: {evaluation_score}")
     print(f"| Batch size: {batch_size}")
     print(f"| Data format: {data_format}")
@@ -258,6 +268,16 @@ def test_efficientnet_timm(training, batch_size, input_size, channel_size, loop_
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,  # This is the target evaluation score.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -285,6 +305,7 @@ def benchmark(config: dict):
     task = config["task"]
     data_format = config["data_format"]
     model_name = config["model"]
+    measure_cpu = config["measure_cpu"]
 
     return test_efficientnet_timm(
         training=training,
@@ -295,4 +316,5 @@ def benchmark(config: dict):
         task=task,
         data_format=data_format,
         model_name=model_name,
+        measure_cpu=measure_cpu,
     )

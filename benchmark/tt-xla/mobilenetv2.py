@@ -15,7 +15,7 @@ import torch.nn as nn
 import torch_xla.core.xla_model as xm
 from tqdm import tqdm
 
-from benchmark.utils import load_benchmark_dataset, evaluate_classification
+from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
 from third_party.tt_forge_models.mobilenetv2.pytorch.loader import (
     ModelLoader as MobileNetV2Loader,
     ModelVariant as MobileNetV2Variant,
@@ -62,7 +62,7 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_mobilenetv2_torch_xla(
-    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name
+    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
 ):
     """
     This function creates a MobileNetV2 model using PyTorch and torch-xla.
@@ -107,6 +107,13 @@ def test_mobilenetv2_torch_xla(
         # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
+
+    if measure_cpu:
+        # Use batch size 1
+        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
+        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
+    else:
+        cpu_fps = -1.0
 
     # torch_xla compilation
     framework_model.compile(backend="openxla")
@@ -185,6 +192,7 @@ def test_mobilenetv2_torch_xla(
     print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+    print(f"| CPU samples per second: {cpu_fps}")
     print(f"| Evaluation score: {evaluation_score}")
     print(f"| Batch size: {batch_size}")
     print(f"| Data format: {data_format}")
@@ -246,6 +254,16 @@ def test_mobilenetv2_torch_xla(
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,  # This is the target evaluation score.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -273,6 +291,7 @@ def benchmark(config: dict):
     data_format = config["data_format"]
     task = config["task"]
     model_name = config["model"]
+    measure_cpu = config["measure_cpu"]
 
     return test_mobilenetv2_torch_xla(
         training=training,
@@ -283,4 +302,5 @@ def benchmark(config: dict):
         task=task,
         data_format=data_format,
         model_name=model_name,
+        measure_cpu=measure_cpu,
     )
