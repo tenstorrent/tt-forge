@@ -9,13 +9,13 @@ import pytest
 
 # Third-party modules
 import torch
+import torch.nn as nn
 import torch_xla.core.xla_model as xm
 from tqdm import tqdm
-from pytorchcv.model_provider import get_model as ptcv_get_model
 
-from benchmark.utils import download_model
+from benchmark.utils import measure_cpu_fps
+from third_party.tt_forge_models.unet.pytorch.loader import ModelLoader as UNetLoader
 from .utils import (
-    calculate_performance_metrics,
     get_benchmark_metadata,
     print_benchmark_results,
     create_benchmark_result,
@@ -62,6 +62,7 @@ def test_unet_torch_xla(
     data_format,
     variant,
     model_name,
+    measure_cpu,
 ):
     """
     This function creates a UNet model using PyTorch and torch-xla.
@@ -79,10 +80,9 @@ def test_unet_torch_xla(
     # Create random inputs
     input_sample = torch.randn(batch_size, channel_size, input_size[0], input_size[1])
 
-    if variant == "unet_cityscapes":
-        framework_model = download_model(ptcv_get_model, variant, pretrained=False)
-    else:
-        raise ValueError(f"Unsupported UNet variant: {variant}")
+    unet_loader = UNetLoader()
+    model_info = unet_loader.get_model_info().name
+    framework_model: nn.Module = unet_loader.load_model()
 
     if data_format == "bfloat16":
         input_sample = input_sample.to(torch.bfloat16)
@@ -92,6 +92,13 @@ def test_unet_torch_xla(
         framework_model = framework_model.to(torch.float32)
 
     framework_model.eval()
+
+    if measure_cpu:
+        # Use batch size 1 for CPU measurement
+        cpu_input = input_sample[0].reshape(1, *input_sample[0].shape[0:])
+        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
+    else:
+        cpu_fps = -1.0
 
     # torch_xla compilation
     framework_model.compile(backend="openxla")
@@ -122,13 +129,25 @@ def test_unet_torch_xla(
             framework_model(input_sample)
     end = time.time()
 
-    metrics = calculate_performance_metrics(end - start, batch_size, loop_count)
+    total_time = end - start
+    total_samples = batch_size * loop_count
+    samples_per_sec = total_samples / total_time
+
     metadata = get_benchmark_metadata()
 
     full_model_name = "UNet Torch-XLA"
     model_type = "Segmentation, Random Input Data"
     dataset_name = "UNet, Random Data"
     num_layers = -1
+
+    # Create custom measurements for CPU FPS
+    custom_measurements = [
+        {
+            "measurement_name": "cpu_fps",
+            "value": cpu_fps,
+            "target": -1,
+        }
+    ]
 
     print_benchmark_results(
         model_title="UNet Torch-XLA",
@@ -137,9 +156,10 @@ def test_unet_torch_xla(
         dataset_name=dataset_name,
         date=metadata["date"],
         machine_name=metadata["machine_name"],
-        total_time=metrics["total_time"],
-        total_samples=metrics["total_samples"],
-        samples_per_sec=metrics["samples_per_sec"],
+        total_time=total_time,
+        total_samples=total_samples,
+        samples_per_sec=samples_per_sec,
+        cpu_samples_per_sec=cpu_fps,
         batch_size=batch_size,
         data_format=data_format,
         input_size=input_size,
@@ -156,17 +176,17 @@ def test_unet_torch_xla(
         loop_count=loop_count,
         data_format=data_format,
         training=training,
-        total_time=metrics["total_time"],
-        total_samples=metrics["total_samples"],
+        total_time=total_time,
+        total_samples=total_samples,
+        custom_measurements=custom_measurements,
         optimizer_enabled=OPTIMIZER_ENABLED,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
+        model_info=model_info,
         torch_xla_enabled=True,
         openxla_backend=True,
         channel_size=channel_size,
-        device_name="TT",
-        arch="torch-xla",
     )
 
     return result
@@ -186,6 +206,7 @@ def benchmark(config: dict):
     data_format = config["data_format"]
     variant = VARIANTS[0]
     model_name = config["model"]
+    measure_cpu = config["measure_cpu"]
 
     return test_unet_torch_xla(
         training=training,
@@ -196,4 +217,5 @@ def benchmark(config: dict):
         data_format=data_format,
         variant=variant,
         model_name=model_name,
+        measure_cpu=measure_cpu,
     )

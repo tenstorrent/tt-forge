@@ -8,7 +8,6 @@ from datetime import datetime
 import socket
 from tqdm import tqdm
 from .utils import (
-    calculate_performance_metrics,
     get_benchmark_metadata,
     print_benchmark_results,
     create_benchmark_result,
@@ -75,6 +74,7 @@ def test_resnet(
             variant,
             from_pt=True,
         )
+        model_info = variant
         # Make sure to generate on the CPU, RNG requires an unsupported SHLO op
         input_sample = jax.random.normal(
             jax.random.PRNGKey(0), (batch_size, channel_size, input_size[0], input_size[1])
@@ -97,7 +97,10 @@ def test_resnet(
         compiled_fwd(input_sample, train=False, params=framework_model.params)
     end = time.time()
 
-    metrics = calculate_performance_metrics(end - start, batch_size, loop_count)
+    total_time = end - start
+    total_samples = batch_size * loop_count
+    samples_per_sec = total_samples / total_time
+
     metadata = get_benchmark_metadata()
 
     task = "na"
@@ -113,9 +116,9 @@ def test_resnet(
         dataset_name=dataset_name,
         date=metadata["date"],
         machine_name=metadata["machine_name"],
-        total_time=metrics["total_time"],
-        total_samples=metrics["total_samples"],
-        samples_per_sec=metrics["samples_per_sec"],
+        total_time=total_time,
+        total_samples=total_samples,
+        samples_per_sec=samples_per_sec,
         batch_size=batch_size,
         data_format=data_format,
         input_size=input_size,
@@ -132,12 +135,13 @@ def test_resnet(
         loop_count=loop_count,
         data_format=data_format,
         training=training,
-        total_time=metrics["total_time"],
-        total_samples=metrics["total_samples"],
+        total_time=total_time,
+        total_samples=total_samples,
         optimizer_enabled=OPTIMIZER_ENABLED,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
+        model_info=model_info,
         torch_xla_enabled=False,
         openxla_backend=False,
         channel_size=channel_size,

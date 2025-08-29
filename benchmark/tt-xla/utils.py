@@ -7,18 +7,6 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 
-def calculate_performance_metrics(total_time: float, batch_size: int, loop_count: int) -> Dict[str, Any]:
-    """Calculate basic performance metrics."""
-    total_samples = batch_size * loop_count
-    samples_per_sec = total_samples / total_time
-
-    return {
-        "total_time": total_time,
-        "total_samples": total_samples,
-        "samples_per_sec": samples_per_sec,
-    }
-
-
 def get_benchmark_metadata() -> Dict[str, str]:
     """Get common benchmark metadata."""
     return {
@@ -53,6 +41,7 @@ def print_benchmark_results(
     total_time: float,
     total_samples: int,
     samples_per_sec: float,
+    cpu_samples_per_sec: Optional[float] = None,
     evaluation_score: Optional[float] = None,
     batch_size: int = None,
     data_format: str = None,
@@ -71,6 +60,9 @@ def print_benchmark_results(
     print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+
+    if cpu_samples_per_sec is not None:
+        print(f"| CPU samples per second: {cpu_samples_per_sec}")
 
     if evaluation_score is not None:
         print(f"| Evaluation score: {evaluation_score}")
@@ -131,6 +123,7 @@ def create_benchmark_result(
     program_cache_enabled: bool = False,
     memory_layout_analysis_enabled: bool = False,
     trace_enabled: bool = False,
+    model_info: str = "",
     torch_xla_enabled: bool = True,
     openxla_backend: bool = True,
     channel_size: int = 3,
@@ -138,7 +131,6 @@ def create_benchmark_result(
     galaxy: bool = False,
     arch: str = "",
     chips: int = 1,
-    device_ip: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a standardized benchmark result dictionary.
 
@@ -183,6 +175,7 @@ def create_benchmark_result(
         "program_cache_enabled": program_cache_enabled,
         "memory_layout_analysis_enabled": memory_layout_analysis_enabled,
         "trace_enabled": trace_enabled,
+        "model_info": model_info,
     }
 
     if torch_xla_enabled:
@@ -215,5 +208,4 @@ def create_benchmark_result(
             "arch": arch,
             "chips": chips,
         },
-        "device_ip": device_ip,
     }
