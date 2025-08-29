@@ -16,7 +16,6 @@ from tqdm import tqdm
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
 from third_party.tt_forge_models.resnet.pytorch.loader import ModelLoader as ResNetLoader, ModelVariant as ResNetVariant
 from .utils import (
-    calculate_performance_metrics,
     get_benchmark_metadata,
     determine_model_type_and_dataset,
     print_benchmark_results,
@@ -106,7 +105,9 @@ def test_resnet_torch_xla(
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
     # Load model using tt_forge_models
-    resnet_loader = ResNetLoader(ResNetVariant.RESNET_50_HF)
+    model_variant = ResNetVariant.RESNET_50_HF
+    resnet_loader = ResNetLoader(model_variant)
+    model_info = resnet_loader.get_model_info(model_variant).name
     framework_model: nn.Module = resnet_loader.load_model()
 
     if data_format == "bfloat16":
@@ -169,7 +170,10 @@ def test_resnet_torch_xla(
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
-    metrics = calculate_performance_metrics(end - start, batch_size, loop_count)
+    total_time = end - start
+    total_samples = batch_size * loop_count
+    samples_per_sec = total_samples / total_time
+
     metadata = get_benchmark_metadata()
 
     full_model_name = "ResNet Torch-XLA 50"
@@ -192,18 +196,16 @@ def test_resnet_torch_xla(
         dataset_name=dataset_name,
         date=metadata["date"],
         machine_name=metadata["machine_name"],
-        total_time=metrics["total_time"],
-        total_samples=metrics["total_samples"],
-        samples_per_sec=metrics["samples_per_sec"],
+        total_time=total_time,
+        total_samples=total_samples,
+        samples_per_sec=samples_per_sec,
+        cpu_samples_per_sec=cpu_fps,
         evaluation_score=evaluation_score,
         batch_size=batch_size,
         data_format=data_format,
         input_size=input_size,
         channel_size=channel_size,
     )
-
-    # Add CPU FPS to the print output manually since it's not in the print function yet
-    print(f"| CPU samples per second: {cpu_fps}")
 
     result = create_benchmark_result(
         full_model_name=full_model_name,
@@ -215,14 +217,15 @@ def test_resnet_torch_xla(
         loop_count=loop_count,
         data_format=data_format,
         training=training,
-        total_time=metrics["total_time"],
-        total_samples=metrics["total_samples"],
+        total_time=total_time,
+        total_samples=total_samples,
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
         optimizer_enabled=OPTIMIZER_ENABLED,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
+        model_info=model_info,
         torch_xla_enabled=True,
         openxla_backend=True,
         channel_size=channel_size,
