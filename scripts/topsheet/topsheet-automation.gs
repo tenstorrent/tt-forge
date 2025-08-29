@@ -65,34 +65,6 @@ function main() {
   }
 }
 
-function main() {
-  try {
-    Logger.log('🚀 Starting TT-Forge project sync...');
-    
-    // Get all qualifying issues from TT-Forge project
-    const issues = getAllQualifyingIssues();
-    
-    Logger.log(`📊 Found ${issues.length} qualifying issues`);
-    
-    if (issues.length === 0) {
-      Logger.log('⚠️  No qualifying issues found');
-      return;
-    }
-    
-    // Create or get sheet and write all data
-    writeAllIssuesToSheet(issues);
-    
-    // Create Key Milestones sheet
-    Logger.log('📋 Creating Key Milestones sheet...');
-    createKeyMilestonesSheet();
-    
-    Logger.log(`✅ Successfully updated sheet with ${issues.length} issues from TT-Forge project`);
-    Logger.log(`✅ Successfully created Key Milestones sheet`);
-  } catch (error) {
-    Logger.log('❌ Error: ' + error.toString());
-  }
-}
-
 function getAllQualifyingIssues() {
   Logger.log('🔍 Searching TT-Forge project for qualifying issues...');
   
