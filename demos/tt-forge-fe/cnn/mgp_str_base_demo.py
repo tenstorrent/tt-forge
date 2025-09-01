@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# Autoencoder-linear Demo Script
+# MGP-STR Base Demo Script
 
-import os
 import forge
-from third_party.tt_forge_models.autoencoder_linear.pytorch import ModelLoader
+from third_party.tt_forge_models.mgp_str_base.pytorch import ModelLoader
 
 # Load model and input
 loader = ModelLoader()
@@ -19,6 +18,4 @@ compiled_model = forge.compile(model, sample_inputs=[inputs])
 output = compiled_model(inputs)
 
 # Post-process the output
-output_dir = "demos/tt-forge-fe/cnn/autoencoder_linear"
-os.makedirs(output_dir, exist_ok=True)
-loader.post_processing(output, output_dir)
+loader.decode_output(output)
