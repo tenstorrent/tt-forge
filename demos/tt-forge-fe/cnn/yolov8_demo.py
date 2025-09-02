@@ -7,6 +7,8 @@ import sys
 import forge
 from third_party.tt_forge_models.yolov8.pytorch import ModelLoader, ModelVariant
 import torch
+from forge._C import DataFormat
+from forge.config import CompilerConfig
 
 
 class YoloWrapper(torch.nn.Module):
@@ -26,12 +28,16 @@ def run_yolov8_demo_case(variant):
 
     # Load Model and inputs
     loader = ModelLoader(variant=variant)
-    model = loader.load_model()
-    inputs = loader.load_inputs()
+    model = loader.load_model(dtype_override=torch.bfloat16)
+    inputs = loader.load_inputs(dtype_override=torch.bfloat16)
+
+    data_format_override = DataFormat.Float16_b
+    compiler_cfg = CompilerConfig(default_df_override=data_format_override)
+
     framework_model = YoloWrapper(model)
 
     # Compile the model using Forge
-    compiled_model = forge.compile(framework_model, sample_inputs=[inputs])
+    compiled_model = forge.compile(framework_model, sample_inputs=[inputs], compiler_cfg=compiler_cfg)
 
     # Run inference on Tenstorrent device
     output = compiled_model(inputs)
