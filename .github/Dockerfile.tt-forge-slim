@@ -17,6 +17,9 @@ RUN apt-get update && \
     python3.10 \
     python3.10-venv \
     python3.10-dev \
+    python3.11 \
+    python3.11-venv \
+    python3.11-dev \
     python3-pip && \
     # Make Python 3.10 the default
     update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
@@ -62,7 +65,7 @@ RUN FRONTEND=tt-torch && \
 
 # Create and activate virtual environment for tt-xla, install whl
 RUN FRONTEND=tt-xla && \
-    python -m venv venv-$FRONTEND && \
+    python3.11 -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     WHL_VERSION=$(pip index versions pjrt-plugin-tt -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
     pip install --no-cache-dir https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl && \
