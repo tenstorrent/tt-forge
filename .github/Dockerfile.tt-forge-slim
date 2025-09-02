@@ -34,6 +34,11 @@ RUN apt-get update && \
     apt install -y "./mpi.deb" && \
     rm -f "mpi.deb"
 
+# Install Python 3.11
+RUN add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.11 python3.11-dev python3.11-venv python3.11-distutils
+
 # Create forge user and home directory
 RUN useradd -m -s /bin/bash forge && \
 echo "forge ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/forge && \
@@ -44,11 +49,6 @@ WORKDIR /home/forge
 
 # Switch to forge user for remaining operations
 USER forge
-
-# Install Python 3.11
-RUN add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt-get install -y python3.11 python3.11-dev python3.11-venv python3.11-distutils
 
 # Create and activate virtual environment for tt-forge-fe, install whl
 RUN FRONTEND=tt-forge-fe && \
