@@ -8,17 +8,23 @@ import forge
 from third_party.tt_forge_models.resnet.pytorch import ModelLoader, ModelVariant
 from datasets import load_dataset
 import random
+from forge._C import DataFormat
+from forge.config import CompilerConfig
+import torch
 
 
 def run_resnet_demo_case(variant):
 
     # Load Model and inputs
     loader = ModelLoader(variant=variant)
-    model = loader.load_model()
-    inputs = loader.load_inputs()
+    model = loader.load_model(dtype_override=torch.bfloat16)
+    inputs = loader.load_inputs(dtype_override=torch.bfloat16)
+
+    data_format_override = DataFormat.Float16_b
+    compiler_cfg = CompilerConfig(default_df_override=data_format_override)
 
     # Compile the model using Forge
-    compiled_model = forge.compile(model, sample_inputs=[inputs])
+    compiled_model = forge.compile(model, sample_inputs=[inputs], compiler_cfg=compiler_cfg)
 
     # Run inference on Tenstorrent device
     output = compiled_model(inputs)
@@ -28,7 +34,9 @@ def run_resnet_demo_case(variant):
         # Load tiny dataset
         dataset = load_dataset("zh-plus/tiny-imagenet")
         images = random.sample(dataset["valid"]["image"], 10)
-        loader.post_process(framework_model=model, compiled_model=compiled_model, inputs=images)
+        loader.post_process(
+            framework_model=model, compiled_model=compiled_model, inputs=images, dtype_override=torch.bfloat16
+        )
     else:
         loader.post_process(output)
 
