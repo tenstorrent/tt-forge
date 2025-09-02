@@ -70,7 +70,7 @@ RUN FRONTEND=tt-torch && \
 
 # Create and activate virtual environment for tt-xla, install whl
 RUN FRONTEND=tt-xla && \
-    python3.11 -m venv venv-$FRONTEND && \
+    /usr/bin/python3.11 -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     WHL_VERSION=$(pip index versions pjrt-plugin-tt -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
     pip install --no-cache-dir https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl && \
