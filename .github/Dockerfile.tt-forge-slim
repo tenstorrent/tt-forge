@@ -5,6 +5,9 @@ SHELL ["/bin/bash", "-c"]
 # Install system tools
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    software-properties-common \
+    pkg-config \
+    gnupg2 \
     curl \
     wget \
     jq \
@@ -31,6 +34,11 @@ RUN apt-get update && \
     wget "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb" -O "mpi.deb" && \
     apt install -y "./mpi.deb" && \
     rm -f "mpi.deb"
+
+# Install Python 3.11
+RUN add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3.11 python3.11-dev python3.11-venv python3.11-distutils
 
 # Create forge user and home directory
 RUN useradd -m -s /bin/bash forge && \
@@ -62,7 +70,7 @@ RUN FRONTEND=tt-torch && \
 
 # Create and activate virtual environment for tt-xla, install whl
 RUN FRONTEND=tt-xla && \
-    python -m venv venv-$FRONTEND && \
+    /usr/bin/python3.11 -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     WHL_VERSION=$(pip index versions pjrt-plugin-tt -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
     pip install --no-cache-dir https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-$WHL_VERSION-py3-none-linux_x86_64.whl && \
