@@ -10,7 +10,7 @@ This automation script fetches qualifying issues from the TT-Forge GitHub projec
 
 - **Automatic Issue Sync**: Fetches issues from TT-Forge project via GitHub GraphQL API
 - **Smart Filtering**: Includes issues with "Top Problems/Issues" label OR non-empty "Top Sheet" field
-- **Dual Sheet Creation**: 
+- **Dual Sheet Creation**:
   - `TT-Forge Top Issues`: Complete issue listing with custom fields
   - `Key Milestones`: Organized milestone and problem tracking
 - **Custom Menu**: Adds "TT-Forge Sync" menu to Google Sheets
@@ -21,7 +21,7 @@ This automation script fetches qualifying issues from the TT-Forge GitHub projec
 1. **Open Google Apps Script**: Go to [script.google.com](https://script.google.com)
 2. **Create New Project**: Click "New Project"
 3. **Copy Code**: Copy the contents of `topsheet-automation.gs` into the script editor
-4. **Configure Token**: 
+4. **Configure Token**:
    - Go to Project Settings → Script Properties
    - Add property: `GITHUB_TOKEN` with your GitHub Personal Access Token
 5. **Set Permissions**: Authorize Google Sheets and UrlFetch permissions
@@ -45,7 +45,7 @@ This automation script fetches qualifying issues from the TT-Forge GitHub projec
   - Issues with non-empty "Top Sheet" custom field
 - **Custom Fields**:
   - Estimated Completion Date
-  - Status Update  
+  - Status Update
   - Top Sheet
 
 ## Output Sheets
@@ -57,7 +57,7 @@ Complete listing with columns:
 - Custom Fields (Estimated Completion, Status Update, Top Sheet)
 - Qualifying Reason, Issue URL
 
-### Key Milestones  
+### Key Milestones
 Organized by Top Sheet value with two sections:
 - **Key Upcoming Milestones/Deliverables**: From non-labeled issues
 - **Top Problems/Issues**: From labeled issues
@@ -65,7 +65,7 @@ Organized by Top Sheet value with two sections:
 ## Status Color Coding
 
 - **[G]** prefix: Green background (Good/On Track)
-- **[Y]** prefix: Yellow background (Warning/At Risk)  
+- **[Y]** prefix: Yellow background (Warning/At Risk)
 - **[R]** prefix: Red background (Critical/Blocked)
 - **[D]** prefix: Blue background (Done/Complete)
 
