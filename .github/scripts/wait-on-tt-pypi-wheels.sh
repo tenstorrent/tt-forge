@@ -3,9 +3,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# TEST:
-# NEW_VERSION_TAG="0.1.0.dev20250623"
-# PIP_WHEEL_NAMES="tt-torch tt_forge_fe tt_tvm pjrt-plugin-tt"
+# LOCAL TEST:
+# export NEW_VERSION_TAG="0.4.0.dev20250904"
+# export PIP_WHEEL_NAMES="tt-torch tt_forge_fe tt_tvm pjrt_plugin_tt"
+# export ALL_REPOS="tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-xla"
 
 set -eu
 attempts=30
@@ -24,6 +25,7 @@ check_wheels() {
       release_urls=$(gh release view -R $repo $NEW_VERSION_TAG --json assets | jq -r '.assets[] | select(.url | contains(".whl")) | .url' | xargs)
       for release_url in $release_urls; do
         if [[ $release_url == *"$wheel_name"* ]]; then
+          echo "Found $repo $wheel_name $release_url"
           env_map[$wheel_name]=$release_url
         fi
       done
@@ -35,7 +37,7 @@ n=0
 
 until [ "$n" -ge $attempts ]; do
   # Wait for pypi frontend wheels to be available
-  check_wheels 
+  check_wheels
   if [[ ${#env_map[@]} -eq $(echo $PIP_WHEEL_NAMES | wc -w) ]]; then
     break
   fi
@@ -45,6 +47,8 @@ until [ "$n" -ge $attempts ]; do
 done
 
 # Dump the env map to a file
+echo "Dumping env map to file"
 for env_key in "${!env_map[@]}"; do
   echo "$env_key=${env_map[$env_key]}" >> /tmp/WHEEL_ENV_MAP
 done
+cat /tmp/WHEEL_ENV_MAP

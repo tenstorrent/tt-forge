@@ -9,9 +9,9 @@ setup(
     homepage="https://github.com/tenstorrent/tt-forge",
     install_requires=[
         "tt_forge_fe @${tt_forge_fe}",
-        "tt-tvm @${tt_tvm}",
-        "tt-torch @${tt_torch}",
-        "pjrt-plugin-tt @${pjrt_plugin_tt}",
+        "tt_tvm @${tt_tvm}",
+        "tt_torch @${tt_torch}",
+        "pjrt_plugin_tt @${pjrt_plugin_tt}",
     ],
     python_requires=">=3.11",
     py_modules=[],
