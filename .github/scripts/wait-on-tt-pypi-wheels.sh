@@ -11,10 +11,22 @@ set -eu
 attempts=30
 wait_time=10
 
+# Create an associative array(map) to store the wheel names and their release urls
+declare -A env_map
+
+pip_wheel_names_array=($PIP_WHEEL_NAMES)
+
 check_wheels() {
+  for repo in $ALL_REPOS; do
+  # Iterate over wheels names only for tt-forge
   for wheel_name in $PIP_WHEEL_NAMES; do
-    # Check the only tenstorrent index for the wheel version
-    pip index versions $wheel_name --pre --index-url https://pypi.eng.aws.tenstorrent.com/ | grep $NEW_VERSION_TAG && echo "Found tag $NEW_VERSION_TAG for $wheel_name"
+    # Check each repo's release for a wheel download url
+    release_urls=$(gh release view -R $repo $NEW_VERSION_TAG --json assets | jq -r '.assets[] | select(.url | contains(".whl")) | .url' | xargs)
+    for release_url in $release_urls; do
+      if [[ $release_url == *"$wheel_name"* ]]; then
+        env_map[$wheel_name]=$release_url
+      fi
+    done
   done
 }
 
@@ -22,8 +34,16 @@ n=0
 
 until [ "$n" -ge $attempts ]; do
   # Wait for pypi frontend wheels to be available
-  check_wheels && break
+  check_wheels 
+  if [[ ${#env_map[@]} -eq $(echo $PIP_WHEEL_NAMES | wc -w) ]]; then
+    break
+  fi
   n=$((n+1))
-  echo "Waiting for pypi frontend wheels to be available on tt-pypi"
+  echo "Waiting for all frontend wheels to be available on github release"
   sleep $wait_time
+done
+
+# Dump the env map to a file
+for env_key in "${!env_map[@]}"; do
+  echo "$env_key=${env_map[$env_key]}" >> /tmp/WHEEL_ENV_MAP
 done

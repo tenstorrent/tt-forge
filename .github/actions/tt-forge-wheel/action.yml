@@ -47,6 +47,7 @@ runs:
       env:
         PIP_WHEEL_NAMES: ${{ steps.set-release-facts.outputs.pip_wheel_deps_names }}
         NEW_VERSION_TAG: ${{ steps.use-yesterday-version.outputs.NEW_VERSION_TAG }}
+        ALL_REPOS: ${{ steps.set-release-facts.outputs.all_repos }}
       run: .github/scripts/wait-on-tt-pypi-wheels.sh
 
     - name: Build wheel
@@ -54,15 +55,10 @@ runs:
       env:
         NEW_VERSION_TAG: ${{ steps.use-yesterday-version.outputs.NEW_VERSION_TAG }}
       run: |
+        source /tmp/WHEEL_ENV_MAP
         envsubst < .github/scripts/template-setup.py > setup.py
+        cat setup.py
         pip install wheel
         python setup.py sdist bdist_wheel
         mkdir -p ${{ github.workspace }}/release/artifacts
         mv ${{ github.workspace }}/dist/*.whl ${{ github.workspace }}/release/artifacts/.
-        cd ${{ github.workspace }}/release/artifacts
-        # TODO: build alerting around this.
-        if [ "${{ steps.set-release-facts.outputs.skip_wheel_install }}" == "false" ]; then
-          pip install *.whl
-        else
-          pip install *.whl || echo "Failed to install wheel"
-        fi
