@@ -411,7 +411,7 @@ jobs:
         apt-get update -y -qq
         apt-get install -y -qq bc
 
-        prev_perf_report=${{steps.prev_perf.outputs.response}}
+        prev_perf_report=${{steps.prev-perf.outputs.response}}
 
         prev_total_samples=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_samples") | .last_value')
         prev_total_time=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_time") | .last_value')
