@@ -30,6 +30,11 @@ on:
         description: "Run on shared runner"
         required: false
         type: boolean
+      # todo(vvukoman): remove after testing
+      on_uplift_pr:
+        description: "Performance benchmark triggered from an uplift PR"
+        required: false
+        type: boolean
   workflow_call:
     inputs:
       docker-image:
@@ -59,6 +64,10 @@ on:
         type: string
       sh-runner:
         description: "Run on shared runner"
+        required: false
+        type: boolean
+      on_uplift_pr:
+        description: "Performance benchmark triggered from an uplift PR"
         required: false
         type: boolean
 
@@ -193,6 +202,7 @@ jobs:
         echo "work-dir=$(pwd)" >> "$GITHUB_OUTPUT"
         echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
         echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
+        echo "perf_report_json_file"="$perf_report_path/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
 
     # - name: Git safe dir
     #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
@@ -273,6 +283,7 @@ jobs:
         cd ..
 
     - name: Run Perf Benchmark
+      id: run-perf-benchmark
       shell: bash
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -289,7 +300,7 @@ jobs:
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
-        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
+        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
 
     - name: Dump ttir and ttnn to report
       if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
@@ -344,12 +355,12 @@ jobs:
         ttrt query --save-artifacts
         chmod ugo+x ./benchmark/ttrt_perf.sh
         echo "Run ttrt perf"
-        ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json || true
+        ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_json_file }} || true
 
     - name: Add config fields to perf report
       shell: bash
       run: |
-        PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
+        PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_json_file }}"
         TTIR_URL="${{ !matrix.build.skip-ttir-dump && steps.upload-ttir-mlir.outputs.artifact-url || '' }}"
         TTNN_URL="${{ !matrix.build.skip-ttnn-dump && steps.upload-ttnn-mlir.outputs.artifact-url || '' }}"
         MLIR_SHA="${{ steps.find-run.outputs.mlir_sha || '' }}"
@@ -367,3 +378,59 @@ jobs:
       with:
         name: perf-reports-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}
+
+    - name: Set perf query strings
+      id: set-query-strings
+      if: inputs.on_uplift_pr
+      shell: bash
+      run: |
+        echo "model_name=$(cat ${{ steps.strings.outputs.perf_report_json_file }} | jq -r '.model')" >> $GITHUB_OUTPUT
+
+        workflow_id=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/mega-docker.yml/runs?event=schedule&status=completed&per_page=1" \
+          | jq -r '.workflow_runs[0].id')
+        echo "last_nigthly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
+
+    - name: Fetch previous perf results
+      id: prev-perf
+      if: inputs.on_uplift_pr
+      uses: ./.github/actions/superset-api
+      with:
+        query: 'benchmarks/last_measurement'
+        query_params: '{"project":"tt-forge/${{matrix.build.project}}","ml_model_name":"${{steps.set-query-strings.outputs.model_name}}","batch_size":"${{matrix.build.bs}}","precision":"${{matrix.build.df}}","github_pipeline_id":"${{steps.set-query-strings.outputs.last_nigthly_workflow_id}}"}'
+
+    - name: Check perf regression
+      if: inputs.on_uplift_pr
+      shell: bash
+      run: |
+        prev_perf_report=${{steps.prev_perf.outputs.response}}
+
+        prev_total_samples=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_samples") | .last_value')
+        prev_total_time=$(echo "$perprev_perf_report_report" | jq -r '.[] | select(.name == "total_time") | .last_value')
+        prev_samples_per_sec=$(echo "scale=6; $prev_total_samples / $prev_total_time" | bc -l)
+
+        current_perf_report_file="${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
+
+        current_total_samples=$(jq -r '.measurements[] | select(.measurement_name == "total_samples") | .value' "$current_perf_report_file")
+        current_total_time=$(jq -r '.measurements[] | select(.measurement_name == "total_time") | .value' "$current_perf_report_file")
+        current_samples_per_sec=$(echo "scale=6; $current_total_samples / $current_total_time" | bc -l)
+
+        perf_diff=$(echo "scale=4; (($prev_samples_per_sec - $current_samples_per_sec) / $prev_samples_per_sec) * 100" | bc -l)
+
+        echo "Previous performance:"
+        echo "  Total samples: $prev_total_samples"
+        echo "  Total time: $prev_total_time"
+        echo "  Samples per second: $prev_samples_per_sec"
+        echo ""
+        echo "Current performance:"
+        echo "  Total samples: $current_total_samples"
+        echo "  Total time: $current_total_time"
+        echo "  Samples per second: $current_samples_per_sec"
+        echo ""
+        echo "Performance difference: ${perf_diff}%"
+
+        if (( $(echo "$perf_diff >= 5.0" | bc -l) )); then
+          echo "Performance regression > 5% detected! Performance dropped by ${perf_diff}%"
+          exit 1
+        fi
