@@ -408,6 +408,7 @@ jobs:
       if: inputs.on_uplift_pr
       shell: bash
       run: |
+        export DEBIAN_FRONTEND=noninteractive
         apt-get update -y -qq
         apt-get install -y -qq bc
 
@@ -437,7 +438,6 @@ jobs:
         echo "  Total time: $current_total_time"
         echo "  Samples per second: $current_samples_per_sec"
         echo ""
-        echo "Performance difference: ${perf_diff}%"
 
         if (( $(echo "$perf_diff >= 5.0" | bc -l) )); then
           echo "Performance regression > 5% detected! Performance dropped by ${perf_diff}%"
