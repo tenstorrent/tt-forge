@@ -5,7 +5,7 @@
 
 # LOCAL TEST:
 # export NEW_VERSION_TAG="0.4.0.dev20250904"
-# export PIP_WHEEL_NAMES="tt-torch tt_forge_fe tt_tvm pjrt_plugin_tt"
+# export PIP_WHEEL_NAMES="tt_torch tt_forge_fe tt_tvm pjrt_plugin_tt"
 # export ALL_REPOS="tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-xla"
 
 set -eu
@@ -49,6 +49,6 @@ done
 # Dump the env map to a file
 echo "Dumping env map to file"
 for env_key in "${!env_map[@]}"; do
-  echo "$env_key=${env_map[$env_key]}" >> /tmp/WHEEL_ENV_MAP
+  echo "export $env_key=${env_map[$env_key]}" >> /tmp/WHEEL_ENV_MAP
 done
 cat /tmp/WHEEL_ENV_MAP

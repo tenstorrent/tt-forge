@@ -42,13 +42,13 @@ runs:
         echo "NEW_VERSION_TAG=$NEW_VERSION_TAG"
         echo "NEW_VERSION_TAG=$NEW_VERSION_TAG" >> $GITHUB_OUTPUT
 
-    - name: Wait for pypi frontend wheels to be available on tt-pypi
+    - name: Wait for pypi frontend wheels to be available on gh-release
       shell: bash
       env:
         PIP_WHEEL_NAMES: ${{ steps.set-release-facts.outputs.pip_wheel_deps_names }}
         NEW_VERSION_TAG: ${{ steps.use-yesterday-version.outputs.NEW_VERSION_TAG }}
         ALL_REPOS: ${{ steps.set-release-facts.outputs.all_repos }}
-      run: .github/scripts/wait-on-tt-pypi-wheels.sh
+      run: .github/scripts/wait-on-gh-release-wheels.sh
 
     - name: Build wheel
       shell: bash
