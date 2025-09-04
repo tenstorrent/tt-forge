@@ -408,7 +408,6 @@ jobs:
       if: inputs.on_uplift_pr
       shell: bash
       run: |
-        export DEBIAN_FRONTEND=noninteractive
         apt-get update -y -qq
         apt-get install -y -qq bc
 
