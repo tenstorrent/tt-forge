@@ -18,7 +18,7 @@ import jax
 
 from transformers import FlaxResNetForImageClassification
 from jax import device_put
-from ttxla_tools import serialize_function_to_binary
+from tt_jax.tools import serialize_function_to_binary
 
 
 BATCH_SIZE = [
