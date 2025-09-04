@@ -71,6 +71,10 @@ on:
         required: false
         type: boolean
 
+# todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
+permissions:
+  id-token: write
+
 jobs:
   filter-tests:
     runs-on: ubuntu-latest
