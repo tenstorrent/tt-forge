@@ -408,6 +408,9 @@ jobs:
       if: inputs.on_uplift_pr
       shell: bash
       run: |
+        apt-get update -y -qq
+        apt-get install -y -qq bc
+
         prev_perf_report=${{steps.prev_perf.outputs.response}}
 
         prev_total_samples=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_samples") | .last_value')
