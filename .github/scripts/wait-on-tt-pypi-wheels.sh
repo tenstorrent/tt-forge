@@ -19,13 +19,14 @@ pip_wheel_names_array=($PIP_WHEEL_NAMES)
 check_wheels() {
   for repo in $ALL_REPOS; do
   # Iterate over wheels names only for tt-forge
-  for wheel_name in $PIP_WHEEL_NAMES; do
-    # Check each repo's release for a wheel download url
-    release_urls=$(gh release view -R $repo $NEW_VERSION_TAG --json assets | jq -r '.assets[] | select(.url | contains(".whl")) | .url' | xargs)
-    for release_url in $release_urls; do
-      if [[ $release_url == *"$wheel_name"* ]]; then
-        env_map[$wheel_name]=$release_url
-      fi
+    for wheel_name in $PIP_WHEEL_NAMES; do
+      # Check each repo's release for a wheel download url
+      release_urls=$(gh release view -R $repo $NEW_VERSION_TAG --json assets | jq -r '.assets[] | select(.url | contains(".whl")) | .url' | xargs)
+      for release_url in $release_urls; do
+        if [[ $release_url == *"$wheel_name"* ]]; then
+          env_map[$wheel_name]=$release_url
+        fi
+      done
     done
   done
 }
