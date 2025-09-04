@@ -417,7 +417,10 @@ jobs:
         prev_total_time=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_time") | .last_value')
         prev_samples_per_sec=$(echo "scale=6; $prev_total_samples / $prev_total_time" | bc -l)
 
-        current_perf_report_file="${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
+        # current_perf_report_file="${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
+        echo "${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
+        echo ${{ steps.strings.outputs.perf_report_json_file }}
+        current_perf_report_file=${{ steps.strings.outputs.perf_report_json_file }}
 
         current_total_samples=$(jq -r '.measurements[] | select(.measurement_name == "total_samples") | .value' "$current_perf_report_file")
         current_total_time=$(jq -r '.measurements[] | select(.measurement_name == "total_time") | .value' "$current_perf_report_file")
