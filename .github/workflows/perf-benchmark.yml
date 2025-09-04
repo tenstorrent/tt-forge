@@ -202,7 +202,7 @@ jobs:
         echo "work-dir=$(pwd)" >> "$GITHUB_OUTPUT"
         echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
         echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
-        echo "perf_report_json_file"="$perf_report_path/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
+        echo "perf_report_json_file=$perf_report_path/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json" >> "$GITHUB_OUTPUT"
 
     # - name: Git safe dir
     #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
@@ -390,7 +390,7 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/mega-docker.yml/runs?event=schedule&status=completed&branch=main&per_page=1" \
           | jq -r '.workflow_runs[0].id')
-        echo "last_nigthly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
+        echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
     - name: Fetch previous perf results
       id: prev-perf
@@ -398,7 +398,7 @@ jobs:
       uses: ./.github/actions/superset-api
       with:
         query: 'benchmarks/last_measurement'
-        query_params: '{"project":"tt-forge/${{matrix.build.project}}","ml_model_name":"${{steps.set-query-strings.outputs.model_name}}","batch_size":"${{matrix.build.bs}}","precision":"${{matrix.build.df}}","github_pipeline_id":"${{steps.set-query-strings.outputs.last_nigthly_workflow_id}}"}'
+        query_params: '{"project":"tt-forge/${{matrix.build.project}}","ml_model_name":"${{steps.set-query-strings.outputs.model_name}}","batch_size":"${{matrix.build.bs}}","precision":"${{matrix.build.df}}","github_pipeline_id":"${{steps.set-query-strings.outputs.last_nightly_workflow_id}}"}'
 
     - name: Check perf regression
       if: inputs.on_uplift_pr
@@ -407,7 +407,7 @@ jobs:
         prev_perf_report=${{steps.prev_perf.outputs.response}}
 
         prev_total_samples=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_samples") | .last_value')
-        prev_total_time=$(echo "$perprev_perf_report_report" | jq -r '.[] | select(.name == "total_time") | .last_value')
+        prev_total_time=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_time") | .last_value')
         prev_samples_per_sec=$(echo "scale=6; $prev_total_samples / $prev_total_time" | bc -l)
 
         current_perf_report_file="${{ steps.strings.outputs.perf_report_path }}/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json"
