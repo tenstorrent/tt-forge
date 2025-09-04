@@ -1,3 +1,3 @@
 [
-  { "runs-on": "n150", "project": "tt-forge-fe", "name": "yolo_v10",          "dir": "YOLOv10",                      "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na",             "libreq": "libgl1-mesa-glx libglib2.0-0" },
+  { "runs-on": "n150", "project": "tt-forge-fe", "name": "yolo_v10",          "dir": "YOLOv10",                      "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na",             "libreq": "libgl1-mesa-glx libglib2.0-0" }
 ]
