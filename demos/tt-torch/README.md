@@ -4,7 +4,7 @@ Build/install and activate the environment as you would for development on tt-to
 Additional python dependencies may be required for some demos. The following set of requirements covers all demos.
 ```
 pip install -r benchmark/tt-torch/requirements.txt
-pip install accelerate tabulate
+pip install accelerate tabulate FlagEmbedding
 ```
 
 From the project root, run
