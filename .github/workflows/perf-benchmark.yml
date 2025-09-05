@@ -402,16 +402,21 @@ jobs:
       uses: ./.github/actions/superset-api
       with:
         query: 'benchmarks/last_measurement'
-        query_params: '{"project":"tt-forge/${{matrix.build.project}}","ml_model_name":"${{steps.set-query-strings.outputs.model_name}}","batch_size":"${{matrix.build.bs}}","precision":"${{matrix.build.df}}","github_pipeline_id":"${{steps.set-query-strings.outputs.last_nightly_workflow_id}}"}'
+        query_params: '{"project":"tt-forge/${{ matrix.build.project }}","ml_model_name":"${{ steps.set-query-strings.outputs.model_name }}","batch_size":"${{ matrix.build.bs }}","precision":"${{ matrix.build.df }}","github_pipeline_id":"${{ steps.set-query-strings.outputs.last_nightly_workflow_id }}"}'
 
     - name: Check perf regression
       if: inputs.on_uplift_pr
       shell: bash
       run: |
+        if [[ "${{ steps.prev-perf.outputs.response }}" == "[]" ]]; then
+          echo "Performance report not found in the last nightly"
+          exit 0
+        fi
+
         apt-get update -y -qq
         apt-get install -y -qq bc
 
-        prev_perf_report='${{steps.prev-perf.outputs.response}}'
+        prev_perf_report='${{ steps.prev-perf.outputs.response }}'
 
         prev_total_samples=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_samples") | .last_value')
         prev_total_time=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_time") | .last_value')
