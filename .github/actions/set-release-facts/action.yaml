@@ -114,6 +114,9 @@ outputs:
   test_demo_wait:
     description: "Test demo wait"
     value: ${{ steps.set-manifest.outputs.test_demo_wait }}
+  docker_build_file:
+    description: "Docker build file"
+    value: ${{ steps.set-manifest.outputs.docker_build_file }}
 
 
 runs:
@@ -151,6 +154,7 @@ runs:
         git_log_fail_on_error="true"
         test_demo_filter=""
         test_demo_wait="false"
+        docker_build_file=".github/Dockerfile.single-wheel-slim"
 
         # Tag & Release Defaults
 
@@ -207,6 +211,7 @@ runs:
             fi
             artifact_download_glob='*{xla-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
+            docker_build_file=".github/Dockerfile.single-wheel-slim-3.11"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             workflow="Daily Releaser"
             ignore_artifacts="true"
@@ -293,6 +298,7 @@ runs:
         echo "git_log_fail_on_error=$git_log_fail_on_error"
         echo "test_demo_filter=$test_demo_filter"
         echo "test_demo_wait=$test_demo_wait"
+        echo "docker_build_file=$docker_build_file"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -326,3 +332,4 @@ runs:
         echo "git_log_fail_on_error=$git_log_fail_on_error" >> $GITHUB_OUTPUT
         echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
         echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
+        echo "docker_build_file=$docker_build_file" >> $GITHUB_OUTPUT
