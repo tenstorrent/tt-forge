@@ -22,8 +22,8 @@ on:
           - tt-forge-fe
           - tt-torch
           - tt-xla
-          - All
-        default: All
+          - tt-forge
+        default: tt-forge
       test-filter:
         description: "Only run tests that contains"
         required: false
@@ -59,7 +59,7 @@ jobs:
         filter='.[] | select(true'
 
         # Add frontend filter if specified
-        if [ "${{ inputs.project-filter }}" != "All" ]; then
+        if [ "${{ inputs.project-filter }}" != "tt-forge" ]; then
           project="${{ inputs.project-filter }}"
           filter="$filter and .frontend == \"$project\""
         fi
