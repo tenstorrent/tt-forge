@@ -27,7 +27,7 @@ jobs:
         uses: ./.github/actions/superset-api
         with:
           query: 'benchmarks/last_measurement'
-          query_params: '{"project":"tt-forge/tt-forge-fe","ml_model_name":"YOLOv10","batch_size":"1","precision":"bfloat16","github_pipeline_id":"1706220098112321"}'
+          query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
 
       - name: Display Response
         run: |

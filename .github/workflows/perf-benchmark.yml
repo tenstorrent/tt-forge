@@ -30,11 +30,6 @@ on:
         description: "Run on shared runner"
         required: false
         type: boolean
-      # todo(vvukoman): remove after testing
-      on_uplift_pr:
-        description: "Performance benchmark triggered from an uplift PR"
-        required: false
-        type: boolean
   workflow_call:
     inputs:
       docker-image:

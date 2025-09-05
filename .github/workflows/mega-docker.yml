@@ -15,6 +15,7 @@ permissions:
   packages: write
   checks: write
   attestations: write
+  id-token: write
 
 jobs:
 
