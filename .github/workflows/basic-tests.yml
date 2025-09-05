@@ -22,8 +22,8 @@ on:
           - tt-forge-fe
           - tt-torch
           - tt-xla
-          - All
-        default: All
+          - tt-forge
+        default: tt-forge
 
   workflow_call:
     inputs:
@@ -46,7 +46,7 @@ jobs:
           frontends="tt-forge-fe tt-torch tt-xla"
           runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
 
-          if [ -n "${{ inputs.project-filter }}" ]; then
+          if [ -n "${{ inputs.project-filter }}" && "${{ inputs.project-filter }}" != "tt-forge" ]; then
             frontends="${{ inputs.project-filter }}"
           fi
 
