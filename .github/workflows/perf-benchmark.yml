@@ -377,6 +377,8 @@ jobs:
         name: perf-reports-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}
 
+    # note: potentially improve this by looking at the last nigthly with the specific model's
+    # perf data present, not only at the last nigthly
     - name: Set perf query strings
       id: set-query-strings
       if: inputs.on_uplift_pr
