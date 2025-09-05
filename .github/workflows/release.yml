@@ -132,7 +132,7 @@ jobs:
         make_latest: false
         force_rebuild: ${{ inputs.overwrite_releases }}
         draft: ${{ inputs.draft }}
-        dockerfile: ${{ inputs.repo_short == 'tt-xla' && '.github/Dockerfile.single-wheel-slim-3.11' || '.github/Dockerfile.single-wheel-slim' }}
+        dockerfile: ${{ (inputs.repo_short == 'tt-xla' || inputs.repo_short == 'tt-torch') && '.github/Dockerfile.single-wheel-slim-3.11' || '.github/Dockerfile.single-wheel-slim' }}
         build_args: "--build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }} --build-arg WHEEL_FILES_PATH=${{ steps.build-release-wheel.outputs.wheel_files_path }}"
 
   test-release:
