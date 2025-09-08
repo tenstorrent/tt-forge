@@ -265,7 +265,7 @@ jobs:
       if: ${{ !matrix.build.skip-device-perf }}
       run: |
         echo "Install ttrt"
-        python -m venv ttrt-venv
+        /usr/bin/python3.11 -m venv ttrt-venv
         source ttrt-venv/bin/activate
         apt-get update -y -qq
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
