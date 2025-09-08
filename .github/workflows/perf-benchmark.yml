@@ -286,6 +286,8 @@ jobs:
         cd install
         tar xvf artifact.tar
         cd ..
+        ls /__w/tt-forge/tt-forge/ttrt-venv/lib/python3.11/site-packages/ttrt/runtime
+        sleep 120
 
     - name: Run Perf Benchmark
       shell: bash
