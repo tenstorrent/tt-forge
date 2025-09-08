@@ -214,34 +214,25 @@ jobs:
 
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
         if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
-          version=$(pip freeze | grep -oP "pjrt_plugin_tt-.+dev\.\K([^-]*)")
-          echo "tt-xla commit $version"
-          git clone --depth 1 https://github.com/tenstorrent/tt-xla.git temp_tt_xla
-          cd temp_tt_xla
-          git checkout $version
-          cd ..
-          mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" temp_tt_xla/third_party/CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
-          rm -rf temp_tt_xla
+          project_name="pjrt_plugin_tt"
+        fi
+
+        echo "Set version to commit sha if called from other repo"
+        if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
+          version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
         else
-          version=""
-          echo "Set version to commit sha if called from other repo"
-          if [[ -n "${{ inputs.run_id }}" ]]; then
-            version=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/tenstorrent/${{ matrix.build.project }}/actions/runs/${{ inputs.run_id }}" | jq -r '.head_sha')
-          else
-            version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
-          fi
+          version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
+        fi
 
-          echo "Wheel version: $version"
+        echo "Wheel version: $version"
 
-          mlir_sha=""
-          if [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
-            wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
-            mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
-          elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
-            mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
-              grep '"sha"' | head -1 | cut -d'"' -f4)
-          fi
+        mlir_sha=""
+        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
+          mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
+        elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
+          mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
+            grep '"sha"' | head -1 | cut -d'"' -f4)
         fi
 
         echo "Mlir commit sha: $mlir_sha"
