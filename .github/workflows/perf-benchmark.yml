@@ -227,7 +227,14 @@ jobs:
         echo "Wheel version: $version"
 
         mlir_sha=""
-        if [[ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]]; then
+        if [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
+          wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
+          xla_sha=$(grep -E "set\(TT_XLA_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
+          echo "XLA commit sha: $xla_sha"
+          rm -f CMakeLists.txt
+          wget "https://raw.githubusercontent.com/tenstorrent/tt-xla/${xla_sha}/third_party/CMakeLists.txt"
+          mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
+        elif [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
           wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
           mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
         elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
