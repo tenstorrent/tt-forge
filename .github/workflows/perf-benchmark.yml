@@ -327,7 +327,7 @@ jobs:
         fi
         source ttrt-venv/bin/activate
         echo "Run ttrt read"
-        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json > /dev/null 2>&1
+        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json
         echo "Extract MLIR from ttnn"
         python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
         cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
