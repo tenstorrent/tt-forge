@@ -18,19 +18,23 @@ def clear_dynamo_cache():
 
 def main():
     # Load the model and set to evaluation mode
-    model = BGEM3FlagModel("BAAI/bge-m3").model
-    model = model.eval()
+    bge_m3 = BGEM3FlagModel("BAAI/bge-m3")
+    model = bge_m3.encode
 
     # Create tokenized inputs for the model 
-    sentences = [
+    sentences_1 = ["What is BGE M3?", "Defination of BM25"]
+    sentences_2 = [
         "BGE M3 is an embedding model supporting dense retrieval, lexical matching and multi-vector interaction.",
         "BM25 is a bag-of-words retrieval function that ranks a set of documents based on the query terms appearing in each document",
     ]
-    text_input = model.tokenizer(
-        sentences, return_tensors="pt", padding=True, truncation=True
-    )
-    input_args = {
-        "text_input": text_input,
+    input_args_1 = {
+        "sentences": sentences_1,
+        "return_dense": True,
+        "return_sparse": True,
+        "return_colbert_vecs": True,
+    }
+    input_args_2 = {
+        "sentences": sentences_2,
         "return_dense": True,
         "return_sparse": True,
         "return_colbert_vecs": True,
@@ -46,13 +50,24 @@ def main():
 
     # Compile and run the model, passing in the custom backend and options
     compiled_model = torch.compile(model, backend=xla_backend, dynamic=False, options=options)
-    out = compiled_model(**input_args)
+    output_1 = compiled_model(**input_args_1)
+    output_2 = compiled_model(**input_args_2)
     
     # Print output in a nicer format
-    print("=== BGE-M3 Model Output ===")
-    print(f"Dense embeddings shape: {out['dense_vecs'].shape}")
-    print(f"Sparse embeddings shape: {out['sparse_vecs'].shape}")
-    print(f"ColBERT embeddings shape: {out['colbert_vecs'].shape}")
+    print("\n=== BGE-M3 ColBERT Score Demo ===")
+    print(bge_m3.colbert_score(
+        output_1['colbert_vecs'][0], 
+        output_2['colbert_vecs'][0]
+    ))
+    print(bge_m3.colbert_score(
+        output_1['colbert_vecs'][0], 
+        output_2['colbert_vecs'][1]
+    ))
+    print("\n=== BGE-M3 Lexical Weights Demo ===")
+    print(bge_m3.convert_id_to_token(output_1['lexical_weights']))
+    lexical_scores = bge_m3.compute_lexical_matching_score(output_1['lexical_weights'][0], output_2['lexical_weights'][0])
+    print(lexical_scores)
+    print(bge_m3.compute_lexical_matching_score(output_1['lexical_weights'][0], output_1['lexical_weights'][1]))
 
 
 
