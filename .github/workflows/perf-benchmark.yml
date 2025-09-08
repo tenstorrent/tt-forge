@@ -214,7 +214,8 @@ jobs:
 
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
         if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
-          version=$(pip freeze | grep -oP "pjrt_plugin_tt-.+dev\.\K(.*)")
+          version=$(pip freeze | grep -oP "pjrt_plugin_tt-.+dev\.\K([^-]*)")
+          echo "tt-xla commit $version"
           git clone --depth 1 --branch $version https://github.com/tenstorrent/tt-xla.git temp_tt_xla
           mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" temp_tt_xla/third_party/CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
           rm -rf temp_tt_xla
