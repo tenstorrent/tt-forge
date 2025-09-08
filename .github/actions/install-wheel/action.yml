@@ -31,15 +31,18 @@ runs:
           echo "artifact=forge-wheel" >> $GITHUB_OUTPUT
           echo "wheel_name=tt_*" >> $GITHUB_OUTPUT
           echo "artifact_is_regex=false" >> $GITHUB_OUTPUT
+          echo "wf_name=on-push.yml" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-torch" ]; then
           echo "artifact=install-artifacts-release" >> $GITHUB_OUTPUT
           echo "wheel_name=wheels/tt_*" >> $GITHUB_OUTPUT
           echo "untar='true'" >> $GITHUB_OUTPUT
           echo "artifact_is_regex=false" >> $GITHUB_OUTPUT
+          echo "wf_name=on-push.yml" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-xla" ]; then
           echo "artifact=^xla-whl-release.*" >> $GITHUB_OUTPUT
           echo "wheel_name=pjrt_*" >> $GITHUB_OUTPUT
           echo "artifact_is_regex=true" >> $GITHUB_OUTPUT
+          echo "wf_name=push-main.yml" >> $GITHUB_OUTPUT
         else
           echo "Unknown project: ${{ inputs.project }}"
           exit 1
@@ -69,7 +72,7 @@ runs:
       uses: dawidd6/action-download-artifact@v11
       with:
         workflow_conclusion: success
-        workflow: on-push.yml
+        workflow: ${{ steps.set-wheel-name.outputs.wf_name }}
         branch: main
         name: "${{ steps.set-wheel-name.outputs.artifact }}"
         name_is_regexp: "${{ steps.set-wheel-name.outputs.artifact_is_regex}}"
