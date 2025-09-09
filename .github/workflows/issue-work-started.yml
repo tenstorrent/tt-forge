@@ -1,0 +1,36 @@
+name: "Issue Work Started"
+description: "Update issue work started date when Status field changes to In Progress"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+
+permissions:
+  repository-projects: write
+  issues: read
+  contents: read
+
+jobs:
+  bulk_update_work_started:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        run: |
+          echo "project_id=PVT_kwDOA9MHEM4AjeTl" >> $GITHUB_ENV
+          echo "work_started_field_id=PVTF_lADOA9MHEM4AjeTlzgzZQtk" >> $GITHUB_ENV
+
+      - name: python install
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run issue work started bulk update
+        env:
+          GITHUB_TOKEN: ${{ secrets.TT_FORGE_PROJECT }}
+        run: |
+          pip install -r ./.github/scripts/bulk_update_issues/requirements-bulk-update.txt
+          python ./.github/scripts/bulk_update_issues/bulk_update_issues.py
