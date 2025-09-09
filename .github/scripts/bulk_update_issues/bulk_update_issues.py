@@ -81,9 +81,7 @@ class GitHubProjectUpdater:
                         error_data = response.json()
                         if "API rate limit exceeded" in str(error_data):
                             wait_time = 60 + random.randint(30, 120)  # 60-180 seconds
-                            info_flush(
-                                f"🛑 Rate limited (403): Retrying in {wait_time}s (attempt #{attempt})"
-                            )
+                            info_flush(f"🛑 Rate limited (403): Retrying in {wait_time}s (attempt #{attempt})")
                             await asyncio.sleep(wait_time)
                             continue  # Infinite retry for rate limits
                     except Exception:
@@ -96,9 +94,7 @@ class GitHubProjectUpdater:
                     else:
                         wait_time = 60 + random.randint(30, 120)
 
-                    info_flush(
-                        f"🛑 Rate limited (429): Retrying in {wait_time}s (attempt #{attempt})"
-                    )
+                    info_flush(f"🛑 Rate limited (429): Retrying in {wait_time}s (attempt #{attempt})")
                     await asyncio.sleep(wait_time)
                     continue  # Infinite retry for rate limits
 
@@ -128,14 +124,10 @@ class GitHubProjectUpdater:
                     await asyncio.sleep(wait_time)
                     continue
                 else:
-                    info_flush(
-                        f"❌ Request error after {max_non_rate_limit_attempts} attempts: {e}"
-                    )
+                    info_flush(f"❌ Request error after {max_non_rate_limit_attempts} attempts: {e}")
                     raise
 
-    async def make_graphql_request_with_infinite_retry(
-        self, query: str, variables: dict
-    ) -> dict:
+    async def make_graphql_request_with_infinite_retry(self, query: str, variables: dict) -> dict:
         """Make GraphQL request with infinite retry for rate limits."""
         payload = {"query": query, "variables": variables}
 
@@ -148,9 +140,7 @@ class GitHubProjectUpdater:
                 response = await self.make_api_request("POST", "/graphql", json=payload)
 
                 if response.status_code != 200:
-                    info_flush(
-                        f"❌ GraphQL HTTP {response.status_code}: {response.text}"
-                    )
+                    info_flush(f"❌ GraphQL HTTP {response.status_code}: {response.text}")
                     return {"errors": [{"message": f"HTTP {response.status_code}"}]}
 
                 data = response.json()
@@ -160,9 +150,7 @@ class GitHubProjectUpdater:
                     for error in data["errors"]:
                         if error.get("type") == "RATE_LIMITED":
                             wait_time = 60 + random.randint(30, 120)
-                            info_flush(
-                                f"🛑 GraphQL Rate Limited: Retrying in {wait_time}s (attempt #{attempt})"
-                            )
+                            info_flush(f"🛑 GraphQL Rate Limited: Retrying in {wait_time}s (attempt #{attempt})")
                             await asyncio.sleep(wait_time)
                             continue  # Continue the retry loop for rate limit
                         else:
@@ -203,48 +191,34 @@ class GitHubProjectUpdater:
 
     async def process_issue(self, issue_number: int) -> None:
         """Process a single issue: check status and update Work Started if needed."""
-        info_flush(
-            f"🔄 Processing repository {self.repository} issue #{issue_number}..."
-        )
+        info_flush(f"🔄 Processing repository {self.repository} issue #{issue_number}...")
 
         # Step 1: Get issue status and work started
         result = await self.get_issue_status_and_work_started(issue_number)
         if result.get("errors"):
-            self.collect_errors.append(
-                f"   ❌ get_issue_status_and_work_started Errors: {result['errors']}"
-            )
+            self.collect_errors.append(f"   ❌ get_issue_status_and_work_started Errors: {result['errors']}")
             return
 
         issue_status = result["status"]
         issue_work_started = result["work_started"]
         item_id = result["item_id"]
         updated_at = result["updated_at"]
-        info_flush(
-            f"   📊 Status: '{issue_status}', Work Started: '{issue_work_started}', Updated At: '{updated_at}'"
-        )
+        info_flush(f"   📊 Status: '{issue_status}', Work Started: '{issue_work_started}', Updated At: '{updated_at}'")
 
         # Step 2: Update Work Started if needed (matching workflow logic exactly)
         # Condition: Status is "In Progress" AND Work Started is empty/null
-        if issue_status == "In Progress" and (
-            not issue_work_started or issue_work_started == "null"
-        ):
-            info_flush(
-                f"   🔧 repository {self.repository} issue #{issue_number} Updating Work Started field..."
-            )
+        if issue_status == "In Progress" and (not issue_work_started or issue_work_started == "null"):
+            info_flush(f"   🔧 repository {self.repository} issue #{issue_number} Updating Work Started field...")
 
             # Use the date when status changed to 'In Progress', with fallback to current date (matching workflow)
             if updated_at and updated_at != "null":
                 # Extract date part from timestamp (YYYY-MM-DD)
                 work_started_date = updated_at.split("T")[0]
-                info_flush(
-                    f"   📅 Using status change date: {work_started_date} (from timestamp: {updated_at})"
-                )
+                info_flush(f"   📅 Using status change date: {work_started_date} (from timestamp: {updated_at})")
             else:
                 # Fallback to current date
                 work_started_date = time.strftime("%Y-%m-%d")
-                info_flush(
-                    f"   📅 Could not determine status change date, using current date: {work_started_date}"
-                )
+                info_flush(f"   📅 Could not determine status change date, using current date: {work_started_date}")
 
             success = await self.update_work_started_field(item_id, work_started_date)
 
@@ -337,9 +311,7 @@ class GitHubProjectUpdater:
 
         data = await self.make_graphql_request_with_infinite_retry(query, variables)
 
-        info_flush(
-            f"   ✅ get_issue_status_and_work_started: issue #{issue_number} Query response: {data}"
-        )
+        info_flush(f"   ✅ get_issue_status_and_work_started: issue #{issue_number} Query response: {data}")
 
         if data.get("errors"):
             return data
@@ -368,16 +340,10 @@ class GitHubProjectUpdater:
                 },
             }
 
-        work_started = (
-            project_item["workStarted"]["date"]
-            if project_item["workStarted"]
-            else "null"
-        )
+        work_started = project_item["workStarted"]["date"] if project_item["workStarted"] else "null"
         status = project_item["status"]["name"] if project_item["status"] else "null"
         item_id = project_item["id"]
-        updated_at = (
-            project_item["status"]["updatedAt"] if project_item["status"] else "null"
-        )
+        updated_at = project_item["status"]["updatedAt"] if project_item["status"] else "null"
 
         return {
             "work_started": work_started,
@@ -426,9 +392,7 @@ async def main():
     info_flush(f"   Debug Mode: {DEBUG_MODE}")
 
     max_concurrent = 5
-    info_flush(
-        f"⚡ Starting concurrent processing with max {max_concurrent} simultaneous requests..."
-    )
+    info_flush(f"⚡ Starting concurrent processing with max {max_concurrent} simultaneous requests...")
     start_time = time.time()
 
     collect_repo_errors = {}
@@ -443,10 +407,7 @@ async def main():
         )
         async for repo_issue_numbers in updater.get_all_repository_issues():
             # Build coroutine tasks
-            tasks = [
-                updater.process_issue(issue_number)
-                for issue_number in repo_issue_numbers
-            ]
+            tasks = [updater.process_issue(issue_number) for issue_number in repo_issue_numbers]
 
             # Process all coroutine tasks
             await asyncio.gather(*tasks)
