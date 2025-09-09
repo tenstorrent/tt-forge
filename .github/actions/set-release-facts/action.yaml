@@ -117,6 +117,9 @@ outputs:
   docker_build_file:
     description: "Docker build file"
     value: ${{ steps.set-manifest.outputs.docker_build_file }}
+  python_version:
+    description: "Python version"
+    value: ${{ steps.set-manifest.outputs.python_version }}
 
 
 runs:
