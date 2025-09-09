@@ -62,10 +62,10 @@ RUN FRONTEND=tt-forge-fe && \
 
 # Create and activate virtual environment for tt-torch, install whl
 RUN FRONTEND=tt-torch && \
-    python -m venv venv-$FRONTEND && \
+    /usr/bin/python3.11 -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     WHL_VERSION=$(pip index versions $FRONTEND -i https://pypi.eng.aws.tenstorrent.com --pre 2>/dev/null | grep -oP 'Available versions: \K.*' | tr -d ' ' | tr ',' '\n' | grep dev | head -n1) && \
-    pip install --no-cache-dir https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp310-cp310-linux_x86_64.whl && \
+    pip install --no-cache-dir https://pypi.eng.aws.tenstorrent.com/tt-torch/tt_torch-$WHL_VERSION-cp311-cp311-linux_x86_64.whl && \
     pip cache purge && rm -rf ~/.cache/pip
 
 # Create and activate virtual environment for tt-xla, install whl

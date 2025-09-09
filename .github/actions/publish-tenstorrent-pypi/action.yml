@@ -38,9 +38,9 @@ runs:
         new_version_tag: ${{ inputs.new_version_tag }}
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: "${{ steps.set-release-facts.outputs.python_version }}"
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4

@@ -4,10 +4,10 @@ name: Superset API Example
 on:
   push:
     paths:
-      - '.github/scripts/superset-api/**'
+      - '.github/actions/superset-api/**'
   pull_request:
     paths:
-      - '.github/scripts/superset-api/**'
+      - '.github/actions/superset-api/**'
   workflow_dispatch:  # Allow manual triggering
 
 permissions:
