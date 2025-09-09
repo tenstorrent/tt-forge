@@ -307,6 +307,7 @@ runs:
         echo "test_demo_filter=$test_demo_filter"
         echo "test_demo_wait=$test_demo_wait"
         echo "docker_build_file=$docker_build_file"
+        echo "python_version=$python_version"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -341,3 +342,4 @@ runs:
         echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
         echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
         echo "docker_build_file=$docker_build_file" >> $GITHUB_OUTPUT
+        echo "python_version=$python_version" >> $GITHUB_OUTPUT
