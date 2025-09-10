@@ -297,7 +297,6 @@ jobs:
         echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
-        pip freeze
 
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
