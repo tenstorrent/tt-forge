@@ -7,21 +7,14 @@ import os
 import time
 import pytest
 
-os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
-
 # Third-party modules
 import torch
 import torch.nn as nn
-import torch_xla
 import torch_xla.core.xla_model as xm
-import tt_torch
 from tqdm import tqdm
 
-from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
-from third_party.tt_forge_models.mobilenetv2.pytorch.loader import (
-    ModelLoader as MobileNetV2Loader,
-    ModelVariant as MobileNetV2Variant,
-)
+from benchmark.utils import measure_cpu_fps
+from third_party.tt_forge_models.yolov9.pytorch.loader import ModelLoader as YOLOv9Loader
 from .utils import (
     get_benchmark_metadata,
     determine_model_type_and_dataset,
@@ -36,7 +29,7 @@ os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 # Machine learning task
 TASK = [
-    "classification",
+    "na",
 ]
 
 # Batch size configurations
@@ -51,7 +44,7 @@ DATA_FORMAT = [
 
 # Input size configurations
 INPUT_SIZE = [
-    (224, 224),
+    (640, 640),
 ]
 
 # Channel size configurations
@@ -69,36 +62,27 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-def test_mobilenetv2_torch_xla(
+def test_yolov9_torch_xla(
     training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
 ):
     """
-    This function creates a MobileNetV2 model using PyTorch and torch-xla.
+    This function creates a YOLOv9 model using PyTorch and torch-xla.
     It is used for benchmarking purposes.
     """
 
     if training:
         pytest.skip("Training is not supported")
 
-    OPTIMIZER_ENABLED = True
+    OPTIMIZER_ENABLED = False
     PROGRAM_CACHE_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
     BACKEND = "tt"
 
-    if task == "classification":
-        inputs, labels = load_benchmark_dataset(
-            task=task,
-            model_version="microsoft/resnet-50",
-            dataset_name="imagenet-1k",
-            split="validation",
-            batch_size=batch_size,
-            loop_count=loop_count,
-        )
-    elif task == "na":
+    # Create random inputs
+    if task == "na":
         torch.manual_seed(1)
-        # Random data
-        inputs = [torch.randn(batch_size, channel_size, *input_size)]
+        inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])]
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
@@ -107,14 +91,12 @@ def test_mobilenetv2_torch_xla(
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
     # Load model using tt_forge_models
-    model_variant = MobileNetV2Variant.MOBILENET_V2_TORCH_HUB
-    mobilenet_loader = MobileNetV2Loader(model_variant)
-    model_info = mobilenet_loader.get_model_info(model_variant).name
-    framework_model: nn.Module = mobilenet_loader.load_model()
-
+    yolov9_loader = YOLOv9Loader()
+    model_info = yolov9_loader.get_model_info().name
     if data_format == "bfloat16":
-        # Convert model to bfloat16
-        framework_model = framework_model.to(torch.bfloat16)
+        framework_model: nn.Module = yolov9_loader.load_model(dtype_override=torch.bfloat16)
+    else:
+        framework_model: nn.Module = yolov9_loader.load_model()
     framework_model.eval()
 
     if measure_cpu:
@@ -124,15 +106,6 @@ def test_mobilenetv2_torch_xla(
     else:
         cpu_fps = -1.0
 
-    options = {
-        "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
-        "enable_l1_interleaved": False,
-        "enable_fusing_conv2d_with_multiply_pattern": True,
-    }
-
-    torch_xla.set_custom_compile_options(options)
-
     # torch_xla compilation
     framework_model.compile(backend=BACKEND)
 
@@ -140,38 +113,19 @@ def test_mobilenetv2_torch_xla(
     device = xm.xla_device()
 
     # Move inputs and model to device
-    if data_format == "bfloat16":
-        framework_model = framework_model.to(device, dtype=torch.bfloat16)
-    else:
-        framework_model = framework_model.to(device)
+    framework_model = framework_model.to(device)
 
     # Move first input to device for verification
     device_input = inputs[0].to(device)
 
     with torch.no_grad():
         fw_out = framework_model(device_input)
-        if hasattr(fw_out, "logits"):
-            fw_out = fw_out.logits
 
-    fw_out_cpu = fw_out.to("cpu")
-    print(f"Model verification - Output shape: {fw_out_cpu.shape}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu.flatten()[:10]}")
+    fw_out_cpu = [output.to("cpu") for output in fw_out]
+    print(f"Model verification - Output shapes: {[out.shape for out in fw_out_cpu]}")
+    print(f"Model verification - Output (first 10 values): {fw_out_cpu[0].flatten()[:10]}")
 
-    if task == "classification":
-        predictions = []
-        start = time.time()
-        for i in tqdm(range(loop_count)):
-            device_input = inputs[i].to(device)
-            with torch.no_grad():
-                output = framework_model(device_input)
-                if hasattr(output, "logits"):
-                    output = output.logits
-                predictions.append(output.to("cpu"))
-        end = time.time()
-        predictions = torch.cat(predictions)
-        labels = torch.cat(labels)
-        evaluation_score = evaluate_classification(predictions, labels)
-    elif task == "na":
+    if task == "na":
         start = time.time()
         for i in tqdm(range(loop_count)):
             with torch.no_grad():
@@ -187,9 +141,9 @@ def test_mobilenetv2_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = "MobileNet V2 Torch-XLA"
+    full_model_name = "YOLOv9 Torch-XLA"
     model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
-    num_layers = 54
+    num_layers = -1
 
     # Create custom measurements for CPU FPS
     custom_measurements = [
@@ -201,7 +155,7 @@ def test_mobilenetv2_torch_xla(
     ]
 
     print_benchmark_results(
-        model_title="MobileNet V2 Torch-XLA",
+        model_title="YOLOv9 Torch-XLA",
         full_model_name=full_model_name,
         model_type=model_type,
         dataset_name=dataset_name,
@@ -238,7 +192,7 @@ def test_mobilenetv2_torch_xla(
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,
-        backend=BACKEND,
+        openxla_backend=True,
         channel_size=channel_size,
     )
 
@@ -247,7 +201,7 @@ def test_mobilenetv2_torch_xla(
 
 def benchmark(config: dict):
     """
-    Run the mobilenet v2 torch-xla benchmark.
+    Run the yolov9 torch-xla benchmark.
     This function is a placeholder for the actual benchmark implementation.
     """
 
@@ -257,11 +211,11 @@ def benchmark(config: dict):
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     data_format = config["data_format"]
-    task = config["task"]
+    task = config.get("task", TASK[0])
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
 
-    return test_mobilenetv2_torch_xla(
+    return test_yolov9_torch_xla(
         training=training,
         batch_size=batch_size,
         input_size=input_size,
