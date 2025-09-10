@@ -8,6 +8,7 @@ from tt_torch.dynamo.experimental.xla_backend import xla_backend
 from tt_torch.tools.device_manager import DeviceManager
 from FlagEmbedding import BGEM3FlagModel
 
+
 def clear_dynamo_cache():
     # taken from/ inspired by: https://github.com/pytorch/pytorch/issues/107444
     import torch._dynamo as dynamo
@@ -16,12 +17,13 @@ def clear_dynamo_cache():
     dynamo.reset()  # clear cache
     gc.collect()
 
+
 def main():
-    # Load the model and set to evaluation mode
+    # Load the model
     bge_m3 = BGEM3FlagModel("BAAI/bge-m3")
     model = bge_m3.encode
 
-    # Create tokenized inputs for the model 
+    # Create tokenized inputs for the model
     sentences_1 = ["What is BGE M3?", "Defination of BM25"]
     sentences_2 = [
         "BGE M3 is an embedding model supporting dense retrieval, lexical matching and multi-vector interaction.",
@@ -39,7 +41,7 @@ def main():
         "return_sparse": True,
         "return_colbert_vecs": True,
     }
-   
+
     # Set up compiler configuration and backend options
     cc = CompilerConfig()
     cc.enable_consteval = True
@@ -52,23 +54,15 @@ def main():
     compiled_model = torch.compile(model, backend=xla_backend, dynamic=False, options=options)
     output_1 = compiled_model(**input_args_1)
     output_2 = compiled_model(**input_args_2)
-    
-    # Print output in a nicer format
-    print("\n=== BGE-M3 ColBERT Score Demo ===")
-    print(bge_m3.colbert_score(
-        output_1['colbert_vecs'][0], 
-        output_2['colbert_vecs'][0]
-    ))
-    print(bge_m3.colbert_score(
-        output_1['colbert_vecs'][0], 
-        output_2['colbert_vecs'][1]
-    ))
-    print("\n=== BGE-M3 Lexical Weights Demo ===")
-    print(bge_m3.convert_id_to_token(output_1['lexical_weights']))
-    lexical_scores = bge_m3.compute_lexical_matching_score(output_1['lexical_weights'][0], output_2['lexical_weights'][0])
-    print(lexical_scores)
-    print(bge_m3.compute_lexical_matching_score(output_1['lexical_weights'][0], output_1['lexical_weights'][1]))
 
+    # Print results as done in Sparse Embedding and Multi-Vector Hugging Face examples
+    print("\n=== BGE-M3 Sparse Embedding (Lexical Weight) Demo ===")
+    print(bge_m3.convert_id_to_token(output_1["lexical_weights"]))
+    print(bge_m3.compute_lexical_matching_score(output_1["lexical_weights"][0], output_2["lexical_weights"][0]))
+    print(bge_m3.compute_lexical_matching_score(output_1["lexical_weights"][0], output_1["lexical_weights"][1]))
+    print("\n=== BGE-M3 Multi-Vector (ColBERT) Demo ===")
+    print(bge_m3.colbert_score(output_1["colbert_vecs"][0], output_2["colbert_vecs"][0]))
+    print(bge_m3.colbert_score(output_1["colbert_vecs"][0], output_2["colbert_vecs"][1]))
 
 
 if __name__ == "__main__":
