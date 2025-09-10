@@ -156,7 +156,8 @@ jobs:
         shell: bash
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_HOME: /home/forge/huggingface
+          HF_HOME: /tmp
+          HF_DEBUG: 1
           # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
           TRACY_NO_INVARIANT_CHECK: 1
           IRD_LF_CACHE: ${{ vars.IRD_LF_CACHE }}
