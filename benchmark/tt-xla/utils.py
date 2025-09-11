@@ -125,7 +125,7 @@ def create_benchmark_result(
     trace_enabled: bool = False,
     model_info: str = "",
     torch_xla_enabled: bool = True,
-    openxla_backend: bool = True,
+    backend: str = "tt",
     channel_size: int = 3,
     device_name: str = "",
     galaxy: bool = False,
@@ -182,7 +182,7 @@ def create_benchmark_result(
         config.update(
             {
                 "torch_xla_enabled": torch_xla_enabled,
-                "openxla_backend": openxla_backend,
+                "backend": backend,
             }
         )
 
