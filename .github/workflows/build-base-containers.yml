@@ -7,7 +7,6 @@ on:
         description: 'Force rebuild of Docker images even if they exist'
         type: boolean
         default: false
-  push:
 
 
 permissions:
