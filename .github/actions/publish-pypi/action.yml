@@ -1,0 +1,62 @@
+name: "Publish Tenstorrent PyPI"
+description: "Publish Tenstorrent PyPI"
+
+inputs:
+  release-artifacts-name:
+    description: "Release artifacts name"
+    required: true
+  release-artifacts-wheel-path:
+    description: "Release artifacts wheel path"
+    required: true
+  repo:
+    description: "Repo name"
+    required: true
+  overwrite_releases:
+    description: "Overwrite releases"
+    required: true
+  pypi_url:
+    description: "PyPI URL"
+    required: true
+  unique_artifact_suffix:
+    description: "Unique artifacts suffix"
+    required: true
+  draft:
+    description: "Draft release"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        new_version_tag: ${{ inputs.new_version_tag }}
+
+    - name: Set Unique Artifacts Suffix
+      id: set-unique-artifacts-suffix
+      shell: bash
+      run: |
+        unique_artifacts_suffix="${{ inputs.unique_artifact_suffix }}"
+        if [[ "${{ inputs.draft }}" != "true" ]]; then
+          unique_artifacts_suffix=""
+        fi
+        echo "unique_artifacts_suffix=$unique_artifacts_suffix"
+        echo "unique_artifacts_suffix=$unique_artifacts_suffix" >> $GITHUB_OUTPUT
+    - name: Find wheel package
+      shell: bash
+      run: |
+        found_wheel_file=$(find ${{ github.workspace }}/release/${{ inputs.release-artifacts-name }}${{ steps.set-unique-artifacts-suffix.outputs.unique_artifacts_suffix }}/${{ inputs.release-artifacts-wheel-path }} -type f -iname "*${{ steps.set-release-facts.outputs.repo_short }}*.whl")
+        echo "found_wheel_file=$found_wheel_file"
+        echo "found_wheel_file=$found_wheel_file" >> $GITHUB_OUTPUT
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Publish package to ${{ steps.set-release-facts.outputs.pypi_repository }}
+      shell: bash
+      run: |
+        python -m twine upload ${{ steps.found-wheel-file.outputs.found_wheel_file }} --repository ${{ steps.set-release-facts.outputs.pypi_repository }}

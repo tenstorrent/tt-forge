@@ -120,6 +120,12 @@ outputs:
   python_version:
     description: "Python version"
     value: ${{ steps.set-manifest.outputs.python_version }}
+  pypi_release:
+    description: "PyPI release"
+    value: ${{ steps.set-manifest.outputs.pypi_release }}
+  pypi_repository:
+    description: "PyPI repository"
+    value: ${{ steps.set-manifest.outputs.pypi_repository }}
 
 
 runs:
@@ -159,6 +165,8 @@ runs:
         test_demo_wait="false"
         docker_build_file=".github/Dockerfile.single-wheel-slim"
         python_version="3.10"
+        pypi_release="false"
+        pypi_repository="testpypi"
 
         # Tag & Release Defaults
 
@@ -168,6 +176,7 @@ runs:
         if [[ "${{ inputs.release_type }}" == "stable" ]]; then
           prerelease="false"
           make_latest="true"
+          pypi_repository="pypi"
         elif [[ "${{ inputs.release_type }}" == "nightly" ]]; then
           new_version_tag="${VERSION}.dev$(date +"%Y%m%d")"
           workflow_allow_failed="true"
@@ -228,6 +237,7 @@ runs:
             skip_wheel_install="true"
             skip_model_compatible_table="true"
             skip_docker_build="true"
+            pypi_release="true"
         fi
 
 
@@ -308,6 +318,8 @@ runs:
         echo "test_demo_wait=$test_demo_wait"
         echo "docker_build_file=$docker_build_file"
         echo "python_version=$python_version"
+        echo "pypi_release=$pypi_release"
+        echo "pypi_repository=$pypi_repository"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -343,3 +355,5 @@ runs:
         echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
         echo "docker_build_file=$docker_build_file" >> $GITHUB_OUTPUT
         echo "python_version=$python_version" >> $GITHUB_OUTPUT
+        echo "pypi_release=$pypi_release" >> $GITHUB_OUTPUT
+        echo "pypi_repository=$pypi_repository" >> $GITHUB_OUTPUT

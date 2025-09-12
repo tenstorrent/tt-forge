@@ -252,6 +252,17 @@ jobs:
           repo: ${{ inputs.repo }}
           overwrite_releases: ${{ inputs.overwrite_releases }}
 
+      - uses: ./.github/actions/publish-pypi
+        if: ${{ steps.set-release-facts.outputs.pypi_release }}
+        with:
+          repo: ${{ inputs.repo }}
+          new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
+          overwrite_releases: ${{ inputs.overwrite_releases }}
+          release-artifacts-name: build-release-${{ inputs.repo_short }}
+          release-artifacts-wheel-path: artifacts
+          pypi_url: ${{ steps.set-release-facts.outputs.pypi_url }}
+          unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
+          draft: ${{ inputs.draft }}
 
       - name: "${{ inputs.draft && 'Draft' || '' }} Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
