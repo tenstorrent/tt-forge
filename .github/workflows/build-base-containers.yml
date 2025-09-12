@@ -9,6 +9,12 @@ on:
         default: false
   push:
 
+
+permissions:
+  id-token: write
+  packages: write
+  attestations: write
+
 jobs:
   build-base-containers:
     runs-on: ubuntu-latest
