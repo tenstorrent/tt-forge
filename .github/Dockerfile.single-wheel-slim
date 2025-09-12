@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:a0df00dd4a80f434d702b21b7419acf33050ed5e
 
 RUN --mount=type=bind,source=$WHEEL_FILES_PATH,target=/wheels \
     ls -la /wheels && \
