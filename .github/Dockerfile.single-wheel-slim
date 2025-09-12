@@ -1,4 +1,4 @@
-FROM harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:a0df00dd4a80f434d702b21b7419acf33050ed5e
+FROM ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:a0df00dd4a80f434d702b21b7419acf33050ed5e
 
 ARG WHEEL_FILES_PATH
 ARG REPO_SHORT
