@@ -56,7 +56,7 @@ runs:
       run: |
         envsubst < .github/scripts/template-setup.py > setup.py
         pip install wheel
-        python setup.py sdist bdist_wheel
+        python setup.py sdist bdist_wheel --python-tag cp311 --abi-tag cp311 --plat-name linux_x86_64
         mkdir -p ${{ github.workspace }}/release/artifacts
         mv ${{ github.workspace }}/dist/*.whl ${{ github.workspace }}/release/artifacts/.
         cd ${{ github.workspace }}/release/artifacts
