@@ -45,6 +45,7 @@ runs:
         echo "unique_artifacts_suffix=$unique_artifacts_suffix"
         echo "unique_artifacts_suffix=$unique_artifacts_suffix" >> $GITHUB_OUTPUT
     - name: Find wheel package
+      id: find-wheel-package
       shell: bash
       run: |
         tree ${{ github.workspace }}/release/${{ inputs.release-artifacts-name }}${{ steps.set-unique-artifacts-suffix.outputs.unique_artifacts_suffix }}/${{ inputs.release-artifacts-wheel-path }}
@@ -61,4 +62,4 @@ runs:
       shell: bash
       run: |
         pip install twine
-        python -m twine upload  ${{ steps.found-wheel-file.outputs.found_wheel_file }} --repository ${{ steps.set-release-facts.outputs.pypi_repository }}
+        python -m twine upload  ${{ steps.find-wheel-package.outputs.found_wheel_file }} --repository ${{ steps.set-release-facts.outputs.pypi_repository }}
