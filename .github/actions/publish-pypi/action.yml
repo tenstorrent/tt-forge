@@ -59,4 +59,5 @@ runs:
     - name: Publish package to ${{ steps.set-release-facts.outputs.pypi_repository }}
       shell: bash
       run: |
+        pip install twine
         python -m twine upload ${{ steps.found-wheel-file.outputs.found_wheel_file }} --repository ${{ steps.set-release-facts.outputs.pypi_repository }}
