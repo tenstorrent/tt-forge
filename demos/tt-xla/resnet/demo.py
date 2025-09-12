@@ -47,13 +47,6 @@ def print_top_predictions(logits, model, top_k=5):
 
 
 
-def attempt_to_device(x):
-    if hasattr(x, "to"):
-        return x.to(device)
-    return x
-
-
-
 def main():
     # Set the XLA runtime device to TT 
     xr.set_device_type("TT")
@@ -65,7 +58,7 @@ def main():
     processor = AutoImageProcessor.from_pretrained(model_name)
 
     # Load the inputs
-    image = Image.open("000000039769.jpg").convert("RGB")
+    image = Image.open("demos/tt-xla/resnet/000000039769.jpg").convert("RGB")
     inputs = processor(images=image, return_tensors="pt")
 
     # Convert to bfloat16
@@ -75,6 +68,11 @@ def main():
     # Compile the model with tt backend
     compiled_model = torch.compile(model, backend=xla_backend)
 
+    def attempt_to_device(x):
+        if hasattr(x, "to"):
+            return x.to(device)
+        return x
+
     # Move model and inputs to the TT device
     device = xm.xla_device()
     compiled_model = compiled_model.to(device)
@@ -83,11 +81,10 @@ def main():
     # Run the model and print top predictions
     with torch.no_grad():
         outputs = compiled_model(**inputs)
-
         logits = outputs.logits
         print_top_predictions(logits, model, top_k=5)
        
 
-
+       
 if __name__ == "__main__":
     main()
