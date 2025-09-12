@@ -52,12 +52,7 @@ chmod 0440 /etc/sudoers.d/forge
 # Set working directory
 WORKDIR /home/forge
 
+CMD ["/bin/bash"]
+
 # Switch to forge user for remaining operations
 USER forge
-RUN --mount=type=bind,source=$WHEEL_FILES_PATH,target=/wheels \
-    ls -la /wheels && \
-    for wheel in /wheels/*.whl; do \
-      pip install "$wheel" --no-cache-dir; \
-    done
-
-CMD ["/bin/bash"]

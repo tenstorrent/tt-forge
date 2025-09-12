@@ -1,0 +1,28 @@
+name: Build Base Containers
+description: Build base containers
+on:
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild of Docker images even if they exist'
+        type: boolean
+        default: false
+  push:
+    paths:
+      - '.github/Dockerfile.ubuntu22-04-py3.11'
+
+jobs:
+  clean-up-release-tests:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: "Build Forge Ubuntu 22.04 Py 3.11"
+        id: docker-build-push
+        uses: ./.github/actions/docker-build-push
+        with:
+            image_name: "ghcr.io/tenstorrent/forge-ubuntu22-04-py3-11"
+            docker_tag: "${{ github.sha }}"
+            make_latest: false
+            force_rebuild: ${{ inputs.force_rebuild || false }}
+            dockerfile: ".github/Dockerfile.ubuntu22-04-py3.11"
