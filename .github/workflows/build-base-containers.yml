@@ -31,4 +31,4 @@ jobs:
             docker_tag: "${{ github.sha }}"
             make_latest: false
             force_rebuild: ${{ inputs.force_rebuild || false }}
-            dockerfile: ".github/Dockerfile.ubuntu-22-04-py3.11"
+            dockerfile: ".github/Dockerfile.ubuntu-22-04-py3-11"
