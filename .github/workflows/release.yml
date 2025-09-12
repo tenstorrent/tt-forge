@@ -86,14 +86,16 @@ jobs:
       workflow_run_status_symbol: ${{ steps.build-release-wheel.outputs.workflow_run_status_symbol }}
       workflow_run_url: ${{ steps.build-release-wheel.outputs.workflow_run_url }}
 
-    runs-on: tt-ubuntu-2204-large-stable
+    runs-on: ubuntu-latest
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
-    - name: Install GH CLI
-      run: |
-        wget https://github.com/cli/cli/releases/download/v2.79.0/gh_2.79.0_linux_amd64.deb
-        sudo dpkg -i gh_2.79.0_linux_amd64.deb
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 512
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
     - uses: actions/checkout@v4
     - uses: ./.github/actions/set-release-facts
       id: set-release-facts
