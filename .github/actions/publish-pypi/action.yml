@@ -48,7 +48,6 @@ runs:
       id: find-wheel-package
       shell: bash
       run: |
-        tree ${{ github.workspace }}/release/${{ inputs.release-artifacts-name }}${{ steps.set-unique-artifacts-suffix.outputs.unique_artifacts_suffix }}/${{ inputs.release-artifacts-wheel-path }}
         found_wheel_file=$(find ${{ github.workspace }}/release/${{ inputs.release-artifacts-name }}${{ steps.set-unique-artifacts-suffix.outputs.unique_artifacts_suffix }}/${{ inputs.release-artifacts-wheel-path }} -type f -iname "*.whl")
         echo "found_wheel_file=$found_wheel_file"
         echo "found_wheel_file=$found_wheel_file" >> $GITHUB_OUTPUT
@@ -62,4 +61,4 @@ runs:
       shell: bash
       run: |
         pip install twine
-        python -m twine upload  ${{ steps.find-wheel-package.outputs.found_wheel_file }} --repository ${{ steps.set-release-facts.outputs.pypi_repository }}
+        python -m twine upload --repository ${{ steps.set-release-facts.outputs.pypi_repository }} ${{ steps.find-wheel-package.outputs.found_wheel_file }}
