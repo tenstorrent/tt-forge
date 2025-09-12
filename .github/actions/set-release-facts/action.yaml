@@ -225,6 +225,7 @@ runs:
             ignore_artifacts="true"
             pip_wheel_deps_names="tt-torch pjrt-plugin-tt"
             pip_wheel_names="tt-forge"
+            docker_build_file=".github/Dockerfile.single-wheel-slim-3.11"
             skip_wheel_install="true"
             skip_model_compatible_table="true"
         fi
