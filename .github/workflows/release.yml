@@ -256,7 +256,6 @@ jobs:
         if: ${{ steps.set-release-facts.outputs.pypi_release }}
         with:
           repo: ${{ inputs.repo }}
-          new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
           overwrite_releases: ${{ inputs.overwrite_releases }}
           release-artifacts-name: build-release-${{ inputs.repo_short }}
           release-artifacts-wheel-path: artifacts

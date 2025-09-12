@@ -61,4 +61,4 @@ runs:
       shell: bash
       run: |
         pip install twine
-        python -m twine upload --repository ${{ steps.set-release-facts.outputs.pypi_repository }} ${{ steps.find-wheel-package.outputs.found_wheel_file }}
+        python -m twine upload --verbose --repository ${{ steps.set-release-facts.outputs.pypi_repository }} ${{ steps.find-wheel-package.outputs.found_wheel_file }}
