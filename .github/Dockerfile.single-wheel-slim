@@ -1,5 +1,12 @@
 FROM ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:a0df00dd4a80f434d702b21b7419acf33050ed5e
 
+ARG WHEEL_FILES_PATH
+ARG REPO_SHORT
+
+LABEL org.opencontainers.image.source=https://github.com/tenstorrent/${REPO_SHORT}
+LABEL org.opencontainers.image.description=${REPO_SHORT}
+LABEL org.opencontainers.image.licenses=Apache-2.0
+
 RUN --mount=type=bind,source=$WHEEL_FILES_PATH,target=/wheels \
     ls -la /wheels && \
     for wheel in /wheels/*.whl; do \
