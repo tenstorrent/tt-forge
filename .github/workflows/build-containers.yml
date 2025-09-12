@@ -21,8 +21,8 @@ jobs:
         id: docker-build-push
         uses: ./.github/actions/docker-build-push
         with:
-            image_name: "ghcr.io/tenstorrent/forge-ubuntu22-04-py3-11"
+            image_name: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11"
             docker_tag: "${{ github.sha }}"
             make_latest: false
             force_rebuild: ${{ inputs.force_rebuild || false }}
-            dockerfile: ".github/Dockerfile.ubuntu22-04-py3.11"
+            dockerfile: ".github/Dockerfile.ubuntu-22-04-py3.11"
