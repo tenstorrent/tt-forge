@@ -10,11 +10,13 @@ on:
   push:
 
 jobs:
-  clean-up-release-tests:
+  build-base-containers:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: "Build Forge Ubuntu 22.04 Py 3.11"
         id: docker-build-push
         uses: ./.github/actions/docker-build-push
