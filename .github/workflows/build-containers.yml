@@ -9,7 +9,7 @@ on:
         default: false
   push:
     paths:
-      - '.github/Dockerfile.ubuntu22-04-py3.11'
+      - '.github/Dockerfile.ubuntu-22-04-py3.11'
 
 jobs:
   clean-up-release-tests:
