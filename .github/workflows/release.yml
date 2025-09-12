@@ -90,14 +90,21 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
-    - name: Maximize build space
-      uses: easimon/maximize-build-space@master
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
       with:
-        remove-dotnet: 'true'
-        remove-codeql: 'true'
-        remove-docker-images: 'true'
-        remove-haskell: 'true'
-    
+        # this might remove tools that are actually needed,
+        # if set to "true" but frees about 6 GB
+        tool-cache: false
+        
+        # all of these default to true, but feel free to set to
+        # "false" if necessary for your workflow
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
     - uses: actions/checkout@v4
     - uses: ./.github/actions/set-release-facts
       id: set-release-facts
