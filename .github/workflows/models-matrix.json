@@ -17,5 +17,6 @@
   {"runs-on": "p150b", "frontend": "tt-xla", "name": "albert_base_v2", "path": "/albert_base_v2/demo.py", "pyreq_file": true},
   {"runs-on": "p150b", "frontend": "tt-xla", "name": "gpt2", "path": "/gpt2/demo.py", "pyreq_file": true},
   {"runs-on": "n300", "frontend": "tt-torch", "name": "llama_7b_pipeline_parallel", "path": "llama_7b_pipeline_parallel.py", "pyreq": "loguru requests transformers==4.52.4 datasets torch==2.7.0 torchvision pytest tabulate accelerate"},
-  {"runs-on": "n150", "frontend": "tt-torch", "name": "llama3.2_generate", "path": "llama3.2_generate_demo.py", "pyreq": "transformers==4.52.4"}
+  {"runs-on": "n150", "frontend": "tt-torch", "name": "llama3.2_generate", "path": "llama3.2_generate_demo.py", "pyreq": "transformers==4.52.4"},
+  {"runs-on": "n150", "frontend": "tt-torch", "name": "bge_m3", "path": "bge_m3_demo.py", "pyreq": "FlagEmbedding"}
 ]
