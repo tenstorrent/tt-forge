@@ -23,7 +23,7 @@ from forge.config import CompilerConfig, MLIRConfig
 from forge.verify.config import VerifyConfig
 from forge._C import DataFormat
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification
+from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps
 
 
 # Common constants
@@ -78,6 +78,7 @@ def test_vovnet_timm(
     task,
     data_format,
     model_name,
+    measure_cpu,
 ):
     """
     Test the Vovnet OSMR benchmark function.
@@ -115,6 +116,13 @@ def test_vovnet_timm(
     if data_format == "bfloat16":
         # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
+
+    if measure_cpu:
+        # Use batch size 1
+        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
+        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
+    else:
+        cpu_fps = -1.0
 
     # Compiler configuration
     OPTIMIZER_ENABLED = True
@@ -215,6 +223,7 @@ def test_vovnet_timm(
     print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+    print(f"| CPU samples per second: {cpu_fps}")
     print(f"| Evaluation score: {evaluation_score}")
     print(f"| Batch size: {batch_size}")
     print(f"| Data format: {data_format}")
@@ -275,6 +284,16 @@ def test_vovnet_timm(
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,  # This is the target evaluation score.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -303,6 +322,7 @@ def benchmark(config: dict):
     task = config["task"]
     data_format = config["data_format"]
     model_name = config["model"]
+    measure_cpu = config["measure_cpu"]
 
     return test_vovnet_timm(
         training=training,
@@ -314,4 +334,5 @@ def benchmark(config: dict):
         task=task,
         data_format=data_format,
         model_name=model_name,
+        measure_cpu=measure_cpu,
     )

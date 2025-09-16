@@ -346,3 +346,27 @@ def reset_seeds():
     torch.manual_seed(0)
     if tf is not None:
         tf.random.set_seed(0)
+
+
+def measure_cpu_fps(model, input, iterations=512):
+    """
+    Measure the fps of the model for 512 iterations and take the max value for stability.
+
+    Parameters:
+    ----------
+    model: Framework model (not compiled).
+    input: Framework input tensor. Should be batch size 1.
+
+    Returns:
+    -------
+    fps: float
+        The fps of the model.
+    """
+    # Measure fps
+    best_time = float("inf")
+    for i in range(iterations):
+        start = time.perf_counter()
+        model(input)
+        end = time.perf_counter()
+        best_time = min(best_time, end - start)
+    return 1 / best_time

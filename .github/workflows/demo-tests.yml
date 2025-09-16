@@ -97,7 +97,7 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.set-matrix.outputs.matrix) }}
 
-    runs-on: ${{ matrix.runs-on && format('tt-beta-ubuntu-2204-{0}-large-stable', matrix.runs-on) }}
+    runs-on: ${{ matrix.runs-on && format('tt-ubuntu-2204-{0}-stable', matrix.runs-on) }}
     container:
       image: ${{ inputs.docker-image }}
       options: --device /dev/tenstorrent
@@ -163,8 +163,8 @@ jobs:
         run: |
           if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
             echo "Using /home/forge/venv-${{ matrix.frontend }}"
-            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
             source /home/forge/venv-${{ matrix.frontend }}/bin/activate
+            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
           fi
 
           third_party_models="$(realpath third_party)"

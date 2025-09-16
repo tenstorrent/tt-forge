@@ -214,7 +214,7 @@ runs:
     - name: output readme
       shell: bash
       run: |
-        readme_path="${{ github.workspace }}/release/docs"
+        readme_path="/tmp/release/docs"
         mkdir -p $readme_path
 
         new_version_tag="${{ inputs.new_version_tag }}"

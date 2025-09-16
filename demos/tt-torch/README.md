@@ -4,7 +4,7 @@ Build/install and activate the environment as you would for development on tt-to
 Additional python dependencies may be required for some demos. The following set of requirements covers all demos.
 ```
 pip install -r benchmark/tt-torch/requirements.txt
-pip install accelerate tabulate
+pip install accelerate tabulate FlagEmbedding
 ```
 
 From the project root, run
@@ -64,4 +64,12 @@ The `llama3.2_generate_demo.py` script demonstrates a text generation loop using
 
 ```
 python demos/tt-torch/llama3.2_generate_demo.py
+```
+
+## bge_m3_demo.py
+
+The `bge_m3_demo.py` script demonstrates the BGE-M3 embedding model by processing two sets of sentences and computing similarity scores. The approches used follow the Sparse Embedding (Lexical Weigth) and Mult-Vector (ColBERT) demos from the [BGE-M3 Hugging Face documentation](https://huggingface.co/BAAI/bge-m3#generate-embedding-for-text).
+
+```
+python demos/tt-torch/bge_m3_demo.py
 ```

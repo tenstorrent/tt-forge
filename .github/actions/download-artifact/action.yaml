@@ -72,7 +72,7 @@ runs:
           echo "Downloading artifact ${ARTIFACT_NAME} from ${REPOSITORY}..."
 
           curl -H "Authorization: token ${GITHUB_TOKEN}" -L \
-          "https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/artifacts" | \
+          "https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" | \
           jq -r ".artifacts[] | select(.name==\"${ARTIFACT_NAME}\") | .archive_download_url" | \
           xargs -I {} curl -H "Authorization: token ${GITHUB_TOKEN}" -L {} --output "$path/${ARTIFACT_NAME}.zip"
 

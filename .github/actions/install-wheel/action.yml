@@ -15,6 +15,10 @@ inputs:
     description: "Repo source for provided workflow run ID"
     required: false
     type: string
+  venv_bin_path:
+    description: "Path to the venv the wheel will get installed in"
+    required: false
+    type: string
 
 runs:
   using: 'composite'
@@ -26,13 +30,19 @@ runs:
         if [ "${{ inputs.project }}" = "tt-forge-fe" ]; then
           echo "artifact=forge-wheel" >> $GITHUB_OUTPUT
           echo "wheel_name=tt_*" >> $GITHUB_OUTPUT
+          echo "artifact_is_regex=false" >> $GITHUB_OUTPUT
+          echo "wf_name=on-push.yml" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-torch" ]; then
           echo "artifact=install-artifacts-release" >> $GITHUB_OUTPUT
           echo "wheel_name=wheels/tt_*" >> $GITHUB_OUTPUT
           echo "untar='true'" >> $GITHUB_OUTPUT
+          echo "artifact_is_regex=false" >> $GITHUB_OUTPUT
+          echo "wf_name=on-push.yml" >> $GITHUB_OUTPUT
         elif [ "${{ inputs.project }}" = "tt-xla" ]; then
-          echo "artifact=xla-whl-release" >> $GITHUB_OUTPUT
+          echo "artifact=^xla-whl-release.*" >> $GITHUB_OUTPUT
           echo "wheel_name=pjrt_*" >> $GITHUB_OUTPUT
+          echo "artifact_is_regex=true" >> $GITHUB_OUTPUT
+          echo "wf_name=push-main.yml" >> $GITHUB_OUTPUT
         else
           echo "Unknown project: ${{ inputs.project }}"
           exit 1
@@ -53,7 +63,7 @@ runs:
       with:
         run_id: ${{ inputs.run_id }}
         name: "${{ steps.set-wheel-name.outputs.artifact }}"
-        name_is_regexp: false
+        name_is_regexp: "${{ steps.set-wheel-name.outputs.artifact_is_regex}}"
         repo: "tenstorrent/${{ steps.set-wheel-name.outputs.run_id_source }}"
         check_artifacts: true
 
@@ -62,10 +72,10 @@ runs:
       uses: dawidd6/action-download-artifact@v11
       with:
         workflow_conclusion: success
-        workflow: on-push.yml
+        workflow: ${{ steps.set-wheel-name.outputs.wf_name }}
         branch: main
         name: "${{ steps.set-wheel-name.outputs.artifact }}"
-        name_is_regexp: false
+        name_is_regexp: "${{ steps.set-wheel-name.outputs.artifact_is_regex}}"
         repo: "tenstorrent/${{ inputs.project }}"
         check_artifacts: true
 
@@ -77,4 +87,10 @@ runs:
     - name: Install wheel
       shell: bash
       run: |
+        if [ -n "${{ inputs.venv_bin_path }}" ]; then
+          source ${{ inputs.venv_bin_path }}
+        fi
+        if [ "${{ steps.set-wheel-name.outputs.artifact_is_regex }}" == "true" ]; then
+          cd $(ls | grep -E "${{ steps.set-wheel-name.outputs.artifact }}")
+        fi
         pip install ${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade

@@ -3,19 +3,64 @@
 
 # Regnet Demo Script
 
+import sys
 import forge
-from third_party.tt_forge_models.regnet.pytorch import ModelLoader
+from third_party.tt_forge_models.regnet.pytorch import ModelLoader, ModelVariant
+from forge._C import DataFormat
+from forge.config import CompilerConfig
+import torch
 
-# Load model and input
-loader = ModelLoader()
-model = loader.load_model()
-inputs = loader.load_inputs()
 
-# Compile the model using Forge
-compiled_model = forge.compile(model, sample_inputs=[inputs])
+def run_regnet_demo_case(variant):
 
-# Run inference on Tenstorrent device
-output = compiled_model(inputs)
+    # Load Model and inputs
+    loader = ModelLoader(variant=variant)
+    model = loader.load_model(dtype_override=torch.bfloat16)
+    inputs = loader.load_inputs(dtype_override=torch.bfloat16)
 
-# Post-process the output
-loader.post_processing(output)
+    data_format_override = DataFormat.Float16_b
+    compiler_cfg = CompilerConfig(default_df_override=data_format_override)
+
+    # Compile the model using Forge
+    compiled_model = forge.compile(model, sample_inputs=[inputs], compiler_cfg=compiler_cfg)
+
+    # Run inference on Tenstorrent device
+    output = compiled_model(inputs)
+
+    # Post-process and display results
+    loader.post_processing(output)
+
+    print("=" * 60, flush=True)
+
+
+if __name__ == "__main__":
+
+    demo_cases = [
+        # HuggingFace variants
+        ModelVariant.Y_040,
+        ModelVariant.Y_064,
+        ModelVariant.Y_080,
+        ModelVariant.Y_120,
+        ModelVariant.Y_160,
+        ModelVariant.Y_320,
+        # Torchvision variants
+        ModelVariant.Y_400MF,
+        ModelVariant.Y_800MF,
+        ModelVariant.Y_1_6GF,
+        ModelVariant.Y_3_2GF,
+        ModelVariant.Y_8GF,
+        ModelVariant.Y_16GF,
+        ModelVariant.Y_32GF,
+        ModelVariant.Y_128GF,
+        ModelVariant.X_400MF,
+        ModelVariant.X_800MF,
+        ModelVariant.X_1_6GF,
+        ModelVariant.X_3_2GF,
+        ModelVariant.X_8GF,
+        ModelVariant.X_16GF,
+        ModelVariant.X_32GF,
+    ]
+
+    # Run each demo case
+    for variant in demo_cases:
+        run_regnet_demo_case(variant)

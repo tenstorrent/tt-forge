@@ -64,7 +64,7 @@ runs:
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        body_path: "${{ github.workspace }}/release/docs/readme"
+        body_path: "/tmp/release/docs/readme"
         token: ${{ inputs.release_token }}
         name: ${{ steps.set-name.outputs.name }}
         tag_name: ${{ inputs.new_version_tag }}

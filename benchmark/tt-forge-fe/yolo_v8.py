@@ -18,7 +18,7 @@ from forge.verify.verify import verify, VerifyConfig
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
-from benchmark.utils import YoloWrapper
+from benchmark.utils import YoloWrapper, measure_cpu_fps
 
 
 # Common constants
@@ -60,6 +60,7 @@ def test_yolo_v8(
     loop_count,
     data_format,
     model_name,
+    measure_cpu,
 ):
     """
     This function creates a basic Yolo8 model for image classification task using PyTorch.
@@ -91,6 +92,13 @@ def test_yolo_v8(
     if data_format == "bfloat16":
         # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
+
+    if measure_cpu:
+        # Use batch size 1
+        cpu_input = input_sample[0][0].reshape(1, *input_sample[0][0].shape[0:])
+        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
+    else:
+        cpu_fps = -1.0
 
     # Compiler configuration
     OPTIMIZER_ENABLED = True
@@ -157,6 +165,7 @@ def test_yolo_v8(
     print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+    print(f"| CPU samples per second: {cpu_fps}")
     print(f"| Batch size: {batch_size}")
     print(f"| Data format: {data_format}")
     print(f"| Input size: {input_size}")
@@ -206,6 +215,16 @@ def test_yolo_v8(
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,  # This is the target evaluation score.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -232,6 +251,7 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     data_format = config["data_format"]
     model_name = config["model"]
+    measure_cpu = config["measure_cpu"]
 
     return test_yolo_v8(
         training=training,
@@ -241,4 +261,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         data_format=data_format,
         model_name=model_name,
+        measure_cpu=measure_cpu,
     )

@@ -4,18 +4,43 @@
 # Deit Demo Script
 
 import forge
-from third_party.tt_forge_models.deit.pytorch import ModelLoader
+from third_party.tt_forge_models.deit.pytorch import ModelLoader, ModelVariant
+from forge._C import DataFormat
+from forge.config import CompilerConfig
+import torch
 
-# Load model and input
-loader = ModelLoader()
-model = loader.load_model()
-inputs = loader.load_inputs()
 
-# Compile the model using Forge
-compiled_model = forge.compile(model, sample_inputs=[inputs.pixel_values])
+def run_deit_demo_case(variant):
 
-# Run inference on Tenstorrent device
-output = compiled_model(inputs.pixel_values)
+    # Load model and input
+    loader = ModelLoader(variant=variant)
+    model = loader.load_model(dtype_override=torch.bfloat16)
+    inputs = loader.load_inputs(dtype_override=torch.bfloat16)
 
-# Post-process the output
-loader.post_processing(output, model)
+    data_format_override = DataFormat.Float16_b
+    compiler_cfg = CompilerConfig(default_df_override=data_format_override)
+
+    # Compile the model using Forge
+    compiled_model = forge.compile(model, sample_inputs=[inputs.pixel_values], compiler_cfg=compiler_cfg)
+
+    # Run inference on Tenstorrent device
+    output = compiled_model(inputs.pixel_values)
+
+    # Post-process the output
+    loader.post_processing(output, model)
+
+    print("=" * 60, flush=True)
+
+
+if __name__ == "__main__":
+
+    demo_cases = [
+        ModelVariant.BASE,
+        ModelVariant.BASE_DISTILLED,
+        ModelVariant.SMALL,
+        ModelVariant.TINY,
+    ]
+
+    # Run each demo case
+    for variant in demo_cases:
+        run_deit_demo_case(variant)

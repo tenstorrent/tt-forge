@@ -119,6 +119,7 @@ def test_llama_decode(
     loop_count,
     data_format,
     model_name,
+    measure_cpu,
 ):
 
     if data_format == "bfloat16":
@@ -148,6 +149,9 @@ def test_llama_decode(
     framework_model = LlamaModelWrapper(model)
     framework_model = framework_model.to(torch_dtype)
     framework_model.eval()
+
+    # Skip CPU measurement for LLaMA models
+    cpu_fps = -1.0
 
     if model_path == "openlm-research/open_llama_3b":
         tokenizer.pad_token_id = model.config.pad_token_id
@@ -314,6 +318,16 @@ def test_llama_decode(
                 "device_power": -1.0,
                 "device_temperature": -1.0,
             },
+            {
+                "iteration": 1,
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,
+                "device_power": -1.0,
+                "device_temperature": -1.0,
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -335,6 +349,7 @@ def benchmark(config: dict):
     loop_count = config["loop_count"]
     model_name = config["model"]
     data_format = config["data_format"]
+    measure_cpu = config["measure_cpu"]
 
     return test_llama_decode(
         training=training,
@@ -343,4 +358,5 @@ def benchmark(config: dict):
         loop_count=loop_count,
         model_name=model_name,
         data_format=data_format,
+        measure_cpu=measure_cpu,
     )

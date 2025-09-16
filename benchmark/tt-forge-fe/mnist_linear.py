@@ -23,6 +23,8 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.verify.verify import verify
 from forge.config import CompilerConfig, MLIRConfig
 
+from benchmark.utils import measure_cpu_fps
+
 
 # Common constants
 
@@ -98,6 +100,7 @@ def test_mnist_linear(
     hidden_size,
     loop_count,
     model_name,
+    measure_cpu,
     # arch,
     # dataformat,
     # math_fidelity,
@@ -110,6 +113,13 @@ def test_mnist_linear(
 
     framework_model = MNISTLinear(input_size=input_size, hidden_size=hidden_size)
     fw_out = framework_model(*inputs)
+
+    if measure_cpu:
+        # Use batch size 1
+        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
+        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
+    else:
+        cpu_fps = -1.0
 
     OPTIMIZER_ENABLED = True
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False  # mnist_linear.py doesn't use set_enable_memory_layout_analysis
@@ -159,6 +169,7 @@ def test_mnist_linear(
     print(f"| Total execution time: {total_time}")
     print(f"| Total samples: {total_samples}")
     print(f"| Sample per second: {samples_per_sec}")
+    print(f"| CPU samples per second: {cpu_fps}")
     print(f"| Batch size: {batch_size}")
     print(f"| Input size: {input_size}")
     print(f"| Hidden size: {hidden_size}")
@@ -208,6 +219,16 @@ def test_mnist_linear(
                 "device_power": -1.0,  # This value is negative, because we don't have a device power value.
                 "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
             },
+            {
+                "iteration": 1,  # This is the number of iterations, we are running only one iteration.
+                "step_name": full_model_name,
+                "step_warm_up_num_iterations": 0,
+                "measurement_name": "cpu_fps",
+                "value": cpu_fps,
+                "target": -1,  # This is the target evaluation score.
+                "device_power": -1.0,  # This value is negative, because we don't have a device power value.
+                "device_temperature": -1.0,  # This value is negative, because we don't have a device temperature value.
+            },
         ],
         "device_info": {
             "device_name": "",
@@ -230,6 +251,7 @@ def benchmark(config: dict):
     input_size = MNIST_INPUT_FEATURE_SIZE if config["input_size"] is None else config["input_size"]
     hidden_size = MNIIST_HIDDEN_SIZE if config["hidden_size"] is None else config["hidden_size"]
     model_name = config["model"]
+    measure_cpu = config["measure_cpu"]
 
     return test_mnist_linear(
         training=training,
@@ -238,4 +260,5 @@ def benchmark(config: dict):
         hidden_size=hidden_size,
         loop_count=loop_count,
         model_name=model_name,
+        measure_cpu=measure_cpu,
     )

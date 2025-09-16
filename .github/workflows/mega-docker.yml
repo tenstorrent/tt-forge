@@ -1,4 +1,4 @@
-name: Build TT-Forge Docker Images
+name: Nightly Release & Tests
 
 on:
   workflow_dispatch:
@@ -8,21 +8,20 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '0 5 * * *'
 
 
 permissions:
   packages: write
   checks: write
   attestations: write
+  id-token: write
 
 jobs:
 
   build-tt-forge-slim:
     name: Build tt-forge-slim Docker Image
-    # runs-on: tt-beta-ubuntu-2204-large
-    # TODO We cant use tt-beta-ubuntu-2204-large until we whitelist pypi.eng.aws.tenstorrent.com on proxy
-    runs-on: ubuntu-latest
+    runs-on: tt-ubuntu-2204-large-stable
     outputs:
       docker-image: ${{ steps.build.outputs.docker-image }}
       docker-image-harbor: ${{ steps.build.outputs.docker-image-harbor }}
