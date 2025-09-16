@@ -62,7 +62,7 @@ RUN FRONTEND=tt-forge-fe && \
 RUN FRONTEND=tt-torch && \
     /usr/bin/python3.11 -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
-    pip install tt-torch --no-cache-dir --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/ 
+    pip install tt-torch --no-cache-dir --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 
 # Create and activate virtual environment for tt-xla, install whl
 RUN FRONTEND=tt-xla && \
