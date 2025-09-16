@@ -8,6 +8,8 @@
   {"runs-on": "n150", "frontend": "tt-xla", "name": "albert_base_v2", "path": "/albert_base_v2/demo.py", "pyreq_file": true},
   {"runs-on": "n150", "frontend": "tt-xla", "name": "gpt2", "path": "/gpt2/demo.py", "pyreq_file": true},
   {"runs-on": "n150", "frontend": "tt-xla", "name": "opt_125m", "path": "/opt_125m/demo.py", "pyreq_file": true},
+  {"runs-on": "n150", "frontend": "tt-xla", "name": "resnet50", "path": "/resnet50/demo.py", "pyreq_file": true},
+  {"runs-on": "n150", "frontend": "tt-xla", "name": "bge_m3", "path": "/bge_m3/demo.py", "pyreq_file": true},
   {"runs-on": "p150b", "frontend": "tt-forge-fe", "name": "mobile_netv2", "path": "cnn/mobile_netv2_demo.py"},
   {"runs-on": "p150b", "frontend": "tt-forge-fe", "name": "resnet", "path": "cnn/resnet_demo.py"},
   {"runs-on": "p150b", "frontend": "tt-forge-fe", "name": "resnet_onnx", "path": "cnn/resnet_onnx_demo.py"},
