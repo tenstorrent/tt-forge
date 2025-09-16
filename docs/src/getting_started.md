@@ -46,7 +46,7 @@ git clone https://github.com/tenstorrent/tt-forge.git
 ```
 
 2. Navigate to the folder for the frontend you want:
-   * [TT-XLA Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla) 
+   * [TT-XLA Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla)
    * [TT-Forge-FE Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-fe)
    * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch) - (deprecated)
 

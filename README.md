@@ -20,7 +20,7 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 - [Interactive Tenstorrent Software Diagram](#interactive-tenstorrent-sofware-architecture-diagram)
 - [TT-XLA](https://github.com/tenstorrent/tt-xla) - For use with PyTorch, JAX, and TensorFlow
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe) - For use with ONNX and PaddlePaddle
-- [TT-MLIR](https://github.com/tenstorrent/tt-mlir) - Open source compiler framework for compiling and optimizing machine learning models for Tenstorrent hardware 
+- [TT-MLIR](https://github.com/tenstorrent/tt-mlir) - Open source compiler framework for compiling and optimizing machine learning models for Tenstorrent hardware
 - [TT-Metal](https://github.com/tenstorrent/tt-metal) - Low-level programming model, enabling kernel development for Tenstorrent hardware
 - [TT-Torch](https://github.com/tenstorrent/tt-torch) - (Deprecated) Previously for use with PyTorch and ONNX
 - [TT-TVM](https://github.com/tenstorrent/tt-tvm)
