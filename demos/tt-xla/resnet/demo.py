@@ -5,21 +5,9 @@ import torch
 from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
+from tt_torch.backend.backend import xla_backend
 from transformers import ResNetForImageClassification, AutoImageProcessor
 from PIL import Image
-
-#FIXME: this shouldn't be needed in CI - Handles potential duplicate backend registration
-from torch._dynamo.backends.registry import _COMPILER_FNS
-if "tt" in _COMPILER_FNS:
-    # Backend already registered, clear it first
-    del _COMPILER_FNS["tt"]
-
-#FIXME: change to proper import path for CI (from tt_xla.python_package.tt_torch.backend import xla_backend) ?
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../third_party/tt-xla'))
-from python_package.tt_torch.backend.backend import xla_backend
-
 
 
 def print_top_predictions(logits, model, top_k=5):

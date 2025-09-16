@@ -5,20 +5,8 @@ import torch
 from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
+from tt_torch.backend.backend import xla_backend
 from FlagEmbedding import BGEM3FlagModel
-
-#FIXME: this shouldn't be needed in CI - Handles potential duplicate backend registration
-from torch._dynamo.backends.registry import _COMPILER_FNS
-if "tt" in _COMPILER_FNS:
-    # Backend already registered, clear it first
-    del _COMPILER_FNS["tt"]
-
-#FIXME: change to proper import path for CI (from tt_xla.python_package.tt_torch.backend import xla_backend) ?
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../third_party/tt-xla'))
-from python_package.tt_torch.backend.backend import xla_backend
-
 
 
 def main():
@@ -57,9 +45,12 @@ def main():
     compiled_model = compiled_model.to(device)
     inputs = tree_map(attempt_to_device, inputs)
 
-    # Run the model and print top predictions
+    # Run the model and print the output shapes
     with torch.no_grad():
-        outputs = compiled_model(**inputs)       
+        outputs = compiled_model(**inputs)
+        print(f"Dense embeddings shape: {outputs['dense_vecs'].shape}")
+        print(f"Sparse embeddings shape: {outputs['sparse_vecs'].shape}")
+        print(f"ColBERT embeddings shape: {outputs['colbert_vecs'].shape}")       
 
        
 if __name__ == "__main__":
