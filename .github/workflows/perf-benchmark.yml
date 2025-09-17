@@ -282,6 +282,8 @@ jobs:
       if: ${{ !matrix.build.skip-device-perf }}
       shell: bash
       run: |
+        apt update
+        apt install unzip
         echo "Extracting ttrt wheel"
         unzip -q ttrt-whl-tracy.zip
         echo "Extracting install artifacts"
