@@ -55,6 +55,26 @@ def main():
     output_1 = compiled_model(**input_args_1)
     output_2 = compiled_model(**input_args_2)
 
+    # Print Dense Embedding results
+    print("\n=== BGE-M3 Dense Embedding Demo ===")
+    # Extract dense embeddings
+    embeddings_1 = output_1["dense_vecs"]
+    embeddings_2 = output_2["dense_vecs"]
+    
+    # Compute similarity matrix (dot product between normalized embeddings)
+    # Note: BGE-M3 embeddings are already normalized, so we can directly compute dot product
+    similarity = embeddings_1 @ embeddings_2.T
+    
+    print(f"Dense embedding shape for sentences_1: {embeddings_1.shape}")
+    print(f"Dense embedding shape for sentences_2: {embeddings_2.shape}")
+    print(f"\nSimilarity matrix (sentences_1 x sentences_2):")
+    print(similarity)
+    print(f"\nDetailed similarities:")
+    print(f"  '{sentences_1[0]}' vs '{sentences_2[0][:50]}...': {similarity[0, 0]:.4f}")
+    print(f"  '{sentences_1[0]}' vs '{sentences_2[1][:50]}...': {similarity[0, 1]:.4f}")
+    print(f"  '{sentences_1[1]}' vs '{sentences_2[0][:50]}...': {similarity[1, 0]:.4f}")
+    print(f"  '{sentences_1[1]}' vs '{sentences_2[1][:50]}...': {similarity[1, 1]:.4f}")
+
     # Print results as done in Sparse Embedding and Multi-Vector Hugging Face examples
     print("\n=== BGE-M3 Sparse Embedding (Lexical Weight) Demo ===")
     print(bge_m3.convert_id_to_token(output_1["lexical_weights"]))
