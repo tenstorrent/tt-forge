@@ -290,6 +290,7 @@ jobs:
         unzip -q ttrt-whl-tracy.zip
         echo "Extracting install artifacts"
         unzip -q install-artifacts-tracy.zip
+        ls -la
 
     - name: Install ttrt
       shell: bash
