@@ -220,6 +220,15 @@ jobs:
           project_name="tt_forge_fe"
         fi
 
+        # wheels from docker
+        # pjrt-plugin-tt
+        # tt-torch
+        # tt_forge_fe
+        # wheels updated
+        # pjrt_plugin_tt
+        # tt_torch
+        # tt_forge_fe
+
         echo "Set version to commit sha if called from other repo"
         if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
           version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
@@ -257,7 +266,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
       if: ${{ !matrix.build.skip-device-perf }}
       uses: dawidd6/action-download-artifact@v11
@@ -268,6 +276,16 @@ jobs:
         repo: tenstorrent/tt-mlir
         check_artifacts: true
         path: ./
+        skip_unpack: true
+
+    - name: Extract artifacts manually
+      if: ${{ !matrix.build.skip-device-perf }}
+      shell: bash
+      run: |
+        echo "Extracting ttrt wheel"
+        unzip -q ttrt-whl-tracy.zip
+        echo "Extracting install artifacts"
+        unzip -q install-artifacts-tracy.zip
 
     - name: Install ttrt
       shell: bash
