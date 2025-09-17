@@ -289,10 +289,12 @@ jobs:
 
         echo "Extracting ttrt wheel"
         mkdir ttrt-whl-tracy
+        mv ttrt-whl-tracy.zip ttrt-whl-tracy/ttrt-whl-tracy.zip
         unzip -q ttrt-whl-tracy/ttrt-whl-tracy.zip -d ttrt-whl-tracy
 
         echo "Extracting install artifacts"
         mkdir install-artifacts-tracy
+        mv install-artifacts-tracy.zip install-artifacts-tracy/install-artifacts-tracy.zip
         unzip -q install-artifacts-tracy/install-artifacts-tracy.zip -d install-artifacts-tracy
 
     - name: Install ttrt
