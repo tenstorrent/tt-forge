@@ -286,11 +286,14 @@ jobs:
       run: |
         apt update
         apt install unzip
+
         echo "Extracting ttrt wheel"
-        unzip -q ttrt-whl-tracy.zip
+        mkdir ttrt-whl-tracy
+        unzip -q ttrt-whl-tracy/ttrt-whl-tracy.zip -d ttrt-whl-tracy
+
         echo "Extracting install artifacts"
-        unzip -q install-artifacts-tracy.zip
-        ls -la
+        mkdir install-artifacts-tracy
+        unzip -q install-artifacts-tracy/install-artifacts-tracy.zip -d install-artifacts-tracy
 
     - name: Install ttrt
       shell: bash
