@@ -14,9 +14,9 @@ def print_top_predictions(logits, model, top_k=5):
     # Get the predicted class probabilities
     probabilities = torch.nn.functional.softmax(logits, dim=-1)
 
-    # Get the top 5 predictions 
+    # Get the top 5 predictions
     top5_prob, top5_idx = torch.topk(probabilities, top_k)
-    
+
     # Move to CPU and convert to appropriate types to avoid runtime warnings
     top5_prob_cpu = top5_prob.cpu().float()
     top5_idx_cpu = top5_idx.cpu().int()
@@ -26,7 +26,7 @@ def print_top_predictions(logits, model, top_k=5):
 
     # Use the model's label dictionary
     label_dict = model.config.id2label
-    
+
     for i in range(top_k):
         class_idx = top5_idx_cpu[0][i].item()
         prob = top5_prob_cpu[0][i].item()
@@ -34,9 +34,8 @@ def print_top_predictions(logits, model, top_k=5):
         print(f"{i+1}. {class_name:<35} ({prob:.2%})")
 
 
-
 def main():
-    # Set the XLA runtime device to TT 
+    # Set the XLA runtime device to TT
     xr.set_device_type("TT")
 
     # Load the model and processor
@@ -71,8 +70,7 @@ def main():
         outputs = compiled_model(**inputs)
         logits = outputs.logits
         print_top_predictions(logits, model, top_k=5)
-       
 
-       
+
 if __name__ == "__main__":
     main()

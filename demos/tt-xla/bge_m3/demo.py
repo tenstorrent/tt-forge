@@ -10,7 +10,7 @@ from FlagEmbedding import BGEM3FlagModel
 
 
 def main():
-    # Set the XLA runtime device to TT 
+    # Set the XLA runtime device to TT
     xr.set_device_type("TT")
 
     # Load the model
@@ -22,9 +22,7 @@ def main():
         "BGE M3 is an embedding model supporting dense retrieval, lexical matching and multi-vector interaction.",
         "BM25 is a bag-of-words retrieval function that ranks a set of documents based on the query terms appearing in each document",
     ]
-    tokens = model.tokenizer(
-        sentences, return_tensors="pt", padding=True, truncation=True
-    )
+    tokens = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True)
     inputs = {
         "text_input": tokens,
         "return_dense": True,
@@ -50,8 +48,8 @@ def main():
         outputs = compiled_model(**inputs)
         print(f"Dense embeddings shape: {outputs['dense_vecs'].shape}")
         print(f"Sparse embeddings shape: {outputs['sparse_vecs'].shape}")
-        print(f"ColBERT embeddings shape: {outputs['colbert_vecs'].shape}")       
+        print(f"ColBERT embeddings shape: {outputs['colbert_vecs'].shape}")
 
-       
+
 if __name__ == "__main__":
     main()
