@@ -60,11 +60,11 @@ def main():
     # Extract dense embeddings
     embeddings_1 = output_1["dense_vecs"]
     embeddings_2 = output_2["dense_vecs"]
-    
+
     # Compute similarity matrix (dot product between normalized embeddings)
     # Note: BGE-M3 embeddings are already normalized, so we can directly compute dot product
     similarity = embeddings_1 @ embeddings_2.T
-    
+
     print(f"Dense embedding shape for sentences_1: {embeddings_1.shape}")
     print(f"Dense embedding shape for sentences_2: {embeddings_2.shape}")
     print(f"\nSimilarity matrix (sentences_1 x sentences_2):")
