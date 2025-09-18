@@ -212,23 +212,37 @@ jobs:
       run: |
         source /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
-        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
-        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
-          project_name="pjrt_plugin_tt"
+        declare -A raw_wheel_project_names=(
+          ["tt-xla"]="pjrt_plugin_tt"
+          ["tt-torch"]="tt_torch"
+          ["tt-forge-fe"]="tt_forge_fe"
+        )
+
+        declare -A pypi_wheel_project_names=(
+          ["tt-xla"]="pjrt-plugin-tt"
+          ["tt-torch"]="tt-torch"
+          ["tt-forge-fe"]="tt_forge_fe"
+        )
+
+        # Select appropriate project name based on whether the wheel was downloaded from pypi or not
+        if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
+          project_name="${raw_wheel_project_names[${{ matrix.build.project }}]}"
+        else
+          project_name="${pypi_wheel_project_names[${{ matrix.build.project }}]}"
         fi
 
         echo "Set version to commit sha if called from other repo"
         if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
           version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
         else
-          version=$(pip freeze | grep -oP "(?<=$project_name-)[^-]+")
+          version=$(pip freeze | grep "$project_name==" | grep -oP '==\K.*')
         fi
 
         echo "Wheel version: $version"
 
         mlir_sha=""
         if [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
-          wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
+          wget "https://raw.githubusercontent.com/tenstorrent/tt-torch/${version}/third_party/CMakeLists.txt"
           xla_sha=$(grep -E "set\(TT_XLA_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
           echo "XLA commit sha: $xla_sha"
           rm -f CMakeLists.txt
@@ -254,7 +268,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # ttrt version (sha) should be taken from release metadata or something
     - name: Download ttrt wheel
       if: ${{ !matrix.build.skip-device-perf }}
       uses: dawidd6/action-download-artifact@v11
@@ -265,6 +278,21 @@ jobs:
         repo: tenstorrent/tt-mlir
         check_artifacts: true
         path: ./
+        skip_unpack: true
+
+    - name: Extract artifacts manually
+      if: ${{ !matrix.build.skip-device-perf }}
+      shell: bash
+      run: |
+        echo "Extracting ttrt wheel"
+        mkdir ttrt-whl-tracy
+        mv ttrt-whl-tracy.zip ttrt-whl-tracy/ttrt-whl-tracy.zip
+        unzip -q ttrt-whl-tracy/ttrt-whl-tracy.zip -d ttrt-whl-tracy
+
+        echo "Extracting install artifacts"
+        mkdir install-artifacts-tracy
+        mv install-artifacts-tracy.zip install-artifacts-tracy/install-artifacts-tracy.zip
+        unzip -q install-artifacts-tracy/install-artifacts-tracy.zip -d install-artifacts-tracy
 
     - name: Install ttrt
       shell: bash
