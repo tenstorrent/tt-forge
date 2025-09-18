@@ -157,8 +157,8 @@ runs:
         git_log_fail_on_error="true"
         test_demo_filter=""
         test_demo_wait="false"
-        docker_build_file=".github/Dockerfile.single-wheel-slim"
-        python_version="3.10"
+        docker_build_file=".github/Dockerfile.single-wheel-slim-3.11"
+        python_version="3.11"
 
         # Tag & Release Defaults
 
@@ -198,8 +198,6 @@ runs:
             artifact_cleanup_file_glob='*torchvision*'
             artifact_cleanup_folder_glob='*install-artifacts-debug*'
             pip_wheel_names="tt-torch"
-            docker_build_file=".github/Dockerfile.single-wheel-slim-3.11"
-            python_version="3.11"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
             # NOTE: no nightly job current for tt-mlir keeping this here for future use
             workflow="On push"
@@ -210,7 +208,6 @@ runs:
             pip_wheel_names="ttmlir"
             skip_model_compatible_table="true"
             skip_docker_build="true"
-            python_version="3.11"
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
@@ -219,7 +216,6 @@ runs:
             artifact_download_glob='*{xla-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
             docker_build_file=".github/Dockerfile.single-wheel-slim-3.11"
-            python_version="3.11"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             workflow="Daily Releaser"
             ignore_artifacts="true"
