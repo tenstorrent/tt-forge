@@ -156,22 +156,23 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          apt-get install tree || true
-          apt install tree || true
           echo "Python Location: $(which python)" || true
           echo "Python Version: $(python --version)" || true
           echo "Python Site-Packages: $(python -c 'import site; print(site.getsitepackages()[0])')" || true
           echo "Python sys.prefix: $(python -c 'import sys; print(sys.prefix)')" || true
-          tree -L 2 $(dirname $(which python)) || true
-          tree -L 2 $(python -c 'import site; print(site.getsitepackages()[0])') || true
-          tree -L 2 $(python -c 'import sys; print(sys.prefix)') || true
+          echo "Listing contents around Python binary:" || true
+          ls -l $(dirname $(which python)) || true
+          echo "Listing contents of Python site-packages:" || true
+          ls -l $(python -c 'import site; print(site.getsitepackages()[0])') || true
+          echo "Listing contents of Python sys.prefix:" || true
+          ls -l $(python -c 'import sys; print(sys.prefix)') || true
           echo "Installed Python Packages:" || true
           pip freeze || true
           echo "Details of tt_torch package:" || true
           pip show tt_torch || true
           TT_TORCH_PATH=$(pip show tt_torch | grep Location | cut -d' ' -f2)/tt_torch || true
-          echo "Tree view of tt_torch package directory:" || true
-          tree -L 2 $(dirname $TT_TORCH_PATH) || true
+          echo "Listing contents of tt_torch package directory:" || true
+          ls -l $(dirname $TT_TORCH_PATH) || true
 
       - name: Run ${{ matrix.frontend }} demo ${{ matrix.name }}
         shell: bash
