@@ -14,16 +14,11 @@ RUN apt-get update && \
     git \
     vim \
     nano \
+    unzip \
     ca-certificates \
     sudo \
     ssh \
-    python3.10 \
-    python3.10-venv \
-    python3.10-dev \
-    python3-pip && \
-    # Make Python 3.10 the default
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+    python3-pip
 
 # Install system dependencies
 RUN apt-get update && \
@@ -38,7 +33,9 @@ RUN apt-get update && \
 # Install Python 3.11
 RUN add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3.11 python3.11-dev python3.11-venv python3.11-distutils
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3.11 python3.11-dev python3.11-venv python3.11-distutils && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 # Create forge user and home directory
 RUN useradd -m -s /bin/bash forge && \
@@ -60,13 +57,13 @@ RUN FRONTEND=tt-forge-fe && \
 
 # Create and activate virtual environment for tt-torch, install whl
 RUN FRONTEND=tt-torch && \
-    /usr/bin/python3.11 -m venv venv-$FRONTEND && \
+    python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     pip install tt-torch --no-cache-dir --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 
 # Create and activate virtual environment for tt-xla, install whl
 RUN FRONTEND=tt-xla && \
-    /usr/bin/python3.11 -m venv venv-$FRONTEND && \
+    python -m venv venv-$FRONTEND && \
     source venv-$FRONTEND/bin/activate && \
     pip install pjrt-plugin-tt --no-cache-dir --pre --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 

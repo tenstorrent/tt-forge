@@ -1,0 +1,191 @@
+name: Bump RC and Patch Versions
+run-name: "Bump RC and Patch versions ${{ inputs.repo }} on ${{ inputs.branch }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        type: string
+        description: 'Repo to bump version for (e.g tt-forge-fe)'
+        required: true
+      branch:
+        type: string
+        description: 'Release branch to bump (e.g release-0.4)'
+        required: true
+      draft:
+        type: boolean
+        default: false
+        required: false
+        description: 'Put release in draft mode for testing'
+      override_release_fact_workflow:
+        description: 'Override release facts default workflow (e.g. On push)'
+        required: false
+        type: string
+        default: ''
+      workflow_allow_failed:
+        description: "Ignore if workflow has failed"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      repo:
+        type: string
+        description: 'Repo to bump version for (e.g tt-forge-fe)'
+        required: true
+      branch:
+        type: string
+        description: 'Release branch to bump (e.g release-0.4)'
+        required: true
+      draft:
+        type: boolean
+        default: false
+        required: false
+        description: 'Put release in draft mode for testing'
+      override_release_fact_workflow:
+        description: 'Override release facts default workflow (e.g. On push)'
+        required: false
+        type: string
+        default: ''
+      workflow_allow_failed:
+        description: "Ignore if workflow has failed"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  pages: write
+  id-token: write
+  contents: write
+  actions: write
+  packages: write
+  attestations: write
+
+jobs:
+  validate-and-bump:
+    outputs:
+      new_version_tag: ${{ steps.bump-version.outputs.new_version_tag }}
+      repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
+      current_release_tag: ${{ steps.git-facts.outputs.current_release_tag }}
+      current_release_tag_commit: ${{ steps.git-facts.outputs.current_release_tag_commit }}
+      latest_branch_commit: ${{ steps.git-facts.outputs.latest_branch_commit }}
+      release_type: ${{ steps.bump-version.outputs.release_type }}
+
+    name: Validate Branch and Calculate Version
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set Release Facts
+      id: set-release-facts
+      uses: ./.github/actions/set-release-facts
+      with:
+        repo: ${{ inputs.repo }}
+        draft: ${{ inputs.draft || false }}
+
+    - name: Get Git Facts for Branch
+      id: git-facts
+      uses: ./.github/actions/git-facts
+      with:
+        repo: ${{ steps.set-release-facts.outputs.repo_full }}
+        draft: ${{ inputs.draft || false }}
+        branch: ${{ inputs.branch }}
+        GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+
+    - name: Bump Version
+      id: bump-version
+      shell: bash
+      run: |
+        current_release_tag="${{ steps.git-facts.outputs.current_release_tag }}"
+        draft="${{ inputs.draft }}"
+        repo_short="${{ steps.set-release-facts.outputs.repo_short }}"
+
+        echo "Current release tag: $current_release_tag"
+        echo "Release type to bump: $release_type"
+
+        # TODO: Copied logic from get-release-branches/action.yml. Should be refactored to share logic eventually
+        release_type="rc"
+
+        set +e
+        check_release_type_stable=$(echo "$current_release_tag" | grep -oP '\d\.\d\.\d$')
+        set -e
+        echo "check_release_type_stable=$check_release_type_stable"
+        if [[ -n "$check_release_type_stable" ]]; then
+        release_type="stable"
+        fi
+        echo "release_type=$release_type"
+
+        # Determine new release tag
+
+        if [[ "${{ inputs.draft }}" == "false" ]]; then
+            if [[ "$release_type" == "rc" ]]; then
+            echo "Bump RC version for release candidate branch"
+            IFS='.' read -r major minor patch_rc <<< "$current_release_tag"
+            echo "major=$major"
+            echo "minor=$minor"
+            echo "patch_rc=$patch_rc"
+            patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
+            echo "patch=$patch"
+            current_rc_version=$(echo "$patch_rc" | grep -oP '(?<=rc)\d+')
+            echo "current_rc_version=$current_rc_version"
+            new_rc_version=$((current_rc_version + 1))
+            echo "new_rc_version=$new_rc_version"
+            new_version_tag="${major}.${minor}.${patch}rc$((new_rc_version))"
+            else
+            echo "Bump Patch version for stable branch"
+            IFS='.' read -r major minor patch <<< "$current_release_tag"
+            echo "major=$major"
+            echo "minor=$minor"
+            echo "patch=$patch"
+            new_version_tag="${major}.${minor}.$((patch+1))"
+            fi
+        else
+            if [[ "$release_type" == "rc" ]]; then
+            echo "Draft Bump RC version for release candidate branch"
+            IFS='.' read -r draft repo major minor patch_rc <<< "$current_release_tag"
+            echo "draft=$draft"
+            echo "repo=$repo"
+            echo "major=$major"
+            echo "minor=$minor"
+            echo "patch_rc=$patch_rc"
+            patch=$(echo "$patch_rc" | grep -oP '\d+(?=rc\d+)')
+            echo "patch=$patch"
+            current_rc_version=$(echo "$patch_rc" | grep -oP '(?<=rc)\d+')
+            echo "current_rc_version=$current_rc_version"
+            new_rc_version=$((current_rc_version + 1))
+            echo "new_rc_version=$new_rc_version"
+            new_version_tag="${draft}.${repo}.${major}.${minor}.${patch}rc$((new_rc_version))"
+            else
+            echo "Draft Bump Patch version for stable branch"
+            IFS='.' read -r draft repo major minor patch <<< "$current_release_tag"
+            echo "draft=$draft"
+            echo "repo=$repo"
+            echo "major=$major"
+            echo "minor=$minor"
+            echo "patch=$patch"
+            new_version_tag="${draft}.${repo}.${major}.${minor}.$((patch+1))"
+            fi
+        fi
+
+        echo "new_version_tag=$new_version_tag"
+        echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
+        echo "release_type=$release_type" >> $GITHUB_OUTPUT
+
+  create-release:
+    needs: validate-and-bump
+    name: "${{ inputs.draft == 'true' && 'Draft' || '' }} Create ${{ needs.validate-and-bump.outputs.release_type }} Release ${{ needs.validate-and-bump.outputs.repo_short }} ${{ needs.validate-and-bump.outputs.new_version_tag }}"
+    secrets: inherit
+    uses: ./.github/workflows/release.yml
+    with:
+      draft: ${{ inputs.draft || false }}
+      repo: ${{ inputs.repo }}
+      release_type: ${{ needs.validate-and-bump.outputs.release_type }}
+      repo_short: ${{ needs.validate-and-bump.outputs.repo_short }}
+      branch: ${{ inputs.branch }}
+      new_version_tag: ${{ needs.validate-and-bump.outputs.new_version_tag }}
+      latest_branch_commit: ${{ needs.validate-and-bump.outputs.latest_branch_commit }}
+      current_release_tag_commit: ${{ needs.validate-and-bump.outputs.current_release_tag_commit }}
+      override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
+      workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
