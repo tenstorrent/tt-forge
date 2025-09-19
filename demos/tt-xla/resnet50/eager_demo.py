@@ -44,7 +44,7 @@ def main():
     processor = AutoImageProcessor.from_pretrained(model_name)
 
     # Load the inputs
-    image = Image.open("/localdev/gengelage/tt-forge/demos/tt-xla/resnet50/000000039769.jpg").convert("RGB")
+    image = Image.open("000000039769.jpg").convert("RGB")
     inputs = processor(images=image, return_tensors="pt")
 
     # Convert to bfloat16
