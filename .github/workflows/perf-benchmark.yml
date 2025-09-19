@@ -241,31 +241,13 @@ jobs:
       shell: bash
       run: |
 
-        declare -A raw_wheel_project_names=(
-          ["tt-xla"]="pjrt_plugin_tt"
-          ["tt-torch"]="tt_torch"
-          ["tt-forge-fe"]="tt_forge_fe"
-        )
-
-        declare -A pypi_wheel_project_names=(
-          ["tt-xla"]="pjrt-plugin-tt"
-          ["tt-torch"]="tt-torch"
-          ["tt-forge-fe"]="tt_forge_fe"
-        )
-
-        # Select appropriate project name based on whether the wheel was downloaded from pypi or not
-        if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
-          project_name="${raw_wheel_project_names[${{ matrix.build.project }}]}"
-        else
-          project_name="${pypi_wheel_project_names[${{ matrix.build.project }}]}"
+        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
+        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          project_name="pjrt_plugin_tt"
         fi
 
         echo "Set version to commit sha if called from other repo"
-        if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
-          version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
-        else
-          version=$(pip freeze | grep "$project_name==" | grep -oP '==\K.*')
-        fi
+        version=$(pip show $project_name | grep -oP "(?<=Version:\s)[\d\.\w]+")
 
         echo "Wheel version: $version"
 
