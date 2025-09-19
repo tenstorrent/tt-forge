@@ -8,6 +8,7 @@ import torch_xla.runtime as xr
 from tt_torch.backend.backend import xla_backend
 from transformers import ResNetForImageClassification, AutoImageProcessor
 from PIL import Image
+import requests
 
 
 def print_top_predictions(logits, model, top_k=5):
@@ -45,7 +46,9 @@ def main():
     processor = AutoImageProcessor.from_pretrained(model_name)
 
     # Load the inputs
-    image = Image.open("000000039769.jpg").convert("RGB")
+    image_url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    image = Image.open(requests.get(image_url, stream=True).raw)
+    image = image.convert("RGB")
     inputs = processor(images=image, return_tensors="pt")
 
     # Convert to bfloat16
