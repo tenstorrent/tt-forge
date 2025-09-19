@@ -23,7 +23,7 @@ This directory contains benchmark implementations of popular deep learning model
 
 ## Running Benchmarks
 
-Instructions for running performance benchmarks can be found [here](../../docs/src/getting_started.md).
+Instructions for running performance benchmarks can be found [here](../docs/src/getting_started.md#running-performance-benchmark-tests).
 
 ## Additional Resources
 
