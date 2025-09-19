@@ -17,21 +17,21 @@ This section provides instructions for how to set up your frontend so you can ru
 
 Before running one of the demos in TT-Forge, you must:
 1. Determine which frontend you want to use:
-   * [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
-   * [TT-Torch](https://github.com/tenstorrent/tt-torch)
-   * [TT-XLA](https://github.com/tenstorrent/tt-xla)
+   * [TT-XLA](https://github.com/tenstorrent/tt-xla) - For use with JAX, TensorFlow, PyTorch
+   * [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe) - For use with ONNX and PaddlePaddle
+   * [TT-Torch](https://github.com/tenstorrent/tt-torch) - (Deprecated, if you want to use PyTorch use TT-XLA)
 
 2. Decide what setup you want to use for the frontend:
    * Wheel
    * Docker
 
 3. Follow the installation instructions from the repo for your selected setup method:
-   * [TT-Forge-FE Wheel](https://docs.tenstorrent.com/tt-forge-fe/getting_started.html)
-   * [TT-Forge-FE Docker](https://docs.tenstorrent.com/tt-forge-fe/getting_started_docker.html)
-   * [TT-Torch Wheel](https://docs.tenstorrent.com/tt-torch/getting_started.html)
-   * [TT-Torch Docker](https://docs.tenstorrent.com/tt-torch/getting_started_docker.html)
    * [TT-XLA Wheel](https://docs.tenstorrent.com/tt-xla/getting_started.html)
    * [TT-XLA Docker](https://docs.tenstorrent.com/tt-xla/getting_started_docker.html)
+   * [TT-Forge-FE Wheel](https://docs.tenstorrent.com/tt-forge-fe/getting_started.html)
+   * [TT-Forge-FE Docker](https://docs.tenstorrent.com/tt-forge-fe/getting_started_docker.html)
+   * [TT-Torch Wheel](https://docs.tenstorrent.com/tt-torch/getting_started.html) - (deprecated)
+   * [TT-Torch Docker](https://docs.tenstorrent.com/tt-torch/getting_started_docker.html) - (deprecated)
 
 4. Return to this repo and follow the instructions in the [Running a Demo](#running-a-demo) section.
 
@@ -46,9 +46,9 @@ git clone https://github.com/tenstorrent/tt-forge.git
 ```
 
 2. Navigate to the folder for the frontend you want:
-   * [TT-Forge-FE Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-fe)
-   * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch)
    * [TT-XLA Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla)
+   * [TT-Forge-FE Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-fe)
+   * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch) - (deprecated)
 
 3. In this walkthrough, [**resnet_50_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) from the TT-Forge-FE folder is used.
 
