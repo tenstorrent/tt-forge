@@ -26,6 +26,7 @@ RUN apt-get update && \
     git \
     vim \
     nano \
+    unzip \
     ca-certificates \
     sudo \
     ssh \
