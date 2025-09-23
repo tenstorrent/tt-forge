@@ -78,15 +78,6 @@ runs:
             return 1
           fi
 
-          ls -lah $path
-
-          # unzip -o "$path/${ARTIFACT_NAME}.zip" -d "$path"
-          # if [ $? -ne 0 ]; then
-          #   echo "Error: Failed to unzip artifact."
-          #   return 1
-          # fi
-          # rm "$path/${ARTIFACT_NAME}.zip"
-
           # Check if we need to untar
           for file in "$path"/*.tar*; do
             if [ -f "$file" ]; then
