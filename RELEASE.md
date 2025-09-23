@@ -32,10 +32,10 @@ The release lifecycle is a series of automated workflows that manage the creatio
 Currently this release process manages the release for the following repositories:
 
 - TT-Forge
-- TT-Forge-fe
-- TT-Torch
-- TT-Xla
-- TT-Mlir
+- TT-XLA
+- TT-Forge-FE
+- TT-MLIR
+- TT-Torch (deprecated)
 
 ### Quick Start Release Guide
 
@@ -166,7 +166,7 @@ This [workflow](.github/workflows/basic-tests.yml) runs simple tests across diff
 
 What this workflow does:
 
-- Tests multiple frontends (tt-forge-fe, tt-torch, tt-xla) against the provided Docker image
+- Tests multiple frontends (TT-Forge-FE, TT-XLA, TT-Torch (deprecated)) against the provided Docker image
 - Runs tests on different hardware configurations (N150 and P150B boards)
 - Activates the appropriate Python virtual environment for each frontend
 - Executes basic test scripts to validate core functionality
@@ -181,7 +181,7 @@ This [workflow](.github/workflows/demo-tests.yml) runs more comprehensive demons
 What this workflow does:
 
 - Configures a test matrix based on frontends and available demo tests
-- Supports filtering by frontend (tt-forge-fe, tt-torch, tt-xla) and test name
+- Supports filtering by frontend (TT-XLA, TT-Forge-FE, TT-Torch (deprecated)) and test name
 - Runs tests on specific hardware configurations based on the test requirements
 - Automatically installs required system dependencies and Python packages
 - Executes demo scripts that demonstrate the full functionality of each frontend
@@ -352,7 +352,6 @@ What this workflow does:
 - Handles draft mode for testing the release process without affecting production
 - Supports overwriting existing releases when necessary
 
-
 ### Common Actions
 
 #### Set Release Facts
@@ -376,7 +375,6 @@ What this action does:
 
 This centralized approach ensures consistent behavior across all repositories in the TT-Forge ecosystem and simplifies maintenance of the release process.
 
-
 #### Git Facts
 
 This [action](.github/actions/git-facts/action.yml) and/or [script](.github/scripts/git_facts.sh) retrieves git information about a repository. This information is essential for workflows that need to make decisions based on the current state of a branch, such as determining whether new commits have been added since the last release, or verifying that a release tag points to the expected commit.
@@ -389,7 +387,6 @@ What this action does:
 - Checks whether the latest branch commit matches the latest release tag commit
 - Exposes these values as outputs for other workflows to consume
 
-
 #### Find Workflow
 
 This [action](.github/actions/find-workflow/action.yml) locates suitable workflow runs in repository for release purposes. It's crucial for identifying workflows that have completed successfully and/or have produced artifacts for release purposes.
@@ -401,7 +398,6 @@ What this action does:
 - Verifies that workflows have produced artifacts (unless artifact checking is disabled)
 - Returns information about the selected workflow run, including its ID, URL, and commit SHA
 - Supports filtering to specific job results within a workflow
-
 
 #### Get Repos
 
@@ -527,7 +523,6 @@ What this action does:
 - Creates a timestamp-based unique identifier when running in draft mode
 - Ensures that artifacts from test releases have unique names to avoid collisions
 - Returns an empty ID for production runs to maintain consistent artifact naming
-
 
 #### Create RC Branch
 
