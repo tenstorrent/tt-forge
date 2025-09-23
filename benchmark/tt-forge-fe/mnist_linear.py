@@ -43,9 +43,7 @@ MNIST_INPUT_FEATURE_SIZE = 784  # 784 = 28 * 28, default size of MNIST image
 MNIST_OUTPUT_FEATURE_SIZE = 10  # 10 classes in MNIST, default output size
 MNIIST_HIDDEN_SIZE = 256  # Hidden layer size, default size
 
-BATCH_SIZE = [
-    2**i for i in range(MNIST_BATCH_SIZE_EXP_RANGE)
-]  # Batch size, sizes will be 1, 2, 4, 8, 16, 32, 64, etc.
+BATCH_SIZE = [2**i for i in range(MNIST_BATCH_SIZE_EXP_RANGE)]  # Batch size, sizes will be 1, 2, 4, 8, 16, 32, 64, etc.
 INPUT_SIZE = [  # Input size, sizes will be 1 * 2^5 = 32, 3 * 2^5 = 96, 5 * 2^5 = 160, 7 * 2^5 = 224, etc.
     factor * hidden
     for factor in MNIIST_INPUT_SIZE_FACTORS
@@ -122,7 +120,7 @@ def test_mnist_linear(
         cpu_fps = -1.0
 
     OPTIMIZER_ENABLED = True
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False  # mnist_linear.py doesn't use set_enable_memory_layout_analysis
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
     compiler_cfg = CompilerConfig()
     compiler_cfg.mlir_config = MLIRConfig().set_enable_optimizer(OPTIMIZER_ENABLED)

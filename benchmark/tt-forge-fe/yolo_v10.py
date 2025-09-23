@@ -102,7 +102,7 @@ def test_yolo_v10(
 
     # Compiler configuration
     OPTIMIZER_ENABLED = True
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
     compiler_config = CompilerConfig()
 
