@@ -10,6 +10,7 @@
   - [Daily Releaser](#daily-releaser)
   - [Creating a Release Branch & Initial RC](#creating-a-release-branch--initial-rc)
   - [Promoting a Release Candidate to Stable](#promoting-a-release-candidate-to-stable)
+  - [Manual Version Bumping](#manual-version-bumping)
 - [Maintainer's Guide](#maintainers-guide)
   - [Testing Workflows](#testing)
   - [Core Release Processes](#core-release-processes)
@@ -31,10 +32,10 @@ The release lifecycle is a series of automated workflows that manage the creatio
 Currently this release process manages the release for the following repositories:
 
 - TT-Forge
-- TT-Forge-fe
-- TT-Torch
-- TT-Xla
-- TT-Mlir
+- TT-XLA
+- TT-Forge-FE
+- TT-MLIR
+- TT-Torch (deprecated)
 
 ### Quick Start Release Guide
 
@@ -69,6 +70,21 @@ Currently this release process manages the release for the following repositorie
 1. Trigger the [promote-stable.yml](.github/workflows/promote-stable.yml) workflow manually through the GitHub Actions UI
 2. Specify the target repository and the release branch name
 3. The workflow will create a stable version tag (removing the RC suffix) and mark the release as latest
+
+#### Manually Bump RC or Patch Versions
+
+##### Prerequisites
+
+- An existing release branch (e.g., release-0.1) with at least one release tag
+- The branch should have successful workflow runs for the commits you want to release
+
+##### Bumping
+1. Trigger the [bump-version.yml](.github/workflows/bump-version.yml) workflow manually through the GitHub Actions UI
+2. Specify the target repository and release branch name
+3. The workflow will automatically:
+   - For RC branches: Increment the RC number (e.g., 0.1.0rc1 → 0.1.0rc2)
+   - For stable branches: Increment the patch version (e.g., 0.1.0 → 0.1.1)
+   - Create a new release with the bumped version
 
 ### Release Flow Diagram
 
@@ -105,6 +121,10 @@ graph TD
     C2 --> A6
     A6 --> A1
 
+    %% Bump RC or Patch versions
+    A7[Bump RC or Patch versions]
+    C2 --> A7
+    A7 --> A1
 
     %% Common Release Path
     subgraph A1[Release]
@@ -132,7 +152,6 @@ graph TD
 
         A7a --> A8 --> A9
     end
-
 ```
 
 ## Maintainer's Guide
@@ -147,7 +166,7 @@ This [workflow](.github/workflows/basic-tests.yml) runs simple tests across diff
 
 What this workflow does:
 
-- Tests multiple frontends (tt-forge-fe, tt-torch, tt-xla) against the provided Docker image
+- Tests multiple frontends (TT-Forge-FE, TT-XLA, TT-Torch (deprecated)) against the provided Docker image
 - Runs tests on different hardware configurations (N150 and P150B boards)
 - Activates the appropriate Python virtual environment for each frontend
 - Executes basic test scripts to validate core functionality
@@ -162,7 +181,7 @@ This [workflow](.github/workflows/demo-tests.yml) runs more comprehensive demons
 What this workflow does:
 
 - Configures a test matrix based on frontends and available demo tests
-- Supports filtering by frontend (tt-forge-fe, tt-torch, tt-xla) and test name
+- Supports filtering by frontend (TT-XLA, TT-Forge-FE, TT-Torch (deprecated)) and test name
 - Runs tests on specific hardware configurations based on the test requirements
 - Automatically installs required system dependencies and Python packages
 - Executes demo scripts that demonstrate the full functionality of each frontend
@@ -188,14 +207,13 @@ What this workflow does not do:
 
 #### Test RC/Stable Release Lifecycle
 
-This [workflow](.github/workflows/test-rc-stable-release-lifecycle.yml) allows testing of the RC to stable release promotion process without triggering actual production releases. This workflow verifies that the RC to stable build workflow functions correctly. Currently we only use tt-mlir for this test.
+This [workflow](.github/workflows/test-rc-stable-release-lifecycle.yml) allows testing of the RC to stable release promotion process without triggering actual production releases. This workflow verifies that the RC to stable build workflow functions correctly, including the new manual version bumping capability. Currently we only use tt-mlir for this test.
 
 What this workflow does:
 
-
 - Uses create version branch tag to create the tag initial tag (e.g., 0.1.0rc1) and a draft release of RC1
 - Simulates a user commit and workflow success on release branch (e.g draft-tt-mlir.0.1.0rc1)
-- Runs update release branch to create RC2 and a draft release of RC2
+- Tests the bump-version workflow to create RC2 and a draft release of RC2
 - Promote the RC2 to stable and create a stable draft release (e.g draft-tt-mlir.0.1.0)
 
 
@@ -278,6 +296,46 @@ To promote a release candidate to stable:
 3. Specify the target repository and the release branch name
 
 > **Note:** Once promoted to stable, the release branch continues to be monitored by the daily releaser for patch updates (e.g., `X.Y.1`, `X.Y.2`) as needed.
+
+### Manual Version Bumping
+
+This [workflow](.github/workflows/bump-version.yml) provides manual control over version increments for release branches, allowing maintainers to create new RC or patch versions on demand.
+
+#### Process Overview
+
+The bump version workflow operates differently based on the current state of the release branch:
+
+1. **RC Branch Bumping:** For branches with release candidate tags (e.g., `X.Y.0rc1`):
+   - Automatically increments the RC number (e.g., `X.Y.0rc1` → `X.Y.0rc2`)
+   - Creates a new GitHub pre-release with the incremented RC tag
+   - Uses the latest commit on the release branch as the source
+
+2. **Stable Branch Bumping:** For branches with stable release tags (e.g., `X.Y.0`):
+   - Increments the patch version (e.g., `X.Y.0` → `X.Y.1`)
+   - Creates a new GitHub release with the patch version
+   - Maintains the stable release status
+
+3. **Draft Mode Support:** The workflow supports draft mode for testing:
+   - Draft releases are prefixed with `draft-<repo-name>`
+   - Allows testing the version bumping process without affecting production releases
+
+#### Usage
+
+To manually bump a version:
+
+1. Trigger the `bump-version.yml` workflow manually through the GitHub Actions UI
+2. Specify the target repository and release branch name
+3. Optionally enable draft mode for testing
+4. The workflow will automatically determine whether to bump RC or patch version based on the current release tag
+
+#### Key Features
+
+- **Automatic Version Detection:** Determines whether to create RC or patch versions based on current tags
+- **Workflow Integration:** Leverages existing release infrastructure and validation
+- **Draft Mode:** Supports testing without affecting production releases
+- **Flexible Workflow Override:** Allows overriding default workflow selection for artifact sourcing
+
+> **Note:** This workflow complements the automated daily releaser but provides manual control when immediate version bumps are needed outside the scheduled automation.
 ### Common Workflows
 
 #### Release
@@ -293,7 +351,6 @@ What this workflow does:
 - Creates GitHub releases with all artifacts and documentation
 - Handles draft mode for testing the release process without affecting production
 - Supports overwriting existing releases when necessary
-
 
 ### Common Actions
 
@@ -318,7 +375,6 @@ What this action does:
 
 This centralized approach ensures consistent behavior across all repositories in the TT-Forge ecosystem and simplifies maintenance of the release process.
 
-
 #### Git Facts
 
 This [action](.github/actions/git-facts/action.yml) and/or [script](.github/scripts/git_facts.sh) retrieves git information about a repository. This information is essential for workflows that need to make decisions based on the current state of a branch, such as determining whether new commits have been added since the last release, or verifying that a release tag points to the expected commit.
@@ -331,7 +387,6 @@ What this action does:
 - Checks whether the latest branch commit matches the latest release tag commit
 - Exposes these values as outputs for other workflows to consume
 
-
 #### Find Workflow
 
 This [action](.github/actions/find-workflow/action.yml) locates suitable workflow runs in repository for release purposes. It's crucial for identifying workflows that have completed successfully and/or have produced artifacts for release purposes.
@@ -343,7 +398,6 @@ What this action does:
 - Verifies that workflows have produced artifacts (unless artifact checking is disabled)
 - Returns information about the selected workflow run, including its ID, URL, and commit SHA
 - Supports filtering to specific job results within a workflow
-
 
 #### Get Repos
 
@@ -469,7 +523,6 @@ What this action does:
 - Creates a timestamp-based unique identifier when running in draft mode
 - Ensures that artifacts from test releases have unique names to avoid collisions
 - Returns an empty ID for production runs to maintain consistent artifact naming
-
 
 #### Create RC Branch
 

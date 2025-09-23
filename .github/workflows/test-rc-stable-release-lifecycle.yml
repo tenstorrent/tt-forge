@@ -13,6 +13,9 @@ on:
         - '.github/workflows/nightly-release.yml'
         - '.github/workflows/release.yml'
         - '.github/workflows/create-version-branches.yml'
+        - '.github/workflows/bump-version.yml'
+        - '.github/workflows/promote-stable.yml'
+        - '.github/actions/add-commit/**'
         - '.github/actions/create-rc-branch/**'
         - '.github/actions/docs-generator/**'
         - '.github/actions/find-workflow/**'
@@ -42,6 +45,9 @@ on:
         - '.github/workflows/nightly-release.yml'
         - '.github/workflows/release.yml'
         - '.github/workflows/create-version-branches.yml'
+        - '.github/workflows/bump-version.yml'
+        - '.github/workflows/promote-stable.yml'
+        - '.github/actions/add-commit/**'
         - '.github/actions/create-rc-branch/**'
         - '.github/actions/docs-generator/**'
         - '.github/actions/find-workflow/**'
@@ -189,10 +195,51 @@ jobs:
       repo: ${{ matrix.repo }}
       overwrite_releases: false
 
+  second-commit-successful-pre-release-branch:
+    needs:
+      - get-release-branches
+      - release-rc-first-commit-observed
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} Second RC Commit Successful
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add random test file
+        uses: ./.github/actions/add-commit
+        with:
+          branch: ${{ matrix.branch }}
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/trigger-workflow
+        with:
+          workflow_name: 'Mock Successful'
+          wait: true
+          branch: ${{ matrix.branch }}
+
+  bump-rc-version-observed:
+    needs:
+      - second-commit-successful-pre-release-branch
+      - get-release-branches
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    uses: ./.github/workflows/bump-version.yml
+    secrets: inherit
+    name: ${{ matrix.repo_short }} Bump RC Version on observed second commit
+    with:
+      draft: true
+      repo: ${{ matrix.repo }}
+      branch: ${{ matrix.branch }}
+
   promote-stable:
     needs:
       - get-repos
-      - release-rc-first-commit-observed
+      - bump-rc-version-observed
       - get-release-branches
     strategy:
       fail-fast: false
@@ -214,7 +261,7 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
-    name: ${{ matrix.repo_short }} First StablePatch Commit Successful
+    name: ${{ matrix.repo_short }} First Stable/Patch Commit Successful
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -247,11 +294,205 @@ jobs:
       repo: ${{ matrix.repo }}
       overwrite_releases: false
 
+  second-commit-successful-stable-branch:
+    needs:
+      - get-release-branches
+      - release-stable-first-commit-observed
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} Second Stable/Patch Commit Successful
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add random test file
+        uses: ./.github/actions/add-commit
+        with:
+          branch: ${{ matrix.branch }}
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/trigger-workflow
+        with:
+          workflow_name: 'Mock Successful'
+          wait: true
+          branch: ${{ matrix.branch }}
+
+  bump-stable-version-observed:
+    needs:
+      - second-commit-successful-stable-branch
+      - get-release-branches
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
+    uses: ./.github/workflows/bump-version.yml
+    secrets: inherit
+    name: ${{ matrix.repo_short }} Bump Stable Version on observed second commit
+    with:
+      draft: true
+      repo: ${{ matrix.repo }}
+      branch: ${{ matrix.branch }}
+
+
+  validate-draft-artifacts:
+    if: always()
+    needs:
+      - bump-stable-version-observed
+      - get-repos
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} Validate Draft Artifacts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version file
+        id: read-version
+        run: |
+          source .version
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set expected artifacts
+        id: set-expected
+        run: |
+          # Expected tags based on the automation pattern
+          expected_tags=(
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc1"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc2"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.1"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.2"
+          )
+
+          # Expected branch
+          expected_branch="draft-${{ matrix.repo_short }}-release-${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}"
+
+          # Convert arrays to space-separated strings for easier handling in bash
+          echo "expected_tags=${expected_tags[*]}" >> $GITHUB_OUTPUT
+          echo "expected_branch=$expected_branch" >> $GITHUB_OUTPUT
+
+      - name: Validate draft tags exist
+        run: |
+          echo "Validating draft tags for ${{ matrix.repo_short }}..."
+
+          # Get all tags
+          git fetch --tags
+          all_tags=$(git tag -l)
+
+          # Check each expected tag
+          missing_tags=()
+          for tag in ${{ steps.set-expected.outputs.expected_tags }}; do
+            if echo "$all_tags" | grep -q "^${tag}$"; then
+              echo "✓ Tag $tag exists"
+            else
+              echo "✗ Tag $tag is missing"
+              missing_tags+=("$tag")
+            fi
+          done
+
+          # Report results
+          if [ ${#missing_tags[@]} -eq 0 ]; then
+            echo "✅ All expected tags are present"
+          else
+            echo "❌ Missing tags: ${missing_tags[*]}"
+            exit 1
+          fi
+
+      - name: Validate draft branch exists
+        run: |
+          echo "Validating draft branch for ${{ matrix.repo_short }}..."
+
+          # Get all remote branches
+          git fetch --all
+          all_branches=$(git branch -r)
+
+          expected_branch="${{ steps.set-expected.outputs.expected_branch }}"
+
+          if echo "$all_branches" | grep -q "origin/${expected_branch}$"; then
+            echo "✅ Branch $expected_branch exists"
+          else
+            echo "❌ Branch $expected_branch is missing"
+            echo "Available branches:"
+            echo "$all_branches" | grep "draft-" || echo "No draft branches found"
+            exit 1
+          fi
+
+      - name: Validate draft releases exist
+        run: |
+          echo "Validating draft releases for ${{ matrix.repo_short }}..."
+
+          # Get all releases from the repository
+          releases=$(gh release list --repo tenstorrent/tt-forge --limit 100 --json tagName,isDraft | jq -r '.[] | select(.isDraft == true) | .tagName')
+
+          # Check each expected tag has a corresponding draft release
+          missing_releases=()
+          for tag in ${{ steps.set-expected.outputs.expected_tags }}; do
+            if echo "$releases" | grep -q "^${tag}$"; then
+              echo "✓ Draft release $tag exists"
+            else
+              echo "✗ Draft release $tag is missing"
+              missing_releases+=("$tag")
+            fi
+          done
+
+          # Report results
+          if [ ${#missing_releases[@]} -eq 0 ]; then
+            echo "✅ All expected draft releases are present"
+          else
+            echo "❌ Missing draft releases: ${missing_releases[*]}"
+            echo "Available draft releases:"
+            echo "$releases" | grep "draft.${{ matrix.repo_short }}" || echo "No matching draft releases found"
+            exit 1
+          fi
+
+      - name: Validate version file consistency
+        run: |
+          echo "Validating version file consistency..."
+
+          # Check that the version file matches our expectations
+          source .version
+
+          if [ "$MAJOR" != "${{ steps.read-version.outputs.major }}" ]; then
+            echo "❌ Version file MAJOR mismatch: expected ${{ steps.read-version.outputs.major }}, got $MAJOR"
+            exit 1
+          fi
+
+          if [ "$MINOR" != "${{ steps.read-version.outputs.minor }}" ]; then
+            echo "❌ Version file MINOR mismatch: expected ${{ steps.read-version.outputs.minor }}, got $MINOR"
+            exit 1
+          fi
+
+          if [ "$PATCH" != "${{ steps.read-version.outputs.patch }}" ]; then
+            echo "❌ Version file PATCH mismatch: expected ${{ steps.read-version.outputs.patch }}, got $PATCH"
+            exit 1
+          fi
+
+          echo "✅ Version file is consistent: $VERSION"
+
+      - name: Summary
+        run: |
+          echo "🎉 Validation completed successfully for ${{ matrix.repo_short }}!"
+          echo "✅ All draft tags verified"
+          echo "✅ Draft branch verified"
+          echo "✅ All draft releases verified"
+          echo "✅ Version file consistency verified"
 
   delete-draft-artifacts:
     if: always()
     needs:
-      - release-stable-first-commit-observed
+      - validate-draft-artifacts
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -280,4 +521,24 @@ jobs:
           echo "draft_branches=$draft_branches"
           if [ -n "$draft_branches" ]; then
             git push origin --delete $draft_branches
+          fi
+      - name: Delete draft releases
+        if: ${{ inputs.delete-drafts || true }}
+        run: |
+          echo "Deleting draft releases..."
+          draft_releases=$(gh release list --repo tenstorrent/tt-forge --limit 100 --json tagName,isDraft | jq -r '.[] | select(.isDraft == true) | select(.tagName | startswith("draft.tt-")) | .tagName')
+
+          if [ -n "$draft_releases" ]; then
+            echo "Found draft releases to delete:"
+            echo "$draft_releases"
+
+            # Delete each draft release
+            echo "$draft_releases" | while read -r release_tag; do
+              if [ -n "$release_tag" ]; then
+                echo "Deleting draft release: $release_tag"
+                gh release delete "$release_tag" --repo tenstorrent/tt-forge --yes || echo "Failed to delete release $release_tag"
+              fi
+            done
+          else
+            echo "No draft releases found to delete"
           fi
