@@ -43,7 +43,9 @@ MNIST_INPUT_FEATURE_SIZE = 784  # 784 = 28 * 28, default size of MNIST image
 MNIST_OUTPUT_FEATURE_SIZE = 10  # 10 classes in MNIST, default output size
 MNIIST_HIDDEN_SIZE = 256  # Hidden layer size, default size
 
-BATCH_SIZE = [2**i for i in range(MNIST_BATCH_SIZE_EXP_RANGE)]  # Batch size, sizes will be 1, 2, 4, 8, 16, 32, 64, etc.
+BATCH_SIZE = [
+    2**i for i in range(MNIST_BATCH_SIZE_EXP_RANGE)
+]  # Batch size, sizes will be 1, 2, 4, 8, 16, 32, 64, etc.
 INPUT_SIZE = [  # Input size, sizes will be 1 * 2^5 = 32, 3 * 2^5 = 96, 5 * 2^5 = 160, 7 * 2^5 = 224, etc.
     factor * hidden
     for factor in MNIIST_INPUT_SIZE_FACTORS
