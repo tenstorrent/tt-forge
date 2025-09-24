@@ -58,7 +58,7 @@ def get_jax_device_arch():
 
     devices = jax.devices('tt')
     for device in devices:
-        return str(device.arch)
+        return str(device.device_kind)
 
     return ""
 
