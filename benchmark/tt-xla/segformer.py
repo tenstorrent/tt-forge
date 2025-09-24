@@ -11,6 +11,7 @@ import pytest
 import torch
 import torch.nn as nn
 import torch_xla.core.xla_model as xm
+import tt_torch
 from tqdm import tqdm
 
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
