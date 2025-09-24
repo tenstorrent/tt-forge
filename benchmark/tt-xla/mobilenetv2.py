@@ -227,7 +227,7 @@ def test_mobilenetv2_torch_xla(
         torch_xla_enabled=True,
         openxla_backend=True,
         channel_size=channel_size,
-        device_name=machine_name,
+        device_name=socket.gethostname(),
         arch=get_jax_device_arch()
     )
 
