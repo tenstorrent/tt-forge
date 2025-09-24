@@ -114,8 +114,8 @@ def test_vit_base(
         cpu_fps = -1.0
 
     # Compiler configuration
-    OPTIMIZER_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False  # vit.py doesn't use set_enable_memory_layout_analysis
+    OPTIMIZER_ENABLED = True
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
     compiler_config = CompilerConfig()
     # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.

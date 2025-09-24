@@ -83,7 +83,7 @@ def test_unet(
         raise ValueError(f"Unsupported UNet variant: {variant}")
 
     OPTIMIZER_ENABLED = True
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
     compiler_config = CompilerConfig()
     compiler_config.enable_optimization_passes = True

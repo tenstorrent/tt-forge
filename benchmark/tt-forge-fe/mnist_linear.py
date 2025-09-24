@@ -122,7 +122,7 @@ def test_mnist_linear(
         cpu_fps = -1.0
 
     OPTIMIZER_ENABLED = True
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False  # mnist_linear.py doesn't use set_enable_memory_layout_analysis
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
     compiler_cfg = CompilerConfig()
     compiler_cfg.mlir_config = MLIRConfig().set_enable_optimizer(OPTIMIZER_ENABLED)
