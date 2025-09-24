@@ -10,7 +10,9 @@ import pytest
 # Third-party modules
 import torch
 import torch.nn as nn
+import torch_xla
 import torch_xla.core.xla_model as xm
+import tt_torch
 from tqdm import tqdm
 
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
@@ -122,8 +124,13 @@ def test_resnet_torch_xla(
     else:
         cpu_fps = -1.0
 
+    torch_xla.set_custom_compile_options({
+        "enable_optimizer": True,
+        "enable_memory_layout_analysis": True,
+    })
+    
     # torch_xla compilation
-    framework_model.compile(backend="openxla")
+    framework_model.compile(backend="tt")
 
     # Connect the device
     device = xm.xla_device()
