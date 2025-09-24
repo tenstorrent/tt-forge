@@ -6,6 +6,7 @@
 import os
 import time
 import pytest
+import socket
 
 # Third-party modules
 import torch
@@ -13,7 +14,7 @@ import torch.nn as nn
 import torch_xla.core.xla_model as xm
 from tqdm import tqdm
 
-from benchmark.utils import measure_cpu_fps
+from benchmark.utils import measure_cpu_fps, get_jax_device_arch
 from third_party.tt_forge_models.unet.pytorch.loader import ModelLoader as UNetLoader
 from .utils import (
     get_benchmark_metadata,
@@ -187,6 +188,8 @@ def test_unet_torch_xla(
         torch_xla_enabled=True,
         openxla_backend=True,
         channel_size=channel_size,
+        device_name=socket.gethostname(),
+        arch=get_jax_device_arch()
     )
 
     return result

@@ -6,6 +6,7 @@
 import os
 import time
 import pytest
+import socket
 
 # Third-party modules
 import torch
@@ -13,7 +14,7 @@ import torch.nn as nn
 import torch_xla.core.xla_model as xm
 from tqdm import tqdm
 
-from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
+from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_jax_device_arch
 from third_party.tt_forge_models.mobilenetv2.pytorch.loader import (
     ModelLoader as MobileNetV2Loader,
     ModelVariant as MobileNetV2Variant,
@@ -226,6 +227,8 @@ def test_mobilenetv2_torch_xla(
         torch_xla_enabled=True,
         openxla_backend=True,
         channel_size=channel_size,
+        device_name=machine_name,
+        arch=get_jax_device_arch()
     )
 
     return result

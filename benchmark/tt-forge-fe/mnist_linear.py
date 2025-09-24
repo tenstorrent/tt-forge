@@ -23,7 +23,7 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.verify.verify import verify
 from forge.config import CompilerConfig, MLIRConfig
 
-from benchmark.utils import measure_cpu_fps
+from benchmark.utils import measure_cpu_fps, get_ffe_device_arch
 
 
 # Common constants
@@ -149,6 +149,7 @@ def test_mnist_linear(
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
+    device_arch = get_ffe_device_arch()
     total_time = end - start
     total_samples = batch_size * loop_count
 
@@ -231,9 +232,9 @@ def test_mnist_linear(
             },
         ],
         "device_info": {
-            "device_name": "",
+            "device_name": machine_name,
             "galaxy": False,
-            "arch": "",
+            "arch": device_arch,
             "chips": 1,
         },
         "device_ip": None,
