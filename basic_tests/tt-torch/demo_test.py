@@ -4,6 +4,7 @@
 
 import torch
 import tt_torch
+from tt_torch.dynamo.backend import backend
 
 
 class AddTensors(torch.nn.Module):
@@ -12,7 +13,7 @@ class AddTensors(torch.nn.Module):
 
 
 model = AddTensors()
-tt_model = torch.compile(model, backend="tt")
+tt_model = torch.compile(model, backend=backend)
 
 x = torch.ones(5, 5)
 y = torch.ones(5, 5)

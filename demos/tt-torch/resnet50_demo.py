@@ -12,6 +12,7 @@ import torchvision.models as models
 import tabulate
 import requests
 from tt_torch.tools.device_manager import DeviceManager
+from tt_torch.dynamo.backend import backend
 
 
 def main(run_interactive):
@@ -26,7 +27,7 @@ def main(run_interactive):
 
     options = BackendOptions()
     options.compiler_config = cc
-    tt_model = torch.compile(model, backend="tt", dynamic=False, options=options)
+    tt_model = torch.compile(model, backend=backend, dynamic=False, options=options)
 
     headers = ["Top 5 Predictions"]
     topk = 5
