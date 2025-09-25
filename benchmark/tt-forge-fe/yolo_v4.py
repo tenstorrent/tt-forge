@@ -20,7 +20,7 @@ from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
 
 from yolov4_utils import Yolov4Wrapper, ModelLoader
-from benchmark.utils import measure_cpu_fps
+from benchmark.utils import measure_cpu_fps, get_ffe_device_arch
 
 
 # Common constants
@@ -144,6 +144,7 @@ def test_yolo_v4(
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
+    device_arch = get_ffe_device_arch()
     total_time = end - start
     total_samples = batch_size * loop_count
 
@@ -226,9 +227,9 @@ def test_yolo_v4(
             },
         ],
         "device_info": {
-            "device_name": "",
+            "device_name": machine_name,
             "galaxy": False,
-            "arch": "",
+            "arch": device_arch,
             "chips": 1,
         },
         "device_ip": None,

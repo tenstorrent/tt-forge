@@ -21,7 +21,7 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps
+from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_ffe_device_arch
 
 
 # Common constants
@@ -170,6 +170,7 @@ def test_vit_base(
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
+    device_arch = get_ffe_device_arch()
     total_time = end - start
     total_samples = batch_size * loop_count
 
@@ -268,9 +269,9 @@ def test_vit_base(
             },
         ],
         "device_info": {
-            "device_name": "",
+            "device_name": machine_name,
             "galaxy": False,
-            "arch": "",
+            "arch": device_arch,
             "chips": 1,
         },
         "device_ip": None,
