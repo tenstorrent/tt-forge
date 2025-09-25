@@ -53,15 +53,14 @@ def get_ffe_device_arch():
 
 
 def get_jax_device_arch():
-    
+
     import jax
 
-    devices = jax.devices('tt')
+    devices = jax.devices("tt")
     for device in devices:
         return str(device.device_kind)
 
     return ""
-
 
 
 def download_model(download_func, *args, num_retries=3, timeout=180, **kwargs):

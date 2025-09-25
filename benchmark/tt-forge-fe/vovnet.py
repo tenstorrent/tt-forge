@@ -23,7 +23,13 @@ from forge.config import CompilerConfig, MLIRConfig
 from forge.verify.config import VerifyConfig
 from forge._C import DataFormat
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_ffe_device_arch
+from benchmark.utils import (
+    download_model,
+    load_benchmark_dataset,
+    evaluate_classification,
+    measure_cpu_fps,
+    get_ffe_device_arch,
+)
 
 
 # Common constants
