@@ -231,7 +231,7 @@ def test_resnet_torch_xla(
         openxla_backend=True,
         channel_size=channel_size,
         device_name=socket.gethostname(),
-        arch=get_jax_device_arch()
+        arch=get_jax_device_arch(),
     )
 
     return result
