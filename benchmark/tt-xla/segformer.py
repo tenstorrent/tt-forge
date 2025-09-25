@@ -231,7 +231,7 @@ def test_segformer_torch_xla(
         backend="tt",
         channel_size=channel_size,
         device_name=socket.gethostname(),
-        arch=get_jax_device_arch()
+        arch=get_jax_device_arch(),
     )
 
     return result
