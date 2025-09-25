@@ -93,8 +93,8 @@ def test_llama_prefill(
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
     # Compiler configuration
-    OPTIMIZER_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    OPTIMIZER_ENABLED = True
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
     # @TODO - For now, we are skipping enabling MLIR optimizations, because it is not working with the current version of the model.
     # Turn on MLIR optimizations.
