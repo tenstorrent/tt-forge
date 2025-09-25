@@ -20,6 +20,8 @@ from transformers import FlaxResNetForImageClassification
 from jax import device_put
 from tt_jax.tools import serialize_function_to_binary
 
+from benchmark.utils import get_jax_device_arch
+
 
 BATCH_SIZE = [
     1,
@@ -145,6 +147,8 @@ def test_resnet(
         torch_xla_enabled=False,
         openxla_backend=False,
         channel_size=channel_size,
+        device_name=socket.gethostname(),
+        arch=get_jax_device_arch()
     )
 
     return result
