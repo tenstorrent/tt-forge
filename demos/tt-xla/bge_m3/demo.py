@@ -5,7 +5,7 @@ import torch
 from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
-from tt_torch_core.backend.backend import xla_backend
+from tt_torch_backend.backend.backend import xla_backend
 from FlagEmbedding import BGEM3FlagModel
 
 
