@@ -11,8 +11,7 @@ import numpy as np
 from collections import defaultdict
 from FlagEmbedding import BGEM3FlagModel
 
-# encode function from https://github.com/FlagOpen/FlagEmbedding/blob/master/FlagEmbedding/inference/embedder/encoder_only/m3.py
-# Modified to remove unnecessary overhead handled by the tt backend
+# Adapted from FlagEmbedding's BGEM3 encode function, removing overhead handled by TT backend
 def encode(
     model,
     sentences: Union[List[str], str],
@@ -38,6 +37,7 @@ def encode(
     model = model.to(device)
     outputs = model(**inputs)
 
+    # Process outputs to expected format
     def _process_token_weights(token_weights: np.ndarray, input_ids: list):
         result = defaultdict(int)
         unused_tokens = set()
@@ -62,6 +62,8 @@ def encode(
     length_sorted_idx = np.argsort([-len(text_input["input_ids"][i]) for i in range(batch_size)])
 
     all_dense_embeddings.append(outputs["dense_vecs"].cpu().detach())
+    all_dense_embeddings = np.concatenate(all_dense_embeddings, axis=0)
+    all_dense_embeddings = all_dense_embeddings[np.argsort(length_sorted_idx)]
 
     token_weights = outputs["sparse_vecs"].squeeze(-1)
     all_lexical_weights.extend(
@@ -73,6 +75,7 @@ def encode(
             )
         )
     )
+    all_lexical_weights = [all_lexical_weights[i] for i in np.argsort(length_sorted_idx)]
 
     all_colbert_vecs.extend(
         list(
@@ -83,12 +86,6 @@ def encode(
             )
         )
     )
-
-    all_dense_embeddings = np.concatenate(all_dense_embeddings, axis=0)
-    all_dense_embeddings = all_dense_embeddings[np.argsort(length_sorted_idx)]
-
-    all_lexical_weights = [all_lexical_weights[i] for i in np.argsort(length_sorted_idx)]
-
     all_colbert_vecs = [all_colbert_vecs[i] for i in np.argsort(length_sorted_idx)]
 
     # return the embeddings
