@@ -95,6 +95,9 @@ jobs:
       id: set-perf-benchmarks
       shell: bash
       run: |
+        filter='.[] | select(true'
+
+        # Add project filter if specified
         if [ "${{ inputs.project-filter }}" != "tt-forge" ]; then
           project="${{ inputs.project || inputs.project-filter }}"
           filter="$filter and .project == \"$project\""
@@ -103,16 +106,6 @@ jobs:
           filter="$filter and select(.project | IN(\"tt-xla\", \"tt-forge-fe\"))"
         fi
 
-        filter='.[] | select(true'
-
-        if [ -n "$project" ]; then
-          pa=($project)
-          f="false"
-          for p in "${pa[@]}"; do
-            f="$f or .project == \"$p\""
-          done
-          filter="$filter and ($f)"
-        fi
         if [ -n "${{ inputs.test-filter }}" ]; then
           filter="$filter and .name == \"${{ inputs.test-filter }}\""
         fi
@@ -342,6 +335,8 @@ jobs:
           export TT_TORCH_SAVE_MLIR=TTIR
           export TT_TORCH_SAVE_BINARY=1
         fi
+
+        # Caused by tensorflow installation in tt-xla: https://github.com/tenstorrent/tt-forge/issues/477
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           pip uninstall tensorflow -y
         fi
