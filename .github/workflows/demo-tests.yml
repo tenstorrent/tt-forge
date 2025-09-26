@@ -64,7 +64,7 @@ jobs:
           filter="$filter and .frontend == \"$project\""
         else
           # Select tt-torch and tt-xla for tt-forge
-          filter="$filter and select(.frontend | IN(\"tt-torch\", \"tt-xla\", \"tt-forge-fe\"))"
+          filter="$filter and select(.frontend | IN(\"tt-xla\", \"tt-forge-fe\"))"
         fi
 
         # Add test name filter if specified

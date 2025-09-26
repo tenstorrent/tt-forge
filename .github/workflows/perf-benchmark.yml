@@ -100,7 +100,7 @@ jobs:
           filter="$filter and .project == \"$project\""
         else
           # Select all frontends for tt-forge
-          filter="$filter and select(.project | IN(\"tt-torch\", \"tt-xla\", \"tt-forge-fe\"))"
+          filter="$filter and select(.project | IN(\"tt-xla\", \"tt-forge-fe\"))"
         fi
 
         filter='.[] | select(true'
@@ -337,7 +337,7 @@ jobs:
         echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
 
-        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+        if [ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
           export TT_TORCH_SAVE_BINARY=1
         fi

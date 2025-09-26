@@ -49,7 +49,7 @@ jobs:
           runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
 
           if [ "${{ inputs.project-filter }}" == "tt-forge" ]; then
-            frontends="tt-torch tt-xla tt-forge-fe"
+            frontends="tt-xla tt-forge-fe"
           elif [ -n "${{ inputs.project-filter }}" ]; then
             frontends="${{ inputs.project-filter }}"
           fi
