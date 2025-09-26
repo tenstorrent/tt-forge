@@ -63,7 +63,7 @@ def test_resnet(
     if training:
         pytest.skip("Training is not supported")
 
-    OPTIMIZER_ENABLED = False
+    OPTIMIZER_ENABLED = True
     PROGRAM_CACHE_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
