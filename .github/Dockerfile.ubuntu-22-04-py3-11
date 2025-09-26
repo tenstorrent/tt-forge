@@ -1,0 +1,60 @@
+FROM ubuntu:22.04
+
+SHELL ["/bin/bash", "-c"]
+
+ARG WHL_VERSION
+ARG REPO_SHORT
+ARG WHEEL_FILES_PATH
+
+LABEL org.opencontainers.image.source=https://github.com/tenstorrent/${REPO_SHORT}
+LABEL org.opencontainers.image.description=${REPO_SHORT}
+LABEL org.opencontainers.image.licenses=Apache-2.0
+
+# Set-up necessary Env vars for PyEnv
+ENV PYENV_ROOT /root/.pyenv
+ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+
+# Install system tools and minimal pyenv dependencies
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    software-properties-common \
+    pkg-config \
+    gnupg2 \
+    curl \
+    wget \
+    jq \
+    git \
+    vim \
+    nano \
+    unzip \
+    ca-certificates \
+    sudo \
+    ssh \
+    make \
+    build-essential \
+    libssl-dev \
+    zlib1g-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libffi-dev \
+    liblzma-dev \
+    libnuma1 \
+    libbz2-dev \
+    protobuf-compiler && \
+    wget "https://github.com/dmakoviichuk-tt/mpi-ulfm/releases/download/v5.0.7-ulfm/openmpi-ulfm_5.0.7-1_amd64.deb" -O "mpi.deb" && \
+    apt install -y "./mpi.deb" && \
+    rm -f "mpi.deb" && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+
+# Install pyenv
+RUN set -ex \
+    && curl https://pyenv.run | bash \
+    && pyenv update \
+    && pyenv install 3.11 \
+    && pyenv global 3.11 \
+    && pyenv rehash \
+    && python -m pip install --upgrade pip --no-cache-dir
+
+CMD ["/bin/bash"]
