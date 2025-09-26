@@ -22,7 +22,7 @@ from forge._C import DataFormat
 from forge.forge_property_utils import (
     Task,
 )
-from benchmark.utils import download_model, measure_cpu_fps
+from benchmark.utils import download_model, measure_cpu_fps, get_ffe_device_arch
 
 BATCH_SIZE = [
     1,
@@ -135,6 +135,7 @@ def test_unet(
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
+    device_arch = get_ffe_device_arch()
     total_time = end - start
     total_samples = batch_size * loop_count
 
@@ -217,9 +218,9 @@ def test_unet(
             },
         ],
         "device_info": {
-            "device_name": "",
+            "device_name": machine_name,
             "galaxy": False,
-            "arch": "",
+            "arch": device_arch,
             "chips": 1,
         },
         "device_ip": None,

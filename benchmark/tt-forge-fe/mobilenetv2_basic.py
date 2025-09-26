@@ -20,7 +20,13 @@ from forge._C.runtime.experimental import configure_devices, DeviceSettings
 from forge.config import CompilerConfig, MLIRConfig
 from forge._C import DataFormat
 
-from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps
+from benchmark.utils import (
+    download_model,
+    load_benchmark_dataset,
+    evaluate_classification,
+    measure_cpu_fps,
+    get_ffe_device_arch,
+)
 
 
 # Common constants
@@ -172,6 +178,7 @@ def test_mobilenetv2_basic(
 
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
+    device_arch = get_ffe_device_arch()
     total_time = end - start
     total_samples = batch_size * loop_count
 

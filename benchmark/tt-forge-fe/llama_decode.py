@@ -25,6 +25,8 @@ from forge.config import CompilerConfig
 from forge.verify.compare import compare_with_golden
 from forge._C import DataFormat
 
+from benchmark.utils import get_ffe_device_arch
+
 # Utils
 from utils import load_model
 
@@ -252,6 +254,7 @@ def test_llama_decode(
     # Calculate metrics
     date = datetime.now().strftime("%d-%m-%Y")
     machine_name = socket.gethostname()
+    device_arch = get_ffe_device_arch()
     input_size = len(inputs.input_ids[0])
     total_time = end - start
     total_tokens = tokens_generated
@@ -330,9 +333,9 @@ def test_llama_decode(
             },
         ],
         "device_info": {
-            "device_name": "",
+            "device_name": machine_name,
             "galaxy": False,
-            "arch": "",
+            "arch": device_arch,
             "chips": 1,
         },
         "device_ip": None,
