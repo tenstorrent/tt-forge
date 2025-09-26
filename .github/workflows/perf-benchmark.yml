@@ -117,6 +117,7 @@ jobs:
           filter="$filter and .name == \"${{ inputs.test-filter }}\""
         fi
 
+        echo "filter=$filter"
         matrix_skip="false"
         matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
         echo "Matrix: $matrix"
@@ -337,9 +338,12 @@ jobs:
         echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
 
-        if [ "${{ matrix.build.project }}" == "tt-torch" || "${{ matrix.build.project }}" == "tt-xla" ]; then
+        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
           export TT_TORCH_SAVE_BINARY=1
+        fi
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          pip uninstall tensorflow -y
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
