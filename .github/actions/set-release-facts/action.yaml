@@ -114,13 +114,18 @@ outputs:
   test_demo_wait:
     description: "Test demo wait"
     value: ${{ steps.set-manifest.outputs.test_demo_wait }}
-  docker_build_file:
-    description: "Docker build file"
-    value: ${{ steps.set-manifest.outputs.docker_build_file }}
   python_version:
     description: "Python version"
     value: ${{ steps.set-manifest.outputs.python_version }}
-
+  test_perf_filter:
+    description: "Test perf filter"
+    value: ${{ steps.set-manifest.outputs.test_perf_filter }}
+  test_perf_sh_runner:
+    description: "Test perf sh runner"
+    value: ${{ steps.set-manifest.outputs.test_perf_sh_runner }}
+  test_perf:
+    description: "Test perf"
+    value: ${{ steps.set-manifest.outputs.test_perf }}
 
 runs:
   using: "composite"
@@ -156,8 +161,10 @@ runs:
         skip_docker_build="false"
         git_log_fail_on_error="true"
         test_demo_filter=""
+        test_perf="false"
+        test_perf_sh_runner="false"
+        test_perf_filter=""
         test_demo_wait="false"
-        docker_build_file=".github/Dockerfile.single-wheel-slim-3.11"
         python_version="3.11"
 
         # Tag & Release Defaults
@@ -198,6 +205,7 @@ runs:
             artifact_cleanup_file_glob='*torchvision*'
             artifact_cleanup_folder_glob='*install-artifacts-debug*'
             pip_wheel_names="tt-torch"
+            test_perf="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
             # NOTE: no nightly job current for tt-mlir keeping this here for future use
             workflow="On push"
@@ -219,11 +227,11 @@ runs:
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             workflow="Daily Releaser"
             ignore_artifacts="true"
-            pip_wheel_deps_names="tt-torch tt_forge_fe tt_tvm pjrt-plugin-tt"
+            pip_wheel_deps_names="pjrt-plugin-tt tt-forge-fe"
             pip_wheel_names="tt-forge"
             skip_wheel_install="true"
             skip_model_compatible_table="true"
-            skip_docker_build="true"
+            test_perf="true"
         fi
 
 
@@ -235,8 +243,10 @@ runs:
         if [[ "${{ inputs.draft }}" == "true" ]]; then
             prerelease="true"
             # Wait for the demo test to complete only for draft releases and run only one test
-            test_demo_filter="opt_125m"
+            test_demo_filter="bge_m3"
+            test_perf_filter="resnet"
             test_demo_wait="true"
+            #test_perf_sh_runner="true"
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
@@ -302,8 +312,10 @@ runs:
         echo "git_log_fail_on_error=$git_log_fail_on_error"
         echo "test_demo_filter=$test_demo_filter"
         echo "test_demo_wait=$test_demo_wait"
-        echo "docker_build_file=$docker_build_file"
         echo "python_version=$python_version"
+        echo "test_perf_filter=$test_perf_filter"
+        echo "test_perf_sh_runner=$test_perf_sh_runner"
+        echo "test_perf=$test_perf"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -337,5 +349,7 @@ runs:
         echo "git_log_fail_on_error=$git_log_fail_on_error" >> $GITHUB_OUTPUT
         echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
         echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
-        echo "docker_build_file=$docker_build_file" >> $GITHUB_OUTPUT
         echo "python_version=$python_version" >> $GITHUB_OUTPUT
+        echo "test_perf_filter=$test_perf_filter" >> $GITHUB_OUTPUT
+        echo "test_perf_sh_runner=$test_perf_sh_runner" >> $GITHUB_OUTPUT
+        echo "test_perf=$test_perf" >> $GITHUB_OUTPUT

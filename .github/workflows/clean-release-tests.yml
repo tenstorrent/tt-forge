@@ -28,4 +28,4 @@ jobs:
           image-tags: "draft.tt-*.dev*"
           tag-selection: "tagged"
           dry-run: false
-          cut-off: 1h
+          cut-off: 1s

@@ -10,6 +10,11 @@ inputs:
     type: string
     required: true
     default: ''
+  cache_docker_tag:
+    description: 'Use dockerfile hash as docker tag. Supersedes docker_tag'
+    type: string
+    required: false
+    default: "false"
   repo_short:
     description: 'Repo short name'
     type: string
@@ -68,10 +73,17 @@ runs:
           BUILD_ARGS="${{ inputs.build_args }}"
           DRAFT="${{ inputs.draft }}"
           DOCKERFILE="${{ inputs.dockerfile }}"
+          ON_MAIN=$(git branch --show-current | grep -q main && echo "true" || echo "false")
+
+          if [[ "${{ inputs.cache_docker_tag }}" == "true" ]]; then
+            DOCKER_TAG=$(sha256sum $DOCKERFILE | sha256sum | cut -d ' ' -f 1)
+          fi
+
           echo "IMAGE_NAME=$IMAGE_NAME"
           echo "DOCKER_TAG=$DOCKER_TAG"
           echo "BUILD_ARGS=$BUILD_ARGS"
           echo "DRAFT=$DRAFT"
+          echo "DOCKERFILE=$DOCKERFILE"
 
           # Check if image already exists and not forced to rebuild
           if docker manifest inspect $IMAGE_NAME:$DOCKER_TAG &>/dev/null && [[ "${{ inputs.force_rebuild }}" != "true" ]]; then
@@ -87,7 +99,7 @@ runs:
           fi
 
           TAGS="--tag $IMAGE_NAME:$DOCKER_TAG"
-          if [[ "${{ inputs.make_latest }}" == "true" && "${{ inputs.draft }}" == "false" ]]; then
+          if [[ "${{ inputs.make_latest }}" == "true" && "${{ inputs.draft }}" == "false" && "$ON_MAIN" == "true" ]]; then
             TAGS+=" --tag $IMAGE_NAME:latest"
           fi
           echo "TAGS=${TAGS}"

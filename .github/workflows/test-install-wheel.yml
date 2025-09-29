@@ -20,9 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          { project: "tt-torch", run_id: "15983228065", wheel_name: "tt[-_]torch" },
-          { project: "tt-forge-fe", run_id: "16046494009", wheel_name: "tt[-_]forge[-_]fe" },
-          { project: "tt-xla", run_id: "16044326176", wheel_name: "pjrt[-_]" }
+          { project: "tt-torch", run_id: "17842271263", wheel_name: "tt[-_]torch" },
+          { project: "tt-forge-fe", run_id: "18005587450", wheel_name: "tt[-_]forge[-_]fe" },
+          { project: "tt-xla", run_id: "18098242089", wheel_name: "pjrt[-_]" }
         ]
 
     runs-on: tt-ubuntu-2204-n150-stable
@@ -30,7 +30,7 @@ jobs:
       - name: Setup Python environment
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1

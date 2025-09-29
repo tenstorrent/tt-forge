@@ -83,6 +83,7 @@ jobs:
       check-tag: ${{ steps.check-tag.outputs.exists }}
       target_commit: ${{ steps.build-release-wheel.outputs.target_commit }}
       harbor_image_tag: ${{ steps.docker-build-push.outputs.harbor_image_tag }}
+      image_tag: ${{ steps.docker-build-push.outputs.image_tag }}
       workflow_run_status_symbol: ${{ steps.build-release-wheel.outputs.workflow_run_status_symbol }}
       workflow_run_url: ${{ steps.build-release-wheel.outputs.workflow_run_url }}
 
@@ -99,6 +100,17 @@ jobs:
         draft: ${{ inputs.draft }}
         new_version_tag: ${{ inputs.new_version_tag }}
         latest_branch_commit: ${{ inputs.latest_branch_commit }}
+
+    - name: Free Disk Space (Ubuntu)
+      if: ${{ steps.set-release-facts.outputs.repo_short == 'tt-forge' }}
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: false
+        docker-images: true
+        swap-storage: true
 
     - uses: mukunku/tag-exists-action@v1.6.0
       if: ${{ !inputs.overwrite_releases }}
@@ -122,6 +134,26 @@ jobs:
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
 
+    - name: "Build Forge Ubuntu 22.04 Py 3.11"
+      if: ${{ steps.set-release-facts.outputs.python_version == '3.11' }}
+      uses: ./.github/actions/docker-build-push
+      id: docker-build-push-3-11
+      with:
+          image_name: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11"
+          cache_docker_tag: true
+          make_latest: true
+          force_rebuild: false
+          dockerfile: ".github/Dockerfile.ubuntu-22-04-py3-11"
+
+    - name: "Determine Docker Base Image"
+      id: determine-docker-base-image
+      run: |
+        if [ "${{ steps.set-release-facts.outputs.python_version }}" == '3.11' ]; then
+          DOCKER_BASE_IMAGE="${{ steps.docker-build-push-3-11.outputs.image_tag }}"
+        fi
+        echo "DOCKER_BASE_IMAGE=${DOCKER_BASE_IMAGE}"
+        echo "DOCKER_BASE_IMAGE=${DOCKER_BASE_IMAGE}" >> $GITHUB_OUTPUT
+
     - name: "${{ inputs.draft && 'Draft' || '' }} Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}"
       if: ${{ (steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.check-tag.outputs.exists == 'false') || (steps.set-release-facts.outputs.skip_docker_build == 'false' && inputs.overwrite_releases) }}
       id: docker-build-push
@@ -132,8 +164,8 @@ jobs:
         make_latest: false
         force_rebuild: ${{ inputs.overwrite_releases }}
         draft: ${{ inputs.draft }}
-        dockerfile: ${{ steps.set-release-facts.outputs.docker_build_file }}
-        build_args: "--build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }} --build-arg WHEEL_FILES_PATH=${{ steps.build-release-wheel.outputs.wheel_files_path }}"
+        dockerfile: ".github/Dockerfile.single-wheel-slim"
+        build_args: "--build-arg REPO_SHORT=${{ steps.set-release-facts.outputs.repo_short }} --build-arg WHEEL_FILES_PATH=${{ steps.build-release-wheel.outputs.wheel_files_path }} --build-arg DOCKER_BASE_IMAGE=${{ steps.determine-docker-base-image.outputs.DOCKER_BASE_IMAGE }}"
 
   test-release:
     outputs:
@@ -183,6 +215,19 @@ jobs:
           wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
           wait_for_run_url: true
           json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_demo_filter }}" }'
+
+      - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }}
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' }}
+        uses: ./.github/actions/trigger-workflow
+        id: trigger-perf-test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          workflow_name: "Performance benchmark"
+          parent_run_id: "perf-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
+          wait_for_run_url: true
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}" }'
 
       - name: Wait for Basic tests
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}

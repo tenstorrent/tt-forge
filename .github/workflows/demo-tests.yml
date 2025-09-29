@@ -22,8 +22,8 @@ on:
           - tt-forge-fe
           - tt-torch
           - tt-xla
-          - All
-        default: All
+          - tt-forge
+        default: tt-forge
       test-filter:
         description: "Only run tests that contains"
         required: false
@@ -59,9 +59,12 @@ jobs:
         filter='.[] | select(true'
 
         # Add frontend filter if specified
-        if [ "${{ inputs.project-filter }}" != "All" ]; then
+        if [ "${{ inputs.project-filter }}" != "tt-forge" ]; then
           project="${{ inputs.project-filter }}"
           filter="$filter and .frontend == \"$project\""
+        else
+          # Select tt-torch and tt-xla for tt-forge
+          filter="$filter and select(.frontend | IN(\"tt-xla\", \"tt-forge-fe\"))"
         fi
 
         # Add test name filter if specified
@@ -135,12 +138,8 @@ jobs:
         shell: bash
         run: |
           if [ -n "${{ matrix.libreq }}" ]; then
+            apt-get update -y -qq
             apt-get install -y -qq --no-install-recommends ${{ matrix.libreq }}
-          fi
-
-          if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
-            echo "Using /home/forge/venv-${{ matrix.frontend }}"
-            source /home/forge/venv-${{ matrix.frontend }}/bin/activate
           fi
 
           if [ -n "${{ matrix.pyreq }}" ]; then
@@ -161,11 +160,6 @@ jobs:
           TRACY_NO_INVARIANT_CHECK: 1
           IRD_LF_CACHE: ${{ vars.IRD_LF_CACHE }}
         run: |
-          if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
-            echo "Using /home/forge/venv-${{ matrix.frontend }}"
-            source /home/forge/venv-${{ matrix.frontend }}/bin/activate
-            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          fi
 
           third_party_models="$(realpath third_party)"
           demo_folder=$(dirname demos/${{ matrix.frontend }}/${{ matrix.path }})
