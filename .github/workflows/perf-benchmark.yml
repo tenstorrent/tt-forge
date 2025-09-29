@@ -41,8 +41,7 @@ on:
       docker-image:
         description: "Docker image used in tests"
         required: false
-        # TODO: Change to latest once PR is merged
-        default: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:610ffc95847166e97c0ff3d615d1b7766079f3f5303044d7107b93688f96b2de"
+        default: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:latest"
         type: string
       project:
         description: "Project(s) to launch tests (space separated)"

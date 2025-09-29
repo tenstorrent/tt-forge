@@ -107,7 +107,7 @@ jobs:
         draft_slug_name: ${{ inputs.draft_slug_name || '' }}
         workflow: ${{ inputs.workflow || steps.set-release-facts.outputs.workflow }}
         branch: ${{ inputs.branch || github.head_ref }}
-        ignore_artifacts: ${{ inputs.ignore_artifacts || false }}
+        ignore_artifacts: ${{ inputs.ignore_artifacts || steps.set-release-facts.outputs.ignore_artifacts }}
         workflow_result_in_job: ${{ steps.set-release-facts.outputs.workflow_result_in_job }}
         major_version: ${{ steps.set-release-facts.outputs.major_version }}
         minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
