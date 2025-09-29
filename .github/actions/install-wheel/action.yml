@@ -87,9 +87,6 @@ runs:
     - name: Install wheel
       shell: bash
       run: |
-        if [ -n "${{ inputs.venv_bin_path }}" ]; then
-          source ${{ inputs.venv_bin_path }}
-        fi
         if [ "${{ steps.set-wheel-name.outputs.artifact_is_regex }}" == "true" ]; then
           cd $(ls | grep -E "${{ steps.set-wheel-name.outputs.artifact }}")
         fi

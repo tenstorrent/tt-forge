@@ -22,8 +22,8 @@ on:
           - tt-forge-fe
           - tt-torch
           - tt-xla
-          - All
-        default: All
+          - tt-forge
+        default: tt-forge
 
   workflow_call:
     inputs:
@@ -43,10 +43,14 @@ jobs:
         shell: bash
         run: |
           json_matrix="[]"
-          frontends="tt-forge-fe tt-torch tt-xla"
+
+          project_filter="${{ inputs.project-filter }}"
+
           runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
 
-          if [ -n "${{ inputs.project-filter }}" ]; then
+          if [ "${{ inputs.project-filter }}" == "tt-forge" ]; then
+            frontends="tt-xla tt-forge-fe"
+          elif [ -n "${{ inputs.project-filter }}" ]; then
             frontends="${{ inputs.project-filter }}"
           fi
 
@@ -54,13 +58,16 @@ jobs:
             for run_on in $runs_on; do
               json_matrix=$(echo $json_matrix | jq -r -c --arg frontend "$frontend" --arg run_on "$run_on" '. += [{
               "frontend": $frontend,
-              "run_on": $run_on
+              "run_on": $run_on,
+
               }]')
             done
           done
 
           echo "json_matrix=$json_matrix"
           echo "json_matrix=$json_matrix" >> $GITHUB_OUTPUT
+          echo "frontends=$frontends"
+          echo "frontends=$frontends" >> $GITHUB_OUTPUT
 
 
   basic-test:
@@ -74,7 +81,7 @@ jobs:
     runs-on: ${{ matrix.run_on }}
     container:
       image: ${{ inputs.docker-image }}
-      options: --device /dev/tenstorrent --user forge
+      options: --device /dev/tenstorrent
       volumes:
         - /dev/hugepages:/dev/hugepages
         - /dev/hugepages-1G:/dev/hugepages-1G
@@ -109,10 +116,4 @@ jobs:
           # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
           TRACY_NO_INVARIANT_CHECK: 1
         run: |
-          set -xe
-          if [ -f /home/forge/venv-${{ matrix.frontend }}/bin/activate ]; then
-            echo "Using /home/forge/venv-${{ matrix.frontend }}"
-            source /home/forge/venv-${{ matrix.frontend }}/bin/activate
-            pip list | grep -E 'tt_|tt-|pjrt-' # Print installed version
-          fi
-          python basic_tests/${{ matrix.frontend }}/demo_test.py
+            python "basic_tests/${{ matrix.frontend }}/demo_test.py"

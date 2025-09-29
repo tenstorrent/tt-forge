@@ -1,4 +1,5 @@
 name: Performance benchmark
+run-name: Performance benchmark ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}
 
 on:
   workflow_dispatch:
@@ -16,8 +17,8 @@ on:
           - tt-forge-fe
           - tt-torch
           - tt-xla
-          - All
-        default: All
+          - tt-forge
+        default: tt-forge
       test-filter:
         description: "Only run tests that contains"
         required: false
@@ -30,12 +31,18 @@ on:
         description: "Run on shared runner"
         required: false
         type: boolean
+      parent_run_id:
+        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
+        required: false
+        type: string
+        default: ""
   workflow_call:
     inputs:
       docker-image:
         description: "Docker image used in tests"
         required: false
-        default: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+        # TODO: Change to latest once PR is merged
+        default: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:610ffc95847166e97c0ff3d615d1b7766079f3f5303044d7107b93688f96b2de"
         type: string
       project:
         description: "Project(s) to launch tests (space separated)"
@@ -75,6 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       benchmark-matrix: ${{ steps.set-perf-benchmarks.outputs.perf-benchmarks }}
+      matrix_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_skip }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -83,36 +91,36 @@ jobs:
         fetch-depth: 1
         ref: ${{ inputs.ref || github.ref }}
         submodules: 'recursive'
+
     - name: Filter Matrix
       id: set-perf-benchmarks
       shell: bash
       run: |
-        if [ "${{ inputs.project-filter }}" == "All" ]; then
-          project="tt-forge-fe tt-torch tt-xla"
-        else
-          project="${{ inputs.project || inputs.project-filter }}"
-        fi
-
         filter='.[] | select(true'
 
-        if [ -n "$project" ]; then
-          pa=($project)
-          f="false"
-          for p in "${pa[@]}"; do
-            f="$f or .project == \"$p\""
-          done
-          filter="$filter and ($f)"
-        fi
-        if [ -n "${{ inputs.test-filter }}" ]; then
-          filter="$filter and (.name | contains(\"${{ inputs.test-filter }}\"))"
+        # Add project filter if specified
+        if [ "${{ inputs.project-filter }}" != "tt-forge" ]; then
+          project="${{ inputs.project || inputs.project-filter }}"
+          filter="$filter and .project == \"$project\""
+        else
+          # Select all frontends for tt-forge
+          filter="$filter and select(.project | IN(\"tt-xla\", \"tt-forge-fe\"))"
         fi
 
+        if [ -n "${{ inputs.test-filter }}" ]; then
+          filter="$filter and .name == \"${{ inputs.test-filter }}\""
+        fi
+
+        echo "filter=$filter"
+        matrix_skip="false"
         matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
         echo "Matrix: $matrix"
         if [ "$matrix" == "[]" ]; then
           echo "Error: No matching tests found in the matrix"
-          exit 1
+          matrix_skip="true"
         fi
+        echo "matrix_skip=$matrix_skip"
+        echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
         echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
 
         # Set up the summary for the job
@@ -125,6 +133,7 @@ jobs:
 
   run-perf-benchmarks:
     needs: filter-tests
+    if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
     container:
       image: ${{ inputs.sh-runner && format('harbor.ci.tenstorrent.net/{0}', inputs.docker-image) || inputs.docker-image }}
       options: --device /dev/tenstorrent --user root
@@ -162,17 +171,34 @@ jobs:
         ref: ${{ inputs.ref || github.ref }}
         submodules: 'recursive'
 
+    - name: Fix HOME Directory
+      shell: bash
+      run: |
+        # Issue [HOME is overridden for containers](https://github.com/actions/runner/issues/863)
+        h=$(getent passwd $(id -un) | cut -d: -f6)
+        if [ "$h" = "$HOME" ]; then
+          echo "HOME fine: $HOME"
+          exit 0
+        fi
+        echo "HOME=$HOME was broken. Setting it to $h"
+        ls -ld $HOME
+        ls -ld $h
+        echo "USER: $USER"
+        echo "id: $(id)"
+        echo "HOME=$h" >> $GITHUB_ENV
+
     - name: Install system and python dependencies
       shell: bash
       run: |
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          apt-get install -y -qq --no-install-recommends sqlite3
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq --no-install-recommends sqlite3
         fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
-          apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
         fi
 
-        source /home/forge/venv-${{ matrix.build.project }}/bin/activate
         if [ -n "${{ matrix.build.pyreq }}" ]; then
           pip install ${{ matrix.build.pyreq }}
         fi
@@ -184,7 +210,6 @@ jobs:
         project: ${{ matrix.build.project }}
         run_id: ${{ inputs.run_id }}
         run_id_source: ${{ inputs.run_id_source }}
-        venv_bin_path: /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
     - name: Fetch job id
       id: fetch-job-id
@@ -210,36 +235,23 @@ jobs:
       id: find-run
       shell: bash
       run: |
-        source /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
-        declare -A raw_wheel_project_names=(
-          ["tt-xla"]="pjrt_plugin_tt"
-          ["tt-torch"]="tt_torch"
-          ["tt-forge-fe"]="tt_forge_fe"
-        )
-
-        declare -A pypi_wheel_project_names=(
-          ["tt-xla"]="pjrt-plugin-tt"
-          ["tt-torch"]="tt-torch"
-          ["tt-forge-fe"]="tt_forge_fe"
-        )
-
-        # Select appropriate project name based on whether the wheel was downloaded from pypi or not
-        if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
-          project_name="${raw_wheel_project_names[${{ matrix.build.project }}]}"
-        else
-          project_name="${pypi_wheel_project_names[${{ matrix.build.project }}]}"
+        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
+        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          project_name="pjrt_plugin_tt"
         fi
 
         echo "Set version to commit sha if called from other repo"
         if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
           version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
         else
-          version=$(pip freeze | grep "$project_name" | grep -oP '(\d+\.\d+\.\d+)(\.dev\d+|rc\d+)?')
+          version=$(pip show $project_name | grep -oP "(?<=Version:\s)[\d\.\w]+")
         fi
 
         echo "Wheel version: $version"
 
+        # TODO: Add tt-mlir version to frontend setup.py description
+        # REF: https://github.com/tenstorrent/tt-forge/issues/170
         mlir_sha=""
         if [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
           wget "https://raw.githubusercontent.com/tenstorrent/tt-torch/${version}/third_party/CMakeLists.txt"
@@ -299,9 +311,10 @@ jobs:
       if: ${{ !matrix.build.skip-device-perf }}
       run: |
         echo "Install ttrt"
-        /usr/bin/python3.11 -m venv ttrt-venv
+        python -m venv ttrt-venv
         source ttrt-venv/bin/activate
         apt-get update -y -qq
+        python --version
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
         pip install ttrt-whl-tracy/ttrt*.whl --upgrade
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
@@ -324,11 +337,15 @@ jobs:
       run: |
         echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
-        source /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
         if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
           export TT_TORCH_SAVE_MLIR=TTIR
           export TT_TORCH_SAVE_BINARY=1
+        fi
+
+        # Caused by tensorflow installation in tt-xla: https://github.com/tenstorrent/tt-forge/issues/477
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          pip uninstall tensorflow -y
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
@@ -338,7 +355,6 @@ jobs:
       if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
       shell: bash
       run: |
-        source /home/forge/venv-${{ matrix.build.project }}/bin/activate
 
         if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
           echo "Dump ttir to report"
@@ -354,8 +370,9 @@ jobs:
           cp ./model_flatbuffer/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
         fi
         source ttrt-venv/bin/activate
+        python --version
         echo "Run ttrt read"
-        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json > /dev/null 2>&1
+        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json
         echo "Extract MLIR from ttnn"
         python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
         cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
@@ -420,9 +437,10 @@ jobs:
       run: |
         echo "model_name=$(cat ${{ steps.strings.outputs.perf_report_json_file }} | jq -r '.model')" >> $GITHUB_OUTPUT
 
+        #TODO: Add filter here to not pick up draft runs
         workflow_id=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/mega-docker.yml/runs?event=schedule&status=completed&branch=main&per_page=1" \
+          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?event=schedule&status=completed&branch=main&per_page=1" \
           | jq -r '.workflow_runs[0].id')
         echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
@@ -443,8 +461,8 @@ jobs:
           exit 0
         fi
 
-        apt-get update -y -qq
-        apt-get install -y -qq bc
+        sudo apt-get update -y -qq
+        sudo apt-get install -y -qq bc
 
         prev_perf_report='${{ steps.prev-perf.outputs.response }}'
 
@@ -475,3 +493,52 @@ jobs:
           echo "Performance regression > 5% detected! Performance dropped by ${perf_diff}%"
           exit 1
         fi
+
+  fail-notify:
+    if: always()
+    needs:
+      - run-perf-benchmarks
+    runs-on: ubuntu-latest
+    outputs:
+      is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
+      failed: ${{ steps.check.outputs.failure }}
+      is-draft: ${{ steps.draft-check.outputs.IS_DRAFT }}
+    steps:
+      - name: Check if branch is main
+        id: branch-check
+        run: echo "IS_MAIN=$(if [ '${{ github.ref }}' == 'refs/heads/main' ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+      - name: Check draft
+        id: draft-check
+        run: |
+          parent_run_id="${{ inputs.parent_run_id }}"
+          set +e
+          draft_check="$(echo "$parent_run_id" | grep 'draft')"
+          set -e
+          echo "draft_check=$draft_check"
+          IS_DRAFT="$(if [ -n "$draft_check" ]; then echo true; else echo false; fi)"
+          echo "IS_DRAFT=$IS_DRAFT"
+          echo "IS_DRAFT=$IS_DRAFT" >> $GITHUB_OUTPUT
+      - name: Check if the needed jobs succeeded or failed
+        id: check
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: demo-test
+
+  fail-send-msg:
+    if: always()
+    needs:
+      - fail-notify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Fail Notification
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' }}
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Perf tests ${{ inputs.project-filter }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "channel": "C088QN7E0R3"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}

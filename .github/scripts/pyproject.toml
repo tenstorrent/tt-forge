@@ -9,7 +9,7 @@ readme = "../../README.md"
 authors = [
   { name = "Tenstorrent", email = "info@tenstorrent.com" }
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["forge", "tt-forge", "machine learning", "tenstorrent"]
 license = "Apache-2.0"
 license-files = ["../../LICENSE*"]
@@ -30,8 +30,5 @@ Documentation = "https://docs.tenstorrent.com/tt-forge/"
 Repository = "https://github.com/tenstorrent/tt-forge"
 Issues = "https://github.com/tenstorrent/tt-forge/issues"
 
-#[tool.cibuildwheel]
-#build = "cp311-manylinux_x86_64*"
-#skip = "*-musllinux_*"
 
 build-verbosity = 2
