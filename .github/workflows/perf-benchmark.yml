@@ -235,7 +235,7 @@ jobs:
         if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
           version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
         else
-          version=$(pip freeze | grep "$project_name==" | grep -oP '==\K.*')
+          version=$(pip freeze | grep "$project_name==" | grep -oP '(\d+\.\d+\.\d+)(\.dev\d+|rc\d+)?')
         fi
 
         echo "Wheel version: $version"
