@@ -92,8 +92,7 @@ jobs:
         fetch-depth: 1
         ref: ${{ inputs.ref || github.ref }}
         submodules: 'recursive'
-
-    - name: Filter Matrix
+    - name: Modify Matrix
       id: set-perf-benchmarks
       shell: bash
       run: |
@@ -114,7 +113,18 @@ jobs:
 
         echo "filter=$filter"
         matrix_skip="false"
-        matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
+        
+        # Run all perf tests on p150 as well
+        base_matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
+        if [ "${{ inputs.sh-runner }}" == "true" ]; then
+          n150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "n150"})')
+          p150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "p150b"})')
+        else
+          n150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "n150-perf"})')
+          p150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "p150"})')
+        fi
+        matrix=$(echo "$n150_matrix $p150_matrix" | jq -c -s 'add')
+
         echo "Matrix: $matrix"
         if [ "$matrix" == "[]" ]; then
           echo "Error: No matching tests found in the matrix"
@@ -155,7 +165,7 @@ jobs:
       matrix:
         build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
 
-    runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}-perf", "in-service"]', matrix.build.runs-on)) }}
+    runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
 
     env:
       # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
