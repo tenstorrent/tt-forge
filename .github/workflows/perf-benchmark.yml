@@ -92,7 +92,7 @@ jobs:
         fetch-depth: 1
         ref: ${{ inputs.ref || github.ref }}
         submodules: 'recursive'
-    - name: Modify Matrix
+    - name: Filter Matrix
       id: set-perf-benchmarks
       shell: bash
       run: |
@@ -115,15 +115,13 @@ jobs:
         matrix_skip="false"
         
         # Run all perf tests on p150 as well
-        base_matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
-        if [ "${{ inputs.sh-runner }}" == "true" ]; then
-          n150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "n150"})')
-          p150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "p150b"})')
+        matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
+
+        if [ -n "${{ inputs.sh-runner }}" ]; then
+          matrix=$(echo "$matrix" | jq 'map(if .["runs-on"] == "p150" then .["runs-on"] = "p150b" else . end)')
         else
-          n150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "n150-perf"})')
-          p150_matrix=$(echo "$base_matrix" | jq -c 'map(. + {"runs-on": "p150"})')
+          matrix=$(echo "$matrix" | jq 'map(if .["runs-on"] == "n150" then .["runs-on"] = "n150-perf" else . end)')
         fi
-        matrix=$(echo "$n150_matrix $p150_matrix" | jq -c -s 'add')
 
         echo "Matrix: $matrix"
         if [ "$matrix" == "[]" ]; then
