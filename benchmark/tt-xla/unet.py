@@ -7,10 +7,14 @@ import os
 import time
 import pytest
 
+os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
+
 # Third-party modules
 import torch
 import torch.nn as nn
+import torch_xla
 import torch_xla.core.xla_model as xm
+import tt_torch
 from tqdm import tqdm
 
 from benchmark.utils import measure_cpu_fps
@@ -72,7 +76,7 @@ def test_unet_torch_xla(
     if training:
         pytest.skip("Training is not supported")
 
-    OPTIMIZER_ENABLED = False
+    OPTIMIZER_ENABLED = True
     PROGRAM_CACHE_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
@@ -100,8 +104,17 @@ def test_unet_torch_xla(
     else:
         cpu_fps = -1.0
 
+    options = {
+        "enable_optimizer": OPTIMIZER_ENABLED,
+        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_l1_interleaved": False,
+        "enable_fusing_conv2d_with_multiply_pattern": True,
+    }
+
+    torch_xla.set_custom_compile_options(options)
+
     # torch_xla compilation
-    framework_model.compile(backend="openxla")
+    framework_model.compile(backend="tt")
 
     # Connect the device
     device = xm.xla_device()
