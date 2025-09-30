@@ -113,8 +113,7 @@ jobs:
 
         echo "filter=$filter"
         matrix_skip="false"
-        
-        # Run all perf tests on p150 as well
+
         matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
 
         if [ "${{ inputs.sh-runner }}" == "true" ]; then
