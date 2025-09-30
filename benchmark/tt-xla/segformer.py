@@ -7,7 +7,7 @@ import os
 import time
 import pytest
 
-os.environ['TT_RUNTIME_ENABLE_PROGRAM_CACHE'] = '1'
+os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 # Third-party modules
 import torch

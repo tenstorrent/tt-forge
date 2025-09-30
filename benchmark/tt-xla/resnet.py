@@ -7,7 +7,7 @@ import os
 import time
 import pytest
 
-os.environ['TT_RUNTIME_ENABLE_PROGRAM_CACHE'] = '1'
+os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 # Third-party modules
 import torch
@@ -134,7 +134,7 @@ def test_resnet_torch_xla(
     }
 
     torch_xla.set_custom_compile_options(options)
-    
+
     # torch_xla compilation
     framework_model.compile(backend="tt")
 
