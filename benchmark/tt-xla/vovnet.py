@@ -240,7 +240,7 @@ def test_vovnet_torch_xla(
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,
-        openxla_backend=True,
+        backend="tt",
         channel_size=channel_size,
     )
 

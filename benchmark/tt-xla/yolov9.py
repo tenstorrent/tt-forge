@@ -18,9 +18,10 @@ import tt_torch
 from tqdm import tqdm
 
 from benchmark.utils import measure_cpu_fps
-from third_party.tt_forge_models.unet.pytorch.loader import ModelLoader as UNetLoader
+from third_party.tt_forge_models.yolov9.pytorch.loader import ModelLoader as YOLOv9Loader
 from .utils import (
     get_benchmark_metadata,
+    determine_model_type_and_dataset,
     print_benchmark_results,
     create_benchmark_result,
 )
@@ -30,46 +31,46 @@ os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 # Common constants
 
+# Machine learning task
+TASK = [
+    "na",
+]
+
+# Batch size configurations
 BATCH_SIZE = [
     1,
 ]
 
-DATA_FORMAT = ["bfloat16", "float32"]
-
-INPUT_SIZE = [
-    (224, 224),
+# Data format configurations
+DATA_FORMAT = [
+    "bfloat16",
 ]
 
+# Input size configurations
+INPUT_SIZE = [
+    (640, 640),
+]
+
+# Channel size configurations
 CHANNEL_SIZE = [
     3,
 ]
 
+# Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
-VARIANTS = [
-    "unet_cityscapes",
-]
 
-
-@pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
+@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
+@pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-def test_unet_torch_xla(
-    training,
-    batch_size,
-    input_size,
-    channel_size,
-    loop_count,
-    data_format,
-    variant,
-    model_name,
-    measure_cpu,
+def test_yolov9_torch_xla(
+    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
 ):
     """
-    This function creates a UNet model using PyTorch and torch-xla.
+    This function creates a YOLOv9 model using PyTorch and torch-xla.
     It is used for benchmarking purposes.
     """
 
@@ -82,24 +83,28 @@ def test_unet_torch_xla(
     TRACE_ENABLED = False
 
     # Create random inputs
-    input_sample = torch.randn(batch_size, channel_size, input_size[0], input_size[1])
-
-    unet_loader = UNetLoader()
-    model_info = unet_loader.get_model_info().name
-    framework_model: nn.Module = unet_loader.load_model()
+    if task == "na":
+        torch.manual_seed(1)
+        inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])]
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
 
     if data_format == "bfloat16":
-        input_sample = input_sample.to(torch.bfloat16)
-        framework_model = framework_model.to(torch.bfloat16)
-    elif data_format == "float32":
-        input_sample = input_sample.to(torch.float32)
-        framework_model = framework_model.to(torch.float32)
+        # Convert input to bfloat16
+        inputs = [item.to(torch.bfloat16) for item in inputs]
 
+    # Load model using tt_forge_models
+    yolov9_loader = YOLOv9Loader()
+    model_info = yolov9_loader.get_model_info().name
+    if data_format == "bfloat16":
+        framework_model: nn.Module = yolov9_loader.load_model(dtype_override=torch.bfloat16)
+    else:
+        framework_model: nn.Module = yolov9_loader.load_model()
     framework_model.eval()
 
     if measure_cpu:
-        # Use batch size 1 for CPU measurement
-        cpu_input = input_sample[0].reshape(1, *input_sample[0].shape[0:])
+        # Use batch size 1
+        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
         cpu_fps = measure_cpu_fps(framework_model, cpu_input)
     else:
         cpu_fps = -1.0
@@ -120,27 +125,27 @@ def test_unet_torch_xla(
     device = xm.xla_device()
 
     # Move inputs and model to device
-    if data_format == "bfloat16":
-        framework_model = framework_model.to(device, dtype=torch.bfloat16)
-    else:
-        framework_model = framework_model.to(device)
+    framework_model = framework_model.to(device)
 
-    input_sample = input_sample.to(device)
+    # Move first input to device for verification
+    device_input = inputs[0].to(device)
 
-    # Run framework model for verification
     with torch.no_grad():
-        fw_out = framework_model(input_sample)
+        fw_out = framework_model(device_input)
 
-    fw_out_cpu = fw_out.to("cpu")
-    print(f"Model verification - Output shape: {fw_out_cpu.shape}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu.flatten()[:10]}")
+    fw_out_cpu = [output.to("cpu") for output in fw_out]
+    print(f"Model verification - Output shapes: {[out.shape for out in fw_out_cpu]}")
+    print(f"Model verification - Output (first 10 values): {fw_out_cpu[0].flatten()[:10]}")
 
-    # Benchmark run
-    start = time.time()
-    for _ in tqdm(range(loop_count)):
-        with torch.no_grad():
-            framework_model(input_sample)
-    end = time.time()
+    if task == "na":
+        start = time.time()
+        for i in tqdm(range(loop_count)):
+            with torch.no_grad():
+                output = framework_model(device_input)
+        end = time.time()
+        evaluation_score = 0.0
+    else:
+        raise ValueError(f"Unsupported task: {task}.")
 
     total_time = end - start
     total_samples = batch_size * loop_count
@@ -148,9 +153,8 @@ def test_unet_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = "UNet Torch-XLA"
-    model_type = "Segmentation, Random Input Data"
-    dataset_name = "UNet, Random Data"
+    full_model_name = "YOLOv9 Torch-XLA"
+    model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
     num_layers = -1
 
     # Create custom measurements for CPU FPS
@@ -163,7 +167,7 @@ def test_unet_torch_xla(
     ]
 
     print_benchmark_results(
-        model_title="UNet Torch-XLA",
+        model_title="YOLOv9 Torch-XLA",
         full_model_name=full_model_name,
         model_type=model_type,
         dataset_name=dataset_name,
@@ -173,6 +177,7 @@ def test_unet_torch_xla(
         total_samples=total_samples,
         samples_per_sec=samples_per_sec,
         cpu_samples_per_sec=cpu_fps,
+        evaluation_score=evaluation_score,
         batch_size=batch_size,
         data_format=data_format,
         input_size=input_size,
@@ -191,6 +196,7 @@ def test_unet_torch_xla(
         training=training,
         total_time=total_time,
         total_samples=total_samples,
+        evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
         optimizer_enabled=OPTIMIZER_ENABLED,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
@@ -198,7 +204,7 @@ def test_unet_torch_xla(
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,
-        backend="tt",
+        openxla_backend=True,
         channel_size=channel_size,
     )
 
@@ -207,7 +213,7 @@ def test_unet_torch_xla(
 
 def benchmark(config: dict):
     """
-    Run the unet torch-xla benchmark.
+    Run the yolov9 torch-xla benchmark.
     This function is a placeholder for the actual benchmark implementation.
     """
 
@@ -217,18 +223,18 @@ def benchmark(config: dict):
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     data_format = config["data_format"]
-    variant = VARIANTS[0]
+    task = config.get("task", TASK[0])
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
 
-    return test_unet_torch_xla(
+    return test_yolov9_torch_xla(
         training=training,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
         loop_count=loop_count,
+        task=task,
         data_format=data_format,
-        variant=variant,
         model_name=model_name,
         measure_cpu=measure_cpu,
     )
