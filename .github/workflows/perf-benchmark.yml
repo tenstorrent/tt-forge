@@ -118,9 +118,9 @@ jobs:
         matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
 
         if [ "${{ inputs.sh-runner }}" == "true" ]; then
-          matrix=$(echo "$matrix" | jq 'map(if .["runs-on"] == "p150" then .["runs-on"] = "p150b" else . end)')
+          matrix=$(echo "$matrix" | jq -c 'map(if .["runs-on"] == "p150" then .["runs-on"] = "p150b" else . end)')
         else
-          matrix=$(echo "$matrix" | jq 'map(if .["runs-on"] == "n150" then .["runs-on"] = "n150-perf" else . end)')
+          matrix=$(echo "$matrix" | jq -c 'map(if .["runs-on"] == "n150" then .["runs-on"] = "n150-perf" else . end)')
         fi
 
         echo "Matrix: $matrix"
