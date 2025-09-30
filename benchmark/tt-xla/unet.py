@@ -80,7 +80,6 @@ def test_unet_torch_xla(
     PROGRAM_CACHE_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
-    BACKEND = "tt"
 
     # Create random inputs
     input_sample = torch.randn(batch_size, channel_size, input_size[0], input_size[1])
@@ -115,7 +114,7 @@ def test_unet_torch_xla(
     torch_xla.set_custom_compile_options(options)
 
     # torch_xla compilation
-    framework_model.compile(backend=BACKEND)
+    framework_model.compile(backend="tt")
 
     # Connect the device
     device = xm.xla_device()
@@ -199,7 +198,7 @@ def test_unet_torch_xla(
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,
-        backend=BACKEND,
+        backend="tt",
         channel_size=channel_size,
     )
 

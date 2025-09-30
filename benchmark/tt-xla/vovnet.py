@@ -95,7 +95,6 @@ def test_vovnet_torch_xla(
     PROGRAM_CACHE_ENABLED = False
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
-    BACKEND = "tt"
 
     if task == "classification":
         inputs, labels = load_benchmark_dataset(
@@ -141,7 +140,7 @@ def test_vovnet_torch_xla(
 
     torch_xla.set_custom_compile_options(options)
     # torch_xla compilation
-    framework_model.compile(backend=BACKEND)
+    framework_model.compile(backend="tt")
 
     # Connect the device
     device = xm.xla_device()
@@ -241,7 +240,7 @@ def test_vovnet_torch_xla(
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,
-        backend=BACKEND,
+        backend="tt",
         channel_size=channel_size,
     )
 
