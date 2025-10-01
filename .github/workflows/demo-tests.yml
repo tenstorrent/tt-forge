@@ -207,7 +207,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Fail Notification
-        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' }}
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' && inputs.parent_run_id != ''  }}
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
