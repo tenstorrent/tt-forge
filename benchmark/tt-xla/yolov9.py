@@ -79,7 +79,7 @@ def test_yolov9_torch_xla(
 
     OPTIMIZER_ENABLED = True
     PROGRAM_CACHE_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
 
     # Create random inputs

@@ -65,7 +65,7 @@ def test_resnet(
 
     OPTIMIZER_ENABLED = True
     PROGRAM_CACHE_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+    MEMORY_LAYOUT_ANALYSIS_ENABLED = True
     TRACE_ENABLED = False
     tt_device = jax.devices("tt")[0]
     with jax.default_device(jax.devices("cpu")[0]):
