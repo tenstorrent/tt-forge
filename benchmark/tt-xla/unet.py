@@ -81,7 +81,6 @@ def test_unet_torch_xla(
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
 
-    # Create random inputs
     input_sample = torch.randn(batch_size, channel_size, input_size[0], input_size[1])
 
     unet_loader = UNetLoader()
@@ -98,7 +97,6 @@ def test_unet_torch_xla(
     framework_model.eval()
 
     if measure_cpu:
-        # Use batch size 1 for CPU measurement
         cpu_input = input_sample[0].reshape(1, *input_sample[0].shape[0:])
         cpu_fps = measure_cpu_fps(framework_model, cpu_input)
     else:
@@ -106,20 +104,17 @@ def test_unet_torch_xla(
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
     }
 
     torch_xla.set_custom_compile_options(options)
 
-    # torch_xla compilation
     framework_model.compile(backend="tt")
 
-    # Connect the device
     device = xm.xla_device()
 
-    # Move inputs and model to device
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
     else:
@@ -127,15 +122,11 @@ def test_unet_torch_xla(
 
     input_sample = input_sample.to(device)
 
-    # Run framework model for verification
     with torch.no_grad():
         fw_out = framework_model(input_sample)
 
     fw_out_cpu = fw_out.to("cpu")
-    print(f"Model verification - Output shape: {fw_out_cpu.shape}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu.flatten()[:10]}")
 
-    # Benchmark run
     start = time.time()
     for _ in tqdm(range(loop_count)):
         with torch.no_grad():
@@ -153,7 +144,6 @@ def test_unet_torch_xla(
     dataset_name = "UNet, Random Data"
     num_layers = -1
 
-    # Create custom measurements for CPU FPS
     custom_measurements = [
         {
             "measurement_name": "cpu_fps",
