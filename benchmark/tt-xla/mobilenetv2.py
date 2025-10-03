@@ -6,6 +6,7 @@
 import os
 import time
 import pytest
+import socket
 
 os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
@@ -17,7 +18,7 @@ import torch_xla.core.xla_model as xm
 import tt_torch
 from tqdm import tqdm
 
-from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
+from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_jax_device_arch
 from third_party.tt_forge_models.mobilenetv2.pytorch.loader import (
     ModelLoader as MobileNetV2Loader,
     ModelVariant as MobileNetV2Variant,
@@ -239,6 +240,8 @@ def test_mobilenetv2_torch_xla(
         torch_xla_enabled=True,
         backend="tt",
         channel_size=channel_size,
+        device_name=socket.gethostname(),
+        arch=get_jax_device_arch(),
     )
 
     return result
