@@ -14,7 +14,7 @@ on:
         description: "Run attempt of the workflow to collect data for"
         required: true
         default: ""
-  
+
   workflow_run:
     workflows: # List workflow that we want to collect data for
       - "Performance Benchmark External Trigger"
