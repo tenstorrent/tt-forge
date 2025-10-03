@@ -126,6 +126,9 @@ outputs:
   test_perf:
     description: "Test perf"
     value: ${{ steps.set-manifest.outputs.test_perf }}
+  basic_tests_runner_filter:
+    description: "Basic tests runner filter"
+    value: ${{ steps.set-manifest.outputs.basic_tests_runner_filter }}
 
 runs:
   using: "composite"
@@ -166,6 +169,7 @@ runs:
         test_perf_filter=""
         test_demo_wait="false"
         python_version="3.11"
+        basic_tests_runner_filter="All"
 
         # Tag & Release Defaults
 
@@ -245,6 +249,8 @@ runs:
             test_demo_filter="bge_m3"
             test_perf_filter="resnet"
             test_demo_wait="true"
+            # Only run basic tests on n150 for draft releases until Civ2 capacity improves
+            basic_tests_runner_filter="tt-ubuntu-2204-n150-stable"
             #test_perf_sh_runner="true"
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.
@@ -315,6 +321,7 @@ runs:
         echo "test_perf_filter=$test_perf_filter"
         echo "test_perf_sh_runner=$test_perf_sh_runner"
         echo "test_perf=$test_perf"
+        echo "basic_tests_runner_filter=$basic_tests_runner_filter"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -352,3 +359,4 @@ runs:
         echo "test_perf_filter=$test_perf_filter" >> $GITHUB_OUTPUT
         echo "test_perf_sh_runner=$test_perf_sh_runner" >> $GITHUB_OUTPUT
         echo "test_perf=$test_perf" >> $GITHUB_OUTPUT
+        echo "basic_tests_runner_filter=$basic_tests_runner_filter"

@@ -24,6 +24,15 @@ on:
           - tt-xla
           - tt-forge
         default: tt-forge
+      runner-filter:
+        description: "Runner filter"
+        required: false
+        type: choice
+        options:
+          - tt-ubuntu-2204-n150-stable
+          - tt-ubuntu-2204-p150b-stable
+          - All
+        default: All
 
   workflow_call:
     inputs:
@@ -46,7 +55,11 @@ jobs:
 
           project_filter="${{ inputs.project-filter }}"
 
-          runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
+          if [ "${{ inputs.runner-filter }}" == "All" ]; then
+            runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
+          else
+            runs_on="${{ inputs.runner-filter }}"
+          fi
 
           if [ "${{ inputs.project-filter }}" == "tt-forge" ]; then
             frontends="tt-xla tt-forge-fe"
