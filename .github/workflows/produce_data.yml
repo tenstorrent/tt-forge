@@ -1,12 +1,32 @@
 name: "[internal] Collect workflow data"
-run-name: "Collect data for run_id ${{ github.event.workflow_run.id }} attempt ${{ github.event.workflow_run.run_attempt }}"
+run-name: "Collect data for run_id ${{ github.event.workflow_run.id || inputs.run_id }} attempt ${{ github.event.workflow_run.run_attempt || inputs.run_attempt }} ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}"
 
 on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        type: string
+        description: "Run id of the workflow to collect data for"
+        required: true
+        default: ""
+      run_attempt:
+        type: string
+        description: "Run attempt of the workflow to collect data for"
+        required: true
+        default: ""
+      parent_run_id:
+        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
+        required: false
+        type: string
+        default: ""
+      sleep:
+        type: string
+        description: "Sleep for x seconds before collecting data"
+        required: false
+        default: "0"
+
   workflow_run:
     workflows: # List workflow that we want to collect data for
-      - "Performance benchmark"
-      - "Nightly Release & Tests"
-      - "Demo tests"
       - "Performance Benchmark External Trigger"
     types:
       - completed
@@ -17,13 +37,17 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
+      #TODO: Added as a temporary fix to avoid race condition between the workflow dispatch and the data collection
+      # https://github.com/tenstorrent/tt-forge/pull/496#issuecomment-3366367292
+      - name: sleep
+        run: |
+          sleep ${{ inputs.sleep || '0' }}
       - name: Collect CI/CD data
         uses: tenstorrent/tt-github-actions/.github/actions/collect_data@main
-        if: ${{ github.event_name == 'workflow_run' }}
         with:
           repository: ${{ github.repository }}
-          run_id: ${{ github.event.workflow_run.id }}
-          run_attempt: ${{ github.event.workflow_run.run_attempt }}
+          run_id: ${{ inputs.run_id || github.event.workflow_run.id }}
+          run_attempt: ${{ inputs.run_attempt || github.event.workflow_run.run_attempt }}
           sftp_host: ${{ secrets.SFTP_CICD_WRITER_HOSTNAME }}
           sftp_user: ${{ secrets.SFTP_CICD_WRITER_USERNAME }}
           sftp_perf_host: ${{ secrets.SFTP_PERF_WRITER_HOSTNAME }}

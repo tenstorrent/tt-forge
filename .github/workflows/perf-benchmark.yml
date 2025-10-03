@@ -76,6 +76,7 @@ on:
 # todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
 permissions:
   id-token: write
+  actions: write
 
 jobs:
   filter-tests:
@@ -494,6 +495,7 @@ jobs:
           exit 1
         fi
 
+
   fail-notify:
     if: always()
     needs:
@@ -542,3 +544,22 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}
+
+
+  produce-data:
+    needs:
+      - fail-send-msg
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: Trigger produce_data.yml
+        uses: ./.github/actions/trigger-workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          workflow_name: "produce_data.yml"
+          wait: false
+          wait_for_run_url: true
+          json_params: '{"run_id": "${{ github.run_id }}", "run_attempt": "${{ github.run_attempt }}", "sleep": "10" }'
