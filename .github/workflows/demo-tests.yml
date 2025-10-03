@@ -168,11 +168,19 @@ jobs:
           demo_file=$(basename "${{ matrix.path }}")
           python $demo_file
 
+  produce-data:
+    if: always()
+    needs: demo-test
+    uses: ./.github/workflows/produce_data.yml
+    with:
+      run_id: ${{ github.run_id }}
+      run_attempt: ${{ github.run_attempt }}
 
   fail-notify:
     if: always()
     needs:
       - demo-test
+      - produce-data
     runs-on: ubuntu-latest
     outputs:
       is-main: ${{ steps.branch-check.outputs.IS_MAIN }}

@@ -494,10 +494,20 @@ jobs:
           exit 1
         fi
 
+  produce-data:
+    if: always()
+    needs:
+      - run-perf-benchmarks
+    uses: ./.github/workflows/produce_data.yml
+    with:
+      run_id: ${{ github.run_id }}
+      run_attempt: ${{ github.run_attempt }}
+
   fail-notify:
     if: always()
     needs:
       - run-perf-benchmarks
+      - produce-data
     runs-on: ubuntu-latest
     outputs:
       is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
