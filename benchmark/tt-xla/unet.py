@@ -7,7 +7,14 @@ import os
 import time
 import pytest
 
-os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
+
+OPTIMIZER_ENABLED = True
+PROGRAM_CACHE_ENABLED = True
+MEMORY_LAYOUT_ANALYSIS_ENABLED = True
+TRACE_ENABLED = False
+
+if PROGRAM_CACHE_ENABLED:
+    os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 # Third-party modules
 import torch
@@ -23,6 +30,8 @@ from .utils import (
     get_benchmark_metadata,
     print_benchmark_results,
     create_benchmark_result,
+    torch_xla_measure_fps,
+    torch_xla_warmup_model,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -76,37 +85,39 @@ def test_unet_torch_xla(
     if training:
         pytest.skip("Training is not supported")
 
-    OPTIMIZER_ENABLED = True
-    PROGRAM_CACHE_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
-    TRACE_ENABLED = False
-
     # Create random inputs
-    input_sample = torch.randn(batch_size, channel_size, input_size[0], input_size[1])
+    torch.manual_seed(1)
+    inputs = []
+    for i in range(loop_count):
+        inputs.append(torch.randn(batch_size, channel_size, input_size[0], input_size[1]))
+
+    warmup_inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])] * loop_count
 
     unet_loader = UNetLoader()
     model_info = unet_loader.get_model_info().name
     framework_model: nn.Module = unet_loader.load_model()
 
     if data_format == "bfloat16":
-        input_sample = input_sample.to(torch.bfloat16)
+        inputs = [item.to(torch.bfloat16) for item in inputs]
+        warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
         framework_model = framework_model.to(torch.bfloat16)
     elif data_format == "float32":
-        input_sample = input_sample.to(torch.float32)
+        inputs = [item.to(torch.float32) for item in inputs]
+        warmup_inputs = [item.to(torch.float32) for item in warmup_inputs]
         framework_model = framework_model.to(torch.float32)
 
     framework_model.eval()
 
     if measure_cpu:
         # Use batch size 1 for CPU measurement
-        cpu_input = input_sample[0].reshape(1, *input_sample[0].shape[0:])
+        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
         cpu_fps = measure_cpu_fps(framework_model, cpu_input)
     else:
         cpu_fps = -1.0
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
     }
@@ -125,24 +136,14 @@ def test_unet_torch_xla(
     else:
         framework_model = framework_model.to(device)
 
-    input_sample = input_sample.to(device)
+    # Move first input to device for verification
+    torch_xla_warmup_model(model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count)
 
-    # Run framework model for verification
-    with torch.no_grad():
-        fw_out = framework_model(input_sample)
+    # Benchmark
+    predictions, total_time = torch_xla_measure_fps(
+        model=framework_model, inputs=inputs, device=device, loop_count=loop_count
+    )
 
-    fw_out_cpu = fw_out.to("cpu")
-    print(f"Model verification - Output shape: {fw_out_cpu.shape}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu.flatten()[:10]}")
-
-    # Benchmark run
-    start = time.time()
-    for _ in tqdm(range(loop_count)):
-        with torch.no_grad():
-            framework_model(input_sample)
-    end = time.time()
-
-    total_time = end - start
     total_samples = batch_size * loop_count
     samples_per_sec = total_samples / total_time
 
