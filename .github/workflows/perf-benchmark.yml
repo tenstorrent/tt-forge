@@ -76,6 +76,7 @@ on:
 # todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
 permissions:
   id-token: write
+  actions: write
 
 jobs:
   filter-tests:

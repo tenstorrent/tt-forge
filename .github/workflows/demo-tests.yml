@@ -41,6 +41,12 @@ on:
         required: false
         default: "All"
 
+
+# Used for produce_data.yml workflow dispatch trigger
+permissions:
+  id-token: write
+  actions: write
+
 jobs:
   set-matrix:
     runs-on: ubuntu-latest
