@@ -33,6 +33,7 @@ from .utils import (
     create_benchmark_result,
     torch_xla_measure_fps,
     torch_xla_warmup_model,
+    compute_pcc,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -134,11 +135,17 @@ def test_vovnet_torch_xla(
     framework_model.eval()
 
     if measure_cpu:
-        # Use batch size 1
         cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
         cpu_fps = measure_cpu_fps(framework_model, cpu_input)
     else:
         cpu_fps = -1.0
+
+    if task == "na":
+        golden_input = inputs[0]
+        if data_format == "bfloat16":
+            golden_input = golden_input.to(torch.bfloat16)
+        with torch.no_grad():
+            golden_output = framework_model(golden_input)
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
@@ -148,13 +155,10 @@ def test_vovnet_torch_xla(
     }
 
     torch_xla.set_custom_compile_options(options)
-    # torch_xla compilation
     framework_model.compile(backend="tt")
 
-    # Connect the device
     device = xm.xla_device()
 
-    # Move inputs and model to device
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
     else:
@@ -173,7 +177,8 @@ def test_vovnet_torch_xla(
         labels = torch.cat(labels)
         evaluation_score = evaluate_classification(predictions, labels)
     elif task == "na":
-        # PCC
+        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
+        print(f"PCC verification passed with PCC={pcc_value:.6f}")
         evaluation_score = 0.0
     else:
         raise ValueError(f"Unsupported task: {task}")
@@ -187,7 +192,6 @@ def test_vovnet_torch_xla(
     model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
     num_layers = -1
 
-    # Create custom measurements for CPU FPS
     custom_measurements = [
         {
             "measurement_name": "cpu_fps",
