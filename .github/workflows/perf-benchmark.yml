@@ -494,20 +494,11 @@ jobs:
           exit 1
         fi
 
-  produce-data:
-    if: always()
-    needs:
-      - run-perf-benchmarks
-    uses: ./.github/workflows/produce_data.yml
-    with:
-      run_id: ${{ github.run_id }}
-      run_attempt: ${{ github.run_attempt }}
 
   fail-notify:
     if: always()
     needs:
       - run-perf-benchmarks
-      - produce-data
     runs-on: ubuntu-latest
     outputs:
       is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
@@ -552,3 +543,20 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}
+
+
+  produce-data:
+    needs:
+      - fail-send-msg
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger produce_data.yml
+        uses: ./.github/actions/trigger-workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          workflow_name: "produce_data.yml"
+          wait: false
+          wait_for_run_url: true
+          json_params: '{"run_id": "${{ github.run_id }}", "run_attempt": "${{ github.run_attempt }}", "sleep": "10" }'

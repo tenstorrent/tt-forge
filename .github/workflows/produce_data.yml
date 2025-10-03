@@ -2,7 +2,7 @@ name: "[internal] Collect workflow data"
 run-name: "Collect data for run_id ${{ github.event.workflow_run.id }} attempt ${{ github.event.workflow_run.run_attempt }}"
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       run_id:
         type: string
@@ -14,6 +14,11 @@ on:
         description: "Run attempt of the workflow to collect data for"
         required: true
         default: ""
+      sleep:
+        type: string
+        description: "Sleep for x seconds before collecting data"
+        required: false
+        default: "0"
 
   workflow_run:
     workflows: # List workflow that we want to collect data for
@@ -27,6 +32,11 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
+      #TODO: Added as a temporary fix to avoid race condition between the workflow dispatch and the data collection
+      # https://github.com/tenstorrent/tt-forge/pull/496#issuecomment-3366367292
+      - name: sleep
+        run: |
+          sleep ${{ inputs.sleep || '0' }}
       - name: Collect CI/CD data
         uses: tenstorrent/tt-github-actions/.github/actions/collect_data@main
         with:
