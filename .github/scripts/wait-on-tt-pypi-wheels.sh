@@ -9,17 +9,26 @@
 
 set -eu
 wait_time=60
+attempts=120
 
 check_wheels() {
+  set +e
   for wheel_name in $PIP_WHEEL_NAMES; do
     # Check the only tenstorrent index for the wheel version
     pip index versions $wheel_name --pre --index-url https://pypi.eng.aws.tenstorrent.com/ 2>/dev/null | grep -q $NEW_VERSION_TAG && echo "Found tag $NEW_VERSION_TAG for $wheel_name" || { echo "Can't find wheel $wheel_name for version $NEW_VERSION_TAG"; false; }
   done
+  set -e
 }
 
-while true; do
+n=0
+
+until [ "$n" -ge $attempts ]; do
   # Wait for pypi frontend wheels to be available
-  check_wheels && break
-  echo "Waiting $wait_time seconds for pypi frontend wheels to be available on tt-pypi"
+  check_wheels
+  if [ $? -eq 0 ]; then
+    break
+  fi
+  ((n++))
+  echo "Waiting $wait_time seconds on attempt $n for pypi frontend wheels to be available on tt-pypi"
   sleep $wait_time
 done
