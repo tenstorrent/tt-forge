@@ -1,5 +1,5 @@
 name: "[internal] Collect workflow data"
-run-name: "Collect data for run_id ${{ github.event.workflow_run.id }} attempt ${{ github.event.workflow_run.run_attempt }} ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}"
+run-name: "Collect data for run_id ${{ github.event.workflow_run.id || inputs.run_id }} attempt ${{ github.event.workflow_run.run_attempt || inputs.run_attempt }} ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}"
 
 on:
   workflow_dispatch:
