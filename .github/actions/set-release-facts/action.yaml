@@ -359,4 +359,4 @@ runs:
         echo "test_perf_filter=$test_perf_filter" >> $GITHUB_OUTPUT
         echo "test_perf_sh_runner=$test_perf_sh_runner" >> $GITHUB_OUTPUT
         echo "test_perf=$test_perf" >> $GITHUB_OUTPUT
-        echo "basic_tests_runner_filter=$basic_tests_runner_filter"
+        echo "basic_tests_runner_filter=$basic_tests_runner_filter" >> $GITHUB_OUTPUT
