@@ -18,6 +18,10 @@ inputs:
     description: "Wait only for run url"
     required: false
     default: false
+  watch_interval:
+    description: "Interval to watch for workflow run"
+    required: false
+    default: 60
 
 outputs:
   run_head_sha:
@@ -89,7 +93,7 @@ runs:
         if [[ "${{ inputs.wait_for_run_url }}" == "true" ]]; then
           echo "Workflow run url: $run_url"
         else
-          gh run watch $match_run_id
+          gh run watch --interval ${{ inputs.watch_interval }} $match_run_id
           echo "Workflow run completed"
           echo "Workflow run url: $run_url"
           run_conclusion=$(gh run view $match_run_id --json conclusion | jq -rc '.conclusion')
