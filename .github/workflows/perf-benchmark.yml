@@ -551,6 +551,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
       - name: Trigger produce_data.yml
         uses: ./.github/actions/trigger-workflow
         env:
