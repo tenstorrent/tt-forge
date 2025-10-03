@@ -23,6 +23,7 @@ from .utils import (
     determine_model_type_and_dataset,
     print_benchmark_results,
     create_benchmark_result,
+    compute_pcc,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -81,7 +82,6 @@ def test_yolov10_torch_xla(
     MEMORY_LAYOUT_ANALYSIS_ENABLED = False
     TRACE_ENABLED = False
 
-    # Create random inputs
     if task == "na":
         torch.manual_seed(1)
         inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])]
@@ -89,20 +89,16 @@ def test_yolov10_torch_xla(
         raise ValueError(f"Unsupported task: {task}.")
 
     if data_format == "bfloat16":
-        # Convert input to bfloat16
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
-    # Load YOLO model weights, initialize and load model
     url = "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov10x.pt"
     framework_model = YoloWrapper(url)
 
     if data_format == "bfloat16":
-        # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
 
     if measure_cpu:
-        # Use batch size 1
         cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
         cpu_fps = measure_cpu_fps(framework_model, cpu_input)
     else:
@@ -110,34 +106,41 @@ def test_yolov10_torch_xla(
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
     }
 
     torch_xla.set_custom_compile_options(options)
 
-    # torch_xla compilation
     framework_model.compile(backend="tt")
 
-    # Connect the device
     device = xm.xla_device()
 
-    # Move inputs and model to device
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
     else:
         framework_model = framework_model.to(device)
 
-    # Move first input to device for verification
     device_input = inputs[0].to(device)
+
+    if task == "na":
+        url = "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov10x.pt"
+        cpu_model = YoloWrapper(url)
+        if data_format == "bfloat16":
+            cpu_model = cpu_model.to(torch.bfloat16)
+        cpu_model.eval()
+        with torch.no_grad():
+            golden_output = cpu_model(inputs[0])
 
     with torch.no_grad():
         fw_out = framework_model(device_input)
 
     fw_out_cpu = [output.to("cpu") for output in fw_out]
-    print(f"Model verification - Output shapes: {[out.shape for out in fw_out_cpu]}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu[0].flatten()[:10]}")
+
+    if task == "na":
+        pcc_value = compute_pcc(golden_output[0], fw_out_cpu[0], required_pcc=0.97)
+        print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     if task == "na":
         start = time.time()
@@ -159,7 +162,6 @@ def test_yolov10_torch_xla(
     model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
     num_layers = -1
 
-    # Create custom measurements for CPU FPS
     custom_measurements = [
         {
             "measurement_name": "cpu_fps",

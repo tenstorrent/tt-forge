@@ -27,6 +27,7 @@ from .utils import (
     determine_model_type_and_dataset,
     print_benchmark_results,
     create_benchmark_result,
+    compute_pcc,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -96,13 +97,11 @@ def test_mobilenetv2_torch_xla(
         )
     elif task == "na":
         torch.manual_seed(1)
-        # Random data
         inputs = [torch.randn(batch_size, channel_size, *input_size)]
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
     if data_format == "bfloat16":
-        # Convert input to bfloat16
         inputs = [item.to(torch.bfloat16) for item in inputs]
 
     # Load model using tt_forge_models
@@ -112,12 +111,10 @@ def test_mobilenetv2_torch_xla(
     framework_model: nn.Module = mobilenet_loader.load_model()
 
     if data_format == "bfloat16":
-        # Convert model to bfloat16
         framework_model = framework_model.to(torch.bfloat16)
     framework_model.eval()
 
     if measure_cpu:
-        # Use batch size 1
         cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
         cpu_fps = measure_cpu_fps(framework_model, cpu_input)
     else:
@@ -125,27 +122,33 @@ def test_mobilenetv2_torch_xla(
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
     }
 
     torch_xla.set_custom_compile_options(options)
 
-    # torch_xla compilation
     framework_model.compile(backend="tt")
 
-    # Connect the device
     device = xm.xla_device()
 
-    # Move inputs and model to device
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
     else:
         framework_model = framework_model.to(device)
 
-    # Move first input to device for verification
     device_input = inputs[0].to(device)
+
+    if task == "na":
+        cpu_model = MobileNetV2Loader(model_variant).load_model()
+        if data_format == "bfloat16":
+            cpu_model = cpu_model.to(torch.bfloat16)
+        cpu_model.eval()
+        with torch.no_grad():
+            golden_output = cpu_model(inputs[0])
+            if hasattr(golden_output, "logits"):
+                golden_output = golden_output.logits
 
     with torch.no_grad():
         fw_out = framework_model(device_input)
@@ -153,8 +156,10 @@ def test_mobilenetv2_torch_xla(
             fw_out = fw_out.logits
 
     fw_out_cpu = fw_out.to("cpu")
-    print(f"Model verification - Output shape: {fw_out_cpu.shape}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu.flatten()[:10]}")
+
+    if task == "na":
+        pcc_value = compute_pcc(golden_output, fw_out_cpu, required_pcc=0.97)
+        print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     if task == "classification":
         predictions = []
@@ -190,7 +195,6 @@ def test_mobilenetv2_torch_xla(
     model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
     num_layers = 54
 
-    # Create custom measurements for CPU FPS
     custom_measurements = [
         {
             "measurement_name": "cpu_fps",
