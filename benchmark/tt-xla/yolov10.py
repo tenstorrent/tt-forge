@@ -7,7 +7,14 @@ import os
 import time
 import pytest
 
-os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
+
+OPTIMIZER_ENABLED = True
+PROGRAM_CACHE_ENABLED = True
+MEMORY_LAYOUT_ANALYSIS_ENABLED = True
+TRACE_ENABLED = False
+
+if PROGRAM_CACHE_ENABLED:
+    os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 # Third-party modules
 import torch
@@ -23,6 +30,8 @@ from .utils import (
     determine_model_type_and_dataset,
     print_benchmark_results,
     create_benchmark_result,
+    torch_xla_measure_fps,
+    torch_xla_warmup_model,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -76,21 +85,21 @@ def test_yolov10_torch_xla(
     if training:
         pytest.skip("Training is not supported")
 
-    OPTIMIZER_ENABLED = True
-    PROGRAM_CACHE_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
-    TRACE_ENABLED = False
-
     # Create random inputs
     if task == "na":
         torch.manual_seed(1)
-        inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])]
+        inputs = []
+        for i in range(loop_count):
+            inputs.append(torch.randn(batch_size, channel_size, input_size[0], input_size[1]))
     else:
         raise ValueError(f"Unsupported task: {task}.")
+
+    warmup_inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])] * loop_count
 
     if data_format == "bfloat16":
         # Convert input to bfloat16
         inputs = [item.to(torch.bfloat16) for item in inputs]
+        warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
 
     # Load YOLO model weights, initialize and load model
     url = "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov10x.pt"
@@ -110,7 +119,7 @@ def test_yolov10_torch_xla(
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
     }
@@ -130,26 +139,19 @@ def test_yolov10_torch_xla(
         framework_model = framework_model.to(device)
 
     # Move first input to device for verification
-    device_input = inputs[0].to(device)
+    torch_xla_warmup_model(model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count)
 
-    with torch.no_grad():
-        fw_out = framework_model(device_input)
-
-    fw_out_cpu = [output.to("cpu") for output in fw_out]
-    print(f"Model verification - Output shapes: {[out.shape for out in fw_out_cpu]}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu[0].flatten()[:10]}")
+    # Benchmark
+    predictions, total_time = torch_xla_measure_fps(
+        model=framework_model, inputs=inputs, device=device, loop_count=loop_count
+    )
 
     if task == "na":
-        start = time.time()
-        for i in tqdm(range(loop_count)):
-            with torch.no_grad():
-                output = framework_model(device_input)
-        end = time.time()
+        # PCC
         evaluation_score = 0.0
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
-    total_time = end - start
     total_samples = batch_size * loop_count
     samples_per_sec = total_samples / total_time
 

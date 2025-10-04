@@ -2,9 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import time
 import socket
 from datetime import datetime
 from typing import Dict, Any, Optional, List
+import torch
 
 
 def get_benchmark_metadata() -> Dict[str, str]:
@@ -209,3 +211,98 @@ def create_benchmark_result(
             "chips": chips,
         },
     }
+
+
+def torch_xla_warmup_model(model, inputs, device, loop_count):
+    """
+    Warmup the model for a given number of loop_count.
+
+    Parameters:
+    ----------
+    model: Callable
+        The model to warmup.
+    input: Any
+        The input to the model.
+    device: torch.device
+        The device to run the warmup on.
+    loop_count: int
+        The number of loop_count to warmup the model.
+    """
+    print("Warming up the device...")
+    torch_xla_measure_fps(model, inputs, device, loop_count, sequential=False, print_iterations=False)
+    print("Warming up completed.")
+
+
+def torch_xla_measure_fps(model, inputs, device, loop_count, sequential=False, print_iterations=True):
+    """
+    Measure the fps of the model for a given number of loop_count
+
+    Parameters:
+    ----------
+    model: torch.nn.Module
+        The model to benchmark.
+    inputs: list of torch.Tensor
+        The input data for benchmarking.
+    device: torch.device
+        The device to run the benchmark on.
+    loop_count: int
+        Number of batches to process.
+
+    Returns:
+    -------
+    predictions: list of torch.Tensor
+        The predictions made by the model.
+    total_time: float
+        The total time taken to process the inputs in seconds.
+    """
+    if len(inputs) != loop_count:
+        raise ValueError("Number of inputs must be equal to loop count.")
+
+    if print_iterations:
+        print("Starting benchmark loop...")
+
+    predictions = []
+    itteration_times = []
+    with torch.no_grad():
+        outputs = []
+        for i in range(loop_count):
+            start_time = time.perf_counter_ns()
+
+            device_input = inputs[i].to(device)
+            output = model(device_input)
+            if hasattr(output, "logits"):
+                output = output.logits
+
+            if sequential:
+                predictions.append(output.to("cpu"))
+            else:
+                outputs.append(output)
+
+            end_time = time.perf_counter_ns()
+            itteration_times.append(end_time - start_time)
+
+            if print_iterations:
+                print(f"Iteration\t{i+1}/{loop_count}\ttook {itteration_times[-1] / 1e6:.04} ms")
+
+        # print all outputs and measure time
+        output_start = time.perf_counter_ns()
+        if not sequential:
+            for output in outputs:
+                cpu_output = output.to("cpu")
+                predictions.append(cpu_output)
+        output_end = time.perf_counter_ns()
+
+        output_time = output_end - output_start
+        if print_iterations:
+            print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
+
+    total_time_itterations = sum(itteration_times)
+    total_time = total_time_itterations + output_time
+    if print_iterations:
+        print(f"Total time over itterations: {total_time_itterations / 1e9:.04} s")
+        print(f"Total output wait time: {output_time / 1e6:.04} ms")
+        print(f"Total time: {total_time / 1e9:.04} s")
+
+    # Convert to seconds
+    total_time /= 1e9
+    return predictions, total_time

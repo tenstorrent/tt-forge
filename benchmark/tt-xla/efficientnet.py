@@ -7,7 +7,14 @@ import os
 import time
 import pytest
 
-os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
+
+OPTIMIZER_ENABLED = True
+PROGRAM_CACHE_ENABLED = True
+MEMORY_LAYOUT_ANALYSIS_ENABLED = True
+TRACE_ENABLED = False
+
+if PROGRAM_CACHE_ENABLED:
+    os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 # Third-party modules
 import torch
@@ -27,6 +34,8 @@ from .utils import (
     determine_model_type_and_dataset,
     print_benchmark_results,
     create_benchmark_result,
+    torch_xla_measure_fps,
+    torch_xla_warmup_model,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -80,11 +89,6 @@ def test_efficientnet_torch_xla(
     if training:
         pytest.skip("Training is not supported")
 
-    OPTIMIZER_ENABLED = True
-    PROGRAM_CACHE_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
-    TRACE_ENABLED = False
-
     if task == "classification":
         inputs, labels = load_benchmark_dataset(
             task=task,
@@ -97,13 +101,18 @@ def test_efficientnet_torch_xla(
     elif task == "na":
         torch.manual_seed(1)
         # Random data
-        inputs = [torch.randn(batch_size, channel_size, *input_size)]
+        inputs = []
+        for i in range(loop_count):
+            inputs.append(torch.randn(batch_size, channel_size, *input_size))
     else:
         raise ValueError(f"Unsupported task: {task}.")
+
+    warmup_inputs = [torch.randn(batch_size, channel_size, *input_size)] * loop_count
 
     if data_format == "bfloat16":
         # Convert input to bfloat16
         inputs = [item.to(torch.bfloat16) for item in inputs]
+        warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
 
     # Load model using tt_forge_models
     model_variant = EfficientNetVariant.TIMM_EFFICIENTNET_B0
@@ -125,7 +134,7 @@ def test_efficientnet_torch_xla(
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_sharding": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
     }
@@ -144,38 +153,23 @@ def test_efficientnet_torch_xla(
         framework_model = framework_model.to(device)
 
     # Move first input to device for verification
-    device_input = inputs[0].to(device)
+    torch_xla_warmup_model(model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count)
 
-    with torch.no_grad():
-        fw_out = framework_model(device_input)
-
-    fw_out_cpu = fw_out.to("cpu")
-    print(f"Model verification - Output shape: {fw_out_cpu.shape}")
-    print(f"Model verification - Output (first 10 values): {fw_out_cpu.flatten()[:10]}")
+    # Benchmark
+    predictions, total_time = torch_xla_measure_fps(
+        model=framework_model, inputs=inputs, device=device, loop_count=loop_count
+    )
 
     if task == "classification":
-        predictions = []
-        start = time.time()
-        for i in tqdm(range(loop_count)):
-            device_input = inputs[i].to(device)
-            with torch.no_grad():
-                output = framework_model(device_input)
-                predictions.append(output.to("cpu"))
-        end = time.time()
         predictions = torch.cat(predictions)
         labels = torch.cat(labels)
         evaluation_score = evaluate_classification(predictions, labels)
     elif task == "na":
-        start = time.time()
-        for i in tqdm(range(loop_count)):
-            with torch.no_grad():
-                output = framework_model(device_input)
-        end = time.time()
+        # PCC
         evaluation_score = 0.0
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
-    total_time = end - start
     total_samples = batch_size * loop_count
     samples_per_sec = total_samples / total_time
 
