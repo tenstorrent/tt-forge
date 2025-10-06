@@ -2,9 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import time
 import socket
 from datetime import datetime
 from typing import Dict, Any, Optional, List
+import torch
 
 
 def get_benchmark_metadata() -> Dict[str, str]:
@@ -209,3 +211,115 @@ def create_benchmark_result(
             "chips": chips,
         },
     }
+
+
+def torch_xla_warmup_model(model, inputs, device, loop_count):
+    """
+    Warmup the model for a given number of loop_count.
+
+    Parameters:
+    ----------
+    model: Callable
+        The model to warmup.
+    input: Any
+        The input to the model.
+    device: torch.device
+        The device to run the warmup on.
+    loop_count: int
+        The number of loop_count to warmup the model.
+    """
+    print("Warming up the device...")
+
+    if len(inputs) != loop_count:
+        raise ValueError("Number of inputs must be equal to loop count.")
+
+    with torch.no_grad():
+        for i in range(loop_count):
+            # Move input to device.
+            device_input = inputs[i].to(device)
+            # Model forward, non blocking.
+            output = model(device_input)
+            if hasattr(output, "logits"):
+                output = output.logits
+
+            if type(output) is torch.Tensor:
+                output.to("cpu")
+            elif type(output) is tuple:
+                for out in output:
+                    out.to("cpu")
+            else:
+                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
+    print("Warming up completed.")
+
+
+def torch_xla_measure_fps(model, inputs, device, loop_count):
+    """
+    Measure the fps of the model for a given number of loop_count
+
+    Parameters:
+    ----------
+    model: torch.nn.Module
+        The model to benchmark.
+    inputs: list of torch.Tensor
+        The input data for benchmarking.
+    device: torch.device
+        The device to run the benchmark on.
+    loop_count: int
+        Number of batches to process.
+
+    Returns:
+    -------
+    predictions: list of torch.Tensor
+        The predictions made by the model.
+    total_time: float
+        The total time taken to process the inputs in seconds.
+    """
+    if len(inputs) != loop_count:
+        raise ValueError("Number of inputs must be equal to loop count.")
+
+    print("Starting benchmark loop...")
+
+    predictions = []
+    itteration_times = []
+    with torch.no_grad():
+        outputs = []
+        for i in range(loop_count):
+            start_time = time.perf_counter_ns()
+
+            # Move input to device.
+            device_input = inputs[i].to(device)
+
+            # Model forward, non blocking.
+            output = model(device_input)
+
+            if hasattr(output, "logits"):
+                output = output.logits
+            outputs.append(output)
+
+            end_time = time.perf_counter_ns()
+            itteration_times.append(end_time - start_time)
+
+            print(f"Iteration\t{i+1}/{loop_count}\ttook {itteration_times[-1] / 1e6:.04} ms")
+
+        # Move all outputs to CPU, waits for model execution to finish.
+        output_start = time.perf_counter_ns()
+        for output in outputs:
+            if type(output) is torch.Tensor:
+                cpu_output = output.to("cpu")
+                predictions.append(cpu_output)
+            elif type(output) is tuple:
+                cpu_output = tuple(out.to("cpu") for out in output)
+                predictions.append(cpu_output)
+            else:
+                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
+        output_end = time.perf_counter_ns()
+
+        output_time = output_end - output_start
+        print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
+
+    total_time_itterations = sum(itteration_times)
+    total_time = total_time_itterations + output_time
+
+    # Convert to seconds
+    total_time /= 1e9
+    return predictions, total_time
