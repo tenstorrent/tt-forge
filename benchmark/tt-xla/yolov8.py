@@ -104,6 +104,13 @@ def test_yolov8_torch_xla(
     else:
         cpu_fps = -1.0
 
+    if task == "na":
+        golden_input = inputs[0]
+        if data_format == "bfloat16":
+            golden_input = golden_input.to(torch.bfloat16)
+        with torch.no_grad():
+            golden_output = framework_model(golden_input)
+
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
@@ -123,15 +130,6 @@ def test_yolov8_torch_xla(
         framework_model = framework_model.to(device)
 
     device_input = inputs[0].to(device)
-
-    if task == "na":
-        url = "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8x.pt"
-        cpu_model = YoloWrapper(url)
-        if data_format == "bfloat16":
-            cpu_model = cpu_model.to(torch.bfloat16)
-        cpu_model.eval()
-        with torch.no_grad():
-            golden_output = cpu_model(inputs[0])
 
     with torch.no_grad():
         fw_out = framework_model(device_input)

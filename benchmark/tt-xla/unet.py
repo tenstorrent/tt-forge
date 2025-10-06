@@ -23,6 +23,7 @@ from .utils import (
     get_benchmark_metadata,
     print_benchmark_results,
     create_benchmark_result,
+    compute_pcc,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -102,6 +103,10 @@ def test_unet_torch_xla(
     else:
         cpu_fps = -1.0
 
+    # Generate golden output for PCC calculation
+    with torch.no_grad():
+        golden_output = framework_model(input_sample)
+
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
@@ -120,12 +125,16 @@ def test_unet_torch_xla(
     else:
         framework_model = framework_model.to(device)
 
-    input_sample = input_sample.to(device)
+    device_input = input_sample.to(device)
 
     with torch.no_grad():
-        fw_out = framework_model(input_sample)
+        fw_out = framework_model(device_input)
 
     fw_out_cpu = fw_out.to("cpu")
+
+    # Compute PCC between golden output and device output
+    pcc_value = compute_pcc(golden_output, fw_out_cpu, required_pcc=0.90)
+    print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     start = time.time()
     for _ in tqdm(range(loop_count)):
