@@ -241,8 +241,14 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
             output = model(device_input)
             if hasattr(output, "logits"):
                 output = output.logits
-            output.to("cpu")
 
+            if type(output) is torch.Tensor:
+                output.to("cpu")
+            elif type(output) is tuple:
+                for out in output:
+                    out.to("cpu")
+            else:
+                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
     print("Warming up completed.")
 
 
@@ -298,8 +304,14 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
         # Move all outputs to CPU, waits for model execution to finish.
         output_start = time.perf_counter_ns()
         for output in outputs:
-            cpu_output = output.to("cpu")
-            predictions.append(cpu_output)
+            if type(output) is torch.Tensor:
+                cpu_output = output.to("cpu")
+                predictions.append(cpu_output)
+            elif type(output) is tuple:
+                cpu_output = tuple(out.to("cpu") for out in output)
+                predictions.append(cpu_output)
+            else:
+                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
         output_end = time.perf_counter_ns()
 
         output_time = output_end - output_start
@@ -307,9 +319,6 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
 
     total_time_itterations = sum(itteration_times)
     total_time = total_time_itterations + output_time
-    print(f"Total time over itterations: {total_time_itterations / 1e6:.04} ms")
-    print(f"Total output wait time: {output_time / 1e6:.04} ms")
-    print(f"Total time: {total_time / 1e6:.04} ms")
 
     # Convert to seconds
     total_time /= 1e9
