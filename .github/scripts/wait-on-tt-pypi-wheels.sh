@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # TEST:
-# export NEW_VERSION_TAG="0.1.0.dev20250623"
-# export PIP_WHEEL_NAMES="tt-torch tt_forge_fe tt_tvm pjrt-plugin-tt"
+# export NEW_VERSION_TAG="0.5.0.dev20251007"
+# export PIP_WHEEL_NAMES="tt_forge_fe tt_tvm pjrt-plugin-tt"
 
 set -eu
 wait_time=60
