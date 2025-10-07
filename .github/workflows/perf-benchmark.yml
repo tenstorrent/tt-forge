@@ -441,7 +441,7 @@ jobs:
         #TODO: Add filter here to not pick up draft runs
         workflow_id=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?event=schedule&status=completed&branch=main&per_page=1" \
+          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?status=completed&branch=main&per_page=1&actor=github-actions\[bot\]" \
           | jq -r '.workflow_runs[0].id')
         echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
