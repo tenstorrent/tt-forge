@@ -114,12 +114,22 @@ jobs:
         echo "filter=$filter"
         matrix_skip="false"
 
-        matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
+        matrix=$(jq '
+          [
+            .[] as $proj |
+            $proj.tests[] as $test |
+            $proj["test-defaults"] + $test + {
+              "project": $proj.project,
+            }
+          ]
+        ' .github/workflows/perf-benchmark-matrix-2.json)
+
+        matrix=$(jq -c "[${filter})]" $matrix)
 
         if [ "${{ inputs.sh-runner }}" == "true" ]; then
-          matrix=$(echo "$matrix" | jq -c 'map(if .["runs-on"] == "p150" then .["runs-on"] = "p150b" else . end)')
+          matrix=$(echo "$matrix" | jq -c 'map(.["runs-on"] |= (if type == "array" then map(if . == "p150" then "p150b" else . end) elif . == "p150" then "p150b" else . end))')
         else
-          matrix=$(echo "$matrix" | jq -c 'map(if .["runs-on"] == "n150" then .["runs-on"] = "n150-perf" else . end)')
+          matrix=$(echo "$matrix" | jq -c 'map(.["runs-on"] |= (if type == "array" then map(if . == "n150" then "n150-perf" else . end) elif . == "n150" then "n150-perf" else . end))')
         fi
 
         echo "Matrix: $matrix"
