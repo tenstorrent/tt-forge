@@ -438,11 +438,10 @@ jobs:
       run: |
         echo "model_name=$(cat ${{ steps.strings.outputs.perf_report_json_file }} | jq -r '.model')" >> $GITHUB_OUTPUT
 
-        #TODO: Add filter here to not pick up draft runs
         workflow_id=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?event=schedule&status=completed&branch=main&per_page=1" \
-          | jq -r '.workflow_runs[0].id')
+          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?status=completed&branch=main&per_page=100&actor=github-actions\[bot\]" \
+          | jq -r '.workflow_runs[] | select(.name | contains("draft") | not) | .id' | head -1)
         echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
     - name: Fetch previous perf results
