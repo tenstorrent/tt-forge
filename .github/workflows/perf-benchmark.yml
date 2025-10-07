@@ -124,7 +124,7 @@ jobs:
           ]
         ' .github/workflows/perf-benchmark-matrix-2.json)
 
-        matrix=$(jq -c "[${filter})]" $matrix)
+        matrix=$(echo $matrix | jq -c "[${filter})]")
 
         if [ "${{ inputs.sh-runner }}" == "true" ]; then
           matrix=$(echo "$matrix" | jq -c 'map(.["runs-on"] |= (if type == "array" then map(if . == "p150" then "p150b" else . end) elif . == "p150" then "p150b" else . end))')
