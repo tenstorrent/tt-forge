@@ -9,6 +9,45 @@ from typing import Dict, Any, Optional, List
 import torch
 
 
+def compute_pcc(golden_output, device_output, required_pcc: float = 0.99) -> float:
+    """
+    Compute Pearson Correlation Coefficient between golden and device output.
+
+    Returns:
+        PCC value.
+
+    Raises:
+        AssertionError: If computed PCC is below required_pcc threshold
+    """
+    golden_flat = golden_output.to(torch.float32).flatten()
+    device_flat = device_output.to(torch.float32).flatten()
+
+    golden_centered = golden_flat - golden_flat.mean()
+    device_centered = device_flat - device_flat.mean()
+
+    denom = golden_centered.norm() * device_centered.norm()
+
+    # Handle edge case where tensors are too close (denom approaches 0)
+    if denom == 0:
+        # Check if tensors are actually equal using allclose
+        if torch.allclose(golden_flat, device_flat, rtol=1e-2, atol=1e-2):
+            print(f"PCC check: Tensors are nearly identical (allclose passed), PCC=1.0")
+            return 1.0
+        # If not close, this is an error case
+        raise AssertionError("PCC computation failed: denominator is zero but tensors are not close")
+
+    pcc = (golden_centered @ device_centered) / denom
+    pcc_value = pcc.item()
+
+    print(f"PCC check: Calculated PCC={pcc_value:.6f}, Required PCC={required_pcc}")
+
+    assert pcc_value >= required_pcc, (
+        f"PCC comparison failed. " f"Calculated: pcc={pcc_value:.6f}. Required: pcc={required_pcc}"
+    )
+
+    return pcc_value
+
+
 def get_benchmark_metadata() -> Dict[str, str]:
     """Get common benchmark metadata."""
     return {

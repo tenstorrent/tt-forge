@@ -25,13 +25,14 @@ import tt_torch
 from tqdm import tqdm
 
 from benchmark.utils import measure_cpu_fps
-from third_party.tt_forge_models.unet.pytorch.loader import ModelLoader as UNetLoader
+from third_party.tt_forge_models.vgg19_unet.pytorch.loader import ModelLoader as UNetLoader
 from .utils import (
     get_benchmark_metadata,
     print_benchmark_results,
     create_benchmark_result,
     torch_xla_measure_fps,
     torch_xla_warmup_model,
+    compute_pcc,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -115,6 +116,10 @@ def test_unet_torch_xla(
     else:
         cpu_fps = -1.0
 
+    # Generate golden output for PCC calculation
+    with torch.no_grad():
+        golden_output = framework_model(input_sample)
+
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
@@ -124,13 +129,10 @@ def test_unet_torch_xla(
 
     torch_xla.set_custom_compile_options(options)
 
-    # torch_xla compilation
     framework_model.compile(backend="tt")
 
-    # Connect the device
     device = xm.xla_device()
 
-    # Move inputs and model to device
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
     else:
@@ -154,7 +156,6 @@ def test_unet_torch_xla(
     dataset_name = "UNet, Random Data"
     num_layers = -1
 
-    # Create custom measurements for CPU FPS
     custom_measurements = [
         {
             "measurement_name": "cpu_fps",
