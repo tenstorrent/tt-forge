@@ -34,6 +34,7 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
+    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -146,6 +147,8 @@ def test_unet_torch_xla(
     predictions, total_time = torch_xla_measure_fps(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
+
+    serialize_modules(f"modules/{model_name}")
 
     pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
     print(f"PCC verification passed with PCC={pcc_value:.6f}")

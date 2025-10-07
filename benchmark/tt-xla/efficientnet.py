@@ -22,7 +22,6 @@ import torch
 import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
-import tt_torch
 from tqdm import tqdm
 
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_xla_device_arch
@@ -38,6 +37,7 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
+    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -162,6 +162,8 @@ def test_efficientnet_torch_xla(
     predictions, total_time = torch_xla_measure_fps(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
+
+    serialize_modules(f"modules/{model_name}")
 
     if task == "classification":
         predictions = torch.cat(predictions)

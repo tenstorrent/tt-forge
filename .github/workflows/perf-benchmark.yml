@@ -15,7 +15,6 @@ on:
         type: choice
         options:
           - tt-forge-fe
-          - tt-torch
           - tt-xla
           - tt-forge
         default: tt-forge
@@ -325,11 +324,6 @@ jobs:
         echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
 
-        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-          export TT_TORCH_SAVE_MLIR=TTIR
-          export TT_TORCH_SAVE_BINARY=1
-        fi
-
         # Caused by tensorflow installation in tt-xla: https://github.com/tenstorrent/tt-forge/issues/477
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           pip uninstall tensorflow -y
@@ -350,26 +344,19 @@ jobs:
       shell: bash
       run: |
 
-        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
-          echo "Dump ttir to report"
-          if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-            cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
-          elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-            cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
-          fi
+        echo "Dump ttir to report"
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
 
         echo "Dump ttnn to report"
-        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
-          cp ./model_flatbuffer/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
         fi
-        source ttrt-venv/bin/activate
-        python --version
-        echo "Run ttrt read"
-        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json
-        echo "Extract MLIR from ttnn"
-        python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
-        cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
 
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
@@ -397,6 +384,9 @@ jobs:
         echo "Save artifacts"
         ttrt query --save-artifacts
         chmod ugo+x ./benchmark/ttrt_perf.sh
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          cp ./modules/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
+        fi
         echo "Run ttrt perf"
         ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_json_file }} || true
 
