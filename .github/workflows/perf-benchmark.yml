@@ -176,6 +176,8 @@ jobs:
           ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }} \
           ${{ inputs.sh-runner && '--sh-runner' || '' }})
 
+        echo $result
+
         perf_benchmarks=$(echo $result | jq -r '.matrix')
         matrix_skip=$(echo $result | jq -r '.matrix_skip')
 
