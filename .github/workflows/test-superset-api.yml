@@ -122,12 +122,13 @@ jobs:
       - name: Test non-existent project
         run: |
           echo "Testing non-existent project filter..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json non-existent-project)
-          echo "$result"
-
-          # Should have empty matrix and matrix_skip true
-          echo "$result" | jq -e '.matrix | length == 0'
-          echo "$result" | jq -e '.matrix_skip == "true"'
+          # Script should exit with error code 1 when no tests match
+          if python .github/workflows/filter-test-matrix.py test-matrix.json non-existent-project; then
+            echo "Expected script to fail with no matching tests"
+            exit 1
+          else
+            echo "Script correctly failed with no matching tests"
+          fi
 
       - name: Test error handling
         run: |
