@@ -148,7 +148,7 @@ runs:
         repo_short="${repo#tenstorrent/}"
         repo_full="tenstorrent/${repo_short}"
         # List of all repos that are allowed to release. Make sure to update the conditional below
-        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-torch tenstorrent/tt-mlir tenstorrent/tt-xla tenstorrent/tt-forge'
+        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-mlir tenstorrent/tt-xla tenstorrent/tt-forge'
         workflow_allow_failed="false"
         build_release_find_workflow_branch="${{ inputs.branch }}"
         build_release_latest_branch_commit="${{ inputs.latest_branch_commit }}"
@@ -200,15 +200,6 @@ runs:
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
             workflow_result_in_job="fail-notify"
             pip_wheel_names="tt_forge_fe tt_tvm"
-        elif [[ "${{ inputs.repo }}" =~ "tt-torch" ]]; then
-            workflow="Nightly Tests"
-            if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
-                workflow="On push"
-            fi
-            artifact_download_glob='*{install-artifacts-release,test-reports-models-}*'
-            artifact_cleanup_file_glob='*torchvision*'
-            artifact_cleanup_folder_glob='*install-artifacts-debug*'
-            pip_wheel_names="tt-torch"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
             # NOTE: no nightly job current for tt-mlir keeping this here for future use
             workflow="On push"
