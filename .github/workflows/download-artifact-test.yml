@@ -1,149 +1,116 @@
-name: Test Filter Matrix Script
+name: Download Artifact Test
 
 on:
   pull_request:
     paths:
-      - '.github/workflows/filter-test-matrix.py'
+      - '.github/actions/download-artifact**'
 
 jobs:
-  test-filter-matrix:
+  test-artifact-methods:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      # Create test files
+      - name: Create test content
+        run: |
+          # Create a single file
+          echo "Test content for single file" > test-file.txt
+
+          # Create a directory with multiple files
+          mkdir -p test-directory
+          echo "File 1 content" > test-directory/file1.txt
+          echo "File 2 content" > test-directory/file2.txt
+
+          # Create a tar archive
+          mkdir -p tar-content
+          echo "Tar file 1" > tar-content/file1.txt
+          echo "Tar file 2" > tar-content/file2.txt
+          tar -czf test-archive.tar.gz tar-content/
+
+      # Test 1: Upload and download a single file
+      - name: Upload single file
+        uses: actions/upload-artifact@v4
         with:
-          python-version: '3.11'
+          name: single-file
+          path: test-file.txt
 
-      - name: Create test matrix file
+      - name: Download single file
+        uses: ./.github/actions/download-artifact
+        with:
+          name: single-file
+          path: downloaded-single-file
+
+      - name: Verify single file
         run: |
-          cat > test-matrix.json << 'EOF'
-          [
-            {
-              "project": "tt-forge-fe",
-              "test-defaults": {
-                "runs-on": ["n150", "p150"]
-              },
-              "tests": [
-                {
-                  "name": "basic-test",
-                  "dir": "tests/basic"
-                },
-                {
-                  "name": "advanced-test",
-                  "dir": "tests/advanced",
-                  "runs-on": "p150"
-                },
-                {
-                  "name": "additional-test",
-                  "dir": "tests/additional",
-                  "runs-on": "p150"
-                }
-              ]
-            },
-            {
-              "project": "tt-xla",
-              "test-defaults": {
-                "libreq": 45
-              },
-              "tests": [
-                {
-                  "name": "xla-test",
-                  "dir": "tests/xla",
-                  "runs-on": ["n150"]
-                }
-              ]
-            },
-            {
-              "project": "tt-torch",
-              "tests": [
-                {
-                  "name": "basic-test",
-                  "dir": "custom/path",
-                  "runs-on": "p150"
-                }
-              ]
-            }
-          ]
-          EOF
+          diff test-file.txt downloaded-single-file/test-file.txt
+          if [ $? -eq 0 ]; then echo "✅ Single file test passed"; else echo "❌ Single file test failed"; exit 1; fi
 
-      - name: Test basic functionality
+      # Test 2: Upload and download a directory
+      - name: Upload directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: directory
+          path: test-directory/
+
+      - name: Download directory
+        uses: ./.github/actions/download-artifact
+        with:
+          name: directory
+          path: downloaded-directory
+
+      - name: Verify directory
         run: |
-          echo "Testing tt-forge project filter..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe)
-          echo "$result"
+          diff -r test-directory/ downloaded-directory/
+          if [ $? -eq 0 ]; then echo "✅ Directory test passed"; else echo "❌ Directory test failed"; exit 1; fi
 
-          # Check that result contains expected tests
-          echo "$result" | jq -e '.matrix | length == 4'
-          echo "$result" | jq -e '.matrix_skip == "false"'
+      # Test 3: Upload and download a tar archive
+      - name: Upload tar archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive
+          path: test-archive.tar.gz
 
-      - name: Test basic functionality tt-forge
+      - name: Download tar archive
+        uses: ./.github/actions/download-artifact
+        with:
+          name: archive
+          path: downloaded-archive
+
+      - name: Verify tar archive
         run: |
-          echo "Testing tt-forge project filter..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge)
-          echo "$result"
+          diff -r tar-content/ downloaded-archive/tar-content/
+          if [ $? -eq 0 ]; then echo "✅ Archive test passed"; else echo "❌ Archive test failed"; exit 1; fi
 
-          # Check that result contains expected tests
-          echo "$result" | jq -e '.matrix | length == 5'
-          echo "$result" | jq -e '.matrix_skip == "false"'
+      # Test 4: Attempt to download to restricted filesystem location
+      - name: Try download to restricted path
+        id: restricted-path
+        uses: ./.github/actions/download-artifact
+        continue-on-error: true
+        with:
+          name: single-file
+          path: /tmp/restricted
 
-      - name: Test specific test filter
+      - name: Verify restricted path fails
         run: |
-          echo "Testing with specific test name filter..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --test-filter basic-test)
-          echo "$result"
-
-          # Should only contain basic-test
-          echo "$result" | jq -e '.matrix | length == 2'  # 2 because basic-test runs on 2 runners
-          echo "$result" | jq -e '.matrix[0].name == "basic-test"'
-
-      - name: Test shared runner flag
-        run: |
-          echo "Testing shared runner mapping..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --sh-runner)
-          echo "$result"
-
-          # Check that p150 is mapped to p150b
-          echo "$result" | jq -e '.matrix | map(select(.["runs-on"] == "p150b")) | length == 3'
-
-      - name: Test non-existent project
-        run: |
-          echo "Testing non-existent project filter..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json non-existent-project)
-          echo "$result"
-
-          # Should have empty matrix and matrix_skip true
-          echo "$result" | jq -e '.matrix | length == 0'
-          echo "$result" | jq -e '.matrix_skip == "true"'
-
-      - name: Test error handling
-        run: |
-          echo "Testing error handling with invalid JSON..."
-          echo "invalid json" > invalid.json
-
-          # Should exit with error code 1
-          if python .github/workflows/filter-test-matrix.py invalid.json tt-forge; then
-            echo "Expected script to fail with invalid JSON"
-            exit 1
+          if [ "${{ steps.restricted-path.outcome }}" == "failure" ]; then
+            echo "✅ Restricted path test passed - Action failed as expected"
           else
-            echo "Script correctly failed with invalid JSON"
-          fi
-
-      - name: Test matrix flattening
-        run: |
-          echo "Testing matrix flattening with multiple runners..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge --test-filter basic-test)
-          echo "$result"
-
-          # basic-test should be flattened into 2 entries (n150 and p150)
-          matrix_length=$(echo "$result" | jq '.matrix | length')
-          if [ "$matrix_length" -ne 2 ]; then
-            echo "Expected 2 matrix entries, got $matrix_length"
+            echo "❌ Restricted path test failed - Action should have failed"
             exit 1
           fi
 
-          # Check that both runners are present
-          echo "$result" | jq -e '.matrix | map(.["runs-on"]) | sort == ["n150", "p150"]'
+      # Test 5: Download a single file without specifying a path
+      - name: Save uploaded single file
+        run: mv test-file.txt test-file-orig.txt
+
+      - name: Download single file
+        uses: ./.github/actions/download-artifact
+        with:
+          name: single-file
+
+      - name: Verify single file
+        run: |
+          diff test-file-orig.txt test-file.txt
+          if [ $? -eq 0 ]; then echo "✅ Single file download without path test passed"; else echo "❌ Single file download without path test failed"; exit 1; fi
