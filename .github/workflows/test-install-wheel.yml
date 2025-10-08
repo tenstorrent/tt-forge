@@ -1,48 +1,147 @@
 name: Test Install wheel action
 
 on:
-    push:
-      branches:
-        - main
-      paths:
-        - '.github/actions/install-wheel/**'
-    pull_request:
-      types: [opened, synchronize, reopened, ready_for_review]
-      branches: [ "main" ]
-      paths:
-        - '.github/actions/install-wheel/**'
-jobs:
-  test-install-wheel:
-    container:
-      image: "ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
-      options: --user root
-    strategy:
-      fail-fast: false
-      matrix:
-        build: [
-          { project: "tt-torch", run_id: "17842271263", wheel_name: "tt[-_]torch" },
-          { project: "tt-forge-fe", run_id: "18005587450", wheel_name: "tt[-_]forge[-_]fe" },
-          { project: "tt-xla", run_id: "18098242089", wheel_name: "pjrt[-_]" }
-        ]
+  workflow_dispatch:
 
-    runs-on: tt-ubuntu-2204-n150-stable
+jobs:
+  test-filter-matrix:
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Setup Python environment
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Install projects wheel
-        uses: ./.github/actions/install-wheel
-        with:
-          project: ${{ matrix.build.project }}
-          run_id: ${{ matrix.build.run_id }}
-      - name: Verify installation
+
+      - name: Create test matrix file
         run: |
-          c=$(pip list | grep -c -E "${{ matrix.build.wheel_name }}")
-          if [ $c -eq 0 ]; then
-            echo "${{ matrix.build.project }} is not installed"
+          cat > test-matrix.json << 'EOF'
+          [
+            {
+              "project": "tt-forge-fe",
+              "test-defaults": {
+                "runs-on": ["n150", "p150"]
+              },
+              "tests": [
+                {
+                  "name": "basic-test",
+                  "dir": "tests/basic"
+                },
+                {
+                  "name": "advanced-test",
+                  "dir": "tests/advanced",
+                  "runs-on": "p150"
+                },
+                {
+                  "name": "additional-test",
+                  "dir": "tests/additional",
+                  "runs-on": "p150"
+                }
+              ]
+            },
+            {
+              "project": "tt-xla",
+              "test-defaults": {
+                "libreq": 45
+              },
+              "tests": [
+                {
+                  "name": "xla-test",
+                  "dir": "tests/xla",
+                  "runs-on": ["n150"]
+                }
+              ]
+            },
+            {
+              "project": "tt-torch",
+              "tests": [
+                {
+                  "name": "basic-test",
+                  "dir": "custom/path",
+                  "runs-on": "p150"
+                }
+              ]
+            }
+          ]
+          EOF
+
+      - name: Test basic functionality
+        run: |
+          echo "Testing tt-forge project filter..."
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe)
+          echo "$result"
+
+          # Check that result contains expected tests
+          echo "$result" | jq -e '.matrix | length == 4'
+          echo "$result" | jq -e '.matrix_skip == "false"'
+
+      - name: Test basic functionality tt-forge
+        run: |
+          echo "Testing tt-forge project filter..."
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge)
+          echo "$result"
+
+          # Check that result contains expected tests
+          echo "$result" | jq -e '.matrix | length == 5'
+          echo "$result" | jq -e '.matrix_skip == "false"'
+
+      - name: Test specific test filter
+        run: |
+          echo "Testing with specific test name filter..."
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --test-filter basic-test)
+          echo "$result"
+
+          # Should only contain basic-test
+          echo "$result" | jq -e '.matrix | length == 2'  # 2 because basic-test runs on 2 runners
+          echo "$result" | jq -e '.matrix[0].name == "basic-test"'
+
+      - name: Test shared runner flag
+        run: |
+          echo "Testing shared runner mapping..."
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --sh-runner)
+          echo "$result"
+
+          # Check that p150 is mapped to p150b
+          echo "$result" | jq -e '.matrix | map(select(.["runs-on"] == "p150b")) | length == 3'
+
+      - name: Test non-existent project
+        run: |
+          echo "Testing non-existent project filter..."
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json non-existent-project)
+          echo "$result"
+
+          # Should have empty matrix and matrix_skip true
+          echo "$result" | jq -e '.matrix | length == 0'
+          echo "$result" | jq -e '.matrix_skip == "true"'
+
+      - name: Test error handling
+        run: |
+          echo "Testing error handling with invalid JSON..."
+          echo "invalid json" > invalid.json
+
+          # Should exit with error code 1
+          if python .github/workflows/filter-test-matrix.py invalid.json tt-forge; then
+            echo "Expected script to fail with invalid JSON"
+            exit 1
+          else
+            echo "Script correctly failed with invalid JSON"
+          fi
+
+      - name: Test matrix flattening
+        run: |
+          echo "Testing matrix flattening with multiple runners..."
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge --test-filter basic-test)
+          echo "$result"
+
+          # basic-test should be flattened into 2 entries (n150 and p150)
+          matrix_length=$(echo "$result" | jq '.matrix | length')
+          if [ "$matrix_length" -ne 2 ]; then
+            echo "Expected 2 matrix entries, got $matrix_length"
             exit 1
           fi
+
+          # Check that both runners are present
+          echo "$result" | jq -e '.matrix | map(.["runs-on"]) | sort == ["n150", "p150"]'
