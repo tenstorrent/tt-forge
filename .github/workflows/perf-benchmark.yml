@@ -176,9 +176,7 @@ jobs:
           ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }} \
           ${{ inputs.sh-runner && '--sh-runner' || '' }})
 
-        echo $result
-
-        perf_benchmarks=$(echo $result | jq -r '.matrix')
+        perf_benchmarks=$(echo $result | jq -r -c '.matrix')
         matrix_skip=$(echo $result | jq -r '.matrix_skip')
 
         echo "perf_benchmarks=$perf_benchmarks" >> $GITHUB_OUTPUT
