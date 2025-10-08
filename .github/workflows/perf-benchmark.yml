@@ -82,7 +82,7 @@ jobs:
   filter-tests:
     runs-on: ubuntu-latest
     outputs:
-      benchmark-matrix: ${{ steps.set-perf-benchmarks.outputs.perf-benchmarks }}
+      benchmark-matrix: ${{ steps.set-perf-benchmarks.outputs.matrix }}
       matrix_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_skip }}
     steps:
     - name: Checkout repository
@@ -176,10 +176,10 @@ jobs:
           ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }} \
           ${{ inputs.sh-runner && '--sh-runner' || '' }})
 
-        perf_benchmarks=$(echo $result | jq -r -c '.matrix')
+        matrix=$(echo $result | jq -r -c '.matrix')
         matrix_skip=$(echo $result | jq -r '.matrix_skip')
 
-        echo "perf_benchmarks=$perf_benchmarks" >> $GITHUB_OUTPUT
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT
         echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
 
         # Set up the summary for the job
@@ -214,8 +214,8 @@ jobs:
       matrix:
         build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
 
-    # runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
-    runs-on: ["n150", "p150"]
+    runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
+    # runs-on: ["n150", "p150"]
 
     env:
       # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
