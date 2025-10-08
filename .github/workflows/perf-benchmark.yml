@@ -92,84 +92,11 @@ jobs:
         fetch-depth: 1
         ref: ${{ inputs.ref || github.ref }}
         submodules: 'recursive'
-    # - name: Filter Matrix
-    #   id: set-perf-benchmarks
-    #   shell: bash
-    #   run: |
-    #     filter='.[] | select(true'
-
-    #     # Add project filter if specified
-    #     if [ "${{ inputs.project-filter }}" != "tt-forge" ]; then
-    #       project="${{ inputs.project || inputs.project-filter }}"
-    #       filter="$filter and .project == \"$project\""
-    #     else
-    #       # Select all frontends for tt-forge
-    #       filter="$filter and select(.project | IN(\"tt-xla\", \"tt-forge-fe\"))"
-    #     fi
-
-    #     if [ -n "${{ inputs.test-filter }}" ]; then
-    #       filter="$filter and .name == \"${{ inputs.test-filter }}\""
-    #     fi
-
-    #     echo "filter=$filter"
-    #     matrix_skip="false"
-
-    #     matrix=$(jq '
-    #       [
-    #         .[] as $proj |
-    #         $proj.tests[] as $test |
-    #         $proj["test-defaults"] + $test + {
-    #           "project": $proj.project,
-    #         }
-    #       ]
-    #     '& .github/workflows/perf-benchmark-matrix-2.json)
-
-    #     # if we have an object with runs-on: [<somth>] it will separate into multiple objects
-    #     # each with one value from the array
-    #     matrix=$(echo "$matrix" | jq -c '
-    #       map(
-    #         if (.["runs-on"] | type == "array") then
-    #           .["runs-on"] as $runners |
-    #           $runners | map(. as $runner |
-    #             (. | del(.["runs-on"]) | .["runs-on"] = $runner)
-    #           )
-    #         else
-    #           .
-    #         end
-    #       ) | flatten
-    #     ')
-
-    #     matrix=$(echo $matrix | jq -c "[${filter})]")
-
-    #     if [ "${{ inputs.sh-runner }}" == "true" ]; then
-    #       matrix=$(echo "$matrix" | jq -c 'map(if .["runs-on"] == "p150" then .["runs-on"] = "p150b" else . end)')
-    #     else
-    #       matrix=$(echo "$matrix" | jq -c 'map(if .["runs-on"] == "n150" then .["runs-on"] = "n150-perf" else . end)')
-    #     fi
-
-    #     echo "Matrix: $matrix"
-    #     if [ "$matrix" == "[]" ]; then
-    #       echo "Error: No matching tests found in the matrix"
-    #       matrix_skip="true"
-    #     fi
-    #     echo "matrix_skip=$matrix_skip"
-    #     echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
-    #     echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
-
-    #     # Set up the summary for the job
-    #     echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
-    #     echo "Project(s): $project" >> $GITHUB_STEP_SUMMARY
-    #     echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
-    #     echo "Run ID source: ${{ inputs.run_id_source }}" >> $GITHUB_STEP_SUMMARY
-    #     echo "Run ID: ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY
-    #     echo "Shared runner: ${{ inputs.sh-runner }}" >> $GITHUB_STEP_SUMMARY
 
     - name: Filter Matrix
       id: set-perf-benchmarks
       shell: bash
       run: |
-        project_filter=${{ inputs.project-filter || inputs.project }}
-
         result=$(python .github/workflows/filter-test-matrix.py \
           .github/workflows/perf-bench-matrix.json \
           ${{ inputs.project-filter || inputs.project || '' }} \
@@ -184,7 +111,7 @@ jobs:
 
         # Set up the summary for the job
         echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
-        echo "Project filter: ${{ inputs.project-filter || inputs.project || 'tt-forge' }}" >> $GITHUB_STEP_SUMMARY
+        echo "Project filter: ${{ inputs.project-filter || inputs.project }}" >> $GITHUB_STEP_SUMMARY
         echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
         echo "Run ID source: ${{ inputs.run_id_source }}" >> $GITHUB_STEP_SUMMARY
         echo "Run ID: ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY
@@ -215,7 +142,6 @@ jobs:
         build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
 
     runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
-    # runs-on: ["n150", "p150"]
 
     env:
       # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
