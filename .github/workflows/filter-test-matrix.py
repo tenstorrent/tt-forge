@@ -70,7 +70,7 @@ def main():
 
         matrix_skip = not filtered
 
-        result = {"matrix": filtered, "matrix-skip": matrix_skip}
+        result = {"matrix": filtered, "matrix_skip": matrix_skip}
 
         print(json.dumps(result))
 
