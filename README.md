@@ -18,12 +18,12 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 # Quick Links
 - [Getting Started / How to Run a Model](https://docs.tenstorrent.com/tt-forge/getting_started.html)
 - [Interactive Tenstorrent Software Diagram](#interactive-tenstorrent-sofware-architecture-diagram)
-- [TT-XLA](https://github.com/tenstorrent/tt-xla) - For use with PyTorch, JAX, and TensorFlow
-- [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe) - For use with ONNX and PaddlePaddle
+- [TT-XLA](https://github.com/tenstorrent/tt-xla) - (single and multi-chip) For use with PyTorch, JAX, and TensorFlow 
+- [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe) - (single chip only) For use with ONNX and PaddlePaddle, it also runs PyTorch, however it is recommended to use TT-XLA for PyTorch 
 - [TT-MLIR](https://github.com/tenstorrent/tt-mlir) - Open source compiler framework for compiling and optimizing machine learning models for Tenstorrent hardware
 - [TT-Metal](https://github.com/tenstorrent/tt-metal) - Low-level programming model, enabling kernel development for Tenstorrent hardware
-- [TT-Torch](https://github.com/tenstorrent/tt-torch) - (Deprecated) Previously for use with PyTorch and ONNX
-- [TT-TVM](https://github.com/tenstorrent/tt-tvm)
+- [TT-TVM](https://github.com/tenstorrent/tt-tvm) - A compiler stack for deep learning systems designed to close the gap between the productivity-focused deep learning frameworks, and the performance and efficiency-focused hardware backends
+- [TT-Torch](https://github.com/tenstorrent/tt-torch) - (Deprecated) Previously for use with PyTorch. It is recommended that you use TT-XLA for PyTorch. 
 
 -----
 # What Is This Repo?
@@ -39,7 +39,7 @@ See the documentation available for individual front ends in the [Front End](#cu
 
 # Project Overview
 
-tt-forge is composed of various projects ranging from front ends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project. tt-forge lowers to our tt-metalium project, providing additional functionality to our AI Sofware ecosystem.
+TT-Forge is composed of various projects ranging from front ends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project. tt-forge lowers to our TT-Metalium project, providing additional functionality to our AI Sofware ecosystem.
 
 ![Tenstorrent Software Overview](docs/public/images/tt-sw-overview.png)
 
@@ -265,11 +265,11 @@ flowchart TD
 
 # Current AI Framework Front End Projects
 - [TT-XLA](https://github.com/tenstorrent/tt-xla)
-  - TT-XLA is the primary frontend for running PyTorch and JAX models. It leverages a PJRT interface to integrate JAX (and in the future other frameworks), TT-MLIR, and Tenstorrent hardware. Supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to TT-MLIR compiler.
+  - TT-XLA is the primary frontend for running PyTorch and JAX models. It leverages a PJRT interface to integrate JAX (and in the future other frameworks), TT-MLIR, and Tenstorrent hardware. It supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to TT-MLIR compiler. TT-XLA can be used for single and multi-chip projects. 
   - See the [TT-XLA docs pages](https://docs.tenstorrent.com/tt-xla) for an overview and getting started guide.
 
 - [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
-  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of PyTorch, ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([TT-TVM](https://github.com/tenstorrent/tt-tvm)).
+  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([TT-TVM](https://github.com/tenstorrent/tt-tvm)). It also supports ingestion of PyTorch, however it is recommended that you use TT-XLA. TT-Forge-FE does not support multi-chip configurations; it is for single-chip projects only.
   - See the [TT-Forge-FE docs pages](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html) for an overview and getting started guide.
 
 - [TT-Torch](https://github.com/tenstorrent/tt-torch) - (deprecated)

@@ -1,6 +1,6 @@
 # TT-Forge Model Benchmarks
 
-This directory contains benchmark implementations of popular deep learning models using TT-Forge (TT-Forge-FE, TT-XLA, and TT-Torch). These benchmarks are designed to measure performance across various computer vision and natural language processing models.
+This directory contains benchmark implementations of popular deep learning models using TT-Forge (TT-Forge-FE, TT-XLA, and TT-Torch (deprecated)). These benchmarks are designed to measure performance across various computer vision and natural language processing models.
 
 ## Available Benchmarks
 
@@ -17,7 +17,7 @@ This directory contains benchmark implementations of popular deep learning model
 | YOLOv9                   | TT-Forge-FE   | CNN            | Advanced YOLO model for object detection                                | [`tt-forge-fe/yolo_v9.py`](tt-forge-fe/yolo_v9.py)                            | 16.48                 | 30                       |
 | YOLOv10                  | TT-Forge-FE   | CNN            | Most recent YOLO iteration for object detection                         | [`tt-forge-fe/yolo_v10.py`](tt-forge-fe/yolo_v10.py)                            | 5.1                | 20                       |
 | ResNet-50                | TT-XLA        | CNN            | Deep residual network for image classification                   | [`tt-xla/resnet.py`](tt-xla/resnet.py)                                    | 0.14                 |             500            |
-| ResNet-50                | TT-Torch      | CNN            | Deep residual network for image classification        | [`tt-torch/resnet.py`](tt-torch/resnet.py)                                | 4.32                 |       500                  |
+| ResNet-50                | TT-Torch (deprecated)      | CNN            | Deep residual network for image classification        | [`tt-torch/resnet.py`](tt-torch/resnet.py)                                | 4.32                 |       500                  |
 
 > *Last updated: July 31, 2025
 
