@@ -118,7 +118,7 @@ def test_unet_torch_xla(
 
     # Generate golden output for PCC calculation
     with torch.no_grad():
-        golden_output = framework_model(input_sample)
+        golden_output = framework_model(inputs[0])
 
     options = {
         "enable_optimizer": OPTIMIZER_ENABLED,
@@ -145,6 +145,9 @@ def test_unet_torch_xla(
     predictions, total_time = torch_xla_measure_fps(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
+
+    pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
+    print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     total_samples = batch_size * loop_count
     samples_per_sec = total_samples / total_time

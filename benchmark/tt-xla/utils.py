@@ -6,44 +6,89 @@ import time
 import socket
 from datetime import datetime
 from typing import Dict, Any, Optional, List
+from collections.abc import Sequence
 import torch
+
+
+def _compute_pcc_single(golden_flat: torch.Tensor, device_flat: torch.Tensor) -> float:
+    """Helper to compute PCC between two flattened tensors."""
+    golden_centered = golden_flat - golden_flat.mean()
+    device_centered = device_flat - device_flat.mean()
+    denom = golden_centered.norm() * device_centered.norm()
+
+    if denom == 0:
+        if torch.allclose(golden_flat, device_flat, rtol=1e-2, atol=1e-2):
+            return 1.0
+        raise AssertionError("PCC computation failed: denominator is zero but tensors are not close")
+
+    pcc = ((golden_centered @ device_centered) / denom).item()
+    # Clamp to [-1, 1] to handle floating-point precision errors
+    return max(-1.0, min(1.0, pcc))
 
 
 def compute_pcc(golden_output, device_output, required_pcc: float = 0.99) -> float:
     """
     Compute Pearson Correlation Coefficient between golden and device output.
 
+    Supports single tensors or collections of tensors (e.g., YOLO multi-scale outputs).
+    For collections, computes PCC for each element individually, then computes the overall
+    PCC by concatenating all tensors into a single flattened tensor before comparison.
+
+    Args:
+        golden_output: Golden output tensor or collection of tensors
+        device_output: Device output tensor or collection of tensors
+        required_pcc: Minimum required PCC threshold
+
     Returns:
-        PCC value.
+        Overall PCC value (computed across all concatenated tensor elements).
 
     Raises:
         AssertionError: If computed PCC is below required_pcc threshold
     """
-    golden_flat = golden_output.to(torch.float32).flatten()
-    device_flat = device_output.to(torch.float32).flatten()
+    # Normalize inputs to iterables for uniform processing
+    is_collection = isinstance(golden_output, Sequence) and not isinstance(golden_output, torch.Tensor)
+    golden_iter = golden_output if is_collection else (golden_output,)
+    device_iter = device_output if is_collection else (device_output,)
 
-    golden_centered = golden_flat - golden_flat.mean()
-    device_centered = device_flat - device_flat.mean()
-
-    denom = golden_centered.norm() * device_centered.norm()
-
-    # Handle edge case where tensors are too close (denom approaches 0)
-    if denom == 0:
-        # Check if tensors are actually equal using allclose
-        if torch.allclose(golden_flat, device_flat, rtol=1e-2, atol=1e-2):
-            print(f"PCC check: Tensors are nearly identical (allclose passed), PCC=1.0")
-            return 1.0
-        # If not close, this is an error case
-        raise AssertionError("PCC computation failed: denominator is zero but tensors are not close")
-
-    pcc = (golden_centered @ device_centered) / denom
-    pcc_value = pcc.item()
-
-    print(f"PCC check: Calculated PCC={pcc_value:.6f}, Required PCC={required_pcc}")
-
-    assert pcc_value >= required_pcc, (
-        f"PCC comparison failed. " f"Calculated: pcc={pcc_value:.6f}. Required: pcc={required_pcc}"
+    assert len(golden_iter) == len(device_iter), (
+        f"Output length mismatch: golden has {len(golden_iter)} elements, " f"device has {len(device_iter)} elements"
     )
+
+    # Compute PCC per scale
+    scale_pccs = []
+    for i, (golden, device) in enumerate(zip(golden_iter, device_iter)):
+        golden_flat = golden.to(torch.float32).flatten()
+        device_flat = device.to(torch.float32).flatten()
+        scale_pcc = _compute_pcc_single(golden_flat, device_flat)
+        scale_pccs.append(scale_pcc)
+
+        if is_collection:
+            print(f"  Scale {i} (shape {golden.shape}): PCC={scale_pcc:.6f}")
+
+    # Compute overall PCC
+    golden_all = torch.cat([g.to(torch.float32).flatten() for g in golden_iter])
+    device_all = torch.cat([d.to(torch.float32).flatten() for d in device_iter])
+    pcc_value = _compute_pcc_single(golden_all, device_all)
+
+    # Print results
+    if is_collection:
+        print(f"PCC check: Computing PCC for {len(golden_iter)} output tensors (multi-scale)")
+        print(
+            f"PCC check: Overall PCC={pcc_value:.6f}, Min scale PCC={min(scale_pccs):.6f}, Required PCC={required_pcc}"
+        )
+    else:
+        print(f"PCC check: Calculated PCC={pcc_value:.6f}, Required PCC={required_pcc}")
+
+    # Validate
+    if is_collection:
+        assert pcc_value >= required_pcc, (
+            f"PCC comparison failed. Overall PCC={pcc_value:.6f}, "
+            f"Min scale PCC={min(scale_pccs):.6f}. Required: pcc={required_pcc}"
+        )
+    else:
+        assert (
+            pcc_value >= required_pcc
+        ), f"PCC comparison failed. Calculated: pcc={pcc_value:.6f}. Required: pcc={required_pcc}"
 
     return pcc_value
 
