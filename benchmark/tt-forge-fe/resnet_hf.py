@@ -4,26 +4,42 @@
 
 # Built-in modules
 import os
+print(f'import os TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 import pytest
+print(f'import pytest TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 import time
+print(f'import time TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 
 import socket
+print(f'import socket TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from datetime import datetime
+print(f'from datetime import datetime TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from tqdm import tqdm
+print(f'from tqdm import tqdm TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 
 # Third-party modules
 import torch
+print(f'import torch TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from transformers import ResNetForImageClassification
+print(f'from transformers import ResNetForImageClassification TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from tqdm import tqdm
+print(f'from tqdm import tqdm TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 
 # Forge modules
 import forge
+print(f'import forge TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from forge.verify.config import VerifyConfig
+print(f'from forge.verify.config import VerifyConfig TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from forge.verify.verify import verify
+print(f'from forge.verify.verify import verify TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from forge.verify.value_checkers import AutomaticValueChecker
+print(f'from forge.verify.value_checkers import AutomaticValueChecker TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from forge._C.runtime.experimental import configure_devices, DeviceSettings
+print(f'from forge._C.runtime.experimental import configure_devices, DeviceSettings TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from forge._C import DataFormat
+print(f'from forge._C import DataFormat TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 from forge.config import CompilerConfig, MLIRConfig
+print(f'from forge.config import CompilerConfig, MLIRConfig TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 
 from benchmark.utils import (
     download_model,
@@ -32,6 +48,7 @@ from benchmark.utils import (
     measure_cpu_fps,
     get_ffe_device_arch,
 )
+print(f'from benchmark.utils import download_model, load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_ffe_device_arch TT_METAL_HOME: {os.environ["TT_METAL_HOME"]}')
 
 # Common constants
 
