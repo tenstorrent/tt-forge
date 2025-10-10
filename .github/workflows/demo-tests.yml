@@ -176,10 +176,10 @@ jobs:
           # Set TT_METAL_HOME for specific frontend
           # SITE_PACKAGES="/root/.pyenv/versions/3.11.13/lib/python3.11/site-packages"
           SITE_PACKAGES=$(python3 -c "import site; print(site.getusersitepackages())")
-          if [ "${{ matrix.frontend }}" == "tt-forge-fe" ];
+          if [ "${{ matrix.frontend }}" == "tt-forge-fe" ]; then
             TT_METAL_HOME=$SITE_PACKAGES/forge/tt-metal/runtime/sfpi
           fi
-          if [ "${{ matrix.frontend }}" == "tt-xla" ];
+          if [ "${{ matrix.frontend }}" == "tt-xla" ]; then
             TT_METAL_HOME=$SITE_PACKAGES/pjrt_plugin_tt/tt-metal/runtime/sfpi
           fi
 
