@@ -192,6 +192,13 @@ def read_args():
         help="Hidden size, size of the hidden layer. `If the model gives opportunity to change hidden size.",
     )
     parser.add_argument(
+        "-isl",
+        "--input_sequence_length",
+        type=int,
+        default=0,
+        help="Input sequence length for text/sequence models. Default is 0.",
+    )
+    parser.add_argument(
         "-o",
         "--output",
         default=None,
@@ -225,6 +232,7 @@ def read_args():
     config["batch_size"] = args.batch_size
     config["input_size"] = args.input_size
     config["hidden_size"] = args.hidden_size
+    config["input_sequence_length"] = args.input_sequence_length
     config["output"] = args.output
     config["task"] = args.task
     config["data_format"] = args.data_format
@@ -250,19 +258,13 @@ def main():
     # Read the arguments from the command line.
     config = read_args()
 
-    try:
+    # Run the benchmark
+    results = run_benchmark(config)
+    results["project"] = config["run_origin"] + "/" + config["project"]
+    results["model_rawname"] = config["model"]
 
-        # Run the benchmark
-        results = run_benchmark(config)
-        results["project"] = config["run_origin"] + "/" + config["project"]
-        results["model_rawname"] = config["model"]
-
-        # Save the results
-        save_results(config, results, config["project"], config["model"])
-
-    except Exception as e:
-        print(f"Error running benchmark: {str(e)}", file=sys.stderr)
-        sys.exit(1)
+    # Save the results
+    save_results(config, results, config["project"], config["model"])
 
     print("Done.")
 
