@@ -4,19 +4,22 @@ This directory contains demonstration examples for three different frontends ava
 
 ## Available Frontends
 
-### [`tt-forge-fe`](https://github.com/tenstorrent/tt-forge-fe)
-The Frontend Engine (FE) provides a high-level interface for deploying popular deep learning models. It includes ready-to-use implementations of common CNN and NLP models like ResNet, MobileNet, and BERT.
+- [TT-XLA](https://github.com/tenstorrent/tt-xla)
+  - TT-XLA is the primary frontend for running PyTorch and JAX models. It leverages a PJRT interface to integrate JAX (and in the future other frameworks), TT-MLIR, and Tenstorrent hardware. It supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to TT-MLIR compiler. TT-XLA can be used for single and multi-chip projects.
+  - See the [TT-XLA docs pages](https://docs.tenstorrent.com/tt-xla) for an overview and getting started guide.
 
-### [`tt-xla`](https://github.com/tenstorrent/tt-xla)
-An XLA-based frontend that natively supports JAX models and has support for PyTorch models through [PyTorch/XLA](https://pytorch.org/xla). This enables users to deploy models from these frameworks directly to Tenstorrent hardware while maintaining their existing development workflow.
+- [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
+  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([TT-TVM](https://github.com/tenstorrent/tt-tvm)). It also supports ingestion of PyTorch, however it is recommended that you use TT-XLA. TT-Forge-FE does not support multi-chip configurations; it is for single-chip projects only.
+  - See the [TT-Forge-FE docs pages](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html) for an overview and getting started guide.
 
-### [`tt-torch`](https://github.com/tenstorrent/tt-torch) - (deprecated)
-A PyTorch-based frontend that enables seamless deployment of PyTorch models on Tenstorrent hardware. This frontend provides familiar PyTorch workflows while leveraging Tenstorrent's acceleration capabilities.
+- [TT-Torch](https://github.com/tenstorrent/tt-torch) - (deprecated)
+  - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to TT-MLIR. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
+  - See the [TT-Torch docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide.
 
 Each frontend is designed to support different ML frameworks and workflows. Choose the frontend that best matches your needs:
-- Use `tt-forge-fe` for quick deployment of pre-optimized common models (only single chip configurations are available)
-- Use `tt-xla` for JAX model deployment as well as PyTorch (single and multi-chip configurations are available)
-- Use `tt-torch` for PyTorch model deployment (deprecated, use `tt-xla`)
+- Use TT-Forge-FE for quick deployment of pre-optimized common models for PaddlePaddle and ONNX. (Only single chip configurations are available. Also please note TT-Forge-FE can also be used for PyTorch, however it is recommended that you use TT-XLA for the best experience.)
+- Use TT-XLA for JAX model deployment as well as PyTorch (single and multi-chip configurations are available).
+- Use TT-Torch for PyTorch model deployment (deprecated, use TT-XLA).
 
 
 For more information, visit our [GitHub repositories](https://github.com/tenstorrent) or check the README in each frontend's directory.

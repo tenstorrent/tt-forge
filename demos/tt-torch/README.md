@@ -1,6 +1,6 @@
 # How to Use
 
->**NOTE:** TT-Torch is deprecated. If you want to use PyTorch, please use [TT-XLA](https://github.com/tenstorrent/tt-xla/blob/main/README.md). 
+>**NOTE:** TT-Torch is deprecated. If you want to use PyTorch, please use [TT-XLA](https://github.com/tenstorrent/tt-xla/blob/main/README.md).
 
 Build/install and activate the environment as you would for development on tt-torch: [Build Instructions](https://docs.tenstorrent.com/tt-torch/getting_started.html)
 
