@@ -135,7 +135,7 @@ jobs:
         echo "release_exists=$release_exists" >> $GITHUB_OUTPUT
 
     - name: Build Release Wheel
-      if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && steps.set-release-facts.outputs.event_name == 'workflow_dispatch') || steps.check_release.outputs.release_exists == 'false' }}
+      if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && github.event_name == 'workflow_dispatch') || steps.check_release.outputs.release_exists == 'false' }}
       id: build-release-wheel
       uses: ./.github/actions/build-release-wheel
       with:
