@@ -237,6 +237,7 @@ jobs:
       shell: bash
       run: |
 
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
         project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
         if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
           project_name="pjrt_plugin_tt"
@@ -297,6 +298,7 @@ jobs:
       if: ${{ !matrix.build.skip-device-perf }}
       shell: bash
       run: |
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
         echo "Extracting ttrt wheel"
         mkdir ttrt-whl-tracy
         mv ttrt-whl-tracy.zip ttrt-whl-tracy/ttrt-whl-tracy.zip
@@ -311,6 +313,7 @@ jobs:
       shell: bash
       if: ${{ !matrix.build.skip-device-perf }}
       run: |
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
         echo "Install ttrt"
         python -m venv ttrt-venv
         source ttrt-venv/bin/activate
@@ -324,6 +327,7 @@ jobs:
       if: ${{ !matrix.build.skip-device-perf }}
       shell: bash
       run: |
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
         mv install-artifacts-tracy/ install/
         cd install
         tar xvf artifact.tar
@@ -336,6 +340,7 @@ jobs:
         HF_HOME: /mnt/dockercache/huggingface
         HF_HUB_DISABLE_PROGRESS_BARS: 1
       run: |
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
         echo "Create perf report directory"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}
 
