@@ -346,7 +346,7 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
     print("Warming up completed.")
 
 
-def torch_xla_benchmark(model, inputs, device, loop_count):
+def torch_xla_measure_fps(model, inputs, device, loop_count):
     """
     Benchmark the model for a given number of loop_count.
 
