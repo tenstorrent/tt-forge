@@ -120,7 +120,7 @@ jobs:
         repo: ${{ inputs.draft && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
 
     - name: Build Release Wheel
-      if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && steps.set-release-facts.outputs.event_name == 'workflow_dispatch') || steps.check-tag.outputs.exists == 'false' }}
+      if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && github.event_name == 'workflow_dispatch') || steps.check-tag.outputs.exists == 'false' }}
       id: build-release-wheel
       uses: ./.github/actions/build-release-wheel
       with:

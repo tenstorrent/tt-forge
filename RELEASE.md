@@ -35,7 +35,6 @@ Currently this release process manages the release for the following repositorie
 - TT-XLA
 - TT-Forge-FE
 - TT-MLIR
-- TT-Torch (deprecated)
 
 ### Quick Start Release Guide
 
@@ -49,7 +48,7 @@ Currently this release process manages the release for the following repositorie
 1. Trigger the [create-version-branches.yml](.github/workflows/create-version-branches.yml) workflow manually through the GitHub Actions UI
 2. Specify the target repository, commit, workflow override if needed
 
-#### Promote a Release Candidate to Beta
+#### Promote a Release Candidate to Stable
 
 ##### Prerequisites
 
@@ -139,7 +138,8 @@ graph TD
         subgraph A8[Test Release]
             A8a[Docker Basic Test]
             A8b[Async Docker Demo Test]
-            A8a --> A8b
+            A8c[Async Docker Performance Test]
+            A8a --> A8b --> A8c
         end
 
         subgraph A9[Publish Release]
@@ -166,7 +166,7 @@ This [workflow](.github/workflows/basic-tests.yml) runs simple tests across diff
 
 What this workflow does:
 
-- Tests multiple frontends (TT-Forge-FE, TT-XLA, TT-Torch (deprecated)) against the provided Docker image
+- Tests multiple frontends (TT-Forge-FE, TT-XLA) against the provided Docker image
 - Runs tests on different hardware configurations (N150 and P150B boards)
 - Activates the appropriate Python virtual environment for each frontend
 - Executes basic test scripts to validate core functionality
@@ -181,7 +181,7 @@ This [workflow](.github/workflows/demo-tests.yml) runs more comprehensive demons
 What this workflow does:
 
 - Configures a test matrix based on frontends and available demo tests
-- Supports filtering by frontend (TT-XLA, TT-Forge-FE, TT-Torch (deprecated)) and test name
+- Supports filtering by frontend (TT-XLA, TT-Forge-FE) and test name
 - Runs tests on specific hardware configurations based on the test requirements
 - Automatically installs required system dependencies and Python packages
 - Executes demo scripts that demonstrate the full functionality of each frontend
@@ -189,6 +189,22 @@ What this workflow does:
 - Reports detailed success or failure information with Slack notifications for failures on the main branch
 
 Demo tests represent the async testing portion of the release process, providing confidence that the release works with real-world use cases.
+
+#### Performance Benchmark
+
+This [workflow](.github/workflows/perf-benchmark.yml) runs comprehensive performance benchmarks across supported frontends to measure and validate the performance characteristics of releases. These benchmarks provide critical performance data for releases and can detect performance regressions.
+
+What this workflow does:
+
+- Runs performance benchmarks on various models across TT-Forge-FE and TT-XLA frontends
+- Tests different batch sizes, precisions, and hardware configurations
+- Measures key performance metrics including samples per second and total execution time
+- Generates detailed performance reports with TTIR and TTNN MLIR dumps
+- Supports performance regression detection by comparing against baseline measurements
+- Uploads performance artifacts and reports for analysis
+- Can be triggered manually or as part of the release process
+
+The workflow uses a performance matrix defined in [perf-bench-matrix.json](.github/workflows/perf-bench-matrix.json) that specifies which models to test, their configurations, and hardware requirements. Performance results are stored and can be used for tracking performance trends over time.
 
 #### Test Nightly Releaser
 
@@ -422,18 +438,17 @@ What this action does:
   - For stable branches: Increments the patch version (e.g., 0.1.0 → 0.1.1)
 - Returns a structured JSON with detailed information about branches requiring updates
 
-#### Build Release
+#### Build Release Wheel
 
-This [action](.github/actions/build-release/action.yml) is responsible for constructing release artifacts from successful workflow runs. It serves as the central orchestrator of the release build process, coordinating several sub-actions.
+This [action](.github/actions/build-release-wheel/action.yml) is responsible for constructing release artifacts from successful workflow runs.
 
 What this action does:
 
-- Sets up release configuration using the [set-release-facts](.github/actions/set-release-facts/action.yml) action
+- Sets up release configuration using the [set-release-facts](.github/actions/set-release-facts/action.yaml) action
 - Locates an appropriate workflow run to use as the source for release artifacts
 - Uplifts artifacts from the source workflow run
 - Updates wheel version numbers to match the target release version
-- Generates compatible hardware tables for documentation (when applicable)
-- Creates release documentation including changelog and installation instructions
+
 - Stores all release artifacts for subsequent publishing steps
 
 #### Uplift Artifacts
@@ -541,7 +556,7 @@ What this action does:
 
 #### TT Forge Wheel
 
-This [action](.github/actions/TT-Forge-wheel/action.yml) specifically handles the building of the TT-Forge Python wheel package. It's a specialized action for creating the core package that integrates all TT-Forge components.
+This [action](.github/actions/tt-forge-wheel/action.yml) specifically handles the building of the TT-Forge Python wheel package. It's a specialized action for creating the core package that integrates all TT-Forge components.
 
 What this action does:
 
