@@ -173,6 +173,13 @@ jobs:
           ln -s $third_party_models third_party
           demo_file=$(basename "${{ matrix.path }}")
 
+          SITE_PACKAGES_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+          if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+            export TT_METAL_HOME="$SITE_PACKAGES_DIR/forge/tt-metal"
+          elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+            export TT_METAL_HOME="$SITE_PACKAGES_DIR/pjrt_plugin_tt/tt-metal"
+          fi
+
           python $demo_file
 
 
