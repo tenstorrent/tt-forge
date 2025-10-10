@@ -133,6 +133,7 @@ def print_benchmark_results(
     data_format: str = None,
     input_size: tuple = None,
     channel_size: int = None,
+    input_sequence_length: Optional[int] = None,
 ) -> None:
     """Print formatted benchmark results."""
     print("====================================================================")
@@ -164,6 +165,9 @@ def print_benchmark_results(
 
     if channel_size is not None:
         print(f"| Channel size: {channel_size}")
+
+    if input_sequence_length is not None:
+        print(f"| Input sequence length: {input_sequence_length}")
 
     print("====================================================================")
 
@@ -217,6 +221,8 @@ def create_benchmark_result(
     galaxy: bool = False,
     arch: str = "",
     chips: int = 1,
+    input_is_image: bool = True,
+    input_sequence_length: Optional[int] = -1,
 ) -> Dict[str, Any]:
     """Create a standardized benchmark result dictionary.
 
@@ -272,6 +278,10 @@ def create_benchmark_result(
             }
         )
 
+    image_dimension = ""
+    if input_is_image:
+        image_dimension = f"{channel_size}x{input_size[0]}x{input_size[1]}"
+
     return {
         "model": full_model_name,
         "model_type": model_type,
@@ -282,9 +292,9 @@ def create_benchmark_result(
         "precision": data_format,
         "dataset_name": dataset_name,
         "profile_name": "",
-        "input_sequence_length": -1,
+        "input_sequence_length": input_sequence_length,
         "output_sequence_length": -1,
-        "image_dimension": f"{channel_size}x{input_size[0]}x{input_size[1]}",
+        "image_dimension": input_is_image,
         "perf_analysis": False,
         "training": training,
         "measurements": measurements,
@@ -336,15 +346,15 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
     print("Warming up completed.")
 
 
-def torch_xla_measure_fps(model, inputs, device, loop_count):
+def torch_xla_benchmark(model, inputs, device, loop_count):
     """
-    Measure the fps of the model for a given number of loop_count
+    Benchmark the model for a given number of loop_count.
 
     Parameters:
     ----------
-    model: torch.nn.Module
+    model: Callable
         The model to benchmark.
-    inputs: list of torch.Tensor
+    inputs: Any
         The input data for benchmarking.
     device: torch.device
         The device to run the benchmark on.
@@ -353,7 +363,7 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
 
     Returns:
     -------
-    predictions: list of torch.Tensor
+    predictions: list of Any
         The predictions made by the model.
     total_time: float
         The total time taken to process the inputs in seconds.
