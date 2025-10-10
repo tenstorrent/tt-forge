@@ -333,6 +333,22 @@ jobs:
         tar xvf artifact.tar
         cd ..
 
+    - name: Import TT_METAL_HOME check
+      shell: bash
+      run: |
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
+        python -c 'import forge'
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
+
+    - name: Run test without benchmark
+      shell: bash
+      run: |
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
+        
+        export PYTHONPATH="${PYTHONPATH}:$(pwd)/benchmark"
+        python benchmark/tt-forge-fe/resnet_hf.py
+        echo "TT_METAL_HOME: $TT_METAL_HOME"
+
     - name: Run Perf Benchmark
       shell: bash
       env:
@@ -353,10 +369,6 @@ jobs:
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           pip uninstall tensorflow -y
         fi
-
-        echo "Import TT_METAL_HOME check"
-        python -c 'import forge'
-        echo "TT_METAL_HOME: $TT_METAL_HOME"
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
