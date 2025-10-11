@@ -349,6 +349,13 @@ jobs:
           pip uninstall tensorflow -y
         fi
 
+        SITE_PACKAGES_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          export TT_METAL_HOME="$SITE_PACKAGES_DIR/forge/tt-metal"
+        elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          export TT_METAL_HOME="$SITE_PACKAGES_DIR/pjrt_plugin_tt/tt-metal"
+        fi
+
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
         python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
 
