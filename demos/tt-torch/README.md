@@ -1,4 +1,7 @@
-# How to use
+# How to Use
+
+>**NOTE:** TT-Torch is deprecated. If you want to use PyTorch, please use [TT-XLA](https://github.com/tenstorrent/tt-xla/blob/main/README.md).
+
 Build/install and activate the environment as you would for development on tt-torch: [Build Instructions](https://docs.tenstorrent.com/tt-torch/getting_started.html)
 
 Additional python dependencies may be required for some demos. The following set of requirements covers all demos.
@@ -12,7 +15,6 @@ From the project root, run
 python demos/tt-torch/resnet50_demo.py
 ```
 for the interactive demo that uses a single-device to classify an image using ResNet.
-
 
 # Results
 
