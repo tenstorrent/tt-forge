@@ -109,6 +109,10 @@ def test_yolov9_torch_xla(
         framework_model: nn.Module = yolov9_loader.load_model(dtype_override=torch.bfloat16)
     else:
         framework_model: nn.Module = yolov9_loader.load_model()
+
+    # Wrap the model to handle YOLOv9's tuple output
+    original_forward = framework_model.forward
+    framework_model.forward = lambda x: original_forward(x)[0]
     framework_model.eval()
 
     if measure_cpu:
@@ -209,7 +213,6 @@ def test_yolov9_torch_xla(
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,
-        openxla_backend=True,
         channel_size=channel_size,
     )
 
