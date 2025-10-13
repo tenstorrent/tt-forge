@@ -56,51 +56,26 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
     - name: Filter Matrix
-      id: set-matrix-json
+      id: set-perf-benchmarks
       shell: bash
       run: |
-        matrix_skip="false"
-        # Start with a basic filter that selects all items
-        filter='.[] | select(true'
+        result=$(python .github/workflows/filter-test-matrix.py \
+          .github/workflows/models-matrix.json \
+          ${{ inputs.project-filter || '' }} \
+          ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }}
 
-        # Add frontend filter if specified
-        if [ "${{ inputs.project-filter }}" != "tt-forge" ]; then
-          project="${{ inputs.project-filter }}"
-          filter="$filter and .frontend == \"$project\""
-        else
-          # Select tt-torch and tt-xla for tt-forge
-          filter="$filter and select(.frontend | IN(\"tt-xla\", \"tt-forge-fe\"))"
-        fi
+        matrix=$(echo $result | jq -r -c '.matrix')
+        matrix_skip=$(echo $result | jq -r '.matrix_skip')
 
-        # Add test name filter if specified
-        if [ -n "${{ inputs.test-filter }}" ]; then
-          filter="$filter and .name == \"${{ inputs.test-filter }}\""
-        fi
-
-        # Close the select statement
-        filter="$filter)"
-
-        echo "filter=$filter"
-
-        # Apply the filter to the matrix JSON file
-        matrix=$(jq -c "[${filter}]" .github/workflows/models-matrix.json)
-
-        # Check if any tests matched our filter criteria
-        if [ "$matrix" == "[]" ]; then
-          echo "Error: No matching tests found in the matrix"
-          matrix_skip="true"
-        fi
-
-        echo "matrix=$matrix"
-        echo "matrix_skip=$matrix_skip"
         echo "matrix=$matrix" >> $GITHUB_OUTPUT
         echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
 
   demo-test:
     if: ${{ needs.set-matrix.outputs.matrix_skip == 'false' }}
     needs: set-matrix
-    name: Demo ${{ matrix.frontend }} ${{ matrix.name }} on ${{ matrix.runs-on }}
+    name: Demo ${{ matrix.project }} ${{ matrix.name }} on ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
@@ -153,11 +128,11 @@ jobs:
           fi
 
           if [ "${{ matrix.pyreq_file }}" == "true" ]; then
-            REQUIREMENTS_PATH=$(dirname demos/${{ matrix.frontend }}/${{ matrix.path }})
+            REQUIREMENTS_PATH=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
             pip install -r $REQUIREMENTS_PATH/requirements.txt
           fi
 
-      - name: Run ${{ matrix.frontend }} demo ${{ matrix.name }}
+      - name: Run ${{ matrix.project }} demo ${{ matrix.name }}
         shell: bash
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -168,15 +143,15 @@ jobs:
         run: |
 
           third_party_models="$(realpath third_party)"
-          demo_folder=$(dirname demos/${{ matrix.frontend }}/${{ matrix.path }})
+          demo_folder=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
           cd $demo_folder
           ln -s $third_party_models third_party
           demo_file=$(basename "${{ matrix.path }}")
 
           SITE_PACKAGES_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
-          if [ "${{ matrix.frontend }}" == "tt-forge-fe" ]; then
+          if [ "${{ matrix.project }}" == "tt-forge-fe" ]; then
             export TT_METAL_HOME="$SITE_PACKAGES_DIR/forge/tt-metal"
-          elif [ "${{ matrix.frontend }}" == "tt-xla" ]; then
+          elif [ "${{ matrix.project }}" == "tt-xla" ]; then
             export TT_METAL_HOME="$SITE_PACKAGES_DIR/pjrt_plugin_tt/tt-metal"
           fi
 
