@@ -377,7 +377,7 @@ jobs:
         compression-level: 0
 
     - name: Run Device Perf
-      if: ${{ !matrix.build.skip-device-perf }}
+      if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' }}
       shell: bash
       run: |
         source ttrt-venv/bin/activate

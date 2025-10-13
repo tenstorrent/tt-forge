@@ -13,6 +13,8 @@ from .utils import (
     create_benchmark_result,
 )
 
+from tt_jax import serialize_compiled_artifacts_to_disk
+
 import jax.numpy as jnp
 import jax
 
@@ -83,6 +85,10 @@ def test_resnet(
 
     framework_model.params = jax.tree_util.tree_map(lambda x: device_put(x, tt_device), framework_model.params)
     input_sample = device_put(input_sample, tt_device)
+
+    serialize_compiled_artifacts_to_disk(
+        framework_model, input_sample, output_prefix=f"modules/{model_name}", params=framework_model.params
+    )
 
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
 
