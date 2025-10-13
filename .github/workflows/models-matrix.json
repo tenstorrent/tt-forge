@@ -32,8 +32,8 @@
     "tests": [
       { "runs-on": "n150",  "name": "resnet50_benchmark",         "path": "resnet50_benchmark.py",         "pyreq": "loguru requests transformers datasets==3.6.0 torch==2.7.0 torchvision pytest tabulate" },
       { "runs-on": "n150",  "name": "resnet50",                   "path": "resnet50_demo.py",              "pyreq": "loguru requests transformers datasets==3.6.0 torch==2.7.0 torchvision pytest tabulate" },
-      { "runs-on": "p150b", "name": "resnet50_benchmark",         "path": "resnet50_benchmark.py",         "pyreq": "loguru requests transformers datasets==3.6.0 torch==2.7.0 torchvision pytest tabulate" },
-      { "runs-on": "p150b", "name": "resnet50",                   "path": "resnet50_demo.py",              "pyreq": "loguru requests transformers datasets torch==2.7.0 torchvision pytest tabulate" },
+      { "runs-on": "p150",  "name": "resnet50_benchmark",         "path": "resnet50_benchmark.py",         "pyreq": "loguru requests transformers datasets==3.6.0 torch==2.7.0 torchvision pytest tabulate" },
+      { "runs-on": "p150",  "name": "resnet50",                   "path": "resnet50_demo.py",              "pyreq": "loguru requests transformers datasets torch==2.7.0 torchvision pytest tabulate" },
       { "runs-on": "n300",  "name": "llama_7b_pipeline_parallel", "path": "llama_7b_pipeline_parallel.py", "pyreq": "loguru requests transformers==4.52.4 datasets torch==2.7.0 torchvision pytest tabulate accelerate" },
       { "runs-on": "n150",  "name": "llama3.2_generate",          "path": "llama3.2_generate_demo.py",     "pyreq": "transformers==4.52.4" }
     ]

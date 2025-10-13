@@ -64,7 +64,8 @@ jobs:
         result=$(python .github/workflows/filter-test-matrix.py \
           .github/workflows/models-matrix.json \
           ${{ inputs.project-filter || '' }} \
-          ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }})
+          ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }} \
+          --sh-runner)
 
         matrix=$(echo $result | jq -r -c '.matrix')
         matrix_skip=$(echo $result | jq -r '.matrix_skip')
