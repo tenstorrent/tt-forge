@@ -82,7 +82,7 @@ jobs:
   filter-tests:
     runs-on: ubuntu-latest
     outputs:
-      benchmark-matrix: ${{ steps.set-perf-benchmarks.outputs.perf-benchmarks }}
+      benchmark-matrix: ${{ steps.set-perf-benchmarks.outputs.matrix }}
       matrix_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_skip }}
     steps:
     - name: Checkout repository
@@ -97,40 +97,26 @@ jobs:
       id: set-perf-benchmarks
       shell: bash
       run: |
-        filter='.[] | select(true'
+        result=$(python .github/workflows/filter-test-matrix.py \
+          .github/workflows/perf-bench-matrix.json \
+          ${{ inputs.project-filter || inputs.project || '' }} \
+          ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }} \
+          ${{ inputs.sh-runner && '--sh-runner' || '' }})
 
-        # Add project filter if specified
-        if [ "${{ inputs.project-filter }}" != "tt-forge" ]; then
-          project="${{ inputs.project || inputs.project-filter }}"
-          filter="$filter and .project == \"$project\""
-        else
-          # Select all frontends for tt-forge
-          filter="$filter and select(.project | IN(\"tt-xla\", \"tt-forge-fe\"))"
-        fi
+        matrix=$(echo $result | jq -r -c '.matrix')
+        matrix_skip=$(echo $result | jq -r '.matrix_skip')
 
-        if [ -n "${{ inputs.test-filter }}" ]; then
-          filter="$filter and .name == \"${{ inputs.test-filter }}\""
-        fi
-
-        echo "filter=$filter"
-        matrix_skip="false"
-        matrix=$(jq -c "[${filter})]" .github/workflows/perf-bench-matrix.json)
-        echo "Matrix: $matrix"
-        if [ "$matrix" == "[]" ]; then
-          echo "Error: No matching tests found in the matrix"
-          matrix_skip="true"
-        fi
-        echo "matrix_skip=$matrix_skip"
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT
         echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
-        echo "perf-benchmarks=$matrix" >> $GITHUB_OUTPUT
 
         # Set up the summary for the job
         echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
-        echo "Project(s): $project" >> $GITHUB_STEP_SUMMARY
+        echo "Project filter: ${{ inputs.project-filter || inputs.project }}" >> $GITHUB_STEP_SUMMARY
         echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
         echo "Run ID source: ${{ inputs.run_id_source }}" >> $GITHUB_STEP_SUMMARY
         echo "Run ID: ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY
         echo "Shared runner: ${{ inputs.sh-runner }}" >> $GITHUB_STEP_SUMMARY
+
 
   run-perf-benchmarks:
     needs: filter-tests
@@ -155,14 +141,14 @@ jobs:
       matrix:
         build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
 
-    runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}-perf", "in-service"]', matrix.build.runs-on)) }}
+    runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
 
     env:
       # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
       TRACY_NO_INVARIANT_CHECK: 1
       DOCKER_CACHE_ROOT: /mnt/dockercache
 
-    name: "${{matrix.build.project }}-${{matrix.build.name }} benchmark (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+    name: "${{ matrix.build.project }}-${{ matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }}) benchmark"
     steps:
 
     - uses: actions/checkout@v4
@@ -216,7 +202,7 @@ jobs:
       id: fetch-job-id
       uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
       with:
-        job_name: "${{matrix.build.project }}-${{matrix.build.name }} benchmark (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }})"
+        job_name: "${{ matrix.build.project }}-${{ matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }}) benchmark"
 
     - name: Set reusable strings
       id: strings
