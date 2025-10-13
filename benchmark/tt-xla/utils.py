@@ -294,7 +294,7 @@ def create_benchmark_result(
         "profile_name": "",
         "input_sequence_length": input_sequence_length,
         "output_sequence_length": -1,
-        "image_dimension": input_is_image,
+        "image_dimension": image_dimension,
         "perf_analysis": False,
         "training": training,
         "measurements": measurements,
