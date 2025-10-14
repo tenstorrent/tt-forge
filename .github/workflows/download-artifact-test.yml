@@ -30,7 +30,7 @@ jobs:
           tar -czf test-archive.tar.gz tar-content/
 
           sudo apt-get install -y zstd
-          tar -I 'zstd --adapt=min=9 -T0' cf zst-artifact.tar.zst tar-content/
+          tar -I 'zstd --adapt=min=9 -T0' -cf zst-artifact.tar.zst tar-content/
 
       # Test 1: Upload and download a single file
       - name: Upload single file
