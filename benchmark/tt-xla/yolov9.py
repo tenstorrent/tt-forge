@@ -24,7 +24,7 @@ import torch_xla.core.xla_model as xm
 import tt_torch
 from tqdm import tqdm
 
-from benchmark.utils import measure_cpu_fps
+from benchmark.utils import measure_cpu_fps, get_xla_device_arch
 from third_party.tt_forge_models.yolov9.pytorch.loader import ModelLoader as YOLOv9Loader
 from .utils import (
     get_benchmark_metadata,
@@ -211,6 +211,7 @@ def test_yolov9_torch_xla(
         torch_xla_enabled=True,
         openxla_backend=True,
         channel_size=channel_size,
+        arch=get_xla_device_arch(),
     )
 
     return result
