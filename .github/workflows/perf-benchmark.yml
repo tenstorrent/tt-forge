@@ -177,24 +177,18 @@ jobs:
     - name: Install system and python dependencies
       shell: bash
       run: |
-        curl -v http://ubuntu.com
-        curl -v https://ubuntu.com
-        curl -v http://archive.ubuntu.com
-        curl -v https://archive.ubuntu.com
-        curl -v http://security.ubuntu.com
-        curl -v https://security.ubuntu.com
-        # if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-        #   sudo apt-get update -y -qq
-        #   sudo apt-get install -y -qq --no-install-recommends sqlite3
-        # fi
-        # if [ -n "${{ matrix.build.libreq }}" ]; then
-        #   sudo apt-get update -y -qq
-        #   sudo apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
-        # fi
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq --no-install-recommends sqlite3
+        fi
+        if [ -n "${{ matrix.build.libreq }}" ]; then
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+        fi
 
-        # if [ -n "${{ matrix.build.pyreq }}" ]; then
-        #   pip install ${{ matrix.build.pyreq }}
-        # fi
+        if [ -n "${{ matrix.build.pyreq }}" ]; then
+          pip install ${{ matrix.build.pyreq }}
+        fi
 
     - name: Install upgraded wheel
       if: (inputs.project && inputs.run_id) || inputs.update-wheel
