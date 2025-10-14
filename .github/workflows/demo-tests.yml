@@ -168,10 +168,18 @@ jobs:
       is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
       failed: ${{ steps.check.outputs.failure }}
       is-draft: ${{ steps.draft-check.outputs.IS_DRAFT }}
+      version_tag: ${{ steps.version-tag.outputs.version_tag }}
     steps:
       - name: Check if branch is main
         id: branch-check
         run: echo "IS_MAIN=$(if [ '${{ github.ref }}' == 'refs/heads/main' ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+      - name: Get version tag
+        id: version-tag
+        run: |
+          docker_image="${{ inputs.docker-image }}"
+          version_tag="${ docker_image##*: }"
+          echo "version_tag=$version_tag"
+          echo "version_tag=$version_tag" >> $GITHUB_OUTPUT
       - name: Check draft
         id: draft-check
         run: |
@@ -202,7 +210,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "Demo tests ${{ inputs.project-filter }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "text": "Demo tests ${{ inputs.project-filter }} ${{ needs.fail-notify.outputs.version_tag }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
               "channel": "C088QN7E0R3"
             }
         env:
