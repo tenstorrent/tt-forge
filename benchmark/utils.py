@@ -63,6 +63,15 @@ def get_jax_device_arch():
     return ""
 
 
+def get_xla_device_arch():
+
+    import torch_xla.core.xla_model as xm
+
+    device = xm.xla_device()
+    device = xm.xla_device_kind(device)
+    return str(device)
+
+
 def download_model(download_func, *args, num_retries=3, timeout=180, **kwargs):
     for _ in range(num_retries):
         try:
