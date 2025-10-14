@@ -81,8 +81,14 @@ runs:
           # Check if we need to untar
           for file in "$path"/*.tar*; do
             if [ -f "$file" ]; then
-              echo "Extracting tar file: $file"
-              tar -xf "$file" -C "$path"
+              # Check if it's a zstd compressed tar file
+              if [[ "$file" == *.tar.zst ]]; then
+                echo "Extracting zstd compressed tar file: $file"
+                tar --use-compress-program=zstd -xf "$file" -C "$path"
+              else
+                echo "Extracting tar file: $file"
+                tar -xf "$file" -C "$path"
+              fi
               rm "$file"
             fi
           done
