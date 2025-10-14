@@ -29,6 +29,9 @@ jobs:
           echo "Tar file 2" > tar-content/file2.txt
           tar -czf test-archive.tar.gz tar-content/
 
+          sudo apt-get install -y zstd
+          tar -I 'zstd --adapt=min=9 -T0' -cf zst-artifact.tar.zst tar-content/
+
       # Test 1: Upload and download a single file
       - name: Upload single file
         uses: actions/upload-artifact@v4
@@ -83,7 +86,25 @@ jobs:
           diff -r tar-content/ downloaded-archive/tar-content/
           if [ $? -eq 0 ]; then echo "✅ Archive test passed"; else echo "❌ Archive test failed"; exit 1; fi
 
-      # Test 4: Attempt to download to restricted filesystem location
+      # Test 4: Upload and download a tar zstd archive
+      - name: Upload tar zst archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: zst-archive
+          path: zst-artifact.tar.zst
+
+      - name: Download tar zst archive
+        uses: ./.github/actions/download-artifact
+        with:
+          name: zst-archive
+          path: downloaded-zst-archive
+
+      - name: Verify tar zst archive
+        run: |
+          diff -r tar-content/ downloaded-zst-archive/tar-content/
+          if [ $? -eq 0 ]; then echo "✅ Archive test passed"; else echo "❌ Archive test failed"; exit 1; fi
+
+      # Test 5: Attempt to download to restricted filesystem location
       - name: Try download to restricted path
         id: restricted-path
         uses: ./.github/actions/download-artifact
@@ -101,7 +122,7 @@ jobs:
             exit 1
           fi
 
-      # Test 5: Download a single file without specifying a path
+      # Test 6: Download a single file without specifying a path
       - name: Save uploaded single file
         run: mv test-file.txt test-file-orig.txt
 
