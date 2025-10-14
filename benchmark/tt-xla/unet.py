@@ -26,7 +26,7 @@ import tt_torch
 from tqdm import tqdm
 
 from benchmark.utils import measure_cpu_fps, get_xla_device_arch
-from third_party.tt_forge_models.unet.pytorch.loader import ModelLoader as UNetLoader
+from third_party.tt_forge_models.vgg19_unet.pytorch.loader import ModelLoader as UNetLoader
 from .utils import (
     get_benchmark_metadata,
     print_benchmark_results,
