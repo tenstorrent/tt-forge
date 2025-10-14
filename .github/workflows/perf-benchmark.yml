@@ -177,9 +177,7 @@ jobs:
     - name: Install system and python dependencies
       shell: bash
       run: |
-        nslookup ubuntu.com
-        nslookup archive.ubuntu.com
-        nslookup security.ubuntu.com
+        apt-get install -y -qq --no-install-recommends sqlite3
         # if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
         #   sudo apt-get update -y -qq
         #   sudo apt-get install -y -qq --no-install-recommends sqlite3
