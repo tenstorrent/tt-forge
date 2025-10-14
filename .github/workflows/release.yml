@@ -80,7 +80,7 @@ jobs:
     name: "${{ inputs.draft && 'Draft' || '' }} Build Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
     outputs:
       release-artifacts-id: ${{ steps.build-release-wheel.outputs.release-artifacts-id }}
-      check-tag: ${{ steps.check-tag.outputs.exists }}
+      release_exists: ${{ steps.check_release.outputs.release_exists }}
       target_commit: ${{ steps.build-release-wheel.outputs.target_commit }}
       harbor_image_tag: ${{ steps.docker-build-push.outputs.harbor_image_tag }}
       image_tag: ${{ steps.docker-build-push.outputs.image_tag }}
@@ -112,15 +112,30 @@ jobs:
         docker-images: true
         swap-storage: true
 
-    - uses: mukunku/tag-exists-action@v1.6.0
+    - name: Check if release exists
+      shell: bash
       if: ${{ !inputs.overwrite_releases }}
-      id: check-tag
-      with:
-        tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
-        repo: ${{ inputs.draft && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
+      env:
+        TAG: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+        REPO: ${{ inputs.draft && 'tenstorrent/tt-forge' || steps.set-release-facts.outputs.repo_full }}
+      id: check_release
+      run: |
+        echo "Checking if release exists for $REPO $TAG"
+        # Return value is true or false
+        release_exists="$(.github/scripts/check_release.sh $REPO $TAG)"
+        if [ -z "$release_exists"  ]; then
+          echo "Could not check if release exists"
+          exit 1
+        fi
+        echo "release_exists=$release_exists"
+        if [ "${{ inputs.draft }}" == "true" ]; then
+          echo "Draft release, setting release_exists to false for PR test workflow"
+          release_exists=false
+        fi
+        echo "release_exists=$release_exists" >> $GITHUB_OUTPUT
 
     - name: Build Release Wheel
-      if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && steps.set-release-facts.outputs.event_name == 'workflow_dispatch') || steps.check-tag.outputs.exists == 'false' }}
+      if: ${{ inputs.draft || inputs.overwrite_releases || (inputs.overwrite_releases && steps.set-release-facts.outputs.event_name == 'workflow_dispatch') || steps.check_release.outputs.release_exists == 'false' }}
       id: build-release-wheel
       uses: ./.github/actions/build-release-wheel
       with:
@@ -155,7 +170,7 @@ jobs:
         echo "DOCKER_BASE_IMAGE=${DOCKER_BASE_IMAGE}" >> $GITHUB_OUTPUT
 
     - name: "${{ inputs.draft && 'Draft' || '' }} Build Single Wheel Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.build_release_tag }}"
-      if: ${{ (steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.check-tag.outputs.exists == 'false') || (steps.set-release-facts.outputs.skip_docker_build == 'false' && inputs.overwrite_releases) }}
+      if: ${{ (steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.check_release.outputs.release_exists == 'false') || (steps.set-release-facts.outputs.skip_docker_build == 'false' && inputs.overwrite_releases) }}
       id: docker-build-push
       uses: ./.github/actions/docker-build-push
       with:
@@ -172,7 +187,7 @@ jobs:
       docker_basic_test_run_url: ${{ steps.trigger-basic-test.outputs.run_url }}
       docker_demo_test_run_url: ${{ steps.trigger-demo-test.outputs.run_url }}
     name: "${{ inputs.draft && 'Draft' || '' }} Test Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
-    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
+    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
     needs:
       - build-release
       - generate-seed
@@ -241,7 +256,7 @@ jobs:
 
   publish-release:
     name: "${{ inputs.draft && 'Draft' || '' }} Publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
-    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
+    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
     needs:
       - build-release
       - test-release
@@ -341,7 +356,7 @@ jobs:
   # REF: https://github.com/tenstorrent/tt-forge/issues/170
   test-release-after-publish:
     name: "${{ inputs.draft && 'Draft' || '' }} Test after publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
-    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.check-tag == 'false'  }}
+    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
     needs:
       - build-release
       - test-release
