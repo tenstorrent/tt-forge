@@ -87,19 +87,19 @@ jobs:
           if [ $? -eq 0 ]; then echo "✅ Archive test passed"; else echo "❌ Archive test failed"; exit 1; fi
 
       # Test 4: Upload and download a tar zstd archive
-      - name: Upload tar archive
+      - name: Upload tar zst archive
         uses: actions/upload-artifact@v4
         with:
           name: zst-archive
-          path: zst-test-archive.tar.zst
+          path: zst-artifact.tar.zst
 
-      - name: Download tar archive
+      - name: Download tar zst archive
         uses: ./.github/actions/download-artifact
         with:
-          name: archive
+          name: zst-archive
           path: downloaded-zst-archive
 
-      - name: Verify tar archive
+      - name: Verify tar zst archive
         run: |
           diff -r tar-content/ downloaded-zst-archive/tar-content/
           if [ $? -eq 0 ]; then echo "✅ Archive test passed"; else echo "❌ Archive test failed"; exit 1; fi
