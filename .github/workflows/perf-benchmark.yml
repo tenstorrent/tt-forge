@@ -177,9 +177,12 @@ jobs:
     - name: Install system and python dependencies
       shell: bash
       run: |
-        ping -c ubuntu.com
-        ping -c 10 archive.ubuntu.com
-        ping -c 10 security.ubuntu.com
+        curl -v http://ubuntu.com
+        curl -v https://ubuntu.com
+        curl -v http://archive.ubuntu.com
+        curl -v https://archive.ubuntu.com
+        curl -v http://security.ubuntu.com
+        curl -v https://security.ubuntu.com
         # if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
         #   sudo apt-get update -y -qq
         #   sudo apt-get install -y -qq --no-install-recommends sqlite3
