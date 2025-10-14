@@ -52,6 +52,17 @@ def get_ffe_device_arch():
     return ""
 
 
+def get_jax_device_arch():
+
+    import jax
+
+    devices = jax.devices("tt")
+    for device in devices:
+        return str(device.device_kind)
+
+    return ""
+
+
 def get_xla_device_arch():
 
     import torch_xla.core.xla_model as xm
