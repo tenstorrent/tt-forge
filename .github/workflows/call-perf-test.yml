@@ -12,6 +12,10 @@ on:
         description: "Project filter"
         required: true
         type: string
+      project:
+        description: "Project perf tests are ran for"
+        required: true
+        type: string
       run_id_source:
         description: "Repo source for provided workflow run ID"
         required: false
@@ -53,7 +57,6 @@ permissions:
 
 jobs:
   run-perf-benchmarks:
-    # if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
     container:
       image: ${{ inputs.sh-runner && format('harbor.ci.tenstorrent.net/{0}', inputs.docker-image) || inputs.docker-image }}
       options: --device /dev/tenstorrent --user root
