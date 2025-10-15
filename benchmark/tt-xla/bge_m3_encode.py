@@ -6,6 +6,7 @@
 import os
 import time
 import pytest
+import socket
 from typing import List, Union, Optional, Dict, Literal
 from collections import defaultdict
 
