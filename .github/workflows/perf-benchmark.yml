@@ -139,9 +139,9 @@ jobs:
     uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix-p150 }}
-      docker_image: ${{ inputs.docker-image }}
-      project_filter: ${{ inputs.project-filter }}
-      update_wheel: ${{ inputs.update-wheel }}
+      docker-image: ${{ inputs.docker-image }}
+      project-filter: ${{ inputs.project-filter }}
+      update-wheel: ${{ inputs.update-wheel }}
       sh_runner: ${{ inputs.sh-runner }}
       parent_run_id: ${{ inputs.parent_run_id }}
       run_id_source: ${{ inputs.run_id_source }}
