@@ -123,11 +123,11 @@ jobs:
     uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix-n150 }}
-      docker_image: ${{ inputs.docker-image }}
-      project_filter: ${{ inputs.project-filter }}
-      test_filter: ${{ inputs.test-filter }}
-      update_wheel: ${{ inputs.update-wheel }}
-      sh_runner: ${{ inputs.sh-runner }}
+      docker-image: ${{ inputs.docker-image }}
+      project-filter: ${{ inputs.project-filter }}
+      test-filter: ${{ inputs.test-filter }}
+      update-wheel: ${{ inputs.update-wheel }}
+      sh-runner: ${{ inputs.sh-runner }}
       parent_run_id: ${{ inputs.parent_run_id }}
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
