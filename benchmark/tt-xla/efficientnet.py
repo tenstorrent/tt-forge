@@ -6,6 +6,7 @@
 import os
 import time
 import pytest
+import socket
 
 
 OPTIMIZER_ENABLED = True
@@ -24,7 +25,7 @@ import torch_xla.core.xla_model as xm
 import tt_torch
 from tqdm import tqdm
 
-from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps
+from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_xla_device_arch
 from third_party.tt_forge_models.efficientnet.pytorch.loader import (
     ModelLoader as EfficientNetLoader,
     ModelVariant as EfficientNetVariant,
@@ -230,6 +231,8 @@ def test_efficientnet_torch_xla(
         torch_xla_enabled=True,
         backend="tt",
         channel_size=channel_size,
+        device_name=socket.gethostname(),
+        arch=get_xla_device_arch(),
     )
 
     return result
