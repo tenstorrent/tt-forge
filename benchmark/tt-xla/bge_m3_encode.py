@@ -6,7 +6,6 @@
 import os
 import time
 import pytest
-import socket
 from typing import List, Union, Optional, Dict, Literal
 from collections import defaultdict
 
@@ -400,7 +399,6 @@ def test_bge_m3_encode_torch_xla(
         backend="tt",
         input_is_image=False,
         input_sequence_length=input_sequence_length,
-        device_name=socket.gethostname(),
         arch=get_xla_device_arch(),
     )
 
