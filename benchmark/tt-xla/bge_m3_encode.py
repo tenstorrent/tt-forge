@@ -6,6 +6,7 @@
 import os
 import time
 import pytest
+import socket
 from typing import List, Union, Optional, Dict, Literal
 from collections import defaultdict
 
@@ -17,6 +18,8 @@ import torch_xla.core.xla_model as xm
 import tt_torch
 import numpy as np
 from FlagEmbedding import BGEM3FlagModel
+
+from benchmark.utils import get_xla_device_arch
 
 from .utils import (
     get_benchmark_metadata,
@@ -396,6 +399,8 @@ def test_bge_m3_encode_torch_xla(
         backend="tt",
         input_is_image=False,
         input_sequence_length=input_sequence_length,
+        device_name=socket.gethostname(),
+        arch=get_xla_device_arch(),
     )
 
     return result
