@@ -53,7 +53,7 @@ permissions:
 
 jobs:
   run-perf-benchmarks:
-    if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
+    # if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
     container:
       image: ${{ inputs.sh-runner && format('harbor.ci.tenstorrent.net/{0}', inputs.docker-image) || inputs.docker-image }}
       options: --device /dev/tenstorrent --user root
