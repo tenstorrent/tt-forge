@@ -105,10 +105,12 @@ jobs:
           ${{ inputs.sh-runner && '--sh-runner' || '' }})
 
         matrix=$(echo $result | jq -r -c '.matrix')
-        echo $matrix
         matrix_n150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("n150")))')
         matrix_p150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("p150")))')
         matrix_skip=$(echo $result | jq -r '.matrix_skip')
+
+        echo $matrix_n150
+        echo $matrix_p150
 
         echo "matrix_n150=$matrix_n150" >> $GITHUB_OUTPUT
         echo "matrix_p150=$matrix_p150" >> $GITHUB_OUTPUT
