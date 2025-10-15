@@ -1,0 +1,490 @@
+name: Call perf test
+
+on:
+  workflow_call:
+    inputs:
+      docker-image:
+        description: "Docker image used in tests"
+        required: false
+        default: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:latest"
+        type: string
+      project-filter:
+        description: "Project filter"
+        required: true
+        type: string
+      run_id_source:
+        description: "Repo source for provided workflow run ID"
+        required: false
+        type: string
+      run_id:
+        description: "Workflow ID to use for the new version of wheel"
+        required: false
+        type: string
+      ref:
+        description: "Git ref to checkout"
+        required: false
+        type: string
+      update-wheel:
+        description: "Update wheel for the project"
+        required: false
+        type: boolean
+      sh-runner:
+        description: "Run on shared runner"
+        required: false
+        type: boolean
+      parent_run_id:
+        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
+        required: false
+        type: string
+        default: ""
+      on_uplift_pr:
+        description: "Performance benchmark triggered from an uplift PR"
+        required: false
+        type: boolean
+      matrix:
+        description: "Matrix of all test jobs that are ran"
+        required: true
+        type: string
+
+# todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
+permissions:
+  id-token: write
+  actions: write
+
+jobs:
+  run-perf-benchmarks:
+    if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
+    container:
+      image: ${{ inputs.sh-runner && format('harbor.ci.tenstorrent.net/{0}', inputs.docker-image) || inputs.docker-image }}
+      options: --device /dev/tenstorrent --user root
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /etc/udev/rules.d:/etc/udev/rules.d
+        - /lib/modules:/lib/modules
+        - /opt/tt_metal_infra/provisioning/provisioning_env:/opt/tt_metal_infra/provisioning/provisioning_env
+        - /usr/local/bin:/usr/local/bin
+        - /mnt/dockercache:/mnt/dockercache
+
+    timeout-minutes: 60
+
+    # tt-torch reqs are not needed by tt-torch, but rather by benchmarking infra, should be moved elsewhere: https://github.com/tenstorrent/tt-forge/issues/177
+    strategy:
+      fail-fast: false
+      matrix:
+        build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
+
+    runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
+
+    env:
+      # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
+      TRACY_NO_INVARIANT_CHECK: 1
+      DOCKER_CACHE_ROOT: /mnt/dockercache
+
+    name: "${{ matrix.build.project }}-${{ matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }}) benchmark"
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        repository: 'tenstorrent/tt-forge'
+        fetch-depth: 1
+        ref: ${{ inputs.ref || github.ref }}
+        submodules: 'recursive'
+
+    - name: Fix HOME Directory
+      shell: bash
+      run: |
+        # Issue [HOME is overridden for containers](https://github.com/actions/runner/issues/863)
+        h=$(getent passwd $(id -un) | cut -d: -f6)
+        if [ "$h" = "$HOME" ]; then
+          echo "HOME fine: $HOME"
+          exit 0
+        fi
+        echo "HOME=$HOME was broken. Setting it to $h"
+        ls -ld $HOME
+        ls -ld $h
+        echo "USER: $USER"
+        echo "id: $(id)"
+        echo "HOME=$h" >> $GITHUB_ENV
+
+    - name: Install system and python dependencies
+      shell: bash
+      run: |
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq --no-install-recommends sqlite3
+        fi
+        if [ -n "${{ matrix.build.libreq }}" ]; then
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+        fi
+
+        if [ -n "${{ matrix.build.pyreq }}" ]; then
+          pip install ${{ matrix.build.pyreq }}
+        fi
+
+    - name: Install upgraded wheel
+      if: (inputs.project && inputs.run_id) || inputs.update-wheel
+      uses: ./.github/actions/install-wheel
+      with:
+        project: ${{ matrix.build.project }}
+        run_id: ${{ inputs.run_id }}
+        run_id_source: ${{ inputs.run_id_source }}
+
+    - name: Fetch job id
+      id: fetch-job-id
+      uses: tenstorrent/tt-github-actions/.github/actions/job_id@main
+      with:
+        job_name: "${{ matrix.build.project }}-${{ matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }}) benchmark"
+
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      env:
+        JOB_ID: ${{ steps.fetch-job-id.outputs.job_id }}
+      run: |
+        echo "work-dir=$(pwd)" >> "$GITHUB_OUTPUT"
+        echo "build-output-dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
+        echo "perf_report_path=$(pwd)/benchmark_reports" >> "$GITHUB_OUTPUT"
+        echo "perf_report_json_file=$(pwd)/benchmark_reports/benchmark_${{ matrix.build.project }}_e2e_${{ matrix.build.name }}_${{ matrix.build.bs }}_${{ matrix.build.lp }}_${{ steps.fetch-job-id.outputs.job_id }}.json" >> "$GITHUB_OUTPUT"
+
+    # - name: Git safe dir
+    #   run: git config --global --add safe.directory ${{ steps.strings.outputs.work-dir }}
+
+    - name: Find workflow run ID for ttrt wheel download
+      id: find-run
+      shell: bash
+      run: |
+
+        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
+        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          project_name="pjrt_plugin_tt"
+        fi
+
+        echo "Set version to commit sha if called from other repo"
+        if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
+          version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
+        else
+          version=$(pip show $project_name | grep -oP "(?<=Version:\s)[\d\.\w]+")
+        fi
+
+        echo "Wheel version: $version"
+
+        # TODO: Add tt-mlir version to frontend setup.py description
+        # REF: https://github.com/tenstorrent/tt-forge/issues/170
+        mlir_sha=""
+        if [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
+          wget "https://raw.githubusercontent.com/tenstorrent/tt-torch/${version}/third_party/CMakeLists.txt"
+          xla_sha=$(grep -E "set\(TT_XLA_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
+          echo "XLA commit sha: $xla_sha"
+          rm -f CMakeLists.txt
+          wget "https://raw.githubusercontent.com/tenstorrent/tt-xla/${xla_sha}/third_party/CMakeLists.txt"
+          mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
+        elif [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
+          mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
+        elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
+          mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
+            grep '"sha"' | head -1 | cut -d'"' -f4)
+        fi
+
+        echo "Mlir commit sha: $mlir_sha"
+
+        RUN_ID=$(curl -s \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?head_sha=${mlir_sha}&per_page=1" \
+          | jq -r '.workflow_runs[0].id')
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "mlir_sha=$mlir_sha" >> $GITHUB_OUTPUT
+        echo "Workflow URL: https://github.com/tenstorrent/tt-mlir/actions/runs/$RUN_ID"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download ttrt wheel
+      if: ${{ !matrix.build.skip-device-perf }}
+      uses: dawidd6/action-download-artifact@v11
+      with:
+        run_id: ${{ steps.find-run.outputs.run_id }}
+        name: "(ttrt-whl|install-artifacts)-tracy"
+        name_is_regexp: true
+        repo: tenstorrent/tt-mlir
+        check_artifacts: true
+        path: ./
+        skip_unpack: true
+
+    - name: Extract artifacts manually
+      if: ${{ !matrix.build.skip-device-perf }}
+      shell: bash
+      run: |
+        echo "Extracting ttrt wheel"
+        mkdir ttrt-whl-tracy
+        mv ttrt-whl-tracy.zip ttrt-whl-tracy/ttrt-whl-tracy.zip
+        unzip -q ttrt-whl-tracy/ttrt-whl-tracy.zip -d ttrt-whl-tracy
+
+        echo "Extracting install artifacts"
+        mkdir install-artifacts-tracy
+        mv install-artifacts-tracy.zip install-artifacts-tracy/install-artifacts-tracy.zip
+        unzip -q install-artifacts-tracy/install-artifacts-tracy.zip -d install-artifacts-tracy
+
+    - name: Install ttrt
+      shell: bash
+      if: ${{ !matrix.build.skip-device-perf }}
+      run: |
+        echo "Install ttrt"
+        python -m venv ttrt-venv
+        source ttrt-venv/bin/activate
+        apt-get update -y -qq
+        python --version
+        apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
+        pip install ttrt-whl-tracy/ttrt*.whl --upgrade
+        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+
+    - name: Untar ttmlir install directory
+      if: ${{ !matrix.build.skip-device-perf }}
+      shell: bash
+      run: |
+        mv install-artifacts-tracy/ install/
+        cd install
+        tar xvf artifact.tar
+        cd ..
+
+    - name: Run Perf Benchmark
+      shell: bash
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        HF_HOME: /mnt/dockercache/huggingface
+        HF_HUB_DISABLE_PROGRESS_BARS: 1
+      run: |
+        echo "Create perf report directory"
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}
+
+        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+          export TT_TORCH_SAVE_MLIR=TTIR
+          export TT_TORCH_SAVE_BINARY=1
+        fi
+
+        # Caused by tensorflow installation in tt-xla: https://github.com/tenstorrent/tt-forge/issues/477
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          pip uninstall tensorflow -y
+        fi
+
+        SITE_PACKAGES_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+          export TT_METAL_HOME="$SITE_PACKAGES_DIR/forge/tt-metal"
+        elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          export TT_METAL_HOME="$SITE_PACKAGES_DIR/pjrt_plugin_tt/tt-metal"
+        fi
+
+        echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
+        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
+
+    - name: Dump ttir and ttnn to report
+      if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
+      shell: bash
+      run: |
+
+        if [ "${{ matrix.build.project }}" != "tt-xla" ]; then
+          echo "Dump ttir to report"
+          if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+            cp ./model_mlir/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+            cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          fi
+        fi
+
+        echo "Dump ttnn to report"
+        if [ "${{ matrix.build.project }}" == "tt-torch" ]; then
+          cp ./model_flatbuffer/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
+        fi
+        source ttrt-venv/bin/activate
+        python --version
+        echo "Run ttrt read"
+        ttrt read --ignore-version --section mlir ${{ matrix.build.name }}.ttnn --read-file ttnn_dump.json
+        echo "Extract MLIR from ttnn"
+        python benchmark/extract_mlir.py ttnn_dump.json ttnn.mlir
+        cp ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+
+    - name: Upload TTIR MLIR separately
+      id: upload-ttir-mlir
+      uses: actions/upload-artifact@v4
+      if: ${{ !matrix.build.skip-ttir-dump }}
+      with:
+        name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+        compression-level: 0
+
+    - name: Upload TTNN MLIR separately
+      id: upload-ttnn-mlir
+      uses: actions/upload-artifact@v4
+      if: ${{ !matrix.build.skip-ttnn-dump }}
+      with:
+        name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+        compression-level: 0
+
+    - name: Run Device Perf
+      if: ${{ !matrix.build.skip-device-perf }}
+      shell: bash
+      run: |
+        source ttrt-venv/bin/activate
+        echo "Save artifacts"
+        ttrt query --save-artifacts
+        chmod ugo+x ./benchmark/ttrt_perf.sh
+        echo "Run ttrt perf"
+        ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_json_file }} || true
+
+    - name: Add config fields to perf report
+      shell: bash
+      run: |
+        PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_json_file }}"
+        TTIR_URL="${{ !matrix.build.skip-ttir-dump && steps.upload-ttir-mlir.outputs.artifact-url || '' }}"
+        TTNN_URL="${{ !matrix.build.skip-ttnn-dump && steps.upload-ttnn-mlir.outputs.artifact-url || '' }}"
+        MLIR_SHA="${{ steps.find-run.outputs.mlir_sha || '' }}"
+        JOB_ID_URL="https://github.com/tenstorrent/tt-forge/actions/runs/${{ github.run_id }}/job/${{ steps.fetch-job-id.outputs.job_id }}"
+
+        python benchmark/extend_result_config.py "$PERF_REPORT_FILE" \
+          ${TTIR_URL:+--ttir-url "$TTIR_URL"} \
+          ${TTNN_URL:+--ttnn-url "$TTNN_URL"} \
+          ${MLIR_SHA:+--mlir-sha "$MLIR_SHA"} \
+          --job-id-url "$JOB_ID_URL"
+
+    - name: Upload Perf Report
+      uses: actions/upload-artifact@v4
+      if: success() || failure()
+      with:
+        name: perf-reports-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}
+
+    # note: potentially improve this by looking at the last nigthly with the specific model's
+    # perf data present, not only at the last nigthly
+    - name: Set perf query strings
+      id: set-query-strings
+      if: inputs.on_uplift_pr
+      shell: bash
+      run: |
+        echo "model_name=$(cat ${{ steps.strings.outputs.perf_report_json_file }} | jq -r '.model')" >> $GITHUB_OUTPUT
+
+        workflow_id=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?status=completed&branch=main&per_page=100&actor=github-actions\[bot\]" \
+          | jq -r '.workflow_runs[] | select(.name | contains("draft") | not) | .id' | head -1)
+        echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
+
+    - name: Fetch previous perf results
+      id: prev-perf
+      if: inputs.on_uplift_pr
+      uses: ./.github/actions/superset-api
+      with:
+        query: 'benchmarks/last_measurement'
+        query_params: '{"project":"tt-forge/${{ matrix.build.project }}","ml_model_name":"${{ steps.set-query-strings.outputs.model_name }}","batch_size":"${{ matrix.build.bs }}","precision":"${{ matrix.build.df }}","github_pipeline_id":"${{ steps.set-query-strings.outputs.last_nightly_workflow_id }}"}'
+
+    - name: Check perf regression
+      if: inputs.on_uplift_pr
+      shell: bash
+      run: |
+        if [[ "${{ steps.prev-perf.outputs.response }}" == "[]" ]]; then
+          echo "Performance report not found in the last nightly"
+          exit 0
+        fi
+
+        sudo apt-get update -y -qq
+        sudo apt-get install -y -qq bc
+
+        prev_perf_report='${{ steps.prev-perf.outputs.response }}'
+
+        prev_total_samples=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_samples") | .last_value')
+        prev_total_time=$(echo "$prev_perf_report" | jq -r '.[] | select(.name == "total_time") | .last_value')
+        prev_samples_per_sec=$(echo "scale=6; $prev_total_samples / $prev_total_time" | bc -l)
+
+        current_perf_report_file=${{ steps.strings.outputs.perf_report_json_file }}
+
+        current_total_samples=$(jq -r '.measurements[] | select(.measurement_name == "total_samples") | .value' "$current_perf_report_file")
+        current_total_time=$(jq -r '.measurements[] | select(.measurement_name == "total_time") | .value' "$current_perf_report_file")
+        current_samples_per_sec=$(echo "scale=6; $current_total_samples / $current_total_time" | bc -l)
+
+        perf_diff=$(echo "scale=4; (($prev_samples_per_sec - $current_samples_per_sec) / $prev_samples_per_sec) * 100" | bc -l)
+
+        echo "Previous performance:"
+        echo "  Total samples: $prev_total_samples"
+        echo "  Total time: $prev_total_time"
+        echo "  Samples per second: $prev_samples_per_sec"
+        echo ""
+        echo "Current performance:"
+        echo "  Total samples: $current_total_samples"
+        echo "  Total time: $current_total_time"
+        echo "  Samples per second: $current_samples_per_sec"
+        echo ""
+
+        if (( $(echo "$perf_diff >= 5.0" | bc -l) )); then
+          echo "Performance regression > 5% detected! Performance dropped by ${perf_diff}%"
+          exit 1
+        fi
+
+
+  fail-notify:
+    if: always()
+    needs:
+      - run-perf-benchmarks
+    runs-on: ubuntu-latest
+    outputs:
+      is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
+      failed: ${{ steps.check.outputs.failure }}
+      is-draft: ${{ steps.draft-check.outputs.IS_DRAFT }}
+    steps:
+      - name: Check if branch is main
+        id: branch-check
+        run: echo "IS_MAIN=$(if [ '${{ github.ref }}' == 'refs/heads/main' ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+      - name: Check draft
+        id: draft-check
+        run: |
+          parent_run_id="${{ inputs.parent_run_id }}"
+          set +e
+          draft_check="$(echo "$parent_run_id" | grep 'draft')"
+          set -e
+          echo "draft_check=$draft_check"
+          IS_DRAFT="$(if [ -n "$draft_check" ]; then echo true; else echo false; fi)"
+          echo "IS_DRAFT=$IS_DRAFT"
+          echo "IS_DRAFT=$IS_DRAFT" >> $GITHUB_OUTPUT
+      - name: Check if the needed jobs succeeded or failed
+        id: check
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: run-perf-benchmarks
+
+  fail-send-msg:
+    if: always()
+    needs:
+      - fail-notify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Fail Notification
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' && inputs.parent_run_id != '' }}
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Perf tests ${{ inputs.project-filter }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "channel": "C088QN7E0R3"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}
+
+
+  produce-data:
+    needs:
+      - fail-send-msg
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: Trigger produce_data.yml
+        uses: ./.github/actions/trigger-workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          workflow_name: "produce_data.yml"
+          wait: false
+          wait_for_run_url: true
+          json_params: '{"run_id": "${{ github.run_id }}", "run_attempt": "${{ github.run_attempt }}", "sleep": "10" }'
