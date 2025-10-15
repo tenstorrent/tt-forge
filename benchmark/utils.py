@@ -35,6 +35,13 @@ except ImportError:
     logger.warning("Forge module is not installed. Skipping Forge-related functionality.")
 
 
+def align_arch(arch: str):
+    for item in ["wormhole", "blackhole"]:
+        if item in arch:
+            return item
+    return ""
+
+
 def get_ffe_device_arch():
 
     import forge._C
@@ -47,7 +54,8 @@ def get_ffe_device_arch():
 
     # Work with devices
     for device in system.devices:
-        return str(device.arch)
+        arch_name = str(device.arch).lower()
+        return align_arch(arch_name)
 
     return ""
 
@@ -58,7 +66,8 @@ def get_jax_device_arch():
 
     devices = jax.devices("tt")
     for device in devices:
-        return str(device.device_kind)
+        arch_name = str(device.device_kind).lower()
+        return align_arch(arch_name)
 
     return ""
 
@@ -69,7 +78,8 @@ def get_xla_device_arch():
 
     device = xm.xla_device()
     device = xm.xla_device_kind(device)
-    return str(device)
+    arch_name = str(device).lower()
+    return align_arch(arch_name)
 
 
 def download_model(download_func, *args, num_retries=3, timeout=180, **kwargs):

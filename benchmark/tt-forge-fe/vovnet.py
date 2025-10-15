@@ -303,9 +303,9 @@ def test_vovnet_timm(
             },
         ],
         "device_info": {
-            "device_name": "",
+            "device_name": machine_name,
             "galaxy": False,
-            "arch": "",
+            "arch": device_arch,
             "chips": 1,
         },
         "device_ip": None,
