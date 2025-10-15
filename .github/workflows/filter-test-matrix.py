@@ -51,6 +51,19 @@ def update_runners(matrix, sh_runner):
     return matrix
 
 
+def group_by_runs_on(matrix):
+    """Group matrix items by runs-on value."""
+    runs_on_groups = {}
+
+    for item in matrix:
+        runs_on = item.get("runs-on")
+        if runs_on not in runs_on_groups:
+            runs_on_groups[runs_on] = []
+        runs_on_groups[runs_on].append(item)
+
+    return list(runs_on_groups.values())
+
+
 def main():
     parser = argparse.ArgumentParser(description="Filter benchmark matrix")
     parser.add_argument("matrix_file", help="Path to benchmark matrix JSON file")
@@ -67,6 +80,7 @@ def main():
         matrix = flatten_matrix(data)
         filtered = filter_matrix(matrix, args.project_filter, args.test_filter)
         update_runners(filtered, args.sh_runner)
+        matrix = group_by_runs_on(filtered)
 
         matrix_skip = not filtered
 
