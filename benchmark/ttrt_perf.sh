@@ -9,7 +9,7 @@
 # <flatbuffer_binary> <json_file>
 
 echo "Running ttrt perf on $1"
-ttrt perf $1 --ignore-version
+ttrt perf $1 --ignore-version --disable-eth-dispatch
 if [ $? -ne 0 ]; then
     echo "Error: TTRT perf command failed."
     exit 1
