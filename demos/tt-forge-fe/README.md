@@ -2,6 +2,8 @@
 
 This directory contains example implementations of popular deep learning models using TT-Forge-FE. These demos showcase how to use TT-Forge-FE to run inference on various computer vision and natural language processing models.
 
+>**NOTE:** TT-Forge-FE does not support multi-chip configurations; it is for single-chip projects only.
+
 ## Available Demos
 
 | Model                    | Model Type | Description                                                             | Demo Code                                              |
