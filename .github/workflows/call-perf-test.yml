@@ -72,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
+        build: ${{ fromJson(inputs.matrix) }}
 
     runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
 
