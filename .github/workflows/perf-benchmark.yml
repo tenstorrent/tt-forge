@@ -146,6 +146,7 @@ jobs:
     needs: filter-tests
     if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
     uses: ./.github/workflows/call-perf-test.yml
+    secrets: inherit
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix-p150 }}
       docker-image: ${{ inputs.docker-image }}
