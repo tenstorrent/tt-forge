@@ -21,8 +21,7 @@ import torch
 import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
-import tt_torch
-from tqdm import tqdm
+import torch_xla.runtime as xr
 
 from benchmark.utils import measure_cpu_fps, get_xla_device_arch
 from yolov4_utils import Yolov4Wrapper, ModelLoader
@@ -34,10 +33,15 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
+    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
+
+xr.set_device_type("TT")
+cache_dir = f"{os.getcwd()}/cachedir"
+xr.initialize_cache(cache_dir)
 
 # Common constants
 
@@ -149,6 +153,8 @@ def test_yolov4_torch_xla(
     predictions, total_time = torch_xla_measure_fps(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
+
+    serialize_modules(f"modules/{model_name}", cache_dir)
 
     if task == "na":
         pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
