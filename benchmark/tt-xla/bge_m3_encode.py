@@ -26,7 +26,6 @@ from .utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
-
 )
 
 os.environ["PJRT_DEVICE"] = "TT"

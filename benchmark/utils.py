@@ -35,9 +35,8 @@ except ImportError:
     logger.warning("Forge module is not installed. Skipping Forge-related functionality.")
 
 
-
-def align_arch(arch : str):
-    for item in ['wormhole', 'blackhole']:
+def align_arch(arch: str):
+    for item in ["wormhole", "blackhole"]:
         if item in arch:
             return item
     return ""
