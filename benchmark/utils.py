@@ -54,8 +54,8 @@ def get_ffe_device_arch():
 
     # Work with devices
     for device in system.devices:
-        temp_arch = str(device.arch).lower()
-        return align_arch(temp_arch)
+        arch_name = str(device.arch).lower()
+        return align_arch(arch_name)
 
     return ""
 
@@ -66,8 +66,8 @@ def get_jax_device_arch():
 
     devices = jax.devices("tt")
     for device in devices:
-        temp_arch = str(device.device_kind).lower()
-        return align_arch(temp_arch)
+        arch_name = str(device.device_kind).lower()
+        return align_arch(arch_name)
 
     return ""
 
@@ -78,8 +78,8 @@ def get_xla_device_arch():
 
     device = xm.xla_device()
     device = xm.xla_device_kind(device)
-    temp_arch = str(device).lower()
-    return align_arch(temp_arch)
+    arch_name = str(device).lower()
+    return align_arch(arch_name)
 
 
 def download_model(download_func, *args, num_retries=3, timeout=180, **kwargs):
