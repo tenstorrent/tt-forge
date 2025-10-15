@@ -2,52 +2,175 @@
   {
     "project": "tt-forge-fe",
     "test-defaults": {
-      "runs-on": ["n150", "p150"],
-      "libreq": "libgl1-mesa-glx libglib2.0-0"
+      "runs-on": [
+        "n150",
+        "p150"
+      ],
+      "libreq": "libgl1-mesa-glx libglib2.0-0",
+      "bs": 8,
+      "df": "bfloat16",
+      "lp": 32,
+      "ts": "na"
     },
     "tests": [
-      { "name": "llama_prefill",     "dir": "LlamaModel",                   "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na" },
-      { "name": "llama_decode",      "dir": "LlamaModelDecode",             "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na" },
-      { "name": "mnist_linear",      "dir": "MNISTLinear",                  "bs": 32, "lp": 32, "df": "float32",  "ts": "na" },
-      { "name": "resnet_hf",         "dir": "ResNetForImageClassification", "bs": 8,  "lp": 32, "df": "bfloat16", "ts": "classification" },
-      { "name": "mobilenetv2_basic", "dir": "MobileNetv2Basic",             "bs": 8,  "lp": 32, "df": "bfloat16", "ts": "classification" },
-      { "name": "efficientnet_timm", "dir": "EfficientNetTimmB0",           "bs": 6,  "lp": 32, "df": "bfloat16", "ts": "classification" },
-      { "name": "segformer",         "dir": "Segformer",                    "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na" },
-      { "name": "vit",               "dir": "ViTBase",                      "bs": 8,  "lp": 32, "df": "bfloat16", "ts": "classification" },
-      { "name": "vovnet",            "dir": "VovnetTimm",                   "bs": 8,  "lp": 32, "df": "bfloat16", "ts": "classification" },
-      { "name": "yolo_v4",           "dir": "YOLOv4",                       "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na" },
-      { "name": "yolo_v8",           "dir": "YOLOv8",                       "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na" },
-      { "name": "yolo_v9",           "dir": "YOLOv9",                       "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na" },
-      { "name": "yolo_v10",          "dir": "YOLOv10",                      "bs": 1,  "lp": 32, "df": "bfloat16", "ts": "na" }
+      {
+        "name": "llama_prefill",
+        "dir": "LlamaModel",
+        "bs": 1
+      },
+      {
+        "name": "llama_decode",
+        "dir": "LlamaModelDecode",
+        "bs": 1
+      },
+      {
+        "name": "mnist_linear",
+        "dir": "MNISTLinear",
+        "bs": 32,
+        "df": "float32"
+      },
+      {
+        "name": "resnet_hf",
+        "dir": "ResNetForImageClassification",
+        "ts": "classification"
+      },
+      {
+        "name": "mobilenetv2_basic",
+        "dir": "MobileNetv2Basic",
+        "ts": "classification"
+      },
+      {
+        "name": "efficientnet_timm",
+        "dir": "EfficientNetTimmB0",
+        "bs": 6,
+        "ts": "classification"
+      },
+      {
+        "name": "segformer",
+        "dir": "Segformer",
+        "bs": 1
+      },
+      {
+        "name": "vit",
+        "dir": "ViTBase",
+        "ts": "classification"
+      },
+      {
+        "name": "vovnet",
+        "dir": "VovnetTimm",
+        "ts": "classification"
+      },
+      {
+        "name": "yolo_v4",
+        "dir": "YOLOv4",
+        "bs": 1
+      },
+      {
+        "name": "yolo_v8",
+        "dir": "YOLOv8",
+        "bs": 1
+      },
+      {
+        "name": "yolo_v9",
+        "dir": "YOLOv9",
+        "bs": 1
+      },
+      {
+        "name": "yolo_v10",
+        "dir": "YOLOv10",
+        "bs": 1
+      }
     ]
   },
   {
     "project": "tt-xla",
     "test-defaults": {
-      "runs-on": ["n150", "p150"],
+      "runs-on": [
+        "n150",
+        "p150"
+      ],
       "dir": "",
+      "bs": 12,
+      "df": "bfloat16",
+      "lp": 128,
       "ts": "na",
       "libreq": "libgl1-mesa-glx libglib2.0-0",
       "skip-ttir-dump": true,
       "skip-ttnn-dump": true,
-      "df": "bfloat16",
-      "lp": 32,
       "skip-device-perf": true
     },
     "tests": [
-      { "name": "resnet_jax",         "bs": 8, "lp": 4,  "df": "default",  "pyreq": "pytest tqdm loguru requests transformers datasets flax torch", "skip-device-perf": false },
-      { "name": "resnet",             "bs": 8, "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "mobilenetv2",        "bs": 8, "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "efficientnet",       "bs": 8, "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "segformer",          "bs": 1, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "unet",               "bs": 1, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "vit",                "bs": 8, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "vovnet",             "bs": 8, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "yolov4",             "bs": 1, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "yolov8",             "bs": 1, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "yolov9",             "bs": 1, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "yolov10",            "bs": 1, "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" },
-      { "name": "bge_m3_encode",      "bs": 1, "df": "float32", "input_sequence_length": 512, "pyreq": "FlagEmbedding datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0" }
+      {
+        "name": "resnet_jax",
+        "bs": 8,
+        "lp": 4,
+        "df": "default",
+        "pyreq": "pytest tqdm loguru requests transformers datasets flax torch",
+        "skip-device-perf": false
+      },
+      {
+        "name": "resnet",
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "mobilenetv2",
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "efficientnet",
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "segformer",
+        "bs": 1,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "unet",
+        "bs": 1,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "vit",
+        "bs": 8,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "vovnet",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "yolov4",
+        "bs": 1,
+        "lp": 32,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "yolov8",
+        "bs": 1,
+        "lp": 32,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "yolov9",
+        "bs": 1,
+        "lp": 32,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "yolov10",
+        "bs": 1,
+        "lp": 32,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      },
+      {
+        "name": "bge_m3_encode",
+        "bs": 1,
+        "lp": 32,
+        "df": "float32",
+        "input_sequence_length": 512,
+        "pyreq": "FlagEmbedding datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+      }
     ]
   }
 ]
