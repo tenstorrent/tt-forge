@@ -84,7 +84,7 @@ def main():
 
         matrix_skip = not filtered
 
-        result = {"matrix": grouped, "matrix_skip": str(matrix_skip).lower()}
+        result = {"matrix": filtered, "matrix_skip": str(matrix_skip).lower()}
 
         print(json.dumps(result))
 
