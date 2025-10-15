@@ -22,8 +22,11 @@ import torch
 import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
-import tt_torch
-from tqdm import tqdm
+import torch_xla.runtime as xr
+
+xr.set_device_type("TT")
+cache_dir = f"{os.getcwd()}/cachedir"
+xr.initialize_cache(cache_dir)
 
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_xla_device_arch
 from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import (
@@ -167,7 +170,7 @@ def test_segformer_torch_xla(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
 
-    serialize_modules(f"modules/{model_name}")
+    serialize_modules(f"modules/{model_name}", cache_dir)
 
     if task == "classification":
         predictions = torch.cat(predictions)

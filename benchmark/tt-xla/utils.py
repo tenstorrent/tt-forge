@@ -9,15 +9,10 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 from collections.abc import Sequence
 import torch
-import torch_xla.runtime as xr
 from tt_torch import parse_compiled_artifacts_from_cache_to_disk
 
-xr.set_device_type("TT")
-cache_dir = f"{os.getcwd()}/cachedir"
-xr.initialize_cache(cache_dir)
 
-
-def serialize_modules(output_prefix: str) -> None:
+def serialize_modules(output_prefix: str, cache_dir: str) -> None:
     """
     Serialize TT modules from in-memory cache to disk.
     Modules will be saved as {output_prefix}_ttir.mlir, {output_prefix}_ttnn.mlir and

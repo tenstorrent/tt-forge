@@ -15,7 +15,6 @@ import torch
 import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
-import tt_torch
 import numpy as np
 from FlagEmbedding import BGEM3FlagModel
 
