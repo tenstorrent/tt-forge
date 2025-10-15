@@ -142,7 +142,7 @@ jobs:
       docker-image: ${{ inputs.docker-image }}
       project-filter: ${{ inputs.project-filter }}
       update-wheel: ${{ inputs.update-wheel }}
-      sh_runner: ${{ inputs.sh-runner }}
+      sh-runner: ${{ inputs.sh-runner }}
       parent_run_id: ${{ inputs.parent_run_id }}
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
