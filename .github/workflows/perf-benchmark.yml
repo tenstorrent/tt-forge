@@ -120,7 +120,7 @@ jobs:
   run-n150-perf-benchmarks:
     needs: filter-tests
     if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
-    uses: ./github/workflows/call-perf-test.yml
+    uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix-n150 }}
       docker_image: ${{ inputs.docker-image }}
@@ -137,7 +137,7 @@ jobs:
   run-p150-perf-benchmarks:
     needs: filter-tests
     if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
-    uses: ./github/workflows/call-perf-test.yml
+    uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix-p150 }}
       docker_image: ${{ inputs.docker-image }}
