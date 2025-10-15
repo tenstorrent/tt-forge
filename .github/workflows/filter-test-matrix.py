@@ -80,11 +80,11 @@ def main():
         matrix = flatten_matrix(data)
         filtered = filter_matrix(matrix, args.project_filter, args.test_filter)
         update_runners(filtered, args.sh_runner)
-        matrix = group_by_runs_on(filtered)
+        grouped = group_by_runs_on(filtered)
 
         matrix_skip = not filtered
 
-        result = {"matrix": filtered, "matrix_skip": str(matrix_skip).lower()}
+        result = {"matrix": grouped, "matrix_skip": str(matrix_skip).lower()}
 
         print(json.dumps(result))
 
