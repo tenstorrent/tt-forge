@@ -175,9 +175,10 @@ jobs:
         run: echo "IS_MAIN=$(if [ '${{ github.ref }}' == 'refs/heads/main' ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
       - name: Get version tag
         id: version-tag
+        shell: bash
         run: |
           docker_image="${{ inputs.docker-image }}"
-          version_tag="${ docker_image##*: }"
+          version_tag="${docker_image##*:}"
           echo "version_tag=$version_tag"
           echo "version_tag=$version_tag" >> $GITHUB_OUTPUT
       - name: Check draft
