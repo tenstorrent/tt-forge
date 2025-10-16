@@ -375,6 +375,17 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
 
     predictions = []
     itteration_times = []
+    import sys
+    from tracy.tracy_ttnn import tracy_marker_func, tracy_marker_line, finish_all_zones
+    import tracy.tracy_state
+
+
+
+    from tracy import Profiler
+    tracy.tracy_state.doLine = True
+    tracy.tracy_state.doPartial = True
+    profiler = Profiler()
+    profiler.enable()
     with torch.no_grad():
         outputs = []
         for i in range(loop_count):
@@ -388,7 +399,7 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
 
             if hasattr(output, "logits"):
                 output = output.logits
-            outputs.append(output)
+                outputs.append(output.to("cpu"))
 
             end_time = time.perf_counter_ns()
             itteration_times.append(end_time - start_time)
@@ -399,17 +410,17 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
         output_start = time.perf_counter_ns()
         for output in outputs:
             if type(output) is torch.Tensor:
-                cpu_output = output.to("cpu")
-                predictions.append(cpu_output)
+                predictions.append(output)
             elif type(output) is tuple:
-                cpu_output = tuple(out.to("cpu") for out in output)
-                predictions.append(cpu_output)
+                predictions.append(output)
             else:
                 raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
         output_end = time.perf_counter_ns()
 
         output_time = output_end - output_start
         print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
+
+    profiler.disable()
 
     total_time_itterations = sum(itteration_times)
     total_time = total_time_itterations + output_time
