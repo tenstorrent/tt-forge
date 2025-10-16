@@ -53,7 +53,7 @@ def update_runners(matrix, sh_runner):
 
 def sort_matrix(matrix):
     """Sort matrix by runs-on first, then by name."""
-    return sorted(matrix, key=lambda item: (item.get("project", ""), item.get("runs-on", ""), item.get("name", "")))
+    return sorted(matrix, key=lambda item: (item.get("runs-on", ""), item.get("project", ""), item.get("name", "")))
 
 
 def main():

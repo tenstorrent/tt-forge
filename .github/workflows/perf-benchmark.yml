@@ -147,7 +147,7 @@ jobs:
       TRACY_NO_INVARIANT_CHECK: 1
       DOCKER_CACHE_ROOT: /mnt/dockercache
 
-    name: "[${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}] ${{ matrix.build.project }}-${{ matrix.build.name }} (${{ matrix.build.bs }}, ${{ matrix.build.lp }}) benchmark"
+    name: "[${{ matrix.build.runs-on }}] ${{ matrix.build.project }}-${{ matrix.build.name }} (${{ matrix.build.bs }}, ${{ matrix.build.lp }}) benchmark"
     steps:
 
     - uses: actions/checkout@v4
