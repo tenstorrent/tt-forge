@@ -67,6 +67,7 @@ on:
       on_uplift_pr:
         description: "Performance benchmark triggered from an uplift PR"
         required: false
+        default: false
         type: boolean
       project:
         description: "Project that perf tests are ran for"
@@ -82,8 +83,8 @@ jobs:
   filter-tests:
     runs-on: ubuntu-latest
     outputs:
-      matrix-n150: ${{ steps.set-perf-benchmarks.outputs.matrix_n150 }}
-      matrix-p150: ${{ steps.set-perf-benchmarks.outputs.matrix_p150 }}
+      matrix_n150: ${{ steps.set-perf-benchmarks.outputs.matrix_n150 }}
+      matrix_p150: ${{ steps.set-perf-benchmarks.outputs.matrix_p150 }}
       matrix_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_skip }}
     steps:
     - name: Checkout repository
@@ -130,7 +131,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/call-perf-test.yml
     with:
-      matrix: ${{ needs.filter-tests.outputs.matrix-n150 }}
+      matrix: ${{ needs.filter-tests.outputs.matrix_n150 }}
       docker-image: ${{ inputs.docker-image }}
       project-filter: ${{ inputs.project-filter }}
       project: ${{ inputs.project }}
@@ -148,7 +149,7 @@ jobs:
     uses: ./.github/workflows/call-perf-test.yml
     secrets: inherit
     with:
-      matrix: ${{ needs.filter-tests.outputs.matrix-p150 }}
+      matrix: ${{ needs.filter-tests.outputs.matrix_p150 }}
       docker-image: ${{ inputs.docker-image }}
       project-filter: ${{ inputs.project-filter }}
       project: ${{ inputs.project }}

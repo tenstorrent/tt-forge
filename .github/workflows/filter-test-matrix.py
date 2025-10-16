@@ -80,7 +80,6 @@ def main():
         matrix = flatten_matrix(data)
         filtered = filter_matrix(matrix, args.project_filter, args.test_filter)
         update_runners(filtered, args.sh_runner)
-        grouped = group_by_runs_on(filtered)
 
         matrix_skip = not filtered
 
