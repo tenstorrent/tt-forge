@@ -91,7 +91,8 @@ jobs:
     outputs:
       matrix_n150: ${{ steps.set-perf-benchmarks.outputs.matrix_n150 }}
       matrix_p150: ${{ steps.set-perf-benchmarks.outputs.matrix_p150 }}
-      matrix_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_skip }}
+      matrix_n150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_n150_skip }}
+      matrix_p150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_p150_skip }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -147,7 +148,7 @@ jobs:
 
   run-n150-perf-benchmarks:
     needs: filter-tests
-    if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
+    if: ${{ needs.filter-tests.outputs.matrix_n150_skip == 'false' }}
     secrets: inherit
     uses: ./.github/workflows/call-perf-test.yml
     with:
@@ -165,7 +166,7 @@ jobs:
 
   run-p150-perf-benchmarks:
     needs: filter-tests
-    if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
+    if: ${{ needs.filter-tests.outputs.matrix_p150_skip == 'false' }}
     secrets: inherit
     uses: ./.github/workflows/call-perf-test.yml
     with:
