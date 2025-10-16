@@ -99,7 +99,7 @@ jobs:
       run: |
         result=$(python .github/workflows/filter-test-matrix.py \
           .github/workflows/perf-bench-matrix.json \
-          ${{ inputs.project-filter || '' }} \
+          ${{ inputs.project-filter || inputs.project || '' }} \
           ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }} \
           ${{ inputs.sh-runner && '--sh-runner' || '' }})
 
@@ -117,7 +117,7 @@ jobs:
 
         # Set up the summary for the job
         echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
-        echo "Project filter: ${{ inputs.project-filter }}" >> $GITHUB_STEP_SUMMARY
+        echo "Project filter: ${{ inputs.project-filter || inputs.project }}" >> $GITHUB_STEP_SUMMARY
         echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
         echo "Run ID source: ${{ inputs.run_id_source }}" >> $GITHUB_STEP_SUMMARY
         echo "Run ID: ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY

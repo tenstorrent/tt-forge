@@ -50,55 +50,13 @@ on:
         required: false
         type: string
         default: ""
-
-# todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
-permissions:
-  id-token: write
-  actions: write
+      matrix:
+        description: "Matrix of all test jobs that are ran"
+        required: true
+        type: string
 
 jobs:
-  filter-tests:
-    runs-on: ubuntu-latest
-    outputs:
-      benchmark-matrix: ${{ steps.set-perf-benchmarks.outputs.matrix }}
-      matrix_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_skip }}
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        repository: 'tenstorrent/tt-forge'
-        fetch-depth: 1
-        ref: ${{ inputs.ref || github.ref }}
-        submodules: 'recursive'
-
-    - name: Filter Matrix
-      id: set-perf-benchmarks
-      shell: bash
-      run: |
-        result=$(python .github/workflows/filter-test-matrix.py \
-          .github/workflows/perf-bench-matrix.json \
-          ${{ inputs.project-filter || inputs.project || '' }} \
-          ${{ inputs.test-filter && format('--test-filter "{0}"', inputs.test-filter) || '' }} \
-          ${{ inputs.sh-runner && '--sh-runner' || '' }})
-
-        matrix=$(echo $result | jq -r -c '.matrix')
-        matrix_skip=$(echo $result | jq -r '.matrix_skip')
-
-        echo "matrix=$matrix" >> $GITHUB_OUTPUT
-        echo "matrix_skip=$matrix_skip" >> $GITHUB_OUTPUT
-
-        # Set up the summary for the job
-        echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
-        echo "Project filter: ${{ inputs.project-filter || inputs.project }}" >> $GITHUB_STEP_SUMMARY
-        echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
-        echo "Run ID source: ${{ inputs.run_id_source }}" >> $GITHUB_STEP_SUMMARY
-        echo "Run ID: ${{ inputs.run_id }}" >> $GITHUB_STEP_SUMMARY
-        echo "Shared runner: ${{ inputs.sh-runner }}" >> $GITHUB_STEP_SUMMARY
-
-
   run-perf-benchmarks:
-    needs: filter-tests
-    if: ${{ needs.filter-tests.outputs.matrix_skip == 'false' }}
     container:
       image: ${{ inputs.sh-runner && format('harbor.ci.tenstorrent.net/{0}', inputs.docker-image) || inputs.docker-image }}
       options: --device /dev/tenstorrent --user root
@@ -117,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: ${{ fromJson(needs.filter-tests.outputs.benchmark-matrix) }}
+        build: ${{ fromJson(inputs.matrix) }}
 
     runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
 
