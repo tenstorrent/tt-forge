@@ -177,12 +177,12 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -qq --no-install-recommends sqlite3
+          apt-get update -y -qq
+          apt-get install -y -qq --no-install-recommends sqlite3
         fi
         if [ -n "${{ matrix.build.libreq }}" ]; then
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
+          apt-get update -y -qq
+          apt-get install -y -qq --no-install-recommends ${{ matrix.build.libreq }}
         fi
 
         if [ -n "${{ matrix.build.pyreq }}" ]; then
@@ -444,8 +444,8 @@ jobs:
           exit 0
         fi
 
-        sudo apt-get update -y -qq
-        sudo apt-get install -y -qq bc
+        apt-get update -y -qq
+        apt-get install -y -qq bc
 
         prev_perf_report='${{ steps.prev-perf.outputs.response }}'
 
