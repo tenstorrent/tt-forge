@@ -144,10 +144,10 @@ jobs:
       docker-image: ${{ inputs.docker-image }}
       project-filter: ${{ inputs.project-filter }}
       project: ${{ inputs.project }}
-      update-wheel: ${{ inputs.update-wheel }}
+      update-wheel: ${{ inputs.update-wheel || false }}
       sh-runner: ${{ inputs.sh-runner }}
       parent_run_id: ${{ inputs.parent_run_id }}
-      run_id_source: ${{ inputs.run_id_source }}
+      run_id_source: ${{ inputs.run_id_source || false }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
       on_uplift_pr: ${{ inputs.on_uplift_pr }}
@@ -162,13 +162,13 @@ jobs:
       docker-image: ${{ inputs.docker-image }}
       project-filter: ${{ inputs.project-filter }}
       project: ${{ inputs.project }}
-      update-wheel: ${{ inputs.update-wheel }}
+      update-wheel: ${{ inputs.update-wheel || false }}
       sh-runner: ${{ inputs.sh-runner }}
       parent_run_id: ${{ inputs.parent_run_id }}
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
-      on_uplift_pr: ${{ inputs.on_uplift_pr }}
+      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
 
   fail-notify:
     if: always()
