@@ -3,7 +3,8 @@
     "project": "tt-forge-fe",
     "test-defaults": {
       "runs-on": [
-        "n150"
+        "n150",
+        "p150"
       ],
       "libreq": "libgl1-mesa-glx libglib2.0-0",
       "bs": 8,
