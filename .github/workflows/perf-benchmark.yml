@@ -22,6 +22,7 @@ on:
       test-filter:
         description: "Only run tests that contains"
         required: false
+        default: ""
         type: string
       update-wheel:
         description: "Update wheel for the project"
@@ -31,12 +32,13 @@ on:
       sh-runner:
         description: "Run on shared runner"
         required: false
+        default: false
         type: boolean
       parent_run_id:
         description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
         required: false
-        type: string
         default: ""
+        type: string
   workflow_call:
     inputs:
       docker-image:
@@ -48,18 +50,22 @@ on:
       run_id_source:
         description: "Repo source for provided workflow run ID"
         required: false
+        default: ""
         type: string
       run_id:
         description: "Workflow ID to use for the new version of wheel"
         required: false
+        default: ""
         type: string
       ref:
         description: "Git ref to checkout"
         required: false
+        default: ""
         type: string
       test-filter:
         description: "Only run tests that contains"
         required: false
+        default: ""
         type: string
       sh-runner:
         description: "Run on shared runner"
@@ -74,6 +80,7 @@ on:
       project:
         description: "Project that perf tests are ran for"
         required: false
+        default: ""
         type: string
 
 # todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
