@@ -43,6 +43,7 @@ on:
           - All
           - n150
           - p150
+        default: All
   workflow_call:
     inputs:
       docker-image:
