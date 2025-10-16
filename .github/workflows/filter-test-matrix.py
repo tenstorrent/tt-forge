@@ -72,10 +72,6 @@ def main():
 
         print(json.dumps(result))
 
-        if matrix_skip:
-            print("Error: No matching tests found", file=sys.stderr)
-            sys.exit(1)
-
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
