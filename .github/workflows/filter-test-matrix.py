@@ -68,13 +68,11 @@ def main():
         filtered = filter_matrix(matrix, args.project_filter, args.test_filter)
         update_runners(filtered, args.sh_runner)
 
-        matrix_skip = not filtered
-
-        result = {"matrix": filtered, "matrix_skip": str(matrix_skip).lower()}
+        result = {"matrix": filtered}
 
         print(json.dumps(result))
 
-        if matrix_skip:
+        if not filtered:
             print("Error: No matching tests found", file=sys.stderr)
             sys.exit(1)
 

@@ -78,7 +78,6 @@ jobs:
 
           # Check that result contains expected tests
           echo "$result" | jq -e '.matrix | length == 4'
-          echo "$result" | jq -e '.matrix_skip == "false"'
 
       - name: Test basic functionality tt-forge
         run: |
@@ -88,7 +87,6 @@ jobs:
 
           # Check that result contains expected tests
           echo "$result" | jq -e '.matrix | length == 5'
-          echo "$result" | jq -e '.matrix_skip == "false"'
 
       - name: Test specific test filter
         run: |
