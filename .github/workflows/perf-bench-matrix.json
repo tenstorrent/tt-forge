@@ -104,7 +104,7 @@
         "name": "resnet_jax",
         "bs": 8,
         "lp": 4,
-        "pyreq": "pytest tqdm loguru requests transformers ultralytics datasets flax torch"
+        "pyreq": "pytest tqdm loguru requests transformers ultralytics datasets flax torch==2.7.0"
       },
       {
         "name": "resnet",
