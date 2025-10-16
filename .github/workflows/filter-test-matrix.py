@@ -51,6 +51,11 @@ def update_runners(matrix, sh_runner):
     return matrix
 
 
+def sort_matrix(matrix):
+    """Sort matrix by runs-on first, then by name."""
+    return sorted(matrix, key=lambda item: (item.get("runs-on", ""), item.get("name", "")))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Filter benchmark matrix")
     parser.add_argument("matrix_file", help="Path to benchmark matrix JSON file")
@@ -65,12 +70,13 @@ def main():
             data = json.load(f)
 
         matrix = flatten_matrix(data)
-        filtered = filter_matrix(matrix, args.project_filter, args.test_filter)
-        update_runners(filtered, args.sh_runner)
+        matrix_filtered = filter_matrix(matrix, args.project_filter, args.test_filter)
+        update_runners(matrix_filtered, args.sh_runner)
+        matrix_sorted = sort_matrix(matrix_filtered)
 
-        matrix_skip = not filtered
+        matrix_skip = not matrix_filtered
 
-        result = {"matrix": filtered, "matrix_skip": str(matrix_skip).lower()}
+        result = {"matrix": matrix_filtered, "matrix_skip": str(matrix_skip).lower()}
 
         print(json.dumps(result))
 
