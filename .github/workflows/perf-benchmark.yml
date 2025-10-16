@@ -26,6 +26,7 @@ on:
       update-wheel:
         description: "Update wheel for the project"
         required: false
+        default: false
         type: boolean
       sh-runner:
         description: "Run on shared runner"
@@ -63,6 +64,7 @@ on:
       sh-runner:
         description: "Run on shared runner"
         required: false
+        default: false
         type: boolean
       on_uplift_pr:
         description: "Performance benchmark triggered from an uplift PR"
