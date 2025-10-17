@@ -280,6 +280,7 @@ jobs:
           python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
         else
           # Run with pytest
+          export PYTHONPATH="$(pwd):$(pwd)/benchmark:${PYTHONPATH}"
           pytest -svv ${{ matrix.build.pytest }}
         fi
 
