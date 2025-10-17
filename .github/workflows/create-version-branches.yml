@@ -78,10 +78,8 @@ permissions:
 jobs:
   create-version-branch:
     outputs:
-      tag_name: ${{ steps.create-rc-branch.outputs.tag_name }}
+      new_version_tag: ${{ steps.create-rc-branch.outputs.new_version_tag }}
       branch_name: ${{ steps.create-rc-branch.outputs.branch_name }}
-      latest_branch_commit: ${{ steps.create-rc-branch.outputs.latest_branch_commit }}
-      current_release_tag_commit: ${{ steps.create-rc-branch.outputs.current_release_tag_commit }}
       repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
       branch_exists: ${{ steps.create-rc-branch.outputs.branch_exists }}
     runs-on: ubuntu-latest
@@ -127,9 +125,9 @@ jobs:
       repo: ${{ inputs.repo }}
       release_type: rc
       repo_short: ${{ needs.create-version-branch.outputs.repo_short }}
-      new_version_tag: ${{ needs.create-version-branch.outputs.tag_name }}
+      new_version_tag: ${{ needs.create-version-branch.outputs.new_version_tag }}
       branch: ${{ needs.create-version-branch.outputs.branch_name }}
-      latest_branch_commit: ${{ needs.create-version-branch.outputs.latest_branch_commit }}
-      current_release_tag_commit: ${{ needs.create-version-branch.outputs.current_release_tag_commit }}
+      latest_branch_commit: ${{ inputs.commit }}
+      current_release_tag_commit: ${{ inputs.commit }}
       override_release_fact_workflow: ${{ inputs.override_release_fact_workflow || '' }}
       workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
