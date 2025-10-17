@@ -1,0 +1,70 @@
+name: "Mock commit & tag & merge to branch"
+description: "Mock add commit & tag & merge to branch for PR test workflow"
+
+inputs:
+  release_branch:
+    description: "Release branch to merge to"
+    required: true
+  gh_token:
+    description: "GitHub token"
+    required: true
+  gpg_private_key:
+    description: "GPG private key"
+    required: true
+  gpg_passphrase:
+    description: "GPG passphrase"
+    required: true
+  mock_merge_branch_tag:
+    description: "Mock merge branch tag"
+    required: true
+  mock_merge_branch:
+    description: "Mock branch to merge to release branch"
+    required: true
+
+outputs:
+  commit_hash:
+    description: "Commit hash"
+    value: ${{ steps.add-commit.outputs.commit_hash }}
+  new_version_tag:
+    description: "New version tag"
+    value: ${{ steps.random_file.outputs.new_version_tag }}
+  branch_name:
+    description: "Branch name"
+    value: ${{ steps.random_file.outputs.branch_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create random test file
+      id: random_file
+      shell: bash
+      run: |
+        random="$RANDOM"
+        echo "$random" > "$random.txt"
+        echo "Created random test file: $random.txt"
+        echo "random_text_file=$random.txt" >> $GITHUB_OUTPUT
+        echo "id=$random" >> $GITHUB_OUTPUT
+    - name: Add commit & tag to mock merge branch
+      uses: EndBug/add-and-commit@v9 # You can change this to use a specific version.
+      id: add-commit
+      with:
+        new_branch: ${{ inputs.mock_merge_branch }}
+        add: ${{ steps.random_file.outputs.random_text_file }}
+        message: "Add random test file: ${{ steps.random_file.outputs.id }}"
+    - name: Add tag to mock merge branch commit
+      uses: ./.github/actions/push-annotated-git-tag
+      with:
+        repo: ${{ inputs.repo }}
+        draft: ${{ inputs.draft }}
+        GH_TOKEN: ${{ inputs.gh_token }}
+        commit: ${{ steps.add-commit.outputs.commit_hash }}
+        new_version_tag: ${{ inputs.mock_merge_branch_tag }}
+        gpg_private_key: ${{ inputs.gpg_private_key }}
+        gpg_passphrase: ${{ inputs.gpg_passphrase }}
+    - name: Merge mock merge branch to release branch ${{ inputs.release_branch }}
+      uses: devmasx/merge-branch@master
+      with:
+        type: now
+        from_branch: ${{ inputs.mock_merge_branch }}
+        target_branch: ${{ inputs.release_branch }}
+        github_token: ${{ inputs.gh_token }}

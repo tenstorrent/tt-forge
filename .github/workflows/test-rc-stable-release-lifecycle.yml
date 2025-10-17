@@ -17,7 +17,7 @@ on:
         - '.github/workflows/create-version-branches.yml'
         - '.github/workflows/bump-version.yml'
         - '.github/workflows/promote-stable.yml'
-        - '.github/actions/add-commit/**'
+        - '.github/actions/mock-commit-tag-merge/**'
         - '.github/actions/create-rc-branch/**'
         - '.github/actions/docs-generator/**'
         - '.github/actions/find-workflow/**'
@@ -51,7 +51,7 @@ on:
         - '.github/workflows/create-version-branches.yml'
         - '.github/workflows/bump-version.yml'
         - '.github/workflows/promote-stable.yml'
-        - '.github/actions/add-commit/**'
+        - '.github/actions/mock-commit-tag-merge/**'
         - '.github/actions/create-rc-branch/**'
         - '.github/actions/docs-generator/**'
         - '.github/actions/find-workflow/**'
@@ -84,9 +84,17 @@ permissions:
   packages: write
   attestations: write
 
+env:
+  FIRST_COMMIT_PRE_RELEASE_TAG: "draft.tt-mlir.first-commit-pre-release-${{ github.run_id }}-${{ github.run_attempt }}"
+  SECOND_COMMIT_PRE_RELEASE_TAG: "draft.tt-mlir.second-commit-pre-release-${{ github.run_id }}-${{ github.run_attempt }}"
+  FIRST_COMMIT_STABLE_TAG: "draft.tt-mlir.first-commit-stable-${{ github.run_id }}-${{ github.run_attempt }}"
+  SECOND_COMMIT_STABLE_TAG: "draft.tt-mlir.second-commit-stable-${{ github.run_id }}-${{ github.run_attempt }}"
+  MOCK_MERGE_BRANCH: "draft-tt-mlir-release-mock-branch-${{ github.run_id }}-${{ github.run_attempt }}"
+
 jobs:
 
   get-repos:
+    if: always()
     outputs:
       json_results: ${{ steps.get-repos.outputs.json_results }}
     runs-on: ubuntu-latest
@@ -97,6 +105,85 @@ jobs:
         uses: ./.github/actions/get-repos
         with:
           repo: 'tt-mlir'
+
+  expected-artifacts:
+    if: always()
+    needs:
+      - get-repos
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+    name: ${{ matrix.repo_short }} Expected Artifacts
+    outputs:
+      expected_tags: ${{ steps.set-expected.outputs.expected_tags }}
+      expected_branches: ${{ steps.set-expected.outputs.expected_branches }}
+      draft_release_branch: ${{ steps.set-expected.outputs.draft_release_branch }}
+      expected_release_tags: ${{ steps.set-expected.outputs.expected_release_tags }}
+      non_expected_tags: ${{ steps.set-expected.outputs.non_expected_tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version file
+        id: read-version
+        run: |
+          source .version
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set expected artifacts
+        id: set-expected
+        run: |
+          # Expected mock merge tags to simulate commits with tags being merged to release branches
+          expected_mock_merge_tags=(
+            "${{ env.FIRST_COMMIT_PRE_RELEASE_TAG }}"
+            "${{ env.SECOND_COMMIT_PRE_RELEASE_TAG }}"
+            "${{ env.FIRST_COMMIT_STABLE_TAG }}"
+            "${{ env.SECOND_COMMIT_STABLE_TAG }}"
+          )
+
+          # Expected release tags for draft releases
+          expected_release_tags=(
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc1"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc2"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc3"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.1"
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.2"
+          )
+
+          # Non expected tags
+          non_expected_tags=(
+            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc4"
+          )
+
+          # All expected tags
+          expected_tags=(
+            "${expected_mock_merge_tags[*]}"
+            "${expected_release_tags[*]}"
+          )
+
+          # Expected branch
+          draft_release_branch="draft-${{ matrix.repo_short }}-release-${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}"
+          expected_branches=("$draft_release_branch"
+                  "${{ env.MOCK_MERGE_BRANCH }}"
+                  )
+
+          # Convert arrays to space-separated strings for easier handling in bash
+          echo "expected_tags=${expected_tags[*]}" >> $GITHUB_OUTPUT
+          echo "expected_branches=${expected_branches[*]}" >> $GITHUB_OUTPUT
+          echo "draft_release_branch=$draft_release_branch" >> $GITHUB_OUTPUT
+          echo "expected_release_tags=${expected_release_tags[*]}" >> $GITHUB_OUTPUT
+          echo "non_expected_tags=${non_expected_tags[*]}" >> $GITHUB_OUTPUT
+
 
   mock-successful-workflow-pre-release-branch:
     outputs:
@@ -111,6 +198,7 @@ jobs:
         with:
           workflow_name: 'Mock Successful'
           wait: true
+          watch_interval: 5
 
   create-version-branch:
     needs:
@@ -167,20 +255,30 @@ jobs:
         include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
     name: ${{ matrix.repo_short }} First RC Commit Successful
     runs-on: ubuntu-latest
+    outputs:
+      new_version_tag: ${{ steps.mock-commit-tag-merge.outputs.new_version_tag }}
+      branch_name: ${{ steps.mock-commit-tag-merge.outputs.branch_name }}
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Add random test file
-        uses: ./.github/actions/add-commit
+      - name: Mock commit & tag & merge to release branch
+        id: mock-commit-tag-merge
+        uses: ./.github/actions/mock-commit-tag-merge
         with:
-          branch: ${{ matrix.branch }}
+          gh_token: ${{ secrets.TT_FORGE_RELEASER }}
+          gpg_private_key: ${{ secrets.FORGE_GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.FORGE_GPG_PASSPHRASE }}
+          mock_merge_branch_tag: ${{ env.FIRST_COMMIT_PRE_RELEASE_TAG }}
+          mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
+          release_branch: ${{ matrix.branch }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
           wait: true
           branch: ${{ matrix.branch }}
+          watch_interval: 5
 
 
   release-rc-first-commit-observed:
@@ -209,20 +307,29 @@ jobs:
         include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
     name: ${{ matrix.repo_short }} Second RC Commit Successful
     runs-on: ubuntu-latest
+    outputs:
+      new_version_tag: ${{ steps.mock-commit-tag-merge.outputs.new_version_tag }}
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Add random test file
-        uses: ./.github/actions/add-commit
+      - name: Mock commit & tag & merge to release branch
+        id: mock-commit-tag-merge
+        uses: ./.github/actions/mock-commit-tag-merge
         with:
-          branch: ${{ matrix.branch }}
+          gh_token: ${{ secrets.TT_FORGE_RELEASER }}
+          gpg_private_key: ${{ secrets.FORGE_GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.FORGE_GPG_PASSPHRASE }}
+          mock_merge_branch_tag: ${{ env.SECOND_COMMIT_PRE_RELEASE_TAG }}
+          mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
+          release_branch: ${{ matrix.branch }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
           wait: true
           branch: ${{ matrix.branch }}
+          watch_interval: 5
 
   bump-rc-version-observed:
     needs:
@@ -267,20 +374,29 @@ jobs:
         include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
     name: ${{ matrix.repo_short }} First Stable/Patch Commit Successful
     runs-on: ubuntu-latest
+    outputs:
+      new_version_tag: ${{ steps.mock-commit-tag-merge.outputs.new_version_tag }}
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Add random test file
-        uses: ./.github/actions/add-commit
+      - name: Mock commit & tag & merge to release branch
+        id: mock-commit-tag-merge
+        uses: ./.github/actions/mock-commit-tag-merge
         with:
-          branch: ${{ matrix.branch }}
+          gh_token: ${{ secrets.TT_FORGE_RELEASER }}
+          gpg_private_key: ${{ secrets.FORGE_GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.FORGE_GPG_PASSPHRASE }}
+          mock_merge_branch_tag: ${{ env.FIRST_COMMIT_STABLE_TAG }}
+          mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
+          release_branch: ${{ matrix.branch }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
           wait: true
           branch: ${{ matrix.branch }}
+          watch_interval: 5
 
   release-stable-first-commit-observed:
     needs:
@@ -308,20 +424,29 @@ jobs:
         include: ${{ fromJson(needs.get-release-branches.outputs.json_results) }}
     name: ${{ matrix.repo_short }} Second Stable/Patch Commit Successful
     runs-on: ubuntu-latest
+    outputs:
+      new_version_tag: ${{ steps.mock-commit-tag-merge.outputs.new_version_tag }}
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Add random test file
-        uses: ./.github/actions/add-commit
+      - name: Mock commit & tag & merge to release branch
+        id: mock-commit-tag-merge
+        uses: ./.github/actions/mock-commit-tag-merge
         with:
-          branch: ${{ matrix.branch }}
+          gh_token: ${{ secrets.TT_FORGE_RELEASER }}
+          gpg_private_key: ${{ secrets.FORGE_GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.FORGE_GPG_PASSPHRASE }}
+          mock_merge_branch_tag: ${{ env.SECOND_COMMIT_STABLE_TAG }}
+          mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
+          release_branch: ${{ matrix.branch }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
           wait: true
           branch: ${{ matrix.branch }}
+          watch_interval: 5
 
   bump-stable-version-observed:
     needs:
@@ -345,6 +470,7 @@ jobs:
     needs:
       - bump-stable-version-observed
       - get-repos
+      - expected-artifacts
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -353,51 +479,25 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
     name: ${{ matrix.repo_short }} Validate Draft Artifacts
+    outputs:
+      expected_tags: ${{ steps.set-expected.outputs.expected_tags }}
+      expected_branches: ${{ steps.set-expected.outputs.expected_branches }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Read version file
-        id: read-version
-        run: |
-          source .version
-          echo "major=$MAJOR" >> $GITHUB_OUTPUT
-          echo "minor=$MINOR" >> $GITHUB_OUTPUT
-          echo "patch=$PATCH" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Set expected artifacts
-        id: set-expected
-        run: |
-          # Expected tags based on the automation pattern
-          expected_tags=(
-            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc1"
-            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0rc2"
-            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.0"
-            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.1"
-            "draft.${{ matrix.repo_short }}.${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.2"
-          )
-
-          # Expected branch
-          expected_branch="draft-${{ matrix.repo_short }}-release-${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}"
-
-          # Convert arrays to space-separated strings for easier handling in bash
-          echo "expected_tags=${expected_tags[*]}" >> $GITHUB_OUTPUT
-          echo "expected_branch=$expected_branch" >> $GITHUB_OUTPUT
-
       - name: Validate draft tags exist
         run: |
           echo "Validating draft tags for ${{ matrix.repo_short }}..."
 
-          # Get all tags
-          git fetch --tags
-          all_tags=$(git tag -l)
+          # Get all tags on draft release branch
+          all_tags=$(git tag --merged origin/${{ needs.expected-artifacts.outputs.draft_release_branch }} --sort=creatordate --sort=taggerdate )
 
           # Check each expected tag
           missing_tags=()
-          for tag in ${{ steps.set-expected.outputs.expected_tags }}; do
+          for tag in ${{ needs.expected-artifacts.outputs.expected_tags }}; do
             if echo "$all_tags" | grep -q "^${tag}$"; then
               echo "✓ Tag $tag exists"
             else
@@ -416,22 +516,53 @@ jobs:
 
       - name: Validate draft branch exists
         run: |
-          echo "Validating draft branch for ${{ matrix.repo_short }}..."
+          echo "Validating draft branches for ${{ matrix.repo_short }}..."
 
           # Get all remote branches
           git fetch --all
           all_branches=$(git branch -r)
 
-          expected_branch="${{ steps.set-expected.outputs.expected_branch }}"
+          expected_branches="${{ needs.expected-artifacts.outputs.expected_branches }}"
 
-          if echo "$all_branches" | grep -q "origin/${expected_branch}$"; then
-            echo "✅ Branch $expected_branch exists"
+          # Check each expected branch exists
+          missing_branches=()
+          for branch in $expected_branches; do
+            if echo "$all_branches" | grep -q "origin/${branch}$"; then
+              echo "✓ Branch $branch exists"
+            else
+              echo "✗ Branch $branch is missing"
+              missing_branches+=("$branch")
+            fi
+          done
+
+          # Report results
+          if [ ${#missing_branches[@]} -eq 0 ]; then
+            echo "✅ All expected branches are present"
           else
-            echo "❌ Branch $expected_branch is missing"
+            echo "❌ Missing branches: ${missing_branches[*]}"
             echo "Available branches:"
             echo "$all_branches" | grep "draft-" || echo "No draft branches found"
             exit 1
           fi
+
+      - name: Validate non expected tags do not exist
+        run: |
+          echo "Validating non expected tags do not exist for ${{ matrix.repo_short }}..."
+
+          # Get all tags on draft release branch
+          all_tags=$(git tag --merged origin/${{ needs.expected-artifacts.outputs.draft_release_branch }} --sort=creatordate --sort=taggerdate )
+
+          # Check each non expected tag does not exist
+          for tag in ${{ needs.expected-artifacts.outputs.non_expected_tags }}; do
+            if echo "$all_tags" | grep -q "^${tag}$"; then
+              echo "✗ Tag $tag should not exist"
+              exit 1
+            else
+              echo "✓ Tag $tag does not exist"
+            fi
+          done
+
+          echo "✅ All non expected tags do not exist"
 
       - name: Validate draft releases exist
         run: |
@@ -442,7 +573,7 @@ jobs:
 
           # Check each expected tag has a corresponding draft release
           missing_releases=()
-          for tag in ${{ steps.set-expected.outputs.expected_tags }}; do
+          for tag in ${{ needs.expected-artifacts.outputs.expected_release_tags }}; do
             if echo "$releases" | grep -q "^${tag}$"; then
               echo "✓ Draft release $tag exists"
             else
@@ -461,73 +592,47 @@ jobs:
             exit 1
           fi
 
-      - name: Validate version file consistency
-        run: |
-          echo "Validating version file consistency..."
-
-          # Check that the version file matches our expectations
-          source .version
-
-          if [ "$MAJOR" != "${{ steps.read-version.outputs.major }}" ]; then
-            echo "❌ Version file MAJOR mismatch: expected ${{ steps.read-version.outputs.major }}, got $MAJOR"
-            exit 1
-          fi
-
-          if [ "$MINOR" != "${{ steps.read-version.outputs.minor }}" ]; then
-            echo "❌ Version file MINOR mismatch: expected ${{ steps.read-version.outputs.minor }}, got $MINOR"
-            exit 1
-          fi
-
-          if [ "$PATCH" != "${{ steps.read-version.outputs.patch }}" ]; then
-            echo "❌ Version file PATCH mismatch: expected ${{ steps.read-version.outputs.patch }}, got $PATCH"
-            exit 1
-          fi
-
-          echo "✅ Version file is consistent: $VERSION"
-
       - name: Summary
         run: |
           echo "🎉 Validation completed successfully for ${{ matrix.repo_short }}!"
           echo "✅ All draft tags verified"
           echo "✅ Draft branch verified"
           echo "✅ All draft releases verified"
-          echo "✅ Version file consistency verified"
 
   delete-draft-artifacts:
     if: always()
     needs:
       - validate-draft-artifacts
+      - expected-artifacts
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
-        if: ${{ inputs.delete-drafts || true }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Delete test tags
         if: ${{ inputs.delete-drafts || true }}
         run: |
-          set +e
-          draft_tags=$(git tag -l | grep -oP "^draft\.tt-\w+\.\d\.\d\.\d.*" | xargs)
-          set -e
+          draft_tags=$(git tag -l | grep -oP "^draft\.tt-mlir\..+" | xargs || true)
           echo "draft_tags=$draft_tags"
-          if [ -n "$draft_tags" ]; then
-            git push origin --delete $draft_tags
-          fi
+          for tag in $draft_tags; do
+            git push origin --delete $tag || true
+          done
+
       - name: Delete draft branch branches
         if: ${{ inputs.delete-drafts || true }}
         run: |
-          set +e
-          draft_branches=$(git branch -r | grep -oP "(?<=origin\/)draft-tt-\w+-release-\d\.\d$" | xargs)
-          set -e
+          draft_branches=$(git branch -r | grep -oP "(?<=origin\/)draft-tt-\w+-release-(?=\d|mock).+" | xargs || true)
           echo "draft_branches=$draft_branches"
-          if [ -n "$draft_branches" ]; then
-            git push origin --delete $draft_branches
-          fi
+          for branch in $draft_branches; do
+            git push origin --delete $branch || true
+          done
+
       - name: Delete draft releases
-        if: ${{ inputs.delete-drafts || true }}
+        if: ${{ inputs.delete-drafts || github.event_name != 'workflow_dispatch' }}
         run: |
           echo "Deleting draft releases..."
           draft_releases=$(gh release list --repo tenstorrent/tt-forge --limit 100 --json tagName,isDraft | jq -r '.[] | select(.isDraft == true) | select(.tagName | startswith("draft.tt-")) | .tagName')
