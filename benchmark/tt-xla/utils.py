@@ -5,6 +5,7 @@
 import time
 import socket
 import os
+import shutil
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from collections.abc import Sequence
@@ -20,6 +21,7 @@ def serialize_modules(output_prefix: str, cache_dir: str) -> None:
 
     """
     parse_compiled_artifacts_from_cache_to_disk(cache_dir, output_prefix)
+    shutil.rmtree(cache_dir)  # To avoid errors for consecutive runs
 
 
 def _compute_pcc_single(golden_flat: torch.Tensor, device_flat: torch.Tensor) -> float:
