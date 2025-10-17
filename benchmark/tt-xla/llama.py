@@ -4,6 +4,7 @@
 
 import os
 from typing import List
+import time
 
 import numpy as np
 import torch
@@ -17,91 +18,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenize
 from transformers.cache_utils import StaticCache
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
+# Common constants
+OPTIMIZER_ENABLED = False
+PROGRAM_CACHE_ENABLED = True
+MEMORY_LAYOUT_ANALYSIS_ENABLED = False
+TRACE_ENABLED = False
 
-# --------------------------------
-# Llama Generation Loop Example
-# --------------------------------
-def llama():
-
-    # Check transformers version
-    check_transformers_version()
-
-    # Set up config variables.
-    batch_size: int = 1
-    max_cache_len: int = 128
-    input_prompt: str = "I like taking walks in the"
-    model_name: str = "meta-llama/Llama-3.2-3B"
-
-    # Determine if SPMD mode should be enabled, if more than 1 device is available.
-    # SPMD must be turned off for llama generate on 1x1 mesh - See https://github.com/tenstorrent/tt-xla/issues/1639
-    num_devices = xr.global_runtime_device_count()
-    is_spmd: bool = num_devices > 1
-    if is_spmd:
-        setup_spmd()
-
-    # Connect the device and create an xla mesh.
-    device: torch.device = torch_xla.device()
-    mesh: Mesh = create_device_mesh()
-
-    # Instantiate model and tokenizer
-    model, tokenizer = setup_model_and_tokenizer(model_name)
-
-    # Construct inputs, including static cache
-    input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
-
-    # Limit maximum generation count to fit within preallocated static cache
-    max_tokens_to_generate: int = max_cache_len - input_args["input_ids"].shape[1]
-
-    # Transfer model and inputs to device
-    model, input_args = transfer_to_device(model, input_args, device)
-
-    # Mark sharding on inputs and model internals if SPMD is enabled
-    if is_spmd:
-        mark_sharding_on_inputs_and_model(model, input_args, mesh)
-
-    # Compile model
-    compiled_model = torch.compile(model, backend="tt")
-
-    # Run generation loop until EOS token generated or max tokens reached
-    run_generate(
-        compiled_model,
-        input_args,
-        tokenizer,
-        device,
-        mesh,
-        is_spmd,
-        max_tokens_to_generate,
-    )
-
-
-def setup_spmd():
-    """
-    Initializes SPMD mode in torch_xla.
-    """
-
-    print("Setting up XLA environment...")
-
-    # Converts the StableHLO emitted by torch-xla to the Shardy dialect
-    os.environ["CONVERT_SHLO_TO_SHARDY"] = "1"
-
-    # Initialize SPMD
-    xr.use_spmd()
-    print("XLA environment configured.")
-
-
-def create_device_mesh() -> Mesh:
-    """
-    Create device mesh for tensor parallelism.
-
-    Returns:
-        Mesh object for SPMD operations
-    """
-    num_devices = xr.global_runtime_device_count()
-    mesh_shape = (1, num_devices)
-    device_ids = np.array(range(num_devices))
-    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
-    print(f"Created device mesh: {mesh_shape} with {num_devices} devices")
-    return mesh
+if PROGRAM_CACHE_ENABLED:
+    os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 
 def setup_model_and_tokenizer(
@@ -196,46 +120,11 @@ def transfer_to_device(model: torch.nn.Module, input_args: dict, device: torch.d
     return model, input_args
 
 
-def mark_sharding_on_inputs_and_model(model: torch.nn.Module, input_args: dict, mesh: Mesh):
-    """
-    Mark sharding on inputs and model internals.
-    If mark_sharding is not called on a tensor, it is fully replicated across all devices.
-        i.e. on cache_positions, input_ids
-
-    Args:
-        model: Model instance
-        input_args: Input arguments dictionary
-        mesh: Device mesh for SPMD operations
-    """
-
-    for i, (key, value) in enumerate(
-        zip(
-            input_args["past_key_values"].key_cache,
-            input_args["past_key_values"].value_cache,
-        )
-    ):
-        xs.mark_sharding(key, mesh, (None, "model", None, None))
-        xs.mark_sharding(value, mesh, (None, "model", None, None))
-
-    # Shard model internals
-    for layer in model.model.layers:
-        xs.mark_sharding(layer.mlp.up_proj.weight, mesh, ("model", None))
-        xs.mark_sharding(layer.mlp.gate_proj.weight, mesh, ("model", None))
-        xs.mark_sharding(layer.mlp.down_proj.weight, mesh, (None, "model"))
-
-        xs.mark_sharding(layer.self_attn.q_proj.weight, mesh, ("model", None))
-        xs.mark_sharding(layer.self_attn.k_proj.weight, mesh, ("model", None))
-        xs.mark_sharding(layer.self_attn.v_proj.weight, mesh, ("model", None))
-        xs.mark_sharding(layer.self_attn.o_proj.weight, mesh, (None, "model"))
-
-
-def run_generate(
+def generate_and_benchmark(
     compiled_model: torch.nn.Module,
     input_args: dict,
     tokenizer: PreTrainedTokenizer,
     device: torch.device,
-    mesh: Mesh = None,
-    is_spmd: bool = True,
     max_tokens_to_generate: int = 128,
 ):
     """
@@ -251,10 +140,12 @@ def run_generate(
         max_tokens_to_generate: Maximum number of tokens to generate
     """
     output_tokens: List[str] = []
-
+    itteration_times: List[float] = []
     with torch.no_grad():
         for step in range(max_tokens_to_generate):
             # Run forward pass
+            start = time.perf_counter_ns()
+
             output: CausalLMOutputWithPast = compiled_model(**input_args)
             output_logits: torch.Tensor = output.logits.to("cpu")
             next_token_id = output_logits[:, -1].argmax(dim=-1)
@@ -265,6 +156,9 @@ def run_generate(
             # Check for EOS token and early exit
             if next_token_id.item() == tokenizer.eos_token_id:
                 print()  # Add newline after generation completes
+                end = time.perf_counter_ns()
+                itteration_times.append(end - start)
+                print(" | Step time (ms): ", (end - start) / 1e6)
                 break
 
             # Update inputs for next iteration
@@ -274,18 +168,15 @@ def run_generate(
             host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
             input_args["cache_position"] = host_cache_pos.to(device)
 
-            # Reapply shardings for static cache if SPMD is enabled
-            # See https://github.com/tenstorrent/tt-xla/issues/1641
-            if is_spmd:
-                for i, (key, value) in enumerate(
-                    zip(
-                        input_args["past_key_values"].key_cache,
-                        input_args["past_key_values"].value_cache,
-                    )
-                ):
-                    xs.mark_sharding(key, mesh, (None, "model", None, None))
-                    xs.mark_sharding(value, mesh, (None, "model", None, None))
+            end = time.perf_counter_ns()
+            itteration_times.append(end - start)
+            print(" | Step time (ms): ", (end - start) / 1e6)
     print("Output tokens:", output_tokens)
+
+    total_time = sum(itteration_times)
+    tps = 1e9 * (len(itteration_times) / total_time)
+    print(f"Total generation time (ms): {total_time / 1e6:.2f}")
+    print(f"Tokens per second (TPS): {tps:.2f}")
 
 
 def check_transformers_version():
@@ -309,8 +200,65 @@ def check_transformers_version():
         )
 
 
+def test_llama_torch_xla():
+    # Check transformers version
+    check_transformers_version()
+
+    # Set up config variables.
+    batch_size: int = 1
+    max_cache_len: int = 128
+    input_prompt: str = "I like taking walks in the"
+    model_name: str = "meta-llama/Llama-3.2-3B"
+
+    # Connect the device and create an xla mesh.
+    device: torch.device = torch_xla.device()
+
+    # Instantiate model and tokenizer
+    model, tokenizer = setup_model_and_tokenizer(model_name)
+
+    # Construct inputs, including static cache
+    input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
+
+    # Limit maximum generation count to fit within preallocated static cache
+    max_tokens_to_generate: int = max_cache_len - input_args["input_ids"].shape[1]
+
+    # Transfer model and inputs to device
+    model, input_args = transfer_to_device(model, input_args, device)
+
+    # Set XLA compilation options
+    options = {
+        "enable_optimizer": OPTIMIZER_ENABLED,
+        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_l1_interleaved": False,
+        "enable_fusing_conv2d_with_multiply_pattern": True,
+    }
+
+    torch_xla.set_custom_compile_options(options)
+
+    # Compile model
+    compiled_model = torch.compile(model, backend="tt")
+
+    # Warmp-up run
+    print("Warming up...")
+    generate_and_benchmark(
+        compiled_model,
+        input_args,
+        tokenizer,
+        device,
+        16,
+    )
+
+    generate_and_benchmark(
+        compiled_model,
+        input_args,
+        tokenizer,
+        device,
+        max_tokens_to_generate,
+    )
+
+
 if __name__ == "__main__":
     # By default torch_xla uses the CPU device so we have to set it to TT device.
     xr.set_device_type("TT")
 
-    llama()
+    test_llama_torch_xla()
