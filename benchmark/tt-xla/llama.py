@@ -2,13 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import json
+import pytest
+
 from llm_benchmark import benchmark_llm_torch_xla
 
 
-def test_llama_3_2_3B():
-    llama_version = "meta-llama/Llama-3.2-3B"
+@pytest.mark.parametrize(
+    "version",
+    [
+        "meta-llama/Llama-3.2-1B",
+    ],
+)
+def test_llama(version, output):
+    """Benchmark LLaMA model with given version.
 
-    return benchmark_llm_torch_xla(
+    Args:
+        version (str): Hugging Face model identifier for LLaMA.
+        output_file (str, optional): Path to save benchmark results as JSON. Defaults to None.
+    """
+    results = benchmark_llm_torch_xla(
         training=False,
         batch_size=1,
         loop_count=1,
@@ -16,35 +29,12 @@ def test_llama_3_2_3B():
         data_format="bfloat16",
         measure_cpu=False,
         input_sequence_length=128,
-        huggingface_id=llama_version,
+        huggingface_id=version,
     )
 
+    if output:
+        results["project"] = "tt-forge/tt-xla"
+        results["model_rawname"] = version
 
-def test_llama_3_2_1B():
-    llama_version = "meta-llama/Llama-3.2-1B"
-
-    return benchmark_llm_torch_xla(
-        training=False,
-        batch_size=1,
-        loop_count=1,
-        task="text-generation",
-        data_format="bfloat16",
-        measure_cpu=False,
-        input_sequence_length=128,
-        huggingface_id=llama_version,
-    )
-
-
-def test_llama_3_1_8B():
-    llama_version = "meta-llama/Llama-3.1-8B"
-
-    return benchmark_llm_torch_xla(
-        training=False,
-        batch_size=1,
-        loop_count=1,
-        task="text-generation",
-        data_format="bfloat16",
-        measure_cpu=False,
-        input_sequence_length=128,
-        huggingface_id=llama_version,
-    )
+        with open(output, "w") as file:
+            json.dump(results, file, indent=2)

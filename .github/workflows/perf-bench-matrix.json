@@ -175,8 +175,9 @@
       },
       {
         "name": "llama_3_2_1B",
-        "pytest": "benchmark/tt-xla/llama.py::test_llama_3_2_1B",
         "pyreq": "pytest transformers torch==2.7.0",
+        "pytest": "benchmark/tt-xla/llama.py::test_llama",
+        "version": "meta-llama/Llama-3.2-1B",
         "skip-ttir-dump": true,
         "skip-ttnn-dump": true,
         "skip-device-perf": true
