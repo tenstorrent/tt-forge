@@ -93,6 +93,9 @@ jobs:
         draft: ${{ inputs.draft || false }}
         branch: ${{ inputs.branch }}
         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+        repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
+        major_version: ${{ steps.set-release-facts.outputs.major_version }}
+        minor_version: ${{ steps.set-release-facts.outputs.minor_version }}
 
     - name: Bump Version
       id: bump-version
@@ -101,23 +104,12 @@ jobs:
         current_release_tag="${{ steps.git-facts.outputs.current_release_tag }}"
         draft="${{ inputs.draft }}"
         repo_short="${{ steps.set-release-facts.outputs.repo_short }}"
+        release_type="${{ steps.git-facts.outputs.release_type }}"
 
         echo "Current release tag: $current_release_tag"
         echo "Release type to bump: $release_type"
 
         # TODO: Copied logic from get-release-branches/action.yml. Should be refactored to share logic eventually
-        release_type="rc"
-
-        set +e
-        check_release_type_stable=$(echo "$current_release_tag" | grep -oP '\d\.\d\.\d$')
-        set -e
-        echo "check_release_type_stable=$check_release_type_stable"
-        if [[ -n "$check_release_type_stable" ]]; then
-        release_type="stable"
-        fi
-        echo "release_type=$release_type"
-
-        # Determine new release tag
 
         if [[ "${{ inputs.draft }}" == "false" ]]; then
             if [[ "$release_type" == "rc" ]]; then

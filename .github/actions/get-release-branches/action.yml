@@ -67,30 +67,22 @@ runs:
         echo "Selected release branches: $release_branches"
 
 
+        wget -q https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/${{ github.head_ref || github.ref_name }}/.github/scripts/git_facts.sh
+        chmod +x git_facts.sh
+
         for branch in $release_branches; do
 
-          wget -q https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/${{ github.head_ref || github.ref_name }}/.github/scripts/git_facts.sh
-          chmod +x git_facts.sh
-          export branch=$branch
+          echo "Getting git facts for branch: $branch"
+          export BRANCH="${branch}"
+          export REPO_SHORT="${{ inputs.repo_short }}"
+          export MAJOR="$( echo "$branch" | grep -oP '(?<=release-)\d+')"
+          export MINOR="$( echo "$branch" | grep -oP '(?<=\.)\d+$')"
           source ./git_facts.sh
 
           if [[ "${{ inputs.ignore_update_check }}" == "false" && "$current_release_tag_commit" == "$latest_branch_commit" ]]; then
             echo "Branch $branch has no new commits"
             continue
           fi
-
-          release_type="rc"
-
-          set +e
-          check_release_type_stable=$(echo "$current_release_tag" | grep -oP '\d\.\d\.\d$')
-          set -e
-          echo "check_release_type_stable=$check_release_type_stable"
-          if [[ -n "$check_release_type_stable" ]]; then
-            release_type="stable"
-          fi
-          echo "release_type=$release_type"
-
-          # Determine new release tag
 
           if [[ "${{ inputs.ignore_update_check }}" == "false" ]]; then
             if [[ "${{ inputs.draft }}" == "false" ]]; then

@@ -23,6 +23,10 @@ inputs:
     description: "Wait only for run url"
     required: false
     default: false
+  watch_interval:
+    description: "Interval to watch for workflow run"
+    required: false
+    default: 60
 
 outputs:
   run_head_sha:
@@ -80,3 +84,4 @@ runs:
         branch: ${{ steps.trigger-workflow.outputs.branch }}
         parent_run_id: ${{ steps.trigger-workflow.outputs.parent_run_id }}
         wait_for_run_url: ${{ inputs.wait_for_run_url }}
+        watch_interval: ${{ inputs.watch_interval }}
