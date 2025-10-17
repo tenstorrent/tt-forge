@@ -172,6 +172,14 @@
         "skip-ttir-dump": true,
         "skip-ttnn-dump": true,
         "skip-device-perf": true
+      },
+      {
+        "name": "llama_3_2_1B",
+        "pytest": "benchmarks/tt-xla/llama.py::test_llama_3_2_1B",
+        "pyreq": "pytest transformers torch==2.7.0",
+        "skip-ttir-dump": true,
+        "skip-ttnn-dump": true,
+        "skip-device-perf": true
       }
     ]
   }
