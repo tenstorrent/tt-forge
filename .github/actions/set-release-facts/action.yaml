@@ -54,9 +54,6 @@ outputs:
   pip_wheel_deps_names:
     description: "Names of pip wheel dependencies"
     value: ${{ steps.set-manifest.outputs.pip_wheel_deps_names }}
-  skip_wheel_install:
-    description: "Skip wheel install"
-    value: ${{ steps.set-manifest.outputs.skip_wheel_install }}
   all_repos:
     description: "All repos that are allowed to release"
     value: ${{ steps.set-manifest.outputs.all_repos }}
@@ -87,9 +84,6 @@ outputs:
   draft:
     description: "Draft release"
     value: ${{ steps.set-manifest.outputs.draft }}
-  event_name:
-    description: "Event name"
-    value: ${{ steps.set-manifest.outputs.event_name }}
   make_latest:
     description: "Make release latest"
     value: ${{ steps.set-manifest.outputs.make_latest }}
@@ -99,9 +93,6 @@ outputs:
   skip_model_compatible_table:
     description: "Skip model compatible table"
     value: ${{ steps.set-manifest.outputs.skip_model_compatible_table }}
-  ignore_docker_instructions:
-    description: "Ignore docker instructions"
-    value: ${{ steps.set-manifest.outputs.ignore_docker_instructions }}
   skip_docker_build:
     description: "Skip docker build"
     value: ${{ steps.set-manifest.outputs.skip_docker_build }}
@@ -143,32 +134,53 @@ runs:
 
         # All Repo Defaults
 
-        skip_wheel_install="false"
+        # Repository name from input parameter
         repo="${{ inputs.repo }}"
+        # Repository name without the "tenstorrent/" prefix
         repo_short="${repo#tenstorrent/}"
+        # Full repository name with "tenstorrent/" prefix
         repo_full="tenstorrent/${repo_short}"
         # List of all repos that are allowed to release. Make sure to update the conditional below
         all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-mlir tenstorrent/tt-xla tenstorrent/tt-forge'
+        # Allow workflow failures when finding build workflows
         workflow_allow_failed="false"
+        # Branch to search for build workflows
         build_release_find_workflow_branch="${{ inputs.branch }}"
+        # Latest commit on the branch for build releases
         build_release_latest_branch_commit="${{ inputs.latest_branch_commit }}"
+        # Tag to use for build releases
         build_release_tag="${{ inputs.new_version_tag }}"
+        # This is a prerelease (true for RC/nightly, false for stable)
         prerelease="true"
+        # This is a draft release
         draft="${{ inputs.draft }}"
-        event_name="${{ github.event_name }}"
+        # Mark this release as the latest
         make_latest="false"
+        # Major version number from .version file
         major_version=$MAJOR
+        # Minor version number from .version file
         minor_version=$MINOR
+        # Ignore artifact processing in releases
         ignore_artifacts="false"
+        # Skip generating model compatibility table
         skip_model_compatible_table="false"
+        # Skip Docker build steps
         skip_docker_build="false"
+        # Fail on git log errors during changelog generation
         git_log_fail_on_error="true"
+        # Filter for which demo tests to run (empty = all)
         test_demo_filter=""
+        # Run performance tests
         test_perf="false"
+        # Run performance tests with shared CIv2 runner
         test_perf_sh_runner="false"
+        # Filter for which performance tests to run (empty = all)
         test_perf_filter=""
+        # Wait for demo tests to complete
         test_demo_wait="false"
+        # Python version to use for builds and tests
         python_version="3.11"
+        # Filter for which test runners to use for basic tests
         basic_tests_runner_filter="All"
 
         # Tag & Release Defaults
@@ -218,14 +230,12 @@ runs:
             fi
             artifact_download_glob='*{xla-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
-            docker_build_file=".github/Dockerfile.single-wheel-slim-3.11"
             test_perf="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             workflow="Daily Releaser"
             ignore_artifacts="true"
             pip_wheel_deps_names="pjrt-plugin-tt tt-forge-fe"
             pip_wheel_names="tt-forge"
-            skip_wheel_install="true"
             skip_model_compatible_table="true"
             test_perf="true"
         fi
@@ -280,7 +290,6 @@ runs:
         echo "## Set Release Facts Outputs ##"
         echo "workflow=$workflow"
         echo "ignore_artifacts=$ignore_artifacts"
-        echo "event_name=$event_name"
         echo "artifact_download_glob=$artifact_download_glob"
         echo "artifact_cleanup_file_glob=$artifact_cleanup_file_glob"
         echo "workflow_result_in_job=$workflow_result_in_job"
@@ -294,7 +303,6 @@ runs:
         echo "repo=$repo"
         echo "pip_wheel_names=$pip_wheel_names"
         echo "pip_wheel_deps_names=$pip_wheel_deps_names"
-        echo "skip_wheel_install=$skip_wheel_install"
         echo "all_repos=$all_repos"
         echo "build_release_tag=$build_release_tag"
         echo "build_release_find_workflow_branch=$build_release_find_workflow_branch"
@@ -305,7 +313,6 @@ runs:
         echo "draft=$draft"
         echo "make_latest=$make_latest"
         echo "skip_model_compatible_table=$skip_model_compatible_table"
-        echo "ignore_docker_instructions=$ignore_docker_instructions"
         echo "skip_docker_build=$skip_docker_build"
         echo "git_log_fail_on_error=$git_log_fail_on_error"
         echo "test_demo_filter=$test_demo_filter"
@@ -319,7 +326,6 @@ runs:
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
         echo "ignore_artifacts=$ignore_artifacts" >> $GITHUB_OUTPUT
-        echo "event_name=$event_name" >> $GITHUB_OUTPUT
         echo "artifact_download_glob=$artifact_download_glob" >> $GITHUB_OUTPUT
         echo "artifact_cleanup_file_glob=$artifact_cleanup_file_glob" >> $GITHUB_OUTPUT
         echo "artifact_cleanup_folder_glob=$artifact_cleanup_folder_glob" >> $GITHUB_OUTPUT
@@ -330,7 +336,6 @@ runs:
         echo "gh_new_version_tag=$gh_new_version_tag" >> $GITHUB_OUTPUT
         echo "pip_wheel_names=$pip_wheel_names" >> $GITHUB_OUTPUT
         echo "pip_wheel_deps_names=$pip_wheel_deps_names" >> $GITHUB_OUTPUT
-        echo "skip_wheel_install=$skip_wheel_install" >> $GITHUB_OUTPUT
         echo "all_repos=$all_repos" >> $GITHUB_OUTPUT
         echo "build_release_tag=$build_release_tag" >> $GITHUB_OUTPUT
         echo "build_release_find_workflow_branch=$build_release_find_workflow_branch" >> $GITHUB_OUTPUT
@@ -343,7 +348,6 @@ runs:
         echo "build_release_latest_branch_commit=$build_release_latest_branch_commit" >> $GITHUB_OUTPUT
         echo "make_latest=$make_latest" >> $GITHUB_OUTPUT
         echo "skip_model_compatible_table=$skip_model_compatible_table" >> $GITHUB_OUTPUT
-        echo "ignore_docker_instructions=$ignore_docker_instructions" >> $GITHUB_OUTPUT
         echo "skip_docker_build=$skip_docker_build" >> $GITHUB_OUTPUT
         echo "git_log_fail_on_error=$git_log_fail_on_error" >> $GITHUB_OUTPUT
         echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
