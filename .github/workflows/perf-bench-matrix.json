@@ -135,6 +135,7 @@
       },
       {
         "name": "vovnet",
+        "bs": 8,
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
       },
       {
