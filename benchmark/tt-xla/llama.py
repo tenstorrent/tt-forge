@@ -8,13 +8,7 @@ import pytest
 from llm_benchmark import benchmark_llm_torch_xla
 
 
-@pytest.mark.parametrize(
-    "version",
-    [
-        "meta-llama/Llama-3.2-1B",
-    ],
-)
-def test_llama(version, output):
+def llm_benchmark(model_loader, output):
     """Benchmark LLaMA model with given version.
 
     Args:
@@ -29,12 +23,28 @@ def test_llama(version, output):
         data_format="bfloat16",
         measure_cpu=False,
         input_sequence_length=128,
-        huggingface_id=version,
+        model_loader=model_loader,
     )
 
     if output:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = version
+        results["model_rawname"] = model_loader.get_model_info().name
 
         with open(output, "w") as file:
             json.dump(results, file, indent=2)
+
+
+def test_llama(variant, output):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import (
+        ModelLoader as LLamaLoader,
+        ModelVariant as LLamaVariant,
+    )
+
+    if variant is None:
+        raise ValueError("Model variant must be specified with --variant <variant_name>")
+
+    if LLamaVariant(variant) not in LLamaLoader.query_available_variants():
+        raise ValueError(f"Variant {variant} is not available for LLaMA model.")
+
+    model_loader = LLamaLoader(variant=LLamaVariant(variant))
+    llm_benchmark(model_loader, output)
