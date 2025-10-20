@@ -47,10 +47,7 @@ if PROGRAM_CACHE_ENABLED:
 DEFAULT_INPUT_PROMPT = "I like taking walks in the"
 
 
-# TODO Switch to tt-forge-models when available
-def setup_model_and_tokenizer(
-    model_name: str,
-) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
+def setup_model_and_tokenizer(model_loader) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
     """
     Instantiate model and tokenizer.
 
@@ -60,13 +57,11 @@ def setup_model_and_tokenizer(
     Returns:
         Tuple of (model, tokenizer)
     """
-    model: torch.nn.Module = AutoModelForCausalLM.from_pretrained(
-        model_name, torch_dtype=torch.bfloat16, use_cache=True
-    )
-    model = model.eval()
+    print(f"Loading model {model_loader.get_model_info().name}...")
 
-    tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.pad_token = tokenizer.eos_token
+    model = model_loader.load_model(dtype_override=torch.bfloat16)
+    model = model.eval()
+    tokenizer = model_loader.tokenizer
 
     return model, tokenizer
 
@@ -225,7 +220,7 @@ def check_transformers_version():
 
 
 def benchmark_llm_torch_xla(
-    training, batch_size, loop_count, task, data_format, measure_cpu, input_sequence_length, huggingface_id
+    training, batch_size, loop_count, task, data_format, measure_cpu, input_sequence_length, model_loader
 ):
     """
     This function creates an LLM based model using PyTorch and torch-xla.
@@ -241,8 +236,8 @@ def benchmark_llm_torch_xla(
             f"Only bfloat16 data format is supported for llm benchmark. Got: {data_format}. " "Please use -df bfloat16"
         )
 
-    if not huggingface_id:
-        raise ValueError("HuggingFace id must be specified for benchmark. ")
+    if not model_loader:
+        raise ValueError("Model loader must be specified for benchmark. ")
 
     if loop_count != 1:
         raise ValueError(
@@ -273,7 +268,7 @@ def benchmark_llm_torch_xla(
     device: torch.device = xm.xla_device()
 
     # Instantiate model and tokenizer
-    model, tokenizer = setup_model_and_tokenizer(huggingface_id)
+    model, tokenizer = setup_model_and_tokenizer(model_loader)
 
     # Construct inputs, including static cache
     input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
@@ -368,7 +363,7 @@ def benchmark_llm_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = f"{huggingface_id} Torch-XLA"
+    full_model_name = model_loader.get_model_info().name
     model_type = "text-generation"
     dataset_name = "Random Data"
 
@@ -423,7 +418,7 @@ def benchmark_llm_torch_xla(
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
-        model_info=huggingface_id,
+        model_info=full_model_name,
         torch_xla_enabled=True,
         backend="tt",
         device_name=socket.gethostname(),
