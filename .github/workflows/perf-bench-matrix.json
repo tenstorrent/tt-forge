@@ -53,7 +53,8 @@
       {
         "name": "vit",
         "dir": "ViTBase",
-        "ts": "classification"
+        "ts": "classification",
+        "bs": 8
       },
       {
         "name": "vovnet",
