@@ -254,6 +254,7 @@ jobs:
         with:
           repository: 'tenstorrent/tt-forge'
           fetch-depth: 1
+          ref: ${{ inputs.ref || github.ref }}
       - name: Trigger produce_data.yml
         uses: ./.github/actions/trigger-workflow
         env:
