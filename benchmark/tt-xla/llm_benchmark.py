@@ -34,17 +34,13 @@ from utils import (
 os.environ["PJRT_DEVICE"] = "TT"
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
-# Common constants
-OPTIMIZER_ENABLED = False
 PROGRAM_CACHE_ENABLED = True
-MEMORY_LAYOUT_ANALYSIS_ENABLED = False
-TRACE_ENABLED = False
 
 if PROGRAM_CACHE_ENABLED:
     os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 # Default input prompt
-DEFAULT_INPUT_PROMPT = "I like taking walks in the"
+DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
 
 
 def setup_model_and_tokenizer(model_loader) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
@@ -89,6 +85,7 @@ def construct_inputs(
     inputs = tokenizer.encode_plus(
         input_prompt,
         return_tensors="pt",
+        max_length=max_cache_len,
         truncation=True,
     )
 
@@ -220,7 +217,17 @@ def check_transformers_version():
 
 
 def benchmark_llm_torch_xla(
-    training, batch_size, loop_count, task, data_format, measure_cpu, input_sequence_length, model_loader
+    model_loader,
+    optimizer_enabled,
+    memory_layout_analysis,
+    trace_enabled,
+    training,
+    batch_size,
+    loop_count,
+    task,
+    data_format,
+    measure_cpu,
+    input_sequence_length,
 ):
     """
     This function creates an LLM based model using PyTorch and torch-xla.
@@ -316,8 +323,8 @@ def benchmark_llm_torch_xla(
 
     # Set XLA compilation options
     options = {
-        "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
+        "enable_optimizer": optimizer_enabled,
+        "enable_memory_layout_analysis": memory_layout_analysis,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
     }
@@ -353,6 +360,9 @@ def benchmark_llm_torch_xla(
         max_tokens_to_generate,
         verbose=True,
     )
+
+    if len(iteration_times) < 10:
+        raise RuntimeError("LLM benchmark failed: insufficient number of iterations completed.")
 
     total_time_ns = sum(iteration_times)
     total_time = total_time_ns / 1e9
@@ -414,10 +424,10 @@ def benchmark_llm_torch_xla(
         total_samples=total_tokens,
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
-        optimizer_enabled=OPTIMIZER_ENABLED,
+        optimizer_enabled=optimizer_enabled,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
-        memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
-        trace_enabled=TRACE_ENABLED,
+        memory_layout_analysis_enabled=memory_layout_analysis,
+        trace_enabled=trace_enabled,
         model_info=full_model_name,
         torch_xla_enabled=True,
         backend="tt",
