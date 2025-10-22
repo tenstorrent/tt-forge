@@ -283,16 +283,16 @@ jobs:
           export PYTHONPATH="$(pwd):${PYTHONPATH}"
           pytest -svv "${{ matrix.build.pytest }}" \
             --variant ${{ matrix.build.variant }} \
-            --output=${{ steps.strings.outputs.perf_report_json_file }} \
-            ${{ matrix.build.model_config.optimizer_enabled && format('--optimizer-enabled {0}', matrix.build.model_config.optimizer_enabled) }} \
-            ${{ matrix.build.model_config.memory_layout_analysis && format('--memory-layout-analysis {0}', matrix.build.model_config.memory_layout_analysis) }} \
-            ${{ matrix.build.model_config.trace_enabled && format('--trace-enabled {0}', matrix.build.model_config.trace_enabled) }} \
-            ${{ matrix.build.model_config.batch_size && format('--batch-size {0}', matrix.build.model_config.batch_size) }} \
-            ${{ matrix.build.model_config.loop_count && format('--loop-count {0}', matrix.build.model_config.loop_count) }} \
-            ${{ matrix.build.model_config.input_sequence_length && format('--input-sequence-length {0}', matrix.build.model_config.input_sequence_length) }} \
-            ${{ matrix.build.model_config.data_format && format('--data-format {0}', matrix.build.model_config.data_format) }} \
-            ${{ matrix.build.model_config.measure_cpu && format('--measure-cpu {0}', matrix.build.model_config.measure_cpu) }} \
-            ${{ matrix.build.model_config.task && format('--task {0}', matrix.build.model_config.task) }}
+            --output=${{ steps.strings.outputs.perf_report_json_file }}
+            # ${{ matrix.build.model_config.optimizer_enabled && format('--optimizer-enabled {0}', matrix.build.model_config.optimizer_enabled) }} \
+            # ${{ matrix.build.model_config.memory_layout_analysis && format('--memory-layout-analysis {0}', matrix.build.model_config.memory_layout_analysis) }} \
+            # ${{ matrix.build.model_config.trace_enabled && format('--trace-enabled {0}', matrix.build.model_config.trace_enabled) }} \
+            # ${{ matrix.build.model_config.batch_size && format('--batch-size {0}', matrix.build.model_config.batch_size) }} \
+            # ${{ matrix.build.model_config.loop_count && format('--loop-count {0}', matrix.build.model_config.loop_count) }} \
+            # ${{ matrix.build.model_config.input_sequence_length && format('--input-sequence-length {0}', matrix.build.model_config.input_sequence_length) }} \
+            # ${{ matrix.build.model_config.data_format && format('--data-format {0}', matrix.build.model_config.data_format) }} \
+            # ${{ matrix.build.model_config.measure_cpu && format('--measure-cpu {0}', matrix.build.model_config.measure_cpu) }} \
+            # ${{ matrix.build.model_config.task && format('--task {0}', matrix.build.model_config.task) }}
         fi
 
     - name: Dump ttir and ttnn to report
