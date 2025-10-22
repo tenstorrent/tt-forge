@@ -274,7 +274,28 @@ jobs:
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
-        python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
+
+        if [ -z "${{ matrix.build.pytest }}" ]; then
+          # Run with legacy benchmark script
+          python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
+        else
+          # Run with pytest
+          export PYTHONPATH="$(pwd):${PYTHONPATH}"
+
+          # Build optional arguments
+          PYTEST_OPTS=""
+          [ -n "${{ matrix.build.model_config.optimizer_enabled }}" ] && PYTEST_OPTS="$PYTEST_OPTS --optimizer-enabled ${{ matrix.build.model_config.optimizer_enabled }}"
+          [ -n "${{ matrix.build.model_config.memory_layout_analysis }}" ] && PYTEST_OPTS="$PYTEST_OPTS --memory-layout-analysis ${{ matrix.build.model_config.memory_layout_analysis }}"
+          [ -n "${{ matrix.build.model_config.trace_enabled }}" ] && PYTEST_OPTS="$PYTEST_OPTS --trace-enabled ${{ matrix.build.model_config.trace_enabled }}"
+          [ -n "${{ matrix.build.model_config.batch_size }}" ] && PYTEST_OPTS="$PYTEST_OPTS --batch-size ${{ matrix.build.model_config.batch_size }}"
+          [ -n "${{ matrix.build.model_config.loop_count }}" ] && PYTEST_OPTS="$PYTEST_OPTS --loop-count ${{ matrix.build.model_config.loop_count }}"
+          [ -n "${{ matrix.build.model_config.input_sequence_length }}" ] && PYTEST_OPTS="$PYTEST_OPTS --input-sequence-length ${{ matrix.build.model_config.input_sequence_length }}"
+          [ -n "${{ matrix.build.model_config.data_format }}" ] && PYTEST_OPTS="$PYTEST_OPTS --data-format ${{ matrix.build.model_config.data_format }}"
+          [ -n "${{ matrix.build.model_config.measure_cpu }}" ] && PYTEST_OPTS="$PYTEST_OPTS --measure-cpu ${{ matrix.build.model_config.measure_cpu }}"
+          [ -n "${{ matrix.build.model_config.task }}" ] && PYTEST_OPTS="$PYTEST_OPTS --task ${{ matrix.build.model_config.task }}"
+
+          pytest -svv "${{ matrix.build.pytest }}" --variant ${{ matrix.build.variant }} --output=${{ steps.strings.outputs.perf_report_json_file }} $PYTEST_OPTS
+        fi
 
     - name: Dump ttir and ttnn to report
       if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
