@@ -35,6 +35,7 @@ os.environ["PJRT_DEVICE"] = "TT"
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 PROGRAM_CACHE_ENABLED = True
+MIN_STEPS = 16
 
 if PROGRAM_CACHE_ENABLED:
     os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
@@ -112,15 +113,14 @@ def construct_inputs(
 
 def transfer_to_device(input_args: dict, device: torch.device) -> tuple[torch.nn.Module, dict]:
     """
-    Transfer model and inputs to device.
+    Transfer inputs to device.
 
     Args:
-        model: Model instance
         input_args: Input arguments dictionary
         device: Target device
 
     Returns:
-        Tuple of (model, input_args) on device
+        Tuple input_args on device
     """
     input_args["past_key_values"].key_cache = [k.to(device) for k in input_args["past_key_values"].key_cache]
     input_args["past_key_values"].value_cache = [v.to(device) for v in input_args["past_key_values"].value_cache]
@@ -299,7 +299,7 @@ def benchmark_llm_torch_xla(
         print("Measuring CPU performance...")
         # Measure CPU performance by taking the best of each token over 256 iterations
         min_time_ns = sys.maxsize
-        for i in range(16):
+        for i in range(MIN_STEPS):
             input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
             _, iteration_times = generate_and_benchmark(
                 model,
@@ -336,7 +336,7 @@ def benchmark_llm_torch_xla(
 
     # Warmup run
     print("Warming up...")
-    warmup_tokens = min(16, max_tokens_to_generate)
+    warmup_tokens = min(MIN_STEPS, max_tokens_to_generate)
     _, _ = generate_and_benchmark(
         compiled_model,
         input_args,
