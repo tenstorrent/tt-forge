@@ -176,7 +176,7 @@
       {
         "name": "llama_3_2_1b_instruct",
         "variant": "llama_3_2_1b_instruct",
-        "pyreq": "pytest transformers torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader",
@@ -189,7 +189,7 @@
       {
         "name": "llama_3_2_3b_instruct",
         "variant": "llama_3_2_3b_instruct",
-        "pyreq": "pytest transformers torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader",
@@ -202,7 +202,7 @@
       {
         "name": "microsoft_phi-1",
         "variant": "microsoft/phi-1",
-        "pyreq": "pytest transformers torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.phi1.causal_lm.pytorch.loader",
@@ -215,7 +215,7 @@
       {
         "name": "microsoft_phi-1_5",
         "variant": "microsoft/phi-1_5",
-        "pyreq": "pytest transformers torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader",
@@ -228,7 +228,7 @@
       {
         "name": "microsoft_phi-2",
         "variant": "microsoft/phi-2",
-        "pyreq": "pytest transformers torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.phi2.causal_lm.pytorch.loader",
@@ -241,7 +241,7 @@
       {
         "name": "google_gemma-1.1-2b-it",
         "variant": "google/gemma-1.1-2b-it",
-        "pyreq": "pytest transformers torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
@@ -254,7 +254,7 @@
       {
         "name": "google_gemma-2-2b-it",
         "variant": "google/gemma-2-2b-it",
-        "pyreq": "pytest transformers torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
