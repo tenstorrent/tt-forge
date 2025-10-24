@@ -19,6 +19,7 @@ def serialize_modules(output_prefix: str, cache_dir: str) -> None:
     {output_prefix}.ttnn.
 
     """
+    return
     parse_compiled_artifacts_from_cache_to_disk(cache_dir, output_prefix)
 
 
