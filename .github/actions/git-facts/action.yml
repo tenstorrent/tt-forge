@@ -18,6 +18,18 @@ inputs:
     description: "GitHub token"
     required: true
     type: string
+  repo_short:
+    description: "Repo short name"
+    required: true
+    type: string
+  major_version:
+    description: "Major version"
+    required: true
+    type: string
+  minor_version:
+    description: "Minor version"
+    required: true
+    type: string
 
 
 
@@ -34,6 +46,9 @@ outputs:
   release_tag_equals_latest_commit:
     description: "Release tag equals latest commit"
     value: ${{ steps.get-git-facts.outputs.release_tag_equals_latest_commit }}
+  release_type:
+    description: "Release type"
+    value: ${{ steps.get-git-facts.outputs.release_type }}
 
 runs:
   using: "composite"
@@ -52,7 +67,10 @@ runs:
       shell: bash
       run: |
         set -e
-        export branch=${{ inputs.branch }}
+        export BRANCH="${{ inputs.branch }}"
+        export REPO_SHORT="${{ inputs.repo_short }}"
+        export MAJOR="${{ inputs.major_version }}"
+        export MINOR="${{ inputs.minor_version }}"
         wget -q https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/${{ github.head_ref || github.ref_name }}/.github/scripts/git_facts.sh
         chmod +x git_facts.sh
         # Call twice for GHA workflow logs and to store in github output

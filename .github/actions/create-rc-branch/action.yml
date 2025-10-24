@@ -1,7 +1,5 @@
-
-
-name: "Create RC branch"
-description: "Create RC branch"
+name: "Create Release Branch"
+description: "Create Release Branch"
 inputs:
   repo:
     description: "Repo name"
@@ -55,15 +53,9 @@ outputs:
   branch_name:
     description: "Branch name"
     value: ${{ steps.create-rc-branch.outputs.branch_name }}
-  tag_name:
-    description: "Tag name"
-    value: ${{ steps.create-rc-branch.outputs.tag_name }}
-  latest_branch_commit:
-    description: "Latest branch commit"
-    value: ${{ steps.get-release-branch.outputs.latest_branch_commit }}
-  current_release_tag_commit:
-    description: "Current release tag commit"
-    value: ${{ steps.get-release-branch.outputs.current_release_tag_commit }}
+  new_version_tag:
+    description: "New version tag"
+    value: ${{ steps.create-rc-branch.outputs.new_version_tag }}
   branch_exists:
     description: "Branch exists"
     value: ${{ steps.get-release-branch.outputs.branch_exists }}
@@ -86,14 +78,14 @@ runs:
             tag_prefix="draft.${{ inputs.draft_slug_name }}.${tag_prefix}"
         fi
 
-        tag_name="${tag_prefix}rc1"
+        new_version_tag="${tag_prefix}rc1"
         branch_name="${branch_prefix}-${{ inputs.major_version }}.${{ inputs.minor_version }}"
 
         echo "branch_name=$branch_name"
-        echo "tag_name=$tag_name"
+        echo "new_version_tag=$new_version_tag"
 
         echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
-        echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+        echo "new_version_tag=$new_version_tag" >> $GITHUB_OUTPUT
 
     - name: Find workflow candidate
       id: find_workflow
@@ -123,13 +115,9 @@ runs:
       shell: bash
       id: get-release-branch
       run: |
-        # Create the release branch and add the starter tag
-
-        # Set export commit sha and branch for git_facts.sh
-        export branch="${{ steps.create-rc-branch.outputs.branch_name }}"
-        tag_name="${{ steps.create-rc-branch.outputs.tag_name }}"
+        # Create the release branch and check if it exists
         branch_exists=false
-
+        branch="${{ steps.create-rc-branch.outputs.branch_name }}"
 
         check_branch=$(git ls-remote origin $branch)
 
@@ -141,14 +129,8 @@ runs:
             branch_exists=true
         fi
 
-        wget -q https://raw.githubusercontent.com/tenstorrent/tt-forge/refs/heads/${{ github.head_ref || github.ref_name }}/.github/scripts/git_facts.sh
-        chmod +x git_facts.sh
-        # Call twice for GHA workflow logs and to store in github output
-        ./git_facts.sh
         echo "branch_exists=$branch_exists"
-        echo "tag_name=$tag_name"
         echo "branch_exists=$branch_exists" >> $GITHUB_OUTPUT
-        ./git_facts.sh >> $GITHUB_OUTPUT
 
 
     # Recheckout forge repo to fix side effects for clean up job
