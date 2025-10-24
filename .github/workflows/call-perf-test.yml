@@ -208,8 +208,7 @@ jobs:
       uses: dawidd6/action-download-artifact@v11
       with:
         run_id: ${{ steps.find-run.outputs.run_id }}
-        name: "(ttrt-whl|install-artifacts)-tracy"
-        name_is_regexp: true
+        name: "ttrt-whl-tracy"
         repo: tenstorrent/tt-mlir
         check_artifacts: true
         path: ./
@@ -224,11 +223,6 @@ jobs:
         mv ttrt-whl-tracy.zip ttrt-whl-tracy/ttrt-whl-tracy.zip
         unzip -q ttrt-whl-tracy/ttrt-whl-tracy.zip -d ttrt-whl-tracy
 
-        echo "Extracting install artifacts"
-        mkdir install-artifacts-tracy
-        mv install-artifacts-tracy.zip install-artifacts-tracy/install-artifacts-tracy.zip
-        unzip -q install-artifacts-tracy/install-artifacts-tracy.zip -d install-artifacts-tracy
-
     - name: Install ttrt
       shell: bash
       if: ${{ !matrix.build.skip-device-perf }}
@@ -241,15 +235,6 @@ jobs:
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
         pip install ttrt-whl-tracy/ttrt*.whl --upgrade
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-
-    - name: Untar ttmlir install directory
-      if: ${{ !matrix.build.skip-device-perf }}
-      shell: bash
-      run: |
-        mv install-artifacts-tracy/ install/
-        cd install
-        tar xvf artifact.tar
-        cd ..
 
     - name: Run Perf Benchmark
       shell: bash
