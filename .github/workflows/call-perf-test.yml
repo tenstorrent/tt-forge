@@ -301,6 +301,43 @@ jobs:
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
         fi
 
+    - name: Analyze sharded ops in TTNN MLIR
+      if: ${{ !matrix.build.skip-ttnn-dump }}
+      shell: bash
+      run: |
+        TTNN_MLIR_PATH="${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir"
+        PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_json_file }}"
+
+        if [ -f "$TTNN_MLIR_PATH" ]; then
+          echo "Analyzing sharded ops in $TTNN_MLIR_PATH"
+
+          # Run analyze_sharded_ops.py (non-verbose mode by default)
+          ANALYSIS_OUTPUT=$(python3 benchmark/analyze_sharded_ops.py "$TTNN_MLIR_PATH" 2>&1 | tee /dev/stderr)
+
+          # Extract the three key metrics from the summary output
+          TOTAL_OPS=$(echo "$ANALYSIS_OUTPUT" | grep "Total number of TTNN operations with tensor outputs:" | grep -oP '\d+$')
+          SYSTEM_MEMORY_OPS=$(echo "$ANALYSIS_OUTPUT" | grep "Number of operations with system_memory output:" | grep -oP '\d+$')
+          EFFECTIVELY_SHARDED_PCT=$(echo "$ANALYSIS_OUTPUT" | grep "Percentage of TTNN operations effectively sharded:" | grep -oP '\d+\.\d+')
+
+          echo "Extracted metrics:"
+          echo "  total_ops: $TOTAL_OPS"
+          echo "  system_memory_ops: $SYSTEM_MEMORY_OPS"
+          echo "  effectively_sharded_percentage: $EFFECTIVELY_SHARDED_PCT"
+
+          # Add the metrics to the perf report using extend_result_config.py
+          if [ -n "$TOTAL_OPS" ] && [ -n "$SYSTEM_MEMORY_OPS" ] && [ -n "$EFFECTIVELY_SHARDED_PCT" ]; then
+            python benchmark/extend_result_config.py "$PERF_REPORT_FILE" \
+              --config-field "total_ops" "$TOTAL_OPS" \
+              --config-field "system_memory_ops" "$SYSTEM_MEMORY_OPS" \
+              --config-field "effectively_sharded_percentage" "$EFFECTIVELY_SHARDED_PCT"
+            echo "Successfully added sharding metrics to perf report"
+          else
+            echo "Warning: Could not extract all sharding metrics"
+          fi
+        else
+          echo "Warning: TTNN MLIR file not found at $TTNN_MLIR_PATH"
+        fi
+
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
       uses: actions/upload-artifact@v4
