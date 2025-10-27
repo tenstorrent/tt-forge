@@ -148,6 +148,8 @@ def test_resnet_torch_xla(
                 golden_output = golden_output.logits
 
     options = {
+        "export_path": "model",
+        "backend": "codegen_py",
         "enable_optimizer": OPTIMIZER_ENABLED,
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
