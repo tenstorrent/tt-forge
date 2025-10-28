@@ -215,7 +215,7 @@ jobs:
       repo: ${{ matrix.repo }}
       draft: true
       draft_slug_name: ${{ matrix.repo_short }}
-      workflow_allow_failed: false
+      workflow_allow_failed: true
       workflow: 'Mock Successful'
       commit: ${{ needs.mock-successful-workflow-pre-release-branch.outputs.run_head_sha }}
       ignore_artifacts: true
@@ -296,6 +296,7 @@ jobs:
       draft: true
       repo: ${{ matrix.repo }}
       overwrite_releases: false
+      workflow_allow_failed: true
 
   second-commit-successful-pre-release-branch:
     needs:
@@ -346,6 +347,7 @@ jobs:
       draft: true
       repo: ${{ matrix.repo }}
       branch: ${{ matrix.branch }}
+      workflow_allow_failed: true
 
   promote-stable:
     needs:
@@ -363,6 +365,7 @@ jobs:
       draft: true
       repo: ${{ matrix.repo }}
       release_branch: ${{ matrix.branch }}
+      workflow_allow_failed: true
 
   first-commit-successful-stable-branch:
     needs:
@@ -413,6 +416,7 @@ jobs:
       draft: true
       repo: ${{ matrix.repo }}
       overwrite_releases: false
+      workflow_allow_failed: true
 
   second-commit-successful-stable-branch:
     needs:
@@ -463,6 +467,7 @@ jobs:
       draft: true
       repo: ${{ matrix.repo }}
       branch: ${{ matrix.branch }}
+      workflow_allow_failed: true
 
 
   validate-draft-artifacts:

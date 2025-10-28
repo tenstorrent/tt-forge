@@ -214,11 +214,7 @@ runs:
             pip_wheel_names="tt_forge_fe tt_tvm"
             test_perf="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
-            # NOTE: no nightly job current for tt-mlir keeping this here for future use
-            workflow="On push"
-            if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
-                workflow="On push"
-            fi
+            workflow="schedule-nightly.yml"
             artifact_download_glob='*ttmlir-wheel*'
             pip_wheel_names="ttmlir"
             skip_model_compatible_table="true"
