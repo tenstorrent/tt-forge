@@ -215,7 +215,7 @@ jobs:
       repo: ${{ matrix.repo }}
       draft: true
       draft_slug_name: ${{ matrix.repo_short }}
-      workflow_allow_failed: false
+      workflow_allow_failed: true
       workflow: 'Mock Successful'
       commit: ${{ needs.mock-successful-workflow-pre-release-branch.outputs.run_head_sha }}
       ignore_artifacts: true
