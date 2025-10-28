@@ -80,6 +80,13 @@ def test_llm(
         measure_cpu: Measure CPU FPS (overrides config)
         task: Task type (overrides config)
     """
+
+    print("\n")
+    print("-------------------------------------------------------")
+    print(f"variant: {variant}")
+    print("-------------------------------------------------------")
+    print("\n")
+
     if variant is None:
         raise ValueError("Model variant must be specified with --variant <variant_name>")
 
@@ -87,10 +94,22 @@ def test_llm(
     if not variant_config:
         raise ValueError(f"Variant {variant} is not available in LLM_MODEL_CONFIGS.")
 
+    print("\n")
+    print("-------------------------------------------------------")
+    print(f"variant config: {variant_config}")
+    print("-------------------------------------------------------")
+    print("\n")
+
     module_path = variant_config["model_loader_module"]
     model_loader_module = __import__(module_path, fromlist=["ModelLoader", "ModelVariant"])
     ModelLoader = model_loader_module.ModelLoader
     ModelVariant = model_loader_module.ModelVariant
+
+    print("\n")
+    print("-------------------------------------------------------")
+    print(f"variant model: {ModelVariant}")
+    print("-------------------------------------------------------")
+    print("\n")
 
     if ModelVariant(variant) not in ModelLoader.query_available_variants():
         raise ValueError(f"Variant {variant} is not available for the specified model.")
