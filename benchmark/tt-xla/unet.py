@@ -130,6 +130,7 @@ def test_unet_torch_xla(
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
+        "export_path": "modules",
     }
 
     torch_xla.set_custom_compile_options(options)
