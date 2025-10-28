@@ -52,7 +52,7 @@ BATCH_SIZE = [
 DATA_FORMAT = ["bfloat16", "float32"]
 
 INPUT_SIZE = [
-    (224, 224),
+    (256, 256),
 ]
 
 CHANNEL_SIZE = [
