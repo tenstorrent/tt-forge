@@ -9,17 +9,6 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 from collections.abc import Sequence
 import torch
-from tt_torch import parse_compiled_artifacts_from_cache_to_disk
-
-
-def serialize_modules(output_prefix: str, cache_dir: str) -> None:
-    """
-    Serialize TT modules from in-memory cache to disk.
-    Modules will be saved as {output_prefix}_ttir.mlir, {output_prefix}_ttnn.mlir and
-    {output_prefix}.ttnn.
-
-    """
-    parse_compiled_artifacts_from_cache_to_disk(cache_dir, output_prefix)
 
 
 def _compute_pcc_single(golden_flat: torch.Tensor, device_flat: torch.Tensor) -> float:

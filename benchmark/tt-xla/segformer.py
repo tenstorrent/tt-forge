@@ -41,7 +41,6 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
-    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -149,6 +148,7 @@ def test_segformer_torch_xla(
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
+        "export_path": "modules",
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -169,8 +169,6 @@ def test_segformer_torch_xla(
     predictions, total_time = torch_xla_measure_fps(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
-
-    serialize_modules(f"modules/{model_name}", cache_dir)
 
     if task == "classification":
         predictions = torch.cat(predictions)
