@@ -59,6 +59,7 @@ def main():
     parser.add_argument("--sh-runner", action="store_true", help="Use shared runners")
 
     args = parser.parse_args()
+    matrix_skip = "false"
 
     try:
         with open(args.matrix_file) as f:
@@ -68,13 +69,12 @@ def main():
         filtered = filter_matrix(matrix, args.project_filter, args.test_filter)
         update_runners(filtered, args.sh_runner)
 
-        result = {"matrix": filtered}
-
-        print(json.dumps(result))
-
         if not filtered:
             print("Error: No matching tests found", file=sys.stderr)
-            sys.exit(1)
+            matrix_skip = "true"
+
+        result = {"matrix": filtered, "matrix_skip": matrix_skip}
+        print(json.dumps(result))
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
