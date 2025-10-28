@@ -1,33 +1,8 @@
 name: "[internal] Collect workflow data"
-run-name: "Collect data for run_id ${{ github.event.workflow_run.id || inputs.run_id }} attempt ${{ github.event.workflow_run.run_attempt || inputs.run_attempt }} ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}"
+run-name: "Collect data for run_id ${{ github.event.workflow_run.id }} attempt ${{ github.event.workflow_run.run_attempt }}"
 
 on:
-  workflow_dispatch:
-    inputs:
-      run_id:
-        type: string
-        description: "Run id of the workflow to collect data for"
-        required: true
-        default: ""
-      run_attempt:
-        type: string
-        description: "Run attempt of the workflow to collect data for"
-        required: true
-        default: ""
-      parent_run_id:
-        description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
-        required: false
-        type: string
-        default: ""
-      sleep:
-        type: string
-        description: "Sleep for x seconds before collecting data"
-        required: false
-        default: "0"
-
   workflow_run:
-    workflows: # List workflow that we want to collect data for
-      - "Performance Benchmark External Trigger"
     types:
       - completed
 
@@ -37,12 +12,20 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
-      #TODO: Added as a temporary fix to avoid race condition between the workflow dispatch and the data collection
-      # https://github.com/tenstorrent/tt-forge/pull/496#issuecomment-3366367292
-      - name: sleep
+      - name: Check event workflow run
+        id: skip_collect_data
         run: |
-          sleep ${{ inputs.sleep || '0' }}
+          # Due to dymanic named workflow, we can't match on the workflow name directly. Here we do a regex match on the workflow name to determine if we should collect data.
+          # https://github.com/tenstorrent/tt-github-actions/issues/88#issuecomment-3452943178
+          skip_collect_data="true"
+          workflow_name="${{ github.event.workflow_run.name }}"
+          echo "workflow_name: $workflow_name"
+          if [[ "$workflow_name" =~ "Perf" ]]; then
+            skip_collect_data="false"
+          fi
+          echo "skip_collect_data: $skip_collect_data" >> $GITHUB_OUTPUT
       - name: Collect CI/CD data
+        if: ${{ steps.skip_collect_data.outputs.skip_collect_data == 'false' }}
         uses: tenstorrent/tt-github-actions/.github/actions/collect_data@main
         with:
           repository: ${{ github.repository }}
