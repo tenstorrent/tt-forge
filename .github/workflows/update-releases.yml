@@ -16,6 +16,11 @@ on:
         type: boolean
         default: false
         description: Overwrite releases
+      workflow_allow_failed:
+        description: "Ignore if workflow has failed"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   pages: write
@@ -70,3 +75,4 @@ jobs:
       new_version_tag: ${{ matrix.new_version_tag }}
       latest_branch_commit: ${{ matrix.latest_branch_commit }}
       current_release_tag_commit: ${{ matrix.current_release_tag_commit }}
+      workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
