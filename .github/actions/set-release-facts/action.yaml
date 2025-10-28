@@ -237,7 +237,6 @@ runs:
             pip_wheel_deps_names="pjrt-plugin-tt tt-forge-fe"
             pip_wheel_names="tt-forge"
             skip_model_compatible_table="true"
-            test_perf="true"
         fi
 
 
