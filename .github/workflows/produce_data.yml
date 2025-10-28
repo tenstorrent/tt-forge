@@ -3,8 +3,6 @@ run-name: "Collect data for run_id ${{ github.event.workflow_run.id }} attempt $
 
 on:
   workflow_run:
-    workflows:
-      - "Perf*"
     types:
       - completed
 
