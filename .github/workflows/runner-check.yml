@@ -16,30 +16,30 @@ jobs:
         with:
           repo: tt-forge
           token: ${{ secrets.GH_TOKEN }}
-      - name: Find new offline runners in tt-torch
-        id: tt-torch
-        uses: ./.github/actions/offline-runners
-        with:
-          repo: tt-torch
-          token: ${{ secrets.GH_TOKEN }}
-      - name: Find new offline runners in tt-xla
-        id: tt-xla
-        uses: ./.github/actions/offline-runners
-        with:
-          repo: tt-xla
-          token: ${{ secrets.GH_TOKEN }}
-      - name: Find new offline runners in tt-forge-fe
-        id: tt-forge-fe
-        uses: ./.github/actions/offline-runners
-        with:
-          repo: tt-forge-fe
-          token: ${{ secrets.GH_TOKEN }}
-      - name: Find new offline runners in tt-mlir
-        id: tt-mlir
-        uses: ./.github/actions/offline-runners
-        with:
-          repo: tt-mlir
-          token: ${{ secrets.GH_TOKEN }}
+      # - name: Find new offline runners in tt-torch
+      #   id: tt-torch
+      #   uses: ./.github/actions/offline-runners
+      #   with:
+      #     repo: tt-torch
+      #     token: ${{ secrets.GH_TOKEN }}
+      # - name: Find new offline runners in tt-xla
+      #   id: tt-xla
+      #   uses: ./.github/actions/offline-runners
+      #   with:
+      #     repo: tt-xla
+      #     token: ${{ secrets.GH_TOKEN }}
+      # - name: Find new offline runners in tt-forge-fe
+      #   id: tt-forge-fe
+      #   uses: ./.github/actions/offline-runners
+      #   with:
+      #     repo: tt-forge-fe
+      #     token: ${{ secrets.GH_TOKEN }}
+      # - name: Find new offline runners in tt-mlir
+      #   id: tt-mlir
+      #   uses: ./.github/actions/offline-runners
+      #   with:
+      #     repo: tt-mlir
+      #     token: ${{ secrets.GH_TOKEN }}
       - name: Make report
         id: report
         shell: bash

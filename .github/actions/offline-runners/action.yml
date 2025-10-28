@@ -27,7 +27,8 @@ runs:
       run: |
         repo_name=$(echo "${{ inputs.repo }}" | tr '-' '_')
         echo "repo name: $repo_name"
-        offline_runners=($(gh api repos/tenstorrent/${{ inputs.repo }}/actions/runners --jq '.runners[] | select(.status == "offline") | .name'))
+        # offline_runners=($(gh api repos/tenstorrent/${{ inputs.repo }}/actions/runners --jq '.runners[] | select(.status == "offline") | .name'))
+        offline_runners=($(gh api orgs/tenstorrent/actions/runner-groups/10/runners --jq '.runners[] | select(.status == "offline") | .name'))
         echo "offline runners: ${offline_runners[*]}"
         saved_runners=($(gh api repos/tenstorrent/tt-forge/actions/variables/runners_${repo_name} --jq '.value'))
         echo "saved runners: ${saved_runners[*]}"
