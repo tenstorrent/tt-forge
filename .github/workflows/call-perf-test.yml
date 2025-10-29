@@ -333,18 +333,29 @@ jobs:
         echo "Run ttrt perf"
         ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_json_file }} || true
 
+    - name: Upload Device Perf separately
+      id: upload-device-perf
+      uses: actions/upload-artifact@v4
+      if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' }}
+      with:
+        name: device-perf-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/*.csv
+        compression-level: 0
+
     - name: Add config fields to perf report
       shell: bash
       run: |
         PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_json_file }}"
         TTIR_URL="${{ !matrix.build.skip-ttir-dump && steps.upload-ttir-mlir.outputs.artifact-url || '' }}"
         TTNN_URL="${{ !matrix.build.skip-ttnn-dump && steps.upload-ttnn-mlir.outputs.artifact-url || '' }}"
+        DEVICE_PERF_URL="${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' && steps.upload-device-perf.outputs.artifact-url || '' }}"
         MLIR_SHA="${{ steps.find-run.outputs.mlir_sha || '' }}"
         JOB_ID_URL="https://github.com/tenstorrent/tt-forge/actions/runs/${{ github.run_id }}/job/${{ steps.fetch-job-id.outputs.job_id }}"
 
         python benchmark/extend_result_config.py "$PERF_REPORT_FILE" \
           ${TTIR_URL:+--ttir-url "$TTIR_URL"} \
           ${TTNN_URL:+--ttnn-url "$TTNN_URL"} \
+          ${DEVICE_PERF_URL:+--device-perf-url "$DEVICE_PERF_URL"} \
           ${MLIR_SHA:+--mlir-sha "$MLIR_SHA"} \
           --job-id-url "$JOB_ID_URL"
 
