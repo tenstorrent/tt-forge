@@ -15,7 +15,7 @@ jobs:
         uses: ./.github/actions/offline-runners
         with:
           repo: tt-forge
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.TT_FORGE_ADMIN_ORG }}
       # - name: Find new offline runners in tt-torch
       #   id: tt-torch
       #   uses: ./.github/actions/offline-runners
