@@ -24,6 +24,12 @@
         "pyreq": "pytest tqdm loguru requests transformers ultralytics datasets flax torch==2.7.0"
       },
       {
+        "name": "mnist",
+        "pyreq": "pytest tqdm loguru requests transformers ultralytics datasets torch==2.7.0",
+        "df": "float32",
+        "bs": 32
+      },
+      {
         "name": "resnet",
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
       },
