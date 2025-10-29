@@ -29,10 +29,7 @@ cache_dir = f"{os.getcwd()}/cachedir"
 xr.initialize_cache(cache_dir)
 
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_xla_device_arch
-from third_party.tt_forge_models.efficientnet.pytorch.loader import (
-    ModelLoader as EfficientNetLoader,
-    ModelVariant as EfficientNetVariant,
-)
+from third_party.tt_forge_models.mnist.pytorch.loader import ModelLoader as MNISTLoader
 from .utils import (
     get_benchmark_metadata,
     determine_model_type_and_dataset,
@@ -41,6 +38,7 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
+    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -55,22 +53,23 @@ TASK = [
 
 # Batch size configurations
 BATCH_SIZE = [
-    1,
+    32,
 ]
 
 # Data format configurations
 DATA_FORMAT = [
     "bfloat16",
+    "float32",
 ]
 
-# Input size configurations
+# Input size configurations (MNIST uses 28x28 images)
 INPUT_SIZE = [
-    (224, 224),
+    (28, 28),
 ]
 
-# Channel size configurations
+# Channel size configurations (MNIST is grayscale, 1 channel)
 CHANNEL_SIZE = [
-    3,
+    1,
 ]
 
 # Loop count configurations
@@ -83,11 +82,11 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-def test_efficientnet_torch_xla(
+def test_mnist_torch_xla(
     training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
 ):
     """
-    This function creates an EfficientNet model using PyTorch and torch-xla.
+    This function creates a MNIST model using PyTorch and torch-xla.
     It is used for benchmarking purposes.
     """
 
@@ -97,9 +96,9 @@ def test_efficientnet_torch_xla(
     if task == "classification":
         inputs, labels = load_benchmark_dataset(
             task=task,
-            model_version="microsoft/resnet-50",
-            dataset_name="imagenet-1k",
-            split="validation",
+            model_version="mnist",
+            dataset_name="mnist",
+            split="test",
             batch_size=batch_size,
             loop_count=loop_count,
         )
@@ -119,10 +118,9 @@ def test_efficientnet_torch_xla(
         warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
 
     # Load model using tt_forge_models
-    model_variant = EfficientNetVariant.TIMM_EFFICIENTNET_B0
-    efficientnet_loader = EfficientNetLoader(model_variant)
-    model_info = efficientnet_loader.get_model_info(model_variant).name
-    framework_model: nn.Module = efficientnet_loader.load_model()
+    mnist_loader = MNISTLoader()
+    model_info = mnist_loader.get_model_info().name
+    framework_model: nn.Module = mnist_loader.load_model()
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(torch.bfloat16)
@@ -148,10 +146,10 @@ def test_efficientnet_torch_xla(
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
-        "export_path": "modules",
     }
 
     torch_xla.set_custom_compile_options(options)
+
     framework_model.compile(backend="tt")
 
     device = xm.xla_device()
@@ -169,12 +167,14 @@ def test_efficientnet_torch_xla(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
 
+    serialize_modules(f"modules/{model_name}", cache_dir)
+
     if task == "classification":
         predictions = torch.cat(predictions)
         labels = torch.cat(labels)
         evaluation_score = evaluate_classification(predictions, labels)
     elif task == "na":
-        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
+        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.99)
         print(f"PCC verification passed with PCC={pcc_value:.6f}")
         evaluation_score = 0.0
     else:
@@ -185,9 +185,9 @@ def test_efficientnet_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = "EfficientNet Torch-XLA B0"
+    full_model_name = "MNIST Torch-XLA"
     model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
-    num_layers = 82
+    num_layers = 2
 
     custom_measurements = [
         {
@@ -198,7 +198,7 @@ def test_efficientnet_torch_xla(
     ]
 
     print_benchmark_results(
-        model_title="EfficientNet Torch-XLA",
+        model_title="MNIST Torch-XLA",
         full_model_name=full_model_name,
         model_type=model_type,
         dataset_name=dataset_name,
@@ -246,7 +246,7 @@ def test_efficientnet_torch_xla(
 
 def benchmark(config: dict):
     """
-    Run the efficientnet torch-xla benchmark.
+    Run the mnist torch-xla benchmark.
     This function is a placeholder for the actual benchmark implementation.
     """
 
@@ -260,7 +260,7 @@ def benchmark(config: dict):
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
 
-    return test_efficientnet_torch_xla(
+    return test_mnist_torch_xla(
         training=training,
         batch_size=batch_size,
         input_size=input_size,
