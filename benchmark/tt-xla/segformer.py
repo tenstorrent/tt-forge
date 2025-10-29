@@ -66,7 +66,7 @@ DATA_FORMAT = [
 
 # Input size configurations
 INPUT_SIZE = [
-    (224, 224),
+    (512, 512),
 ]
 
 # Channel size configurations
