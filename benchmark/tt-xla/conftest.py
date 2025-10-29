@@ -1,7 +1,17 @@
 # SPDX-FileCopyrightText: (c) 2025 Tenstorrent AI ULC
 #
 # SPDX-License-Identifier: Apache-2.0
+import sys
+import os
 import pytest
+
+# Add tt-forge directory to Python path so imports like 'from benchmark.utils' work
+# when running pytest from any directory (e.g., from tt-xla repo)
+# Path structure: tt-forge/benchmark/tt-xla/conftest.py
+# We need: tt-forge/ in sys.path so 'benchmark' module can be imported
+tt_forge_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if tt_forge_dir not in sys.path:
+    sys.path.insert(0, tt_forge_dir)
 
 
 # Valid values for parameters
