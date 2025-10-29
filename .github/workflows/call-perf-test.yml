@@ -77,7 +77,7 @@ jobs:
       matrix:
         build: ${{ fromJson(inputs.matrix) }}
 
-    runs-on: ${{ inputs.sh-runner && format('tt-ubuntu-2204-{0}-stable', matrix.build.runs-on) || fromJson(format('["{0}", "in-service"]', matrix.build.runs-on)) }}
+    runs-on: xla-n300-1
 
     env:
       # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
