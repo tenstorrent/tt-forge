@@ -171,15 +171,15 @@ jobs:
           version=$(pip show $project_name | grep -oP "(?<=Version:\s)[\d\.\w]+")
         fi
 
-        echo "printing mlir override"
-        echo "${{ inputs.mlir_override }}"
 
         echo "Wheel version: $version"
 
         # TODO: Add tt-mlir version to frontend setup.py description
         # REF: https://github.com/tenstorrent/tt-forge/issues/170
         mlir_sha=""
-        if [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
+        if [[ -n "${{ inputs.mlir_override }}" ]]; then
+          mlir_sha=${{ inputs.mlir_override }}
+        elif [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
           wget "https://raw.githubusercontent.com/tenstorrent/tt-torch/${version}/third_party/CMakeLists.txt"
           xla_sha=$(grep -E "set\(TT_XLA_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
           echo "XLA commit sha: $xla_sha"
