@@ -38,7 +38,6 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
-    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -173,7 +172,6 @@ def test_resnet_torch_xla(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
 
-    serialize_modules(f"modules/{model_name}", cache_dir)
 
     if task == "classification":
         predictions = torch.cat(predictions)
