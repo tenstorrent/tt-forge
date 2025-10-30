@@ -12,6 +12,7 @@ import torch
 from tt_torch import parse_compiled_artifacts_from_cache_to_disk
 
 
+def serialize_modules(output_prefix: str, cache_dir: str) -> None:
     """
     Serialize TT modules from in-memory cache to disk.
     Modules will be saved as {output_prefix}_ttir.mlir, {output_prefix}_ttnn.mlir and
