@@ -171,6 +171,9 @@ jobs:
           version=$(pip show $project_name | grep -oP "(?<=Version:\s)[\d\.\w]+")
         fi
 
+        echo "printing mlir override"
+        echo "${{ inputs.mlir_override }}"
+
         echo "Wheel version: $version"
 
         # TODO: Add tt-mlir version to frontend setup.py description
