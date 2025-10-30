@@ -108,6 +108,7 @@
       },
       {
         "name": "resnet",
+        "bs": 8,
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
       },
       {
