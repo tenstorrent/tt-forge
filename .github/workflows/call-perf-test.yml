@@ -291,14 +291,14 @@ jobs:
 
         echo "Dump ttir to report"
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          cp ./modules/irs/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
 
         echo "Dump ttnn to report"
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+          cp ./modules/irs/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
         fi
