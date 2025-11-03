@@ -222,7 +222,7 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: run-n150-perf-benchmarks
+          allowed-skips: run-n150-perf-benchmarks, run-p150-perf-benchmarks
           allowed-failured: run-p150-perf-benchmarks
 
   fail-send-msg:
