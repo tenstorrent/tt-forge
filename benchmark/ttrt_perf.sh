@@ -15,11 +15,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo "run device_perf.py creating $2"
-python ./benchmark/device_perf.py -cdp ttrt-artifacts/$1/perf/ops_perf_results_minus_const_eval.csv $2
+python ./benchmark/device_perf.py -cdp ttrt-artifacts/$1/perf/ops_perf_results_minus_const_eval_and_input_layout_conversions.csv $2
 csv_file="${2%.*}.csv"
-cp ttrt-artifacts/$1/perf/ops_perf_results_minus_const_eval.csv "$csv_file"
+cp ttrt-artifacts/$1/perf/ops_perf_results_minus_const_eval_and_input_layout_conversions.csv "$csv_file"
 if [ $? -ne 0 ]; then
-    echo "Error: Failed to copy ops_perf_results_minus_const_eval.csv to $csv_file."
+    echo "Error: Failed to copy ops_perf_results_minus_const_eval_and_input_layout_conversions.csv to $csv_file."
     exit 1
 fi
-echo "Copied ops_perf_results_minus_const_eval.csv to $csv_file"
+echo "Copied ops_perf_results_minus_const_eval_and_input_layout_conversions.csv to $csv_file"
