@@ -46,6 +46,7 @@ def update_runners(matrix, sh_runner):
 
     for item in matrix:
         if item.get("runs-on") in runner_map:
+            item["runs-on-original"] = item["runs-on"]
             item["runs-on"] = runner_map[item["runs-on"]]
 
     return matrix

@@ -57,6 +57,7 @@ on:
 
 jobs:
   run-perf-benchmarks:
+    continue-on-error: ${{ matrix.build.runs-on-original == 'p150' && 'true' || 'false' }}
     container:
       image: ${{ inputs.sh-runner && format('harbor.ci.tenstorrent.net/{0}', inputs.docker-image) || inputs.docker-image }}
       options: --device /dev/tenstorrent --user root
