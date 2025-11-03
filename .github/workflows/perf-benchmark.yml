@@ -187,6 +187,7 @@ jobs:
     if: always()
     needs:
       - run-n150-perf-benchmarks
+      - run-p150-perf-benchmarks
     runs-on: ubuntu-latest
     outputs:
       is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
@@ -222,6 +223,7 @@ jobs:
         with:
           jobs: ${{ toJSON(needs) }}
           allowed-skips: run-n150-perf-benchmarks
+          allowed-failured: run-p150-perf-benchmarks
 
   fail-send-msg:
     if: always()
