@@ -114,7 +114,6 @@ jobs:
           ${{ inputs.sh-runner && '--sh-runner' || '' }})
 
         matrix=$(echo $result | jq -r -c '.matrix')
-        echo $matrix
         matrix_n150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("n150")))')
         matrix_p150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("p150")))')
 
