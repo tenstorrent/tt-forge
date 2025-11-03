@@ -94,6 +94,13 @@ jobs:
         ref: ${{ inputs.ref || github.ref }}
         submodules: 'recursive'
 
+    - name: Check
+      shell: bash
+      run: |
+        if [[ "${{ matrix.build.runs-on }}" == "p150" ]]; then
+          exit 1
+        fi
+
     - name: Fix HOME Directory
       shell: bash
       run: |
