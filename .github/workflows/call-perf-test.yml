@@ -95,11 +95,6 @@ jobs:
         ref: ${{ inputs.ref || github.ref }}
         submodules: 'recursive'
 
-    - name: Check
-      shell: bash
-      run: |
-        exit 1
-
     - name: Fix HOME Directory
       shell: bash
       run: |
