@@ -223,7 +223,7 @@ jobs:
         with:
           jobs: ${{ toJSON(needs) }}
           allowed-skips: run-n150-perf-benchmarks, run-p150-perf-benchmarks
-          allowed-failured: run-p150-perf-benchmarks
+          allowed-failures: run-p150-perf-benchmarks
 
   fail-send-msg:
     if: always()
