@@ -167,7 +167,7 @@ jobs:
 
   run-p150-perf-benchmarks:
     needs: filter-tests
-    if: ${{ needs.filter-tests.outputs.matrix_p150_skip == 'false' }}
+    if: ${{ needs.filter-tests.outputs.matrix_p150_skip == 'true' }}
     secrets: inherit
     uses: ./.github/workflows/call-perf-test.yml
     with:
