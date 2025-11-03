@@ -160,8 +160,15 @@ def generate_and_benchmark(
             start = time.perf_counter_ns()
 
             # Run forward pass
-            output: CausalLMOutputWithPast = model(**input_args)
-            logits: torch.Tensor = output.logits.to("cpu")
+            output = model(**input_args)
+
+            if isinstance(output, tuple):
+                # Tuple format: (logits, past_key_values, ...)
+                logits: torch.Tensor = output[0].to("cpu")
+            else:
+                # Object format: CausalLMOutputWithPast
+                logits: torch.Tensor = output.logits.to("cpu")
+
             output_logits.append(logits)
             next_token_id = logits[:, -1].argmax(dim=-1)
             output_text = tokenizer.decode(next_token_id)
