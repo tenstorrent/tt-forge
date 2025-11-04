@@ -252,4 +252,3 @@ jobs:
     with:
       run_id: ${{ github.run_id }}
       run_attempt: ${{ github.run_attempt }}
-      skip_wait_for_workflow_completion: true
