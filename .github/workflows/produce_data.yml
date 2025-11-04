@@ -43,7 +43,7 @@ jobs:
         run: |
           sleep ${{ inputs.sleep || '0' }}
       - name: Collect CI/CD data
-        uses: tenstorrent/tt-github-actions/.github/actions/collect_data@feature-Allow-different-invocation-methods-of-produce-data-workflow
+        uses: jmcgrathTT/tt-github-actions/.github/actions/collect_data@feature-Allow-different-invocation-methods-of-produce-data-workflow
         with:
           repository: ${{ github.repository }}
           run_id: ${{ inputs.run_id || github.event.workflow_run.id }}
