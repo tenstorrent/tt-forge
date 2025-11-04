@@ -37,12 +37,8 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
-      #TODO: Added as a temporary fix to avoid race condition between the workflow dispatch and the data collection
-      # https://github.com/tenstorrent/tt-forge/pull/496#issuecomment-3366367292
-      - name: sleep
-        run: |
-          sleep ${{ inputs.sleep || '0' }}
       - name: Collect CI/CD data
+        #TODO: Change back to tenstorrent/tt-github-actions before the feature is merged
         uses: jmcgrathTT/tt-github-actions/.github/actions/collect_data@feature-Allow-different-invocation-methods-of-produce-data-workflow
         with:
           repository: ${{ github.repository }}

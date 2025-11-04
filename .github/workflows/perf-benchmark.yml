@@ -248,6 +248,7 @@ jobs:
       - fail-send-msg
     if: always()
     uses: ./.github/workflows/produce_data.yml
+    secrets: inherit
     with:
       run_id: ${{ github.run_id }}
       run_attempt: ${{ github.run_attempt }}
