@@ -19,11 +19,11 @@ on:
         required: false
         type: string
         default: ""
-      sleep:
-        type: string
-        description: "Sleep for x seconds before collecting data"
+      skip_wait_for_workflow_completion:
+        description: "Skip waiting for workflow completion"
         required: false
-        default: "0"
+        type: boolean
+        default: false
 
   workflow_run:
     workflows: # List workflow that we want to collect data for
@@ -43,7 +43,7 @@ jobs:
         run: |
           sleep ${{ inputs.sleep || '0' }}
       - name: Collect CI/CD data
-        uses: tenstorrent/tt-github-actions/.github/actions/collect_data@main
+        uses: tenstorrent/tt-github-actions/.github/actions/collect_data@feature-Allow-different-invocation-methods-of-produce-data-workflow
         with:
           repository: ${{ github.repository }}
           run_id: ${{ inputs.run_id || github.event.workflow_run.id }}
@@ -53,3 +53,4 @@ jobs:
           sftp_perf_host: ${{ secrets.SFTP_PERF_WRITER_HOSTNAME }}
           sftp_perf_user: ${{ secrets.SFTP_PERF_WRITER_USERNAME }}
           ssh-private-key: ${{ secrets.SFTP_CICD_WRITER_KEY }}
+          skip_wait_for_workflow_completion: ${{ inputs.skip_wait_for_workflow_completion }}
