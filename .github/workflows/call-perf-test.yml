@@ -291,14 +291,22 @@ jobs:
 
         echo "Dump ttir to report"
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+            cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          else
+            cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          fi
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
         fi
 
         echo "Dump ttnn to report"
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+            cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+          else
+            cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+          fi
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
         fi
@@ -330,7 +338,11 @@ jobs:
         ttrt query --save-artifacts
         chmod ugo+x ./benchmark/ttrt_perf.sh
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          cp ./modules/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
+          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+            cp ./modules/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
+          else
+            cp ./modules/fb_*.ttnn ${{ matrix.build.name }}.ttnn
+          fi
         fi
         echo "Run ttrt perf"
         ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_json_file }} || true
