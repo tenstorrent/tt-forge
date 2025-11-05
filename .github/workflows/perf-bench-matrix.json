@@ -263,6 +263,32 @@
         "skip-ttir-dump": true,
         "skip-ttnn-dump": true,
         "skip-device-perf": true
+      },
+      {
+        "name": "tiiuae_falcon3-1b-base",
+        "variant": "tiiuae/Falcon3-1B-Base",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 ultralytics torch==2.7.0",
+        "pytest": "benchmark/tt-xla/llms.py::test_llm",
+        "model_config": {
+          "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader",
+          "optimizer_enabled": false
+        },
+        "skip-ttir-dump": true,
+        "skip-ttnn-dump": true,
+        "skip-device-perf": true
+      },
+      {
+        "name": "tiiuae_falcon3-3b-base",
+        "variant": "tiiuae/Falcon3-3B-Base",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 ultralytics torch==2.7.0",
+        "pytest": "benchmark/tt-xla/llms.py::test_llm",
+        "model_config": {
+          "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader",
+          "optimizer_enabled": false
+        },
+        "skip-ttir-dump": true,
+        "skip-ttnn-dump": true,
+        "skip-device-perf": true
       }
     ]
   }
