@@ -78,6 +78,8 @@ VARIANTS = [
     "ese_vovnet19b_dw.ra_in1k",
 ]
 
+MODULE_EXPORT_PATH = "modules"
+
 
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
@@ -156,7 +158,7 @@ def test_vovnet_torch_xla(
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
-        "export_path": "modules",
+        "export_path": MODULE_EXPORT_PATH,
     }
 
     torch_xla.set_custom_compile_options(options)

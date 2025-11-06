@@ -44,6 +44,8 @@ VARIANTS = [
 
 DATA_FORMAT = ["float32"]
 
+MODULE_EXPORT_PATH = "modules"
+
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
@@ -87,7 +89,7 @@ def test_resnet(
     input_sample = device_put(input_sample, tt_device)
 
     serialize_compiled_artifacts_to_disk(
-        framework_model, input_sample, output_prefix=f"modules/{model_name}", params=framework_model.params
+        framework_model, input_sample, output_prefix=f"{MODULE_EXPORT_PATH}/{model_name}", params=framework_model.params
     )
 
     compiled_fwd = jax.jit(framework_model.__call__, static_argnames=["train"])
