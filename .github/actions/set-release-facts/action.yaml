@@ -230,7 +230,7 @@ runs:
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             workflow="Daily Releaser"
             ignore_artifacts="true"
-            pip_wheel_deps_names="pjrt-plugin-tt tt-forge-fe"
+            pip_wheel_deps_names="pjrt-plugin-tt"
             pip_wheel_names="tt-forge"
             skip_model_compatible_table="true"
         fi
