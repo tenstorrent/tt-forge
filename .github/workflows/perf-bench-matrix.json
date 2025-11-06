@@ -92,8 +92,6 @@
         "df": "float32",
         "input_sequence_length": 512,
         "pyreq": "FlagEmbedding datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -105,8 +103,6 @@
           "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -118,8 +114,6 @@
           "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -131,8 +125,6 @@
           "model_loader_module": "third_party.tt_forge_models.phi1.causal_lm.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -144,8 +136,6 @@
           "model_loader_module": "third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -157,8 +147,6 @@
           "model_loader_module": "third_party.tt_forge_models.phi2.causal_lm.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -170,8 +158,6 @@
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -183,8 +169,6 @@
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -196,8 +180,6 @@
           "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       },
       {
@@ -209,8 +191,6 @@
           "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader",
           "optimizer_enabled": false
         },
-        "skip-ttir-dump": true,
-        "skip-ttnn-dump": true,
         "skip-device-perf": true
       }
     ]
