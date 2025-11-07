@@ -342,7 +342,7 @@ def benchmark_llm_torch_xla(
     torch_xla.set_custom_compile_options(options)
 
     # Compile model
-    compiled_model = torch.compile(model, backend="tt")
+    compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": True})
 
     # Warmup run
     print("Warming up...")
