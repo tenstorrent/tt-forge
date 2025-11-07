@@ -283,6 +283,7 @@ jobs:
 
           pytest -svv "${{ matrix.build.pytest }}" --variant ${{ matrix.build.variant }} --output=${{ steps.strings.outputs.perf_report_json_file }} $PYTEST_OPTS
         fi
+        sleep 3600
 
     - name: Dump ttir and ttnn to report
       if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
