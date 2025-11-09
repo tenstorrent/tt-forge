@@ -92,9 +92,33 @@ def test_llm(
     ModelLoader = model_loader_module.ModelLoader
     ModelVariant = model_loader_module.ModelVariant
 
+    print("\n")
+    print(f"module path: {module_path}")
+    print(f"ModelLoader: {ModelLoader}")
+    print(f"ModelVariant: {ModelVariant(variant)}")
+    print("\n")
+
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    import torch
+
+    model_name = "meta-llama/Llama-3.2-3B-Instruct"
+
+    # Load tokenizer and model
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+       model_name,
+       torch_dtype=torch.float16,
+       device_map="auto"
+    )
+
+    print(f"✅ Loaded model: {model_name}")
+    print(f"Model class: {model.__class__.__name__}")
+    print(f"Model path from config: {model.config._name_or_path}")
+
     if ModelVariant(variant) not in ModelLoader.query_available_variants():
         raise ValueError(f"Variant {variant} is not available for the specified model.")
     model_loader = ModelLoader(variant=ModelVariant(variant))
+    #model_loader = ModelLoader(variant="meta-llama/Llama-3.2-3B-Instruct")
 
     # Get config values for the model in the following order of precedence:
     # 1. Command line argument (if provided)
