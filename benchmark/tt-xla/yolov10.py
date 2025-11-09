@@ -123,13 +123,6 @@ def test_yolov10_torch_xla(
     framework_model.forward = lambda x: original_forward(x)[0]
     framework_model.eval()
 
-    # url = "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov10x.pt"
-    # framework_model = YoloWrapper(url)
-
-    # if data_format == "bfloat16":
-    #     framework_model = framework_model.to(torch.bfloat16)
-    # framework_model.eval()
-
     if measure_cpu:
         cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
         cpu_fps = measure_cpu_fps(framework_model, cpu_input)
