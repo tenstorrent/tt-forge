@@ -110,7 +110,7 @@ def test_yolov4_torch_xla(
         warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
 
     # Load model using tt_forge_models
-    yolov4_loader = YOLOv4Loader()
+    yolov4_loader = YOLOv4Loader(variant=ModelVariant("base"))
     model_info = yolov4_loader.get_model_info().name
     print(f"Model name: {model_info}")
     if data_format == "bfloat16":
