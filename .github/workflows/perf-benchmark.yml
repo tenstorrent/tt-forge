@@ -79,6 +79,11 @@ on:
         description: "Performance benchmark triggered from an uplift PR"
         required: false
         type: boolean
+      runs-on-filter:
+        description: "Architecture you want to run the tests on"
+        required: false
+        type: string
+        default: "n150"
 
 permissions:
   id-token: write
