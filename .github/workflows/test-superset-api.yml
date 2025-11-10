@@ -33,11 +33,13 @@ jobs:
         run: |
           echo "API Response:"
           echo '${{ steps.api-call.outputs.response }}'
+
       - name: Create Job Summary
         run: |
           echo "# Benchmark Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "| ------ | ----- |" >> $GITHUB_STEP_SUMMARY
+
           # Parse the JSON and create table rows
           echo '${{ steps.api-call.outputs.response }}' | jq -r '.[] | "| " + .name + " | " + (.last_value | tostring) + " |"' >> $GITHUB_STEP_SUMMARY
