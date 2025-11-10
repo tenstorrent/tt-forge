@@ -2,44 +2,72 @@
 name: Superset API Example
 
 on:
-  push:
-    paths:
-      - '.github/actions/superset-api/**'
-  pull_request:
-    paths:
-      - '.github/actions/superset-api/**'
-  workflow_dispatch:  # Allow manual triggering
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
 
 permissions:
-  id-token: write   # Required for OIDC
-  contents: read    # Required for checking out code
+  id-token: write
+  actions: write
 
 jobs:
-  call_api:
+  filter-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix_p150: ${{ steps.set-perf-benchmarks.outputs.matrix_p150 }}
+      matrix_p150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_p150_skip }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        repository: 'tenstorrent/tt-forge'
+        fetch-depth: 1
+        ref: ${{ github.ref }}
+        submodules: 'recursive'
+
+    - name: Filter Matrix
+      id: set-perf-benchmarks
+      shell: bash
+      run: |
+        result=$(python .github/workflows/filter-test-matrix.py \
+          .github/workflows/perf-bench-matrix.json \
+          "tt-forge")
+
+        matrix=$(echo $result | jq -r -c '.matrix')
+        matrix_p150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("p150")))')
+
+        matrix_p150_skip="false"
+
+        if [ "$matrix_p150" == "[]" ]; then
+          matrix_p150_skip="true"
+        fi
+
+        echo "matrix_p150=$matrix_p150" >> $GITHUB_OUTPUT
+        echo "matrix_p150_skip=$matrix_p150_skip" >> $GITHUB_OUTPUT
+
+  run-p150-perf-benchmarks:
+    needs: filter-tests
+    if: ${{ needs.filter-tests.outputs.matrix_p150_skip == 'false' }}
+    secrets: inherit
+    uses: ./.github/workflows/call-perf-test.yml
+    with:
+      matrix: ${{ needs.filter-tests.outputs.matrix_p150 }}
+      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nigthly-latest"
+
+  produce-data:
+    needs:
+      - run-p150-perf-benchmarks
+    if: always()
     runs-on: ubuntu-latest
     steps:
-
-      - name: Checkout code # only needed when using action in same repo
-        uses: actions/checkout@v3
-
-      - name: Call Superset API
-        id: api-call
-        uses: ./.github/actions/superset-api
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: Trigger produce_data.yml
+        uses: ./.github/actions/trigger-workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
         with:
-          query: 'benchmarks/last_measurement'
-          query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
-
-      - name: Display Response
-        run: |
-          echo "API Response:"
-          echo '${{ steps.api-call.outputs.response }}'
-
-      - name: Create Job Summary
-        run: |
-          echo "# Benchmark Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "| ------ | ----- |" >> $GITHUB_STEP_SUMMARY
-
-          # Parse the JSON and create table rows
-          echo '${{ steps.api-call.outputs.response }}' | jq -r '.[] | "| " + .name + " | " + (.last_value | tostring) + " |"' >> $GITHUB_STEP_SUMMARY
+          workflow_name: "produce_data.yml"
+          wait: false
+          wait_for_run_url: true
+          json_params: '{"run_id": "${{ github.run_id }}", "run_attempt": "${{ github.run_attempt }}", "sleep": "10" }'
