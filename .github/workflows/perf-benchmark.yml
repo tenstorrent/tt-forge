@@ -169,7 +169,6 @@ jobs:
     if: always()
     needs:
       - run-n150-perf-benchmarks
-      - run-p150-perf-benchmarks
     runs-on: ubuntu-latest
     outputs:
       is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
