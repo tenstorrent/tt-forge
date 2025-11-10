@@ -1,4 +1,4 @@
-name: Performance benchmark
+name: Performance benchmark Experimental
 run-name: Performance benchmark ${{ inputs.parent_run_id && format('parent_run_id:{0}', inputs.parent_run_id) || '' }}
 
 on:
@@ -154,6 +154,24 @@ jobs:
     uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix_n150 }}
+      docker-image: ${{ inputs.docker-image }}
+      project-filter: ${{ inputs.project-filter }}
+      project: ${{ inputs.project }}
+      update-wheel: ${{ inputs.update-wheel || false }}
+      sh-runner: ${{ inputs.sh-runner }}
+      parent_run_id: ${{ inputs.parent_run_id }}
+      run_id_source: ${{ inputs.run_id_source }}
+      run_id: ${{ inputs.run_id }}
+      ref: ${{ inputs.ref }}
+      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
+
+  run-p150-perf-benchmarks:
+    needs: filter-tests
+    if: ${{ needs.filter-tests.outputs.matrix_p150_skip == 'false' }}
+    secrets: inherit
+    uses: ./.github/workflows/call-perf-test.yml
+    with:
+      matrix: ${{ needs.filter-tests.outputs.matrix_p150 }}
       docker-image: ${{ inputs.docker-image }}
       project-filter: ${{ inputs.project-filter }}
       project: ${{ inputs.project }}
