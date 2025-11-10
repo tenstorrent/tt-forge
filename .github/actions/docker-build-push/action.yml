@@ -99,8 +99,12 @@ runs:
           fi
 
           TAGS="--tag $IMAGE_NAME:$DOCKER_TAG"
-          if [[ "${{ inputs.make_latest }}" == "true" && "${{ inputs.draft }}" == "false" && "$ON_MAIN" == "true" ]]; then
-            TAGS+=" --tag $IMAGE_NAME:latest"
+          if [[ "${{ inputs.draft }}" == "false" && "$ON_MAIN" == "true" ]]; then
+            if [[ "${{ inputs.make_latest }}" == "true" ]]; then
+              TAGS+=" --tag $IMAGE_NAME:latest"
+            else
+              TAGS+=" --tag $IMAGE_NAME:nigthly-latest"
+            fi
           fi
           echo "TAGS=${TAGS}"
           docker buildx imagetools create $IMAGE_NAME:$DOCKER_TAG $TAGS
