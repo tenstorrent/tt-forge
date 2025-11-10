@@ -14,6 +14,9 @@ jobs:
   filter-tests:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Trigger Docker Performance test
       uses: ./.github/actions/trigger-workflow
       id: trigger-perf-test
