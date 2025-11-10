@@ -139,7 +139,7 @@ jobs:
       - name: Test matrix flattening
         run: |
           echo "Testing matrix flattening with multiple runners..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge --test-filter basic-test)
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --test-filter basic-test)
           echo "$result"
 
           # basic-test should be flattened into 2 entries (n150 and p150)
