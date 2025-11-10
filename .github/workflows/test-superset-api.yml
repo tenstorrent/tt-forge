@@ -63,7 +63,7 @@ jobs:
     uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix_n150 }}
-      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nigthly-latest"
+      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nightly-latest"
 
   run-p150-perf-benchmarks:
     needs: filter-tests
@@ -72,7 +72,7 @@ jobs:
     uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix_p150 }}
-      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nigthly-latest"
+      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nightly-latest"
 
   produce-data:
     needs:
