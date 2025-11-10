@@ -9,9 +9,9 @@ import pytest
 import socket
 
 
-OPTIMIZER_ENABLED = False
+OPTIMIZER_ENABLED = True
 PROGRAM_CACHE_ENABLED = True
-MEMORY_LAYOUT_ANALYSIS_ENABLED = True
+MEMORY_LAYOUT_ANALYSIS_ENABLED = False
 TRACE_ENABLED = False
 
 if PROGRAM_CACHE_ENABLED:
@@ -101,15 +101,7 @@ def test_unet_vanilla_torch_xla(
     warmup_inputs = [torch.randn(batch_size, channel_size, input_size[0], input_size[1])] * loop_count
 
     # Create vanilla UNet with tt-metal configuration
-    # framework_model: nn.Module = UNET(
-    #     in_channels=channel_size,
-    #     out_channels=1,
-    #     list_feature_size=feature_sizes
-    # )
-    framework_model: nn.Module = ReferenceUNET(
-        in_channels=channel_size,
-        out_channels=1,
-    )
+    framework_model: nn.Module = UNET(in_channels=channel_size, out_channels=1, list_feature_size=feature_sizes)
     model_info = f"vanilla_unet_features_{feature_sizes}"
 
     if data_format == "bfloat16":
