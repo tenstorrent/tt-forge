@@ -3,6 +3,7 @@ name: Performance benchmark experimental
 on:
   schedule:
     - cron: '0 5 * * *'
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -50,7 +51,7 @@ jobs:
     uses: ./.github/workflows/call-perf-test.yml
     with:
       matrix: ${{ needs.filter-tests.outputs.matrix_p150 }}
-      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nightly-latest"
+      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nigthly-latest"
 
   produce-data:
     needs:
