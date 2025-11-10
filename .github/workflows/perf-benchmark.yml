@@ -42,7 +42,7 @@ on:
           - All
           - n150
           - p150
-        default: All
+        default: n150
   workflow_call:
     inputs:
       docker-image:
@@ -80,7 +80,6 @@ on:
         required: false
         type: boolean
 
-# todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
 permissions:
   id-token: write
   actions: write
