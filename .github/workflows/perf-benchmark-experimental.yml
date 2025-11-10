@@ -31,7 +31,7 @@ jobs:
       shell: bash
       run: |
         result=$(python .github/workflows/filter-test-matrix.py \
-          .github/workflows/perf-bench-matrix.json ""
+          .github/workflows/perf-bench-matrix.json "")
 
         matrix=$(echo $result | jq -r -c '.matrix')
         matrix_n150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("n150")))')
