@@ -62,7 +62,7 @@ jobs:
           fi
 
           if [ "${{ inputs.project-filter }}" == "tt-forge" ]; then
-            frontends="tt-xla tt-forge-fe"
+            frontends="tt-xla"
           elif [ -n "${{ inputs.project-filter }}" ]; then
             frontends="${{ inputs.project-filter }}"
           fi

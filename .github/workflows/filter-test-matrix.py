@@ -28,7 +28,7 @@ def filter_matrix(matrix, project_filter, name_filter=None):
     """Filter matrix based on project and name attributes."""
 
     def should_include(item):
-        if project_filter == "tt-forge" and item.get("project") not in ["tt-xla", "tt-forge-fe"]:
+        if project_filter == "tt-forge" and item.get("project") not in ["tt-xla"]:
             return False
         if project_filter != "tt-forge" and item.get("project") != project_filter:
             return False
