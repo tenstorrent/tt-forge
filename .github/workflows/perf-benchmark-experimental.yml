@@ -12,9 +12,7 @@ jobs:
   filter-tests:
     runs-on: ubuntu-latest
     outputs:
-      matrix_n150: ${{ steps.set-perf-benchmarks.outputs.matrix_n150 }}
       matrix_p150: ${{ steps.set-perf-benchmarks.outputs.matrix_p150 }}
-      matrix_n150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_n150_skip }}
       matrix_p150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_p150_skip }}
     steps:
     - name: Checkout repository
@@ -34,34 +32,16 @@ jobs:
           "tt-forge")
 
         matrix=$(echo $result | jq -r -c '.matrix')
-        matrix_n150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("n150")))')
         matrix_p150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("p150")))')
 
-        matrix_n150_skip="false"
         matrix_p150_skip="false"
 
-        if [ "$matrix_n150" == "[]" ]; then
-          matrix_n150_skip="true"
-        fi
         if [ "$matrix_p150" == "[]" ]; then
           matrix_p150_skip="true"
         fi
 
-        matrix_n150_skip="true"
-
-        echo "matrix_n150=$matrix_n150" >> $GITHUB_OUTPUT
         echo "matrix_p150=$matrix_p150" >> $GITHUB_OUTPUT
-        echo "matrix_n150_skip=$matrix_n150_skip" >> $GITHUB_OUTPUT
         echo "matrix_p150_skip=$matrix_p150_skip" >> $GITHUB_OUTPUT
-
-  run-n150-perf-benchmarks:
-    needs: filter-tests
-    if: ${{ needs.filter-tests.outputs.matrix_n150_skip == 'false' }}
-    secrets: inherit
-    uses: ./.github/workflows/call-perf-test.yml
-    with:
-      matrix: ${{ needs.filter-tests.outputs.matrix_n150 }}
-      docker-image: "ghcr.io/tenstorrent/tt-forge-slim:nightly-latest"
 
   run-p150-perf-benchmarks:
     needs: filter-tests
@@ -74,7 +54,6 @@ jobs:
 
   produce-data:
     needs:
-      - run-n150-perf-benchmarks
       - run-p150-perf-benchmarks
     if: always()
     runs-on: ubuntu-latest
