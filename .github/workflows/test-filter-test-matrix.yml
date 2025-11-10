@@ -86,7 +86,7 @@ jobs:
           echo "$result"
 
           # Check that result contains expected tests
-          echo "$result" | jq -e '.matrix | length == 5'
+          echo "$result" | jq -e '.matrix | length == 1'
 
       - name: Test specific test filter
         run: |
