@@ -3,7 +3,6 @@ name: Performance benchmark experimental
 on:
   schedule:
     - cron: '0 5 * * *'
-  workflow_dispatch:
 
 permissions:
   id-token: write
