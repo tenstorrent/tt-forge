@@ -38,11 +38,11 @@ runs:
             
             # If input filter is empty, add all repos
             if [[ -z "${{ inputs.repo }}" ]]; then
-              echo "Adding repo: $repo"
+              echo "Adding repo: $repo" >&2
               json_results=$(echo "$json_results" | jq -r -c --arg repo "$repo" --arg repo_short "$repo_short" '. + [{"repo": $repo, "repo_short": $repo_short}]')
             # If input filter matches, add only that repo
             elif [[ "$repo_short" == "${{ inputs.repo }}" ]]; then
-              echo "Adding filtered repo: $repo"
+              echo "Adding filtered repo: $repo" >&2
               json_results=$(echo "$json_results" | jq -r -c --arg repo "$repo" --arg repo_short "$repo_short" '. + [{"repo": $repo, "repo_short": $repo_short}]')
             fi
           done
