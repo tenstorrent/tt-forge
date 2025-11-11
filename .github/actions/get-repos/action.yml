@@ -32,10 +32,10 @@ runs:
         process_repos() {
           local repos="$1"
           local json_results='[]'
-          
+
           for repo in $repos; do
             local repo_short="${repo#tenstorrent/}"
-            
+
             # If input filter is empty, add all repos
             if [[ -z "${{ inputs.repo }}" ]]; then
               echo "Adding repo: $repo" >&2
@@ -46,21 +46,21 @@ runs:
               json_results=$(echo "$json_results" | jq -r -c --arg repo "$repo" --arg repo_short "$repo_short" '. + [{"repo": $repo, "repo_short": $repo_short}]')
             fi
           done
-          
+
           echo "$json_results"
         }
 
         # Process both repo lists
         echo "Processing schedule_nightly_repos..."
         schedule_nightly_repos_results=$(process_repos "$schedule_nightly_repos")
-        
+
         echo "Processing schedule_rc_stable_update_repos..."
         schedule_rc_stable_update_repos_results=$(process_repos "$schedule_rc_stable_update_repos")
 
         # Output the results
         echo "schedule_nightly_repos_results: $schedule_nightly_repos_results"
         echo "schedule_rc_stable_update_repos_results: $schedule_rc_stable_update_repos_results"
-        
+
         # Output the results to the job
         echo "schedule_nightly_repos_results=$schedule_nightly_repos_results" >> $GITHUB_OUTPUT
         echo "schedule_rc_stable_update_repos_results=$schedule_rc_stable_update_repos_results" >> $GITHUB_OUTPUT
