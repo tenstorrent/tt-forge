@@ -55,7 +55,8 @@ jobs:
 
   get-repos:
     outputs:
-      json_results: ${{ steps.get-repos.outputs.json_results }}
+      schedule_nightly_repos_results: ${{ steps.get-repos.outputs.schedule_nightly_repos_results }}
+      schedule_rc_stable_update_repos_results: ${{ steps.get-repos.outputs.schedule_rc_stable_update_repos_results }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -72,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_rc_stable_update_repos_results) }}
     uses: ./.github/workflows/update-releases.yml
     secrets: inherit
     name: ${{ matrix.repo_short }} Update RC and Stable
@@ -86,7 +87,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_nightly_repos_results) }}
     name: ${{ matrix.repo_short }} Nightly Release
     secrets: inherit
     uses: ./.github/workflows/release.yml
