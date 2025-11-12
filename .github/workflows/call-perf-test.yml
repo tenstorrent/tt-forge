@@ -280,6 +280,7 @@ jobs:
           [ -n "${{ matrix.build.model_config.data_format }}" ] && PYTEST_OPTS="$PYTEST_OPTS --data-format ${{ matrix.build.model_config.data_format }}"
           [ -n "${{ matrix.build.model_config.measure_cpu }}" ] && PYTEST_OPTS="$PYTEST_OPTS --measure-cpu ${{ matrix.build.model_config.measure_cpu }}"
           [ -n "${{ matrix.build.model_config.task }}" ] && PYTEST_OPTS="$PYTEST_OPTS --task ${{ matrix.build.model_config.task }}"
+          [ -n "${{ matrix.build.experimental_compile }}" ] && PYTEST_OPTS="$PYTEST_OPTS --experimental-compile ${{ matrix.build.experimental_compile }}"
 
           pytest -svv "${{ matrix.build.pytest }}" --variant ${{ matrix.build.variant }} --output=${{ steps.strings.outputs.perf_report_json_file }} $PYTEST_OPTS
         fi

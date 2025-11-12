@@ -31,6 +31,7 @@
       },
       {
         "name": "resnet",
+        "bs": 8,
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
       },
       {
@@ -156,7 +157,8 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": false,
+          "experimental_compile": false
         },
         "skip-device-perf": true
       },
@@ -167,7 +169,8 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": false,
+          "experimental_compile": false
         },
         "skip-device-perf": true
       },

@@ -237,6 +237,7 @@ def benchmark_llm_torch_xla(
     data_format,
     measure_cpu,
     input_sequence_length,
+    experimental_compile,
 ):
     """
     This function creates an LLM based model using PyTorch and torch-xla.
@@ -342,7 +343,7 @@ def benchmark_llm_torch_xla(
     torch_xla.set_custom_compile_options(options)
 
     # Compile model
-    compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": True})
+    compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": experimental_compile})
 
     # Warmup run
     print("Warming up...")

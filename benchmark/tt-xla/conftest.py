@@ -147,6 +147,13 @@ def pytest_addoption(parser):
         type=make_validator_task("--task"),
         help=f"Task type. Valid values: {', '.join(sorted(VALID_TASKS))}. Overrides config value.",
     )
+    parser.addoption(
+        "--experimental-compile",
+        action="store",
+        default=None,
+        type=make_validator_boolean("--experimental-compile"),
+        help="Enable experimental compile flag (true/false). Overrides config value.",
+    )
 
 
 @pytest.fixture
@@ -202,3 +209,8 @@ def measure_cpu(request):
 @pytest.fixture
 def task(request):
     return request.config.getoption("--task")
+
+
+@pytest.fixture
+def experimental_compile(request):
+    return request.config.getoption("--experimental-compile")
