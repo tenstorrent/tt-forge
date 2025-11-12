@@ -88,7 +88,7 @@
       },
       {
         "name": "bge_m3_encode",
-        "bs": 1,
+        "bs": 4,
         "lp": 32,
         "df": "float32",
         "input_sequence_length": 512,
