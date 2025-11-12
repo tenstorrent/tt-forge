@@ -8,7 +8,7 @@ on:
         description: "Docker image used in tests"
         required: false
         type: string
-        default: "ghcr.io/tenstorrent/tt-forge-slim:latest"
+        default: "ghcr.io/tenstorrent/tt-xla-slim:nightly-latest"
       project-filter:
         description: "Project filter"
         required: false
@@ -42,7 +42,7 @@ on:
           - All
           - n150
           - p150
-        default: All
+        default: n150
   workflow_call:
     inputs:
       docker-image:
