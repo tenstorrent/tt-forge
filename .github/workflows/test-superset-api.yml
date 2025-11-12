@@ -23,6 +23,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Call Superset API
+        id: api-call-org
+        uses: ./.github/actions/superset-api
+        with:
+          query: 'benchmarks/last_measurement'
+          query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"ResNet Torch-XLA 50","batch_size":"12","precision":"bfloat16","github_pipeline_id":"19091232636"}'
+          # query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
+
+      - name: Call Superset API
         id: api-call
         uses: ./.github/actions/superset-api
         with:
@@ -37,6 +45,11 @@ jobs:
           query: 'benchmarks/last_measurement'
           query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"ResNet Torch-XLA 50","batch_size":"12","precision":"bfloat16","github_pipeline_id":"19091232636","arch":"blackhole"}'
           # query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
+
+      - name: Display Response Original
+        run: |
+          echo "API Response Original:"
+          echo '${{ steps.api-call-org.outputs.response }}'
 
       - name: Display Response
         run: |
