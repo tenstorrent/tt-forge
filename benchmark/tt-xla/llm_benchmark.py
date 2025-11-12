@@ -338,6 +338,7 @@ def benchmark_llm_torch_xla(
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
         "export_path": MODULE_EXPORT_PATH,
+        "experimental_bfp8_weights": True
     }
 
     torch_xla.set_custom_compile_options(options)
