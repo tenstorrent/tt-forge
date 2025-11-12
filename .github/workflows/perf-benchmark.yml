@@ -79,8 +79,12 @@ on:
         description: "Performance benchmark triggered from an uplift PR"
         required: false
         type: boolean
+      runs-on-filter:
+        description: "Architecture you want to run the tests on"
+        required: false
+        type: string
+        default: "n150"
 
-# todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
 permissions:
   id-token: write
   actions: write
