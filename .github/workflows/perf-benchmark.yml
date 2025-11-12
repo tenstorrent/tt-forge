@@ -8,7 +8,7 @@ on:
         description: "Docker image used in tests"
         required: false
         type: string
-        default: "ghcr.io/tenstorrent/tt-xla-slim:nightly-latest"
+        default: "ghcr.io/tenstorrent/tt-forge-slim:latest"
       project-filter:
         description: "Project filter"
         required: false
@@ -42,7 +42,7 @@ on:
           - All
           - n150
           - p150
-        default: n150
+        default: All
   workflow_call:
     inputs:
       docker-image:
@@ -79,12 +79,8 @@ on:
         description: "Performance benchmark triggered from an uplift PR"
         required: false
         type: boolean
-      runs-on-filter:
-        description: "Architecture you want to run the tests on"
-        required: false
-        type: string
-        default: "n150"
 
+# todo(vvukoman): add these permissions to mlir and frontend workflow's that call this wf
 permissions:
   id-token: write
   actions: write
@@ -166,7 +162,7 @@ jobs:
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
-      on_uplift_pr: true
+      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
 
   run-p150-perf-benchmarks:
     needs: filter-tests
@@ -184,7 +180,7 @@ jobs:
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
-      on_uplift_pr: true
+      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
 
   fail-notify:
     if: always()
