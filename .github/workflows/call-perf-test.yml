@@ -290,25 +290,27 @@ jobs:
       run: |
 
         echo "Dump ttir to report"
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttir
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+            cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
           else
-            cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+            cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
           fi
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
+          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
         fi
 
         echo "Dump ttnn to report"
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttnn
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+            cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
           else
-            cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+            cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
           fi
         elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
+          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
         fi
 
     - name: Upload TTIR MLIR separately
@@ -317,8 +319,7 @@ jobs:
       if: ${{ !matrix.build.skip-ttir-dump }}
       with:
         name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
-        path: ${{ steps.strings.outputs.perf_report_path }}/ttir.mlir
-        compression-level: 0
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttir/
 
     - name: Upload TTNN MLIR separately
       id: upload-ttnn-mlir
@@ -326,8 +327,7 @@ jobs:
       if: ${{ !matrix.build.skip-ttnn-dump }}
       with:
         name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
-        path: ${{ steps.strings.outputs.perf_report_path }}/ttnn.mlir
-        compression-level: 0
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttnn/
 
     - name: Run Device Perf
       if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' }}

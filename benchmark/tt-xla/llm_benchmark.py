@@ -43,6 +43,8 @@ if PROGRAM_CACHE_ENABLED:
 # Default input prompt
 DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
 
+MODULE_EXPORT_PATH = "modules"
+
 
 def setup_model_and_tokenizer(model_loader) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
     """
@@ -334,6 +336,7 @@ def benchmark_llm_torch_xla(
         "enable_memory_layout_analysis": memory_layout_analysis,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
+        "export_path": MODULE_EXPORT_PATH,
     }
 
     torch_xla.set_custom_compile_options(options)
