@@ -314,7 +314,7 @@ def test_bge_m3_encode_torch_xla(
     torch_xla.set_custom_compile_options(options)
 
     # Compile model with TT backend
-    compiled_model = torch.compile(model, backend="tt")
+    compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": False})
 
     device = xm.xla_device()
     # Send actual device to model encode

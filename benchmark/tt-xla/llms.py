@@ -64,6 +64,7 @@ def test_llm(
     data_format,
     measure_cpu,
     task,
+    experimental_compile,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -121,6 +122,9 @@ def test_llm(
     data_format = data_format if data_format is not None else variant_config.get("data_format", DATA_FORMAT)
     measure_cpu = measure_cpu if measure_cpu is not None else variant_config.get("measure_cpu", MEASURE_CPU)
     task = task if task is not None else variant_config.get("task", TASK)
+    experimental_compile = (
+        experimental_compile if experimental_compile is not None else variant_config.get("experimental_compile", True)
+    )
 
     print(f"Running LLM benchmark for variant: {variant}")
     print(
@@ -134,6 +138,7 @@ def test_llm(
     data_format={data_format}
     measure_cpu={measure_cpu}
     task={task}
+    experimental_compile={experimental_compile}
     """
     )
 
@@ -149,6 +154,7 @@ def test_llm(
         measure_cpu=measure_cpu,
         input_sequence_length=input_sequence_length,
         training=False,
+        experimental_compile=experimental_compile,
     )
 
     if output:

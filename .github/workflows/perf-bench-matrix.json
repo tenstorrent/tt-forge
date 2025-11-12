@@ -27,67 +27,80 @@
         "name": "mnist",
         "pyreq": "pytest tqdm loguru requests transformers ultralytics datasets torch==2.7.0",
         "df": "float32",
-        "bs": 32
+        "bs": 32,
+        "skip-device-perf": true
       },
       {
         "name": "resnet",
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "bs": 8,
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "mobilenetv2",
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "efficientnet",
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "segformer",
         "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "unet",
         "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "vit",
         "bs": 8,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "vovnet",
         "bs": 8,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "yolov4",
         "bs": 1,
         "lp": 32,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "yolov8",
         "bs": 1,
         "lp": 32,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "yolov9",
         "bs": 1,
         "lp": 32,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "yolov10",
         "bs": 1,
         "lp": 32,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
       },
       {
         "name": "bge_m3_encode",
-        "bs": 1,
+        "bs": 4,
         "lp": 32,
         "df": "float32",
         "input_sequence_length": 512,
@@ -156,7 +169,8 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": false,
+          "experimental_compile": false
         },
         "skip-device-perf": true
       },
@@ -167,7 +181,8 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": false,
+          "experimental_compile": false
         },
         "skip-device-perf": true
       },
