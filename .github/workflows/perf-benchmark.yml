@@ -184,7 +184,7 @@ jobs:
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
-      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
+      on_uplift_pr: true
 
   fail-notify:
     if: always()
