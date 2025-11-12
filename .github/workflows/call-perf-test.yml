@@ -397,6 +397,12 @@ jobs:
         echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
         arch=""
+        if [[ "${{ matrix.build.runs-on-original }}" == "n150" ]]; then
+          arch="wormhole"
+        elif [[ "${{ matrix.build.runs-on-original }}" == "p150" ]]; then
+          arch="blackhole"
+        fi
+        echo "arch=$arch" >> $GITHUB_OUTPUT
 
 
     - name: Fetch previous perf results
@@ -405,7 +411,7 @@ jobs:
       uses: ./.github/actions/superset-api
       with:
         query: 'benchmarks/last_measurement'
-        query_params: '{"project":"tt-forge/${{ matrix.build.project }}","ml_model_name":"${{ steps.set-query-strings.outputs.model_name }}","batch_size":"${{ matrix.build.bs }}","precision":"${{ matrix.build.df }}","github_pipeline_id":"${{ steps.set-query-strings.outputs.last_nightly_workflow_id }}","arch":}'
+        query_params: '{"project":"tt-forge/${{ matrix.build.project }}","ml_model_name":"${{ steps.set-query-strings.outputs.model_name }}","batch_size":"${{ matrix.build.bs }}","precision":"${{ matrix.build.df }}","github_pipeline_id":"${{ steps.set-query-strings.outputs.last_nightly_workflow_id }}","arch":"${{ steps.set-query-strings.outputs.arch }}"}'
 
     - name: Check perf regression
       if: inputs.on_uplift_pr
