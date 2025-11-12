@@ -103,7 +103,7 @@ runs:
             if [[ "${{ inputs.make_latest }}" == "true" ]]; then
               TAGS+=" --tag $IMAGE_NAME:latest"
             else
-              TAGS+=" --tag $IMAGE_NAME:nigthly-latest"
+              TAGS+=" --tag $IMAGE_NAME:nightly-latest"
             fi
           fi
           echo "TAGS=${TAGS}"
