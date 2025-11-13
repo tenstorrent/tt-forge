@@ -114,7 +114,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": true
         },
         "skip-device-perf": true
       },
@@ -125,7 +125,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": true
         },
         "skip-device-perf": true
       },
@@ -136,7 +136,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.phi1.causal_lm.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": true
         },
         "skip-device-perf": true
       },
@@ -147,7 +147,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": true
         },
         "skip-device-perf": true
       },
@@ -158,7 +158,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.phi2.causal_lm.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": true
         },
         "skip-device-perf": true
       },
@@ -169,7 +169,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "optimizer_enabled": false,
+          "optimizer_enabled": true,
           "experimental_compile": false
         },
         "skip-device-perf": true
@@ -181,7 +181,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "optimizer_enabled": false,
+          "optimizer_enabled": true,
           "experimental_compile": false
         },
         "skip-device-perf": true
@@ -193,7 +193,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": true
         },
         "skip-device-perf": true
       },
@@ -204,7 +204,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llm",
         "model_config": {
           "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader",
-          "optimizer_enabled": false
+          "optimizer_enabled": true
         },
         "skip-device-perf": true
       }
