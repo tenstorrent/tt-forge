@@ -23,6 +23,7 @@ inputs:
     description: "Latest branch commit"
     required: false
     default: ''
+
 outputs:
   workflow:
     description: "Workflow name"
@@ -120,6 +121,12 @@ outputs:
   basic_tests_runner_filter:
     description: "Basic tests runner filter"
     value: ${{ steps.set-manifest.outputs.basic_tests_runner_filter }}
+  uplift_artifacts_by_commit:
+    description: "Uplift artifacts by commit"
+    value: ${{ steps.set-manifest.outputs.uplift_artifacts_by_commit }}
+  artifact_name_prefix:
+    description: "Artifact name prefix"
+    value: ${{ steps.set-manifest.outputs.artifact_name_prefix }}
 
 runs:
   using: "composite"
@@ -182,6 +189,10 @@ runs:
         python_version="3.11"
         # Filter for which test runners to use for basic tests
         basic_tests_runner_filter="All"
+        # Uplift artifacts by commit
+        uplift_artifacts_by_commit="false"
+        # Artifact name prefix for uplift artifacts by commit
+        artifact_name_prefix=""
 
         # Tag & Release Defaults
 
@@ -223,9 +234,11 @@ runs:
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
                 workflow="On push"
             fi
+            artifact_name_prefix="xla-whl-release"
             artifact_download_glob='*{xla-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
             test_perf="true"
+            uplift_artifacts_by_commit="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             workflow="Daily Releaser"
             ignore_artifacts="true"
@@ -316,6 +329,8 @@ runs:
         echo "test_perf_sh_runner=$test_perf_sh_runner"
         echo "test_perf=$test_perf"
         echo "basic_tests_runner_filter=$basic_tests_runner_filter"
+        echo "uplift_artifacts_by_commit=$uplift_artifacts_by_commit"
+        echo "artifact_name_prefix=$artifact_name_prefix"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -351,3 +366,5 @@ runs:
         echo "test_perf_sh_runner=$test_perf_sh_runner" >> $GITHUB_OUTPUT
         echo "test_perf=$test_perf" >> $GITHUB_OUTPUT
         echo "basic_tests_runner_filter=$basic_tests_runner_filter" >> $GITHUB_OUTPUT
+        echo "uplift_artifacts_by_commit=$uplift_artifacts_by_commit" >> $GITHUB_OUTPUT
+        echo "artifact_name_prefix=$artifact_name_prefix" >> $GITHUB_OUTPUT

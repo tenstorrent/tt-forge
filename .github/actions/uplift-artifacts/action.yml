@@ -21,6 +21,19 @@ inputs:
     description: "Glob to use for deleting extra folders after a artifact is downloaded or exploded"
     type: string
     required: false
+  run-commit-sha:
+    description: "Commit sha of the workflow"
+    type: string
+    required: false
+  uplift_artifacts_by_commit:
+    description: "Uplift artifacts by commit"
+    type: string
+    required: true
+    default: "false"
+  artifact_name_prefix:
+    description: "Artifact name prefix"
+    type: string
+    required: true
 
 outputs:
   download-path:
@@ -30,13 +43,34 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Check if artifact exists
+      if: ${{ inputs.uplift_artifacts_by_commit == 'true' }}
+      id: check-artifact
+      shell: bash
+      run: |
+        # TODO: convert the commit sha to short sha for artifact name download
+        short_sha=$(git rev-parse --short ${{ inputs.run-commit-sha }})
+        artifact_name="${{ inputs.artifact_name_prefix }}-${short_sha}"
+        # Use GitHub API to check for existing artifacts
+        response=$(curl -s -H "Authorization: token ${{ github.token }}" \
+          "https://api.github.com/repos/${{ inputs.repo }}/actions/artifacts?name=${artifact_name}")
+        total_count=$(echo "$response" | jq -r '.total_count')
+
+        if [ "$total_count" -lt 1 ]; then
+          echo "No existing artifact found for: $artifact_name"
+          exit 1
+        fi
+        artifacts_run_id=$(echo "$response" | jq -r '.artifacts[0].workflow_run.id')
+        echo "artifacts_run_id=${artifacts_run_id}" >> "$GITHUB_OUTPUT"
+        echo "Found existing artifact: $artifact_name"
     - name: Download artifacts
       id: artifacts
       uses: actions/download-artifact@v4
       with:
         repository: ${{ inputs.repo }}
         pattern: ${{ inputs.artifact_download_glob }}
-        run-id: ${{ inputs.run-id }}
+        # Prefer the existing artifact run id if it exists, otherwise use the provided run id
+        run-id: ${{ steps.check-artifact.outputs.artifacts_run_id || inputs.run-id }}
         github-token: ${{ github.token }}
         path: ${{ github.workspace }}/release/artifacts/${{ inputs.repo }}
     - name: Explode and clean up artifact path

@@ -89,8 +89,11 @@ runs:
       uses: ./.github/actions/uplift-artifacts
       id: uplift-artifacts
       with:
-        repo: ${{ inputs.repo }}
+        repo: ${{ steps.set-release-facts.outputs.repo_full }}
         run-id: ${{ steps.find_workflow_build_release.outputs.run-id }}
+        run-commit-sha: ${{ steps.find_workflow_build_release.outputs.run-commit-sha }}
+        uplift_artifacts_by_commit: ${{ steps.set-release-facts.outputs.uplift_artifacts_by_commit }}
+        artifact_name_prefix: ${{ steps.set-release-facts.outputs.artifact_name_prefix }}
         artifact_download_glob: ${{ steps.set-release-facts.outputs.artifact_download_glob }}
         artifact_cleanup_file_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_file_glob }}
         artifact_cleanup_folder_glob: ${{ steps.set-release-facts.outputs.artifact_cleanup_folder_glob }}
