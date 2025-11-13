@@ -99,6 +99,13 @@
         "skip-device-perf": true
       },
       {
+        "name": "yoloworld",
+        "bs": 1,
+        "lp": 32,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
+      },
+      {
         "name": "bge_m3_encode",
         "bs": 4,
         "lp": 32,
