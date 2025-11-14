@@ -23,8 +23,10 @@ import torch_xla
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 
+from third_party.tt_forge_models.yolov4.pytorch.loader import ModelLoader as YOLOv4Loader
+from third_party.tt_forge_models.yolov4.pytorch.loader import ModelVariant
+
 from benchmark.utils import measure_cpu_fps, get_xla_device_arch
-from yolov4_utils import Yolov4Wrapper, ModelLoader
 from .utils import (
     get_benchmark_metadata,
     determine_model_type_and_dataset,
@@ -107,13 +109,18 @@ def test_yolov4_torch_xla(
         inputs = [item.to(torch.bfloat16) for item in inputs]
         warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
 
-    # Load YOLO model
-    framework_model = ModelLoader.load_model()
-    framework_model = Yolov4Wrapper(framework_model)
-
+    # Load model using tt_forge_models
+    yolov4_loader = YOLOv4Loader(variant=ModelVariant("base"))
+    model_info = yolov4_loader.get_model_info().name
+    print(f"Model name: {model_info}")
     if data_format == "bfloat16":
-        framework_model = framework_model.to(torch.bfloat16)
+        framework_model: nn.Module = yolov4_loader.load_model(dtype_override=torch.bfloat16)
+    else:
+        framework_model: nn.Module = yolov4_loader.load_model()
 
+    # Wrap the model to handle YOLOv9's tuple output
+    original_forward = framework_model.forward
+    framework_model.forward = lambda x: original_forward(x)[0]
     framework_model.eval()
 
     if measure_cpu:
