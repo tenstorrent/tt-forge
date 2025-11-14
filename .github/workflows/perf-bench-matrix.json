@@ -92,6 +92,15 @@
         "skip-device-perf": true
       },
       {
+        "name": "bert_sentence_embedding",
+        "bs": 8,
+        "lp": 32,
+        "input_sequence_length": 384,
+        "df": "float32",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
+      },
+      {
         "name": "llama_3_2_1b_instruct",
         "variant": "llama_3_2_1b_instruct",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.0",
