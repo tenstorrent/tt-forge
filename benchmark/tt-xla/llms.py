@@ -12,7 +12,7 @@ from llm_benchmark import benchmark_llm_torch_xla
 OPTIMIZER_ENABLED = False
 MEMORY_LAYOUT_ANALYSIS = False
 TRACE_ENABLED = False
-BATCH_SIZE = 1
+BATCH_SIZE = 32
 LOOP_COUNT = 1
 INPUT_SEQUENCE_LENGTH = 128
 DATA_FORMAT = "bfloat16"
