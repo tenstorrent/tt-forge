@@ -14,8 +14,7 @@
   {
     "project": "tt-xla",
     "test-defaults": {
-      "runs-on": "n150",
-      "pyreq_file": true
+      "runs-on": "n150"
     },
     "tests": [
       { "runs-on": ["n150", "p150"], "name": "albert_base_v2", "path": "nlp/jax/albert_demo.py" },
