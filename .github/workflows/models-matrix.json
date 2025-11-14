@@ -18,13 +18,12 @@
       "pyreq_file": true
     },
     "tests": [
-      { "runs-on": ["n150", "p150"], "name": "albert_base_v2", "path": "/albert_base_v2/demo.py" },
-      { "runs-on": ["n150", "p150"], "name": "gpt2",           "path": "/gpt2/demo.py" },
-      { "name": "opt_125m",          "path": "/opt_125m/demo.py" },
-      { "name": "resnet50",          "path": "/resnet50/demo.py" },
-      { "name": "eager_resnet50",    "path": "/resnet50/eager_demo.py" },
-      { "name": "bge_m3",            "path": "/bge_m3/demo.py" },
-      { "name": "bge_m3_encode",     "path": "/bge_m3/encode_demo.py" }
+      { "runs-on": ["n150", "p150"], "name": "albert_base_v2", "path": "nlp/jax/albert_demo.py" },
+      { "runs-on": ["n150", "p150"], "name": "gpt2",           "path": "nlp/jax/gpt_demo.py" },
+      { "name": "opt_125m",          "path": "nlp/jax/opt_demo.py" },
+      { "name": "resnet50",          "path": "cnn/resnet_demo.py" },
+      { "name": "bge_m3",            "path": "nlp/pytorch/bge3_demo.py" },
+      { "name": "bge_m3_encode",     "path": "nlp/pytorch/bge3_encode_demo.py" }
     ]
   },
   {
