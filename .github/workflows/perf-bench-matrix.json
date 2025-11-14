@@ -59,6 +59,12 @@
         "skip-device-perf": true
       },
       {
+        "name": "ufld",
+        "bs": 1,
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "skip-device-perf": true
+      },
+      {
         "name": "unet",
         "bs": 1,
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers torch==2.7.0",
