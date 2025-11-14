@@ -95,7 +95,8 @@ def test_llm(
 
     if ModelVariant(variant) not in ModelLoader.query_available_variants():
         raise ValueError(f"Variant {variant} is not available for the specified model.")
-    model_loader = ModelLoader(variant=ModelVariant(variant))
+    model_variant = ModelVariant(variant)
+    model_loader = ModelLoader(variant=model_variant)
 
     # Get config values for the model in the following order of precedence:
     # 1. Command line argument (if provided)
@@ -147,6 +148,7 @@ def test_llm(
         memory_layout_analysis=memory_layout_analysis,
         trace_enabled=trace_enabled,
         model_loader=model_loader,
+        model_variant=model_variant,
         batch_size=batch_size,
         loop_count=loop_count,
         task=task,
@@ -159,7 +161,7 @@ def test_llm(
 
     if output:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = model_loader.get_model_info().name
+        results["model_rawname"] = model_loader.get_model_info(variant=model_variant).name
 
         with open(output, "w") as file:
             json.dump(results, file, indent=2)

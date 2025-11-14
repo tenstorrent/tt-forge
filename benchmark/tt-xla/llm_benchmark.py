@@ -46,17 +46,18 @@ DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writ
 MODULE_EXPORT_PATH = "modules"
 
 
-def setup_model_and_tokenizer(model_loader) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
+def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
     """
     Instantiate model and tokenizer.
 
     Args:
-        model_name: HuggingFace model name
+        model_loader: Loader of the HuggingFace model.
+        model_variant: Specific variant of the model.
 
     Returns:
         Tuple of (model, tokenizer)
     """
-    print(f"Loading model {model_loader.get_model_info().name}...")
+    print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
 
     model = model_loader.load_model(dtype_override=torch.bfloat16)
     model = model.eval()
@@ -227,6 +228,7 @@ def check_transformers_version():
 
 def benchmark_llm_torch_xla(
     model_loader,
+    model_variant,
     optimizer_enabled,
     memory_layout_analysis,
     trace_enabled,
@@ -285,7 +287,7 @@ def benchmark_llm_torch_xla(
     device: torch.device = xm.xla_device()
 
     # Instantiate model and tokenizer
-    model, tokenizer = setup_model_and_tokenizer(model_loader)
+    model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
     # Construct inputs, including static cache
     input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
@@ -384,7 +386,7 @@ def benchmark_llm_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = model_loader.get_model_info().name
+    full_model_name = model_loader.get_model_info(variant=model_variant).name
     model_type = "text-generation"
     dataset_name = "Random Data"
 
