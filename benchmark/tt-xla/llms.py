@@ -96,56 +96,63 @@ def test_llm(
 def test_llama_3_2_1B(output):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.LLAMA_3_2_1B_INSTRUCT, output=output)
+    variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
 
 
 def test_llama_3_2_3B(output):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.LLAMA_3_2_3B_INSTRUCT, output=output)
+    variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
 
 
 def test_gemma_1_1_2b(output):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(
-        ModelLoaderModule=ModelLoader, variant=ModelVariant.GEMMA_1_1_2B_IT, output=output, experimental_compile=False
-    )
+    variant = ModelVariant.GEMMA_1_1_2B_IT
+    experimental_compile = False
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, experimental_compile=experimental_compile)
 
 
 def test_gemma_2_2b(output):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(
-        ModelLoaderModule=ModelLoader, variant=ModelVariant.GEMMA_2_2B_IT, output=output, experimental_compile=False
-    )
+    variant = ModelVariant.GEMMA_2_2B_IT
+    experimental_compile = False
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, experimental_compile=experimental_compile)
 
 
 def test_phi1(output):
     from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.PHI1, output=output)
+    variant = ModelVariant.PHI1
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
 
 
 def test_phi1_5(output):
     from third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.PHI1_5, output=output)
+    variant = ModelVariant.PHI1_5
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
 
 
 def test_phi2(output):
     from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.PHI2, output=output)
+    variant = ModelVariant.PHI2
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
 
 
 def test_falcon3_1b(output):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.FALCON_1B, output=output)
+    variant = ModelVariant.FALCON_1B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
 
 
 def test_falcon3_3b(output):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.FALCON_3B, output=output)
+    variant = ModelVariant.FALCON_3B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
