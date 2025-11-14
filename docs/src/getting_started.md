@@ -50,13 +50,13 @@ git clone https://github.com/tenstorrent/tt-forge.git
    * [TT-Forge-FE Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-fe)
    * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch) - (deprecated)
 
-3. In this walkthrough, [**resnet_50_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) from the TT-Forge-FE folder is used.
+3. In this walkthrough, [**resnet_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_demo.py) from the TT-Forge-FE folder is used.
 
-4. From the TT-Forge-FE folder for models, run the **resnet_50_demo.py** script. Navigate to the [main folder in the TT-Forge repository](https://github.com/tenstorrent/tt-forge/tree/main) and run the following commands:
+4. From the TT-Forge-FE folder for models, run the **resnet_demo.py** script. Navigate to the [main folder in the TT-Forge repository](https://github.com/tenstorrent/tt-forge/tree/main) and run the following commands:
 
 ```bash
 export PYTHONPATH=.
-python3 demos/tt-forge-fe/cnn/resnet_50_demo.py
+python3 demos/tt-forge-fe/cnn/resnet_demo.py
 ```
 
 If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
