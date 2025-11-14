@@ -17,12 +17,12 @@
       "runs-on": "n150"
     },
     "tests": [
-      { "runs-on": ["n150", "p150"], "name": "albert_base_v2", "path": "nlp/jax/albert_demo.py" },
-      { "runs-on": ["n150", "p150"], "name": "gpt2",           "path": "nlp/jax/gpt_demo.py" },
-      { "name": "opt_125m",          "path": "nlp/jax/opt_demo.py" },
-      { "name": "resnet50",          "path": "cnn/resnet_demo.py" },
-      { "name": "bge_m3",            "path": "nlp/pytorch/bge3_demo.py" },
-      { "name": "bge_m3_encode",     "path": "nlp/pytorch/bge3_encode_demo.py" }
+      { "runs-on": ["n150", "p150"], "name": "albert_base_v2", "path": "nlp/jax/albert_demo.py" ,"pyreq": "transformers==4.52.4"},
+      { "runs-on": ["n150", "p150"], "name": "gpt2",           "path": "nlp/jax/gpt_demo.py" ,"pyreq": "transformers==4.52.4 "},
+      { "name": "opt_125m",          "path": "nlp/jax/opt_demo.py" ,"pyreq": "transformers==4.52.4"},
+      { "name": "resnet50",          "path": "cnn/resnet_demo.py" ,"pyreq": "transformers==4.52.4 datasets torch==2.7.0 torchvision"},
+      { "name": "bge_m3",            "path": "nlp/pytorch/bge3_demo.py" ,"pyreq": "FlagEmbedding"},
+      { "name": "bge_m3_encode",     "path": "nlp/pytorch/bge3_encode_demo.py" ,"pyreq": "FlagEmbedding"}
     ]
   },
   {
