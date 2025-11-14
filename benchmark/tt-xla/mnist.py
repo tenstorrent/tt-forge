@@ -38,7 +38,6 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
-    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -74,6 +73,8 @@ CHANNEL_SIZE = [
 
 # Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
+
+MODULE_EXPORT_PATH = "modules"
 
 
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
@@ -146,6 +147,7 @@ def test_mnist_torch_xla(
         "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
+        "export_path": MODULE_EXPORT_PATH,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -166,8 +168,6 @@ def test_mnist_torch_xla(
     predictions, total_time = torch_xla_measure_fps(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
-
-    serialize_modules(f"modules/{model_name}", cache_dir)
 
     if task == "classification":
         predictions = torch.cat(predictions)
