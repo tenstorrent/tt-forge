@@ -67,7 +67,6 @@ def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Mod
 
 
 def construct_inputs(
-    input_prompt: str,
     tokenizer: PreTrainedTokenizer,
     model_config,
     batch_size: int,
@@ -86,11 +85,15 @@ def construct_inputs(
     Returns:
         Dictionary containing input_ids, past_key_values, cache_position, and use_cache
     """
-    inputs = tokenizer.encode_plus(
+    input_prompt = DEFAULT_INPUT_PROMPT
+    input_prompt = [input_prompt] * batch_size
+
+    inputs = tokenizer(
         input_prompt,
         return_tensors="pt",
         max_length=max_cache_len,
         truncation=True,
+        padding=True,
     )
 
     # Static cache should be initialized on CPU and separately transferred to device
@@ -173,12 +176,12 @@ def generate_and_benchmark(
                 logits: torch.Tensor = output.logits.to("cpu")
 
             output_logits.append(logits)
-            next_token_id = logits[:, -1].argmax(dim=-1)
-            output_text = tokenizer.decode(next_token_id)
+            next_token_ids = logits[:, -1].argmax(dim=-1)
+            output_text = [tokenizer.decode(token_id) for token_id in next_token_ids]
             output_tokens.append(output_text)
 
             # Check for EOS token and early exit
-            if next_token_id.item() == tokenizer.eos_token_id:
+            if torch.all(next_token_ids == tokenizer.eos_token_id):
                 if verbose:
                     print()  # Add newline after generation completes
                 end = time.perf_counter_ns()
@@ -188,7 +191,7 @@ def generate_and_benchmark(
                 break
 
             # Update inputs for next iteration
-            input_args["input_ids"] = next_token_id.unsqueeze(-1).to(device)
+            input_args["input_ids"] = next_token_ids.unsqueeze(-1).to(device)
 
             host_cache_pos = input_args["cache_position"].to("cpu")
             host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
@@ -280,7 +283,6 @@ def benchmark_llm_torch_xla(
     xr.set_device_type("TT")
 
     # Set up config variables
-    input_prompt: str = DEFAULT_INPUT_PROMPT
     max_cache_len: int = input_sequence_length
 
     # Connect the device
@@ -290,7 +292,7 @@ def benchmark_llm_torch_xla(
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
     # Construct inputs, including static cache
-    input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
 
     # Limit maximum generation count to fit within preallocated static cache
     max_tokens_to_generate: int = max_cache_len - input_args["input_ids"].shape[1]
@@ -312,7 +314,7 @@ def benchmark_llm_torch_xla(
         # Measure CPU performance by taking the best of each token over 256 iterations
         min_time_ns = sys.maxsize
         for i in range(MIN_STEPS):
-            input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
+            input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
             _, iteration_times = generate_and_benchmark(
                 model,
                 input_args,
@@ -329,7 +331,7 @@ def benchmark_llm_torch_xla(
         cpu_tokens_per_second = -1.0
 
     # Transfer model and inputs to device
-    input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
     input_args = transfer_to_device(input_args, device)
     model = model.to(device, dtype=torch.bfloat16)
 
@@ -339,6 +341,7 @@ def benchmark_llm_torch_xla(
         "enable_memory_layout_analysis": memory_layout_analysis,
         "enable_l1_interleaved": False,
         "enable_fusing_conv2d_with_multiply_pattern": True,
+        "enable_trace": trace_enabled,
         "export_path": MODULE_EXPORT_PATH,
     }
 
@@ -360,7 +363,7 @@ def benchmark_llm_torch_xla(
     )
 
     # Reconstruct inputs for the actual benchmark run
-    input_args = construct_inputs(input_prompt, tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
     input_args = transfer_to_device(input_args, device)
 
     # Run benchmark once
@@ -420,7 +423,7 @@ def benchmark_llm_torch_xla(
     )
 
     # Check PCC
-    pcc_value = compute_pcc(output_logits[0], cpu_logits, required_pcc=0.99)
+    pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=0.99)
     print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     result = create_benchmark_result(
