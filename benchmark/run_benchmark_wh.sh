@@ -50,18 +50,6 @@ python benchmark/benchmark.py -p tt-forge-fe -m vit -ts classification -bs 8 -df
 # Vovnet
 python benchmark/benchmark.py -p tt-forge-fe -m vovnet -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-vovnet.json
 
-# YOLO v4
-python benchmark/benchmark.py -p tt-forge-fe -m yolo_v4 -bs 1 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-yolo_v4.json
-
-# YOLO v8
-python benchmark/benchmark.py -p tt-forge-fe -m yolo_v8 -bs 1 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-yolo_v8.json
-
-# YOLO v9
-python benchmark/benchmark.py -p tt-forge-fe -m yolo_v9 -bs 1 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-yolo_v9.json
-
-# YOLO v10
-python benchmark/benchmark.py -p tt-forge-fe -m yolo_v10 -bs 1 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-yolo_v10.json
-
 # ------------------------------------------------------- #
 # TT-Torch Compiler
 # ------------------------------------------------------- #
