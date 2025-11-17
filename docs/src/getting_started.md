@@ -156,5 +156,5 @@ Once you have completed the prerequisites, you can run the performance benchmark
    **Example:**
 
    ```bash
-   python -m pytest -svv tt-forge-fe/yolo_v8.py
+   python -m pytest -svv tt-forge-fe/resnet_hf.py
    ```

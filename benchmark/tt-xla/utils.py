@@ -31,7 +31,7 @@ def compute_pcc(golden_output, device_output, required_pcc: float = 0.99) -> flo
     """
     Compute Pearson Correlation Coefficient between golden and device output.
 
-    Supports single tensors or collections of tensors (e.g., YOLO multi-scale outputs).
+    Supports single tensors or collections of tensors (e.g., multi-scale outputs).
     For collections, computes PCC for each element individually, then computes the overall
     PCC by concatenating all tensors into a single flattened tensor before comparison.
 
