@@ -82,7 +82,6 @@ flowchart TD
             subgraph FrontEnds["<span style='font-size:16px;font-weight:bold'>Front Ends</span>"]
                 direction LR
                 %% Add extra spacing between frontend components
-                TT_TORCH("<span style='font-size:14px;font-weight:bold'>tt-torch</span>")
                 TT_FORGE_FE("<span style='font-size:14px;font-weight:bold'>tt-forge-FE</span>")
                 TT_XLA("<span style='font-size:14px;font-weight:bold'>tt-xla</span>")
             end
@@ -223,7 +222,6 @@ flowchart TD
 
     %% Add clickable URLs to frontend components
     click TT_XLA "https://github.com/tenstorrent/tt-xla" "tt-xla GitHub Repository" _blank
-    click TT_TORCH "https://github.com/tenstorrent/tt-torch" "tt-torch GitHub Repository" _blank
     click TT_FORGE_FE "https://github.com/tenstorrent/tt-forge-fe" "tt-forge-fe GitHub Repository" _blank
 
     %% Add clickable URLs to IR components
@@ -274,7 +272,7 @@ flowchart TD
 
 - [TT-Torch](https://github.com/tenstorrent/tt-torch) - (deprecated)
   - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to TT-MLIR. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
-  - See the [TT-Torch docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide.
+  - See the [TT-Torch docs pages](https://docs.tenstorrent.com/tt-torch) (deprecated) for an overview and getting started guide.
 
 # [TT-MLIR](https://github.com/tenstorrent/tt-mlir) Project
 
