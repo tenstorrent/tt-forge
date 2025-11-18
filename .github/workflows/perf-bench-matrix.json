@@ -153,18 +153,6 @@
         "skip-device-perf": true
       },
       {
-        "name": "google_gemma-2-2b-it",
-        "variant": "google/gemma-2-2b-it",
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.0",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "optimizer_enabled": false,
-          "experimental_compile": false
-        },
-        "skip-device-perf": true
-      },
-      {
         "name": "tiiuae_falcon3-1b-base",
         "variant": "tiiuae/Falcon3-1B-Base",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.0",
