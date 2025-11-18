@@ -25,7 +25,7 @@
       },
       {
         "name": "mnist",
-        "pyreq": "pytest tqdm loguru requests tabulate transformers datasets torch==2.7.0",
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
         "df": "float32",
         "bs": 32,
         "skip-device-perf": true
