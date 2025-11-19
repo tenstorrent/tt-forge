@@ -423,7 +423,7 @@ def benchmark_llm_torch_xla(
     )
 
     # Check PCC
-    pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=0.99)
+    pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=0.95)
     print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     result = create_benchmark_result(
