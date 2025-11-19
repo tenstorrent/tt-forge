@@ -168,7 +168,7 @@ def test_ufld_torch_xla(
     )
 
     if task == "na":
-        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.90)
+        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
         print(f"PCC verification passed with PCC={pcc_value:.6f}")
         evaluation_score = 0.0
     else:
