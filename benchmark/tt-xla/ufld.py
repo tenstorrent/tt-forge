@@ -150,7 +150,7 @@ def test_ufld_torch_xla(
     }
 
     torch_xla.set_custom_compile_options(options)
-    framework_model.compile(backend="tt")
+    framework_model.compile(backend="tt", options={"tt_experimental_compile": True})
 
     device = torch_xla.device()
 
