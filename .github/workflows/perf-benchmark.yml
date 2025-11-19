@@ -18,7 +18,7 @@ on:
           - tt-forge
         default: tt-forge
       test-filter:
-        description: "Only run tests that contains"
+        description: "Filter tests based on the name property. One or filters which are contained (case insensitive) in the name (e.g. 'resn' or 'resn,mni,yol')"
         required: false
         type: string
       update-wheel:
@@ -68,7 +68,7 @@ on:
         required: false
         type: string
       test-filter:
-        description: "Only run tests that contains"
+        description: "Filter tests based on the name property. One or filters which are contained (case insensitive) in the name (e.g. 'resn' or 'resn,mni,yol')"
         required: false
         type: string
       sh-runner:
