@@ -28,7 +28,7 @@ cache_dir = f"{os.getcwd()}/cachedir"
 xr.initialize_cache(cache_dir)
 
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_xla_device_arch
-from third_party.tt_forge_models.mnist.pytorch.loader import ModelLoader as MNISTLoader
+from third_party.tt_forge_models.mnist.image_classification.pytorch.loader import ModelLoader as MNISTLoader
 from .utils import (
     get_benchmark_metadata,
     determine_model_type_and_dataset,
