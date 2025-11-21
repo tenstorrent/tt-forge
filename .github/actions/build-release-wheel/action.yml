@@ -40,6 +40,11 @@ inputs:
     required: false
     type: boolean
     default: false
+  mode:
+    description: "Mode to use when invoke a release workflow (pull: pick up release from tt-forge, push: invoke release from child repo workflow (e.g tt-xla))"
+    required: false
+    type: string
+    default: 'pull'
 
 outputs:
   release-artifacts-id:
@@ -83,6 +88,7 @@ runs:
         commit: ${{ inputs.latest_branch_commit }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
         ignore_artifacts: ${{ steps.set-release-facts.outputs.ignore_artifacts }}
+        mode: ${{ inputs.mode }}
 
     - name: Uplift ${{ inputs.repo }} artifacts
       if: ${{ steps.set-release-facts.outputs.ignore_artifacts == 'false' }}

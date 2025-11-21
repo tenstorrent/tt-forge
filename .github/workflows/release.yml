@@ -53,6 +53,11 @@ on:
         required: false
         type: boolean
         default: false
+      mode:
+        description: "Mode to use when invoke a release workflow (pull: pick up release from tt-forge, push: invoke release from child repo workflow (e.g tt-xla))"
+        required: false
+        type: string
+        default: 'pull'
 
 permissions:
   pages: write
@@ -148,6 +153,7 @@ jobs:
         unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
+        mode: ${{ inputs.mode }}
 
     - name: "Build Forge Ubuntu 22.04 Py 3.11"
       if: ${{ steps.set-release-facts.outputs.python_version == '3.11' }}

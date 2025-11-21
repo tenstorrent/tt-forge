@@ -31,6 +31,11 @@ inputs:
     description: "Override release facts workflow"
     default: false
     required: false
+  mode:
+    description: "Mode to use when invoke a release workflow (pull: pick up release from tt-forge, push: invoke release from child repo workflow (e.g tt-xla))"
+    required: false
+    type: string
+    default: 'pull'
 
 outputs:
   run-status-symbol:
@@ -108,7 +113,14 @@ runs:
             run_conclusion=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].conclusion')
           fi
 
-          if [[ "$run_status" == "completed" ]]; then
+          if [[ "${{ inputs.mode }}" == "push" ]]; then
+              # With push mode, we assume the workflow is successful since vaildation occur before invoking the release workflow
+              # If we need to improve gating, we can check the jobs conclusion instead of the workflow conclusion.
+              run_status_symbol=":white_check_mark:"
+              success=true
+              break
+
+          elif [[ "$run_status" == "completed" ]]; then
 
             run_artifact_count=$(gh api repos/${{ inputs.repo }}/actions/runs/$run_id/artifacts | jq -r '.total_count')
 
