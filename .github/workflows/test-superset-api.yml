@@ -64,7 +64,7 @@ jobs:
         with:
           branch: uplift-forge-models
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          author: "vvukoman <vvukoman@tenstorrent.com>"
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           base: main
           commit-message: "Uplift ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }} ${{ env.TODAY }}"
           title: "Uplift ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }} ${{ env.TODAY }}"
