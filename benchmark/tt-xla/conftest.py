@@ -74,6 +74,21 @@ def make_validator_positive_int(option_name):
     return validate
 
 
+def make_validator_optimization_level(option_name):
+    """Create an optimization level validator with the option name in error messages."""
+
+    def validate(value):
+        try:
+            int_value = int(value)
+            if int_value not in (0, 1, 2):
+                raise ValueError
+            return int_value
+        except (ValueError, TypeError):
+            raise pytest.UsageError(f"Invalid value for {option_name}: '{value}'. Must be 0, 1, or 2.")
+
+    return validate
+
+
 def pytest_addoption(parser):
     """Adds a custom command-line option to pytest."""
     parser.addoption("--output", action="store", default=None, help="Path to save benchmark results as JSON.")
@@ -85,18 +100,11 @@ def pytest_addoption(parser):
     )
     # Optional configuration arguments
     parser.addoption(
-        "--optimizer-enabled",
+        "--optimization-level",
         action="store",
         default=None,
-        type=make_validator_boolean("--optimizer-enabled"),
-        help="Enable optimizer (true/false). Overrides config value.",
-    )
-    parser.addoption(
-        "--memory-layout-analysis",
-        action="store",
-        default=None,
-        type=make_validator_boolean("--memory-layout-analysis"),
-        help="Enable memory layout analysis (true/false). Overrides config value.",
+        type=make_validator_optimization_level("--optimization-level"),
+        help="Optimization level (0, 1, or 2). Overrides config value.",
     )
     parser.addoption(
         "--trace-enabled",
@@ -167,13 +175,8 @@ def variant(request):
 
 
 @pytest.fixture
-def optimizer_enabled(request):
-    return request.config.getoption("--optimizer-enabled")
-
-
-@pytest.fixture
-def memory_layout_analysis(request):
-    return request.config.getoption("--memory-layout-analysis")
+def optimization_level(request):
+    return request.config.getoption("--optimization-level")
 
 
 @pytest.fixture

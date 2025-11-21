@@ -232,8 +232,7 @@ def check_transformers_version():
 def benchmark_llm_torch_xla(
     model_loader,
     model_variant,
-    optimizer_enabled,
-    memory_layout_analysis,
+    optimization_level,
     trace_enabled,
     training,
     batch_size,
@@ -337,10 +336,7 @@ def benchmark_llm_torch_xla(
 
     # Set XLA compilation options
     options = {
-        "enable_optimizer": optimizer_enabled,
-        "enable_memory_layout_analysis": memory_layout_analysis,
-        "enable_l1_interleaved": False,
-        "enable_fusing_conv2d_with_multiply_pattern": True,
+        "optimization_level": optimization_level,
         "enable_trace": trace_enabled,
         "export_path": MODULE_EXPORT_PATH,
     }
@@ -440,9 +436,8 @@ def benchmark_llm_torch_xla(
         total_samples=total_tokens,
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
-        optimizer_enabled=optimizer_enabled,
+        optimization_level=optimization_level,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
-        memory_layout_analysis_enabled=memory_layout_analysis,
         trace_enabled=trace_enabled,
         model_info=full_model_name,
         torch_xla_enabled=True,
