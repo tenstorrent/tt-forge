@@ -96,7 +96,7 @@ jobs:
   get-repos:
     if: always()
     outputs:
-      json_results: ${{ steps.get-repos.outputs.json_results }}
+      schedule_nightly_repos_results: ${{ steps.get-repos.outputs.schedule_nightly_repos_results }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_nightly_repos_results) }}
     name: ${{ matrix.repo_short }} Expected Artifacts
     outputs:
       expected_tags: ${{ steps.set-expected.outputs.expected_tags }}
@@ -207,7 +207,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_nightly_repos_results) }}
     name: ${{ matrix.repo_short }} Create Version branch
     uses: ./.github/workflows/create-version-branches.yml
     secrets: inherit
@@ -230,7 +230,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_nightly_repos_results) }}
     name: ${{ matrix.repo_short }} Get Release RC Branches
     runs-on: ubuntu-latest
     steps:
@@ -288,7 +288,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_nightly_repos_results) }}
     uses: ./.github/workflows/update-releases.yml
     secrets: inherit
     name: ${{ matrix.repo_short }} Update RC on observed first commit
@@ -408,7 +408,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_nightly_repos_results) }}
     uses: ./.github/workflows/update-releases.yml
     secrets: inherit
     name: ${{ matrix.repo_short }} Update Stable on observed first commit
@@ -482,7 +482,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.json_results) }}
+        include: ${{ fromJson(needs.get-repos.outputs.schedule_nightly_repos_results) }}
     name: ${{ matrix.repo_short }} Validate Draft Artifacts
     outputs:
       expected_tags: ${{ steps.set-expected.outputs.expected_tags }}
