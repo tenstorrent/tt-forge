@@ -1,5 +1,5 @@
 # This workflow automates creation of uplift pull requests for tt_forge_models.
-# Uplift PR is created daily to uplift the submodule to the latest version.
+# Uplift PR is created weekly to uplift the submodule to the latest version.
 
 name: Weekly Forge Models Uplift
 
