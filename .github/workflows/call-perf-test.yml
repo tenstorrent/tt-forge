@@ -251,6 +251,7 @@ jobs:
         if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
           project_name="pjrt_plugin_tt"
         fi
+
         echo "Set version to commit sha if called from other repo"
         if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
           version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
@@ -258,6 +259,7 @@ jobs:
           version=$(pip show $project_name | grep -oP "(?<=Version:\s)[\d\.\w]+")
         fi
         echo "Wheel version: $version"
+
         # TODO: Add tt-mlir version to frontend setup.py description
         # REF: https://github.com/tenstorrent/tt-forge/issues/170
         mlir_sha=""
@@ -278,6 +280,7 @@ jobs:
             grep '"sha"' | head -1 | cut -d'"' -f4)
         fi
         echo "Mlir commit sha: $mlir_sha"
+
         RUN_ID=$(curl -s \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           "https://api.github.com/repos/tenstorrent/tt-mlir/actions/workflows/on-push.yml/runs?head_sha=${mlir_sha}&per_page=1" \
