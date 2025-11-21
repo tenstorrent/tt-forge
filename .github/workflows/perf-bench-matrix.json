@@ -97,7 +97,7 @@
         "lp": 32,
         "input_sequence_length": 384,
         "df": "float32",
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers ultralytics torch==2.7.0",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.0 ultralytics torch==2.7.1",
         "skip-device-perf": true
       },
       {
