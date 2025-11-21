@@ -83,9 +83,9 @@ jobs:
       - name: Enable Pull Request Automerge and Add Comment with Commit List
         if: ${{ steps.create-pr.outputs.pull-request-number }}
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_UPLIFT_TOKEN }}
         run: |
-          gh pr merge --squash --auto "${{ steps.create-pr.outputs.pull-request-number }}"
+          # gh pr merge --squash --auto "${{ steps.create-pr.outputs.pull-request-number }}"
           gh pr comment ${{ steps.create-pr.outputs.pull-request-number }} --body "$(cat ${{ runner.temp }}/commit_list.txt)"
           rm -rf ${{ runner.temp }}/tt-forge-models
           rm -f ${{ runner.temp }}/commit_list.txt
