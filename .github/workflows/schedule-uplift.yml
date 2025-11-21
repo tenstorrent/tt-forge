@@ -85,7 +85,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # gh pr merge --squash --auto "${{ steps.create-pr.outputs.pull-request-number }}"
+          gh pr merge --squash --auto "${{ steps.create-pr.outputs.pull-request-number }}"
           gh pr comment ${{ steps.create-pr.outputs.pull-request-number }} --body "$(cat ${{ runner.temp }}/commit_list.txt)"
           rm -rf ${{ runner.temp }}/tt-forge-models
           rm -f ${{ runner.temp }}/commit_list.txt
