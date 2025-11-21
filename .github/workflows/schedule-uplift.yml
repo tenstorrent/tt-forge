@@ -5,12 +5,12 @@ name: Weekly Forge Models Uplift
 
 on:
   schedule:
-    - cron: '0 8 * * 6'  # Runs at 07:00 UTC every day
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 8 * * 6'
+  workflow_dispatch:
 
 permissions:
-  contents: write  # Allows creating commits and PRs
-  pull-requests: write  # Allows creating and commenting on PRs
+  contents: write
+  pull-requests: write
 
 jobs:
   uplift-pr:
