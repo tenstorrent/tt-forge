@@ -16,4 +16,4 @@ jobs:
     secrets: inherit
     with:
       docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
-      project: xla
+      project: tt-xla
