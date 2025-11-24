@@ -69,7 +69,7 @@ jobs:
           body: "This PR uplifts the ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to the ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }}"
           labels: dummy-label
           delete-branch: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_UPLIFT_TOKEN }}
           draft: true
 
       - name: Approve Pull Request

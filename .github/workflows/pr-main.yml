@@ -6,10 +6,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  packages: write
-  checks: write
-  pull-requests: write
   id-token: write
   actions: write
 
