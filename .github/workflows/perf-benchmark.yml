@@ -143,6 +143,7 @@ jobs:
         echo "matrix_p150_skip=$matrix_p150_skip" >> $GITHUB_OUTPUT
 
         # Set up the summary for the job
+
         echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
         echo "Project filter: ${{ inputs.project-filter || inputs.project }}" >> $GITHUB_STEP_SUMMARY
         echo "Test filter: ${{ inputs.test-filter }}" >> $GITHUB_STEP_SUMMARY
