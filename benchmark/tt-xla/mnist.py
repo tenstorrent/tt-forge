@@ -150,7 +150,7 @@ def test_mnist_torch_xla(
 
     framework_model.compile(backend="tt")
 
-    device = xm.xla_device()
+    device = torch_xla.device()
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
@@ -170,7 +170,7 @@ def test_mnist_torch_xla(
         labels = torch.cat(labels)
         evaluation_score = evaluate_classification(predictions, labels)
     elif task == "na":
-        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.99)
+        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
         print(f"PCC verification passed with PCC={pcc_value:.6f}")
         evaluation_score = 0.0
     else:
