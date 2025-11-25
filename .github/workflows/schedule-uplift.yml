@@ -24,7 +24,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-          ref: main
+          ref: test-uplift-fix
 
       - name: Fetch commit history and set env variables
         id: set-env-variables
@@ -63,7 +63,7 @@ jobs:
           branch: uplift-forge-models-test
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          base: main
+          base: test-uplift-fix
           commit-message: "Uplift ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }} ${{ env.TODAY }}"
           title: "Uplift ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }} ${{ env.TODAY }}"
           body: "This PR uplifts the ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to the ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }}"

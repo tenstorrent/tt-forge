@@ -2,23 +2,14 @@ name: On PR
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "test-uplift-fix" ]
   workflow_dispatch:
 
 permissions:
   id-token: write
   actions: write
-  contents: read
-  packages: write
-  checks: write
-  pull-requests: write
 
 jobs:
-  log:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Log out
-        run: echo "works"
   performance-benchmark:
     uses: ./.github/workflows/perf-benchmark.yml
     if: contains(github.event.pull_request.labels.*.name, 'dummy-label')
