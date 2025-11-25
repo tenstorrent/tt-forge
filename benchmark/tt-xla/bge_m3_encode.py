@@ -31,9 +31,8 @@ os.environ["PJRT_DEVICE"] = "TT"
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 # Common constants
-OPTIMIZER_ENABLED = False
+OPTIMIZATION_LEVEL = 0
 PROGRAM_CACHE_ENABLED = True
-MEMORY_LAYOUT_ANALYSIS_ENABLED = False
 TRACE_ENABLED = False
 
 if PROGRAM_CACHE_ENABLED:
@@ -307,10 +306,7 @@ def test_bge_m3_encode_torch_xla(
     golden_output = bge_m3.encode(sentences, return_dense=True, return_sparse=True, return_colbert_vecs=True)
 
     options = {
-        "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
-        "enable_l1_interleaved": False,
-        "enable_fusing_conv2d_with_multiply_pattern": True,
+        "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": MODULE_EXPORT_PATH,
     }
 
@@ -392,9 +388,8 @@ def test_bge_m3_encode_torch_xla(
         total_samples=total_samples,
         evaluation_score=pcc_value,
         custom_measurements=custom_measurements,
-        optimizer_enabled=OPTIMIZER_ENABLED,
+        optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
-        memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
         model_info="BAAI/bge-m3",
         torch_xla_enabled=True,

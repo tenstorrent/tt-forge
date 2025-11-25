@@ -8,9 +8,12 @@ inputs:
     required: false
 
 outputs:
-  json_results:
-    description: 'JSON results of repos that are allowed to release'
-    value: ${{ steps.get-repos.outputs.json_results }}
+  schedule_nightly_repos_results:
+    description: 'JSON results of repos that are allowed to release nightly on a schedule'
+    value: ${{ steps.get-repos.outputs.schedule_nightly_repos_results }}
+  schedule_rc_stable_update_repos_results:
+    description: 'JSON results of repos that are allowed to update RC and Stable releases on a schedule'
+    value: ${{ steps.get-repos.outputs.schedule_rc_stable_update_repos_results }}
 
 runs:
   using: "composite"
@@ -21,36 +24,43 @@ runs:
       shell: bash
       id: get-repos
       run: |
-        # Get all repos that are allowed to release
-        all_repos="${{ steps.set-release-facts.outputs.all_repos }}"
+        # Get all repos that are allowed to release nightly and update RC and Stable releases on a schedule
+        schedule_nightly_repos="${{ steps.set-release-facts.outputs.schedule_nightly_repos }}"
+        schedule_rc_stable_update_repos="${{ steps.set-release-facts.outputs.schedule_rc_stable_update_repos }}"
 
-        # Initialize empty results array
-        json_results='[]'
+        # Function to process repos and create JSON array
+        process_repos() {
+          local repos="$1"
+          local json_results='[]'
 
-        add_repo() {
-          local repo="$1"
-          local repo_short="${repo#tenstorrent/}"
-          echo "Adding repo: $repo"
-          json_results=$(echo "$json_results" | jq -r -c --arg repo "$repo" --arg repo_short "$repo_short" '. + [{"repo": $repo, "repo_short": $repo_short}]')
-        }
+          for repo in $repos; do
+            local repo_short="${repo#tenstorrent/}"
 
-        # Add all repos if input is empty
-        if [[ -z "${{ inputs.repo }}" ]]; then
-          echo "No specific repo filter, adding all repos"
-          for repo in $all_repos; do
-            add_repo "$repo"
-          done
-        else
-          echo "Filtering for repo: ${{ inputs.repo }}"
-          # Get all repos by filter
-          for repo in $all_repos; do
-            repo_short="${repo#tenstorrent/}"
-            if [[ "$repo_short" == "${{ inputs.repo }}" ]]; then
-              add_repo "$repo"
+            # If input filter is empty, add all repos
+            if [[ -z "${{ inputs.repo }}" ]]; then
+              echo "Adding repo: $repo" >&2
+              json_results=$(echo "$json_results" | jq -r -c --arg repo "$repo" --arg repo_short "$repo_short" '. + [{"repo": $repo, "repo_short": $repo_short}]')
+            # If input filter matches, add only that repo
+            elif [[ "$repo_short" == "${{ inputs.repo }}" ]]; then
+              echo "Adding filtered repo: $repo" >&2
+              json_results=$(echo "$json_results" | jq -r -c --arg repo "$repo" --arg repo_short "$repo_short" '. + [{"repo": $repo, "repo_short": $repo_short}]')
             fi
           done
-        fi
+
+          echo "$json_results"
+        }
+
+        # Process both repo lists
+        echo "Processing schedule_nightly_repos..."
+        schedule_nightly_repos_results=$(process_repos "$schedule_nightly_repos")
+
+        echo "Processing schedule_rc_stable_update_repos..."
+        schedule_rc_stable_update_repos_results=$(process_repos "$schedule_rc_stable_update_repos")
 
         # Output the results
-        echo "Final JSON: $json_results"
-        echo "json_results=$json_results" >> $GITHUB_OUTPUT
+        echo "schedule_nightly_repos_results: $schedule_nightly_repos_results"
+        echo "schedule_rc_stable_update_repos_results: $schedule_rc_stable_update_repos_results"
+
+        # Output the results to the job
+        echo "schedule_nightly_repos_results=$schedule_nightly_repos_results" >> $GITHUB_OUTPUT
+        echo "schedule_rc_stable_update_repos_results=$schedule_rc_stable_update_repos_results" >> $GITHUB_OUTPUT

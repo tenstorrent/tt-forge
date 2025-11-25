@@ -9,8 +9,7 @@ import os
 from llm_benchmark import benchmark_llm_torch_xla
 
 # Defaults for all llms
-OPTIMIZER_ENABLED = False
-MEMORY_LAYOUT_ANALYSIS = False
+OPTIMIZATION_LEVEL = 0
 TRACE_ENABLED = False
 BATCH_SIZE = 32
 LOOP_COUNT = 1
@@ -55,8 +54,7 @@ LLM_MODEL_CONFIGS = load_llm_configs()
 def test_llm(
     variant,
     output,
-    optimizer_enabled,
-    memory_layout_analysis,
+    optimization_level,
     trace_enabled,
     batch_size,
     loop_count,
@@ -71,8 +69,7 @@ def test_llm(
     Args:
         variant: Model variant identifier
         output: Path to save benchmark results as JSON
-        optimizer_enabled: Enable optimizer (overrides config)
-        memory_layout_analysis: Enable memory layout analysis (overrides config)
+        optimization_level: Optimization level (0, 1, or 2) (overrides config)
         trace_enabled: Enable trace (overrides config)
         batch_size: Batch size (overrides config)
         loop_count: Number of benchmark iterations (overrides config)
@@ -102,15 +99,10 @@ def test_llm(
     # 1. Command line argument (if provided)
     # 2. Variant-specific configuration from CI JSON file
     # 3. Default constant defined at the top of this file
-    optimizer_enabled = (
-        optimizer_enabled
-        if optimizer_enabled is not None
-        else variant_config.get("optimizer_enabled", OPTIMIZER_ENABLED)
-    )
-    memory_layout_analysis = (
-        memory_layout_analysis
-        if memory_layout_analysis is not None
-        else variant_config.get("memory_layout_analysis", MEMORY_LAYOUT_ANALYSIS)
+    optimization_level = (
+        optimization_level
+        if optimization_level is not None
+        else variant_config.get("optimization_level", OPTIMIZATION_LEVEL)
     )
     trace_enabled = trace_enabled if trace_enabled is not None else variant_config.get("trace_enabled", TRACE_ENABLED)
     batch_size = batch_size if batch_size is not None else variant_config.get("batch_size", BATCH_SIZE)
@@ -130,8 +122,7 @@ def test_llm(
     print(f"Running LLM benchmark for variant: {variant}")
     print(
         f"""Configuration:
-    optimizer_enabled={optimizer_enabled}
-    memory_layout_analysis={memory_layout_analysis}
+    optimization_level={optimization_level}
     trace_enabled={trace_enabled}
     batch_size={batch_size}
     loop_count={loop_count}
@@ -144,8 +135,7 @@ def test_llm(
     )
 
     results = benchmark_llm_torch_xla(
-        optimizer_enabled=optimizer_enabled,
-        memory_layout_analysis=memory_layout_analysis,
+        optimization_level=optimization_level,
         trace_enabled=trace_enabled,
         model_loader=model_loader,
         model_variant=model_variant,

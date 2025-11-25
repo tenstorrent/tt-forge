@@ -1,0 +1,91 @@
+# This workflow automates creation of uplift pull requests for tt_forge_models.
+# Uplift PR is created weekly to uplift the submodule to the latest version.
+
+name: Weekly Forge Models Uplift
+
+on:
+  schedule:
+    - cron: '0 8 * * 6'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  uplift-pr:
+    runs-on: ubuntu-latest
+
+    env:
+      TT_FORGE_MODELS_SUBMODULE_PATH: third_party/tt_forge_models
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          ref: main
+
+      - name: Fetch commit history and set env variables
+        id: set-env-variables
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "CURRENT_COMMIT_SHA=$(cd ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} && git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          LATEST_TT_FORGE_MODELS_VERSION=$(gh api repos/tenstorrent/tt-forge-models/commits/main --jq '.sha')
+          echo "LATEST_TT_FORGE_MODELS_VERSION=$LATEST_TT_FORGE_MODELS_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update tt-forge-models submodule to latest
+        run: |
+          echo "Updating tt-forge-models to SHA: ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }}"
+          git submodule update --remote --merge ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }}
+          git add ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }}
+
+      - name: Fetch commit history from tt-forge-models repository
+        run: |
+          # Clone the tt-forge-models repository
+          cd ${{ runner.temp }}
+          echo "### List of tt-forge-models commits since previous uplift:" > commit_list.txt
+          git clone https://github.com/tenstorrent/tt-forge-models.git tt-forge-models
+          cd tt-forge-models
+          # Fetch commit history between $COMMIT_SHA and LATEST_SHA
+          echo '```' >> ${{ runner.temp }}/commit_list.txt
+          git log --format='%cd (%h) by %cn (Author %ae) : %s' --date=short ${{ steps.set-env-variables.outputs.CURRENT_COMMIT_SHA}}..${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }} >> ${{ runner.temp }}/commit_list.txt
+          echo '```' >> ${{ runner.temp }}/commit_list.txt
+          cd ${{ runner.temp }}
+          cat commit_list.txt
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        id: create-pr
+        with:
+          branch: uplift-forge-models
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          base: main
+          commit-message: "Uplift ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }} ${{ env.TODAY }}"
+          title: "Uplift ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }} ${{ env.TODAY }}"
+          body: "This PR uplifts the ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to the ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }}"
+          labels: uplift
+          delete-branch: true
+          token: ${{ secrets.GH_UPLIFT_TOKEN }}
+
+      - name: Approve Pull Request
+        if: ${{ steps.create-pr.outputs.pull-request-number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_APPROVE_TOKEN }}
+        run: |
+          echo "Pull Request Number - ${{ steps.create-pr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.create-pr.outputs.pull-request-url }}"
+          gh pr review ${{ steps.create-pr.outputs.pull-request-number }} --approve
+
+      - name: Enable Pull Request Automerge and Add Comment with Commit List
+        if: ${{ steps.create-pr.outputs.pull-request-number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge --squash --auto "${{ steps.create-pr.outputs.pull-request-number }}"
+          gh pr comment ${{ steps.create-pr.outputs.pull-request-number }} --body "$(cat ${{ runner.temp }}/commit_list.txt)"
+          rm -rf ${{ runner.temp }}/tt-forge-models
+          rm -f ${{ runner.temp }}/commit_list.txt
