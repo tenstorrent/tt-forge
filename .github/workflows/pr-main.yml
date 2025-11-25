@@ -2,7 +2,7 @@ name: On PR
 
 on:
   pull_request:
-    branches: [ "test-uplift-fix" ]
+    branches: [ "vvukoman/test-uplift-fix" ]
   workflow_dispatch:
 
 permissions:

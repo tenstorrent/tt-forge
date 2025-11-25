@@ -24,7 +24,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-          ref: test-uplift-fix
+          ref: vvukoman/test-uplift-fix
 
       - name: Fetch commit history and set env variables
         id: set-env-variables
