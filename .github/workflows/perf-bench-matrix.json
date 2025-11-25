@@ -21,7 +21,7 @@
         "name": "resnet_jax",
         "bs": 8,
         "lp": 4,
-        "pyreq": "pytest tqdm loguru requests transformers datasets flax torch==2.7.0"
+        "pyreq": "pytest tqdm loguru requests transformers==4.52.0 datasets flax torch==2.7.0"
       },
       {
         "name": "mnist",

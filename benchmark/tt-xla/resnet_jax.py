@@ -23,6 +23,10 @@ from jax import device_put
 
 from benchmark.utils import get_jax_device_arch
 
+OPTIMIZATION_LEVEL = 1
+PROGRAM_CACHE_ENABLED = False
+TRACE_ENABLED = False
+
 
 BATCH_SIZE = [
     1,
@@ -68,10 +72,6 @@ def test_resnet(
     if training:
         pytest.skip("Training is not supported")
 
-    OPTIMIZER_ENABLED = True
-    PROGRAM_CACHE_ENABLED = False
-    MEMORY_LAYOUT_ANALYSIS_ENABLED = False
-    TRACE_ENABLED = False
     tt_device = jax.devices("tt")[0]
     with jax.default_device(jax.devices("cpu")[0]):
         # Instantiating the model seems to also run it in op by op mode once for whatver reason, also do that on the CPU
@@ -142,9 +142,8 @@ def test_resnet(
         training=training,
         total_time=total_time,
         total_samples=total_samples,
-        optimizer_enabled=OPTIMIZER_ENABLED,
+        optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
-        memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=False,
