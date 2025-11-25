@@ -8,6 +8,10 @@ on:
 permissions:
   id-token: write
   actions: write
+  contents: read
+  packages: write
+  checks: write
+  pull-requests: write
 
 jobs:
   performance-benchmark:
