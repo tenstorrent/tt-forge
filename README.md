@@ -188,15 +188,12 @@ flowchart TD
     SystemLayer --> Hardware
 
     %% Connect frameworks to front-ends with longer arrows
-    ONX -.-> TT_TORCH
     ONX -.-> TT_FORGE_FE
     JAX -.-> TT_XLA
-    PYTORCH -.-> TT_TORCH
     PYTORCH -.-> TT_FORGE_FE
     TF -.-> TT_FORGE_FE
 
     %% Connect front-ends to tt-MLIR Compiler
-    TT_TORCH --> STABLEHLO
     TT_XLA --> STABLEHLO
     TT_FORGE_FE --> TTIR
 
@@ -211,7 +208,7 @@ flowchart TD
 
     %% Apply styles
     class ONX,JAX,PYTORCH,TF frameworks
-    class TT_TORCH,TT_XLA,TT_FORGE_FE frontends
+    class TT_XLA,TT_FORGE_FE frontends
     class TTIR,TTKERNEL,TTNN,TTMETAL_IR,GRAPH_PASSES,PYKERNEL,TTMLIROPT,TTNNSTANDALONE,TTEXPLORER compiler
     class TTMETAL,TTNN_HW,LLK,TRACY,TTNPE,TTNNVISUALIZER runtime
     class TTSMI,LUWEN,TTTOPOLOGY system
