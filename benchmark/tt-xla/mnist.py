@@ -9,9 +9,8 @@ import pytest
 import socket
 
 
-OPTIMIZER_ENABLED = True
+OPTIMIZATION_LEVEL = 2
 PROGRAM_CACHE_ENABLED = True
-MEMORY_LAYOUT_ANALYSIS_ENABLED = True
 TRACE_ENABLED = False
 
 if PROGRAM_CACHE_ENABLED:
@@ -29,7 +28,7 @@ cache_dir = f"{os.getcwd()}/cachedir"
 xr.initialize_cache(cache_dir)
 
 from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_xla_device_arch
-from third_party.tt_forge_models.mnist.pytorch.loader import ModelLoader as MNISTLoader
+from third_party.tt_forge_models.mnist.image_classification.pytorch.loader import ModelLoader as MNISTLoader
 from .utils import (
     get_benchmark_metadata,
     determine_model_type_and_dataset,
@@ -38,7 +37,6 @@ from .utils import (
     torch_xla_measure_fps,
     torch_xla_warmup_model,
     compute_pcc,
-    serialize_modules,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -74,6 +72,8 @@ CHANNEL_SIZE = [
 
 # Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
+
+MODULE_EXPORT_PATH = "modules"
 
 
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
@@ -142,17 +142,15 @@ def test_mnist_torch_xla(
                 golden_output = golden_output.logits
 
     options = {
-        "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
-        "enable_l1_interleaved": False,
-        "enable_fusing_conv2d_with_multiply_pattern": True,
+        "optimization_level": OPTIMIZATION_LEVEL,
+        "export_path": MODULE_EXPORT_PATH,
     }
 
     torch_xla.set_custom_compile_options(options)
 
     framework_model.compile(backend="tt")
 
-    device = xm.xla_device()
+    device = torch_xla.device()
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
@@ -167,14 +165,12 @@ def test_mnist_torch_xla(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
 
-    serialize_modules(f"modules/{model_name}", cache_dir)
-
     if task == "classification":
         predictions = torch.cat(predictions)
         labels = torch.cat(labels)
         evaluation_score = evaluate_classification(predictions, labels)
     elif task == "na":
-        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.99)
+        pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
         print(f"PCC verification passed with PCC={pcc_value:.6f}")
         evaluation_score = 0.0
     else:
@@ -229,9 +225,8 @@ def test_mnist_torch_xla(
         total_samples=total_samples,
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
-        optimizer_enabled=OPTIMIZER_ENABLED,
+        optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
-        memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,

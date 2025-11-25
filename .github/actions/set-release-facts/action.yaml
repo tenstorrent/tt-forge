@@ -127,6 +127,12 @@ outputs:
   artifact_name_prefix:
     description: "Artifact name prefix"
     value: ${{ steps.set-manifest.outputs.artifact_name_prefix }}
+  schedule_nightly_repos:
+    description: "List of repos that are allowed to release nightly on a schedule"
+    value: ${{ steps.set-manifest.outputs.schedule_nightly_repos }}
+  schedule_rc_stable_update_repos:
+    description: "List of repos that are allowed to update RC and Stable releases on a schedule"
+    value: ${{ steps.set-manifest.outputs.schedule_rc_stable_update_repos }}
 
 runs:
   using: "composite"
@@ -147,8 +153,10 @@ runs:
         repo_short="${repo#tenstorrent/}"
         # Full repository name with "tenstorrent/" prefix
         repo_full="tenstorrent/${repo_short}"
-        # List of all repos that are allowed to release. Make sure to update the conditional below
-        all_repos='tenstorrent/tt-forge-fe tenstorrent/tt-mlir tenstorrent/tt-xla tenstorrent/tt-forge'
+        # List of all repos that will release nightly on a schedule
+        schedule_nightly_repos='tenstorrent/tt-forge-fe tenstorrent/tt-mlir tenstorrent/tt-forge tenstorrent/tt-xla'
+        # List of repos that are allowed to update RC and Stable releases on a schedule
+        schedule_rc_stable_update_repos='tenstorrent/tt-forge-fe tenstorrent/tt-xla tenstorrent/tt-forge'
         # Allow workflow failures when finding build workflows
         workflow_allow_failed="false"
         # Branch to search for build workflows
@@ -331,6 +339,8 @@ runs:
         echo "basic_tests_runner_filter=$basic_tests_runner_filter"
         echo "uplift_artifacts_by_commit=$uplift_artifacts_by_commit"
         echo "artifact_name_prefix=$artifact_name_prefix"
+        echo "schedule_nightly_repos=$schedule_nightly_repos"
+        echo "schedule_rc_stable_update_repos=$schedule_rc_stable_update_repos"
 
         # Set outputs
         echo "workflow=$workflow" >> $GITHUB_OUTPUT
@@ -368,3 +378,5 @@ runs:
         echo "basic_tests_runner_filter=$basic_tests_runner_filter" >> $GITHUB_OUTPUT
         echo "uplift_artifacts_by_commit=$uplift_artifacts_by_commit" >> $GITHUB_OUTPUT
         echo "artifact_name_prefix=$artifact_name_prefix" >> $GITHUB_OUTPUT
+        echo "schedule_nightly_repos=$schedule_nightly_repos" >> $GITHUB_OUTPUT
+        echo "schedule_rc_stable_update_repos=$schedule_rc_stable_update_repos" >> $GITHUB_OUTPUT

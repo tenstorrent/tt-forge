@@ -210,9 +210,8 @@ def create_benchmark_result(
     total_samples: int,
     evaluation_score: Optional[float] = None,
     custom_measurements: Optional[List[Dict[str, Any]]] = None,
-    optimizer_enabled: bool = False,
+    optimization_level: int = 0,
     program_cache_enabled: bool = False,
-    memory_layout_analysis_enabled: bool = False,
     trace_enabled: bool = False,
     model_info: str = "",
     torch_xla_enabled: bool = True,
@@ -264,9 +263,8 @@ def create_benchmark_result(
 
     config = {
         "model_size": "small",
-        "optimizer_enabled": optimizer_enabled,
+        "optimization_level": optimization_level,
         "program_cache_enabled": program_cache_enabled,
-        "memory_layout_analysis_enabled": memory_layout_analysis_enabled,
         "trace_enabled": trace_enabled,
         "model_info": model_info,
     }

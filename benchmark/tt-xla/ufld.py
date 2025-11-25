@@ -4,7 +4,6 @@
 
 # Built-in modules
 import os
-import time
 import pytest
 import socket
 
@@ -20,17 +19,16 @@ if PROGRAM_CACHE_ENABLED:
 import torch
 import torch.nn as nn
 import torch_xla
-import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 
 xr.set_device_type("TT")
 cache_dir = f"{os.getcwd()}/cachedir"
 xr.initialize_cache(cache_dir)
 
-from benchmark.utils import load_benchmark_dataset, evaluate_classification, measure_cpu_fps, get_xla_device_arch
-from third_party.tt_forge_models.efficientnet.pytorch.loader import (
-    ModelLoader as EfficientNetLoader,
-    ModelVariant as EfficientNetVariant,
+from benchmark.utils import measure_cpu_fps, get_xla_device_arch
+from third_party.tt_forge_models.ultra_fast_lane_detection.pytorch.loader import (
+    ModelLoader as UFLDLoader,
+    ModelVariant as UFLDVariant,
 )
 from .utils import (
     get_benchmark_metadata,
@@ -49,7 +47,7 @@ os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 # Machine learning task
 TASK = [
-    "classification",
+    "na",  # Lane detection doesn't fit standard classification/segmentation categories
 ]
 
 # Batch size configurations
@@ -62,9 +60,16 @@ DATA_FORMAT = [
     "bfloat16",
 ]
 
-# Input size configurations
+# Input size configurations (UFLD uses 288x800 for ResNet-18, 320x800 for ResNet-34)
 INPUT_SIZE = [
-    (224, 224),
+    (288, 800),
+    (320, 800),
+]
+
+# Model variant configurations
+MODEL_VARIANTS = [
+    UFLDVariant.TUSIMPLE_RESNET18,
+    UFLDVariant.TUSIMPLE_RESNET34,
 ]
 
 # Channel size configurations
@@ -75,40 +80,35 @@ CHANNEL_SIZE = [
 # Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 
-MODULE_EXPORT_PATH = "modules"
-
 
 @pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
-@pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
+@pytest.mark.parametrize("model_variant", MODEL_VARIANTS, ids=[f"variant={item}" for item in MODEL_VARIANTS])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-def test_efficientnet_torch_xla(
-    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
+def test_ufld_torch_xla(
+    training, batch_size, model_variant, channel_size, loop_count, task, data_format, model_name, measure_cpu
 ):
     """
-    This function creates an EfficientNet model using PyTorch and torch-xla.
+    This function creates a Ultra Fast Lane Detection model using PyTorch and torch-xla.
     It is used for benchmarking purposes.
     """
 
     if training:
         pytest.skip("Training is not supported")
 
-    if task == "classification":
-        inputs, labels = load_benchmark_dataset(
-            task=task,
-            model_version="microsoft/resnet-50",
-            dataset_name="imagenet-1k",
-            split="validation",
-            batch_size=batch_size,
-            loop_count=loop_count,
-        )
-    elif task == "na":
+    # Load model using tt_forge_models to get the correct input size
+    model_variant = UFLDVariant.TUSIMPLE_RESNET34
+    ufld_loader = UFLDLoader(model_variant)
+    model_info = ufld_loader.get_model_info(model_variant).name
+    input_size = ufld_loader.config.input_size
+
+    if task == "na":
         torch.manual_seed(1)
         # Random data
         inputs = []
-        for i in range(loop_count):
+        for _ in range(loop_count):
             inputs.append(torch.randn(batch_size, channel_size, *input_size))
     else:
         raise ValueError(f"Unsupported task: {task}.")
@@ -119,11 +119,7 @@ def test_efficientnet_torch_xla(
         inputs = [item.to(torch.bfloat16) for item in inputs]
         warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
 
-    # Load model using tt_forge_models
-    model_variant = EfficientNetVariant.TIMM_EFFICIENTNET_B0
-    efficientnet_loader = EfficientNetLoader(model_variant)
-    model_info = efficientnet_loader.get_model_info(model_variant).name
-    framework_model: nn.Module = efficientnet_loader.load_model()
+    framework_model: nn.Module = ufld_loader.load_model()
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(torch.bfloat16)
@@ -146,13 +142,13 @@ def test_efficientnet_torch_xla(
 
     options = {
         "optimization_level": OPTIMIZATION_LEVEL,
-        "export_path": MODULE_EXPORT_PATH,
+        "export_path": "modules",
     }
 
     torch_xla.set_custom_compile_options(options)
     framework_model.compile(backend="tt", options={"tt_experimental_compile": True})
 
-    device = xm.xla_device()
+    device = torch_xla.device()
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
@@ -167,11 +163,7 @@ def test_efficientnet_torch_xla(
         model=framework_model, inputs=inputs, device=device, loop_count=loop_count
     )
 
-    if task == "classification":
-        predictions = torch.cat(predictions)
-        labels = torch.cat(labels)
-        evaluation_score = evaluate_classification(predictions, labels)
-    elif task == "na":
+    if task == "na":
         pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=0.97)
         print(f"PCC verification passed with PCC={pcc_value:.6f}")
         evaluation_score = 0.0
@@ -183,9 +175,11 @@ def test_efficientnet_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = "EfficientNet Torch-XLA B0"
+    # Determine model name and layers based on variant
+    backbone_num = ufld_loader.config.backbone
+    full_model_name = f"Ultra Fast Lane Detection Torch-XLA ResNet{backbone_num}"
     model_type, dataset_name = determine_model_type_and_dataset(task, full_model_name)
-    num_layers = 82
+    num_layers = int(backbone_num)
 
     custom_measurements = [
         {
@@ -196,7 +190,7 @@ def test_efficientnet_torch_xla(
     ]
 
     print_benchmark_results(
-        model_title="EfficientNet Torch-XLA",
+        model_title="Ultra Fast Lane Detection Torch-XLA",
         full_model_name=full_model_name,
         model_type=model_type,
         dataset_name=dataset_name,
@@ -243,13 +237,12 @@ def test_efficientnet_torch_xla(
 
 def benchmark(config: dict):
     """
-    Run the efficientnet torch-xla benchmark.
+    Run the ufld torch-xla benchmark.
     This function is a placeholder for the actual benchmark implementation.
     """
 
     training = config["training"]
     batch_size = config["batch_size"]
-    input_size = INPUT_SIZE[0]
     channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     data_format = config["data_format"]
@@ -257,10 +250,15 @@ def benchmark(config: dict):
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
 
-    return test_efficientnet_torch_xla(
+    # Determine model variant from config, default to ResNet18
+    model_variant = config.get("model_variant", UFLDVariant.TUSIMPLE_RESNET18)
+    if isinstance(model_variant, str):
+        model_variant = UFLDVariant(model_variant)
+
+    return test_ufld_torch_xla(
         training=training,
         batch_size=batch_size,
-        input_size=input_size,
+        model_variant=model_variant,
         channel_size=channel_size,
         loop_count=loop_count,
         task=task,

@@ -27,12 +27,20 @@ def flatten_matrix(data):
 def filter_matrix(matrix, project_filter, name_filter=None):
     """Filter matrix based on project and name attributes."""
 
+    name_filters = name_filter.split(",") if name_filter else []
+
     def should_include(item):
         if project_filter == "tt-forge" and item.get("project") not in ["tt-xla"]:
             return False
         if project_filter != "tt-forge" and item.get("project") != project_filter:
             return False
-        if name_filter and item.get("name") != name_filter:
+
+        name_filter_match = False
+        for filter in name_filters:
+            if filter.lower() in item.get("name").lower():
+                name_filter_match = True
+
+        if name_filter and not name_filter_match:
             return False
 
         return True

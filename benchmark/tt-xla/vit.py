@@ -9,9 +9,8 @@ import pytest
 import socket
 
 
-OPTIMIZER_ENABLED = True
+OPTIMIZATION_LEVEL = 2
 PROGRAM_CACHE_ENABLED = True
-MEMORY_LAYOUT_ANALYSIS_ENABLED = True
 TRACE_ENABLED = False
 
 if PROGRAM_CACHE_ENABLED:
@@ -146,10 +145,7 @@ def test_vit_torch_xla(
                 golden_output = golden_output.logits
 
     options = {
-        "enable_optimizer": OPTIMIZER_ENABLED,
-        "enable_memory_layout_analysis": MEMORY_LAYOUT_ANALYSIS_ENABLED,
-        "enable_l1_interleaved": False,
-        "enable_fusing_conv2d_with_multiply_pattern": True,
+        "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": MODULE_EXPORT_PATH,
     }
 
@@ -232,9 +228,8 @@ def test_vit_torch_xla(
         total_samples=total_samples,
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
-        optimizer_enabled=OPTIMIZER_ENABLED,
+        optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
-        memory_layout_analysis_enabled=MEMORY_LAYOUT_ANALYSIS_ENABLED,
         trace_enabled=TRACE_ENABLED,
         model_info=model_info,
         torch_xla_enabled=True,
