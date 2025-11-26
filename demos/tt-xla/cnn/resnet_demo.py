@@ -50,7 +50,7 @@ def run_resnet_demo_case(variant):
 
     if not isinstance(output, (list, tuple)):
         output = [output]
-    loader.post_process(output)
+    loader.output_postprocess(output)
 
     print("=" * 60, flush=True)
 
