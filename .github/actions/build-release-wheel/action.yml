@@ -115,15 +115,24 @@ runs:
       run: ./.github/scripts/wheel-version-updater.sh
       shell: bash
 
-    - name: Get wheel files path
+    - name: Get wheels files path and move to artifacts folder
       shell: bash
       id: get-wheel-files
       run: |
-        wheel_files_path=$(find "${{ github.workspace }}/release/artifacts" -type f -iname "*.whl" -exec dirname {} \; | sort -u | xargs -I{} realpath --relative-to="${{ github.workspace }}" {})
-        echo "wheel_files_path=${wheel_files_path}"
-        echo "In wheel files path:"
-        ls $wheel_files_path
-        echo "wheel_files_path=${wheel_files_path}" >> $GITHUB_OUTPUT
+        wheel_files_path="release/artifacts/wheels"
+        mkdir -p $wheel_files_path
+
+        found_wheel_files_paths=$(find "${{ github.workspace }}/release/artifacts" -type f -iname "*.whl" -exec dirname {} \; | sort -u | xargs -I{} realpath --relative-to="${{ github.workspace }}" {})
+
+        echo "found_wheel_files_paths=$found_wheel_files_paths"
+        for wheel_path in $found_wheel_files_paths; do
+          echo "Moving $wheel_path/*.whl to ${{ github.workspace }}/release/artifacts/."
+          mv $wheel_path/*.whl $wheel_files_path/.
+          rm -rf $wheel_path
+        done
+        echo "Wheel files path:"
+        tree $wheel_files_path
+        echo "wheel_files_path=$wheel_files_path" >> $GITHUB_OUTPUT
 
     - name: use unique artifact suffix
       id: use-unique-artifact-suffix
