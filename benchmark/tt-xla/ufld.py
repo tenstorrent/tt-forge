@@ -88,7 +88,7 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_ufld_torch_xla(
-    training, batch_size, model_variant, channel_size, loop_count, task, data_format, model_name, measure_cpu
+    training, batch_size, model_variant, channel_size, loop_count, task, data_format, model_name, measure_cpu, ttnn_perf_metrics_output_file
 ):
     """
     This function creates a Ultra Fast Lane Detection model using PyTorch and torch-xla.
@@ -143,6 +143,8 @@ def test_ufld_torch_xla(
     options = {
         "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": "modules",
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -255,6 +257,8 @@ def benchmark(config: dict):
     if isinstance(model_variant, str):
         model_variant = UFLDVariant(model_variant)
 
+    ttnn_perf_metrics_output_file = config.get("ttnn_perf_metrics_output_file", "")
+
     return test_ufld_torch_xla(
         training=training,
         batch_size=batch_size,
@@ -265,4 +269,5 @@ def benchmark(config: dict):
         data_format=data_format,
         model_name=model_name,
         measure_cpu=measure_cpu,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
     )

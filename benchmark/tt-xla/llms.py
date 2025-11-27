@@ -118,6 +118,7 @@ def test_llm(
     experimental_compile = (
         experimental_compile if experimental_compile is not None else variant_config.get("experimental_compile", True)
     )
+    ttnn_perf_metrics_output_file = f"LLM_{variant}_perf_metrics.json"
 
     print(f"Running LLM benchmark for variant: {variant}")
     print(
@@ -131,6 +132,7 @@ def test_llm(
     measure_cpu={measure_cpu}
     task={task}
     experimental_compile={experimental_compile}
+    ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
 
@@ -147,11 +149,22 @@ def test_llm(
         input_sequence_length=input_sequence_length,
         training=False,
         experimental_compile=experimental_compile,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
     )
 
     if output:
         results["project"] = "tt-forge/tt-xla"
         results["model_rawname"] = model_loader.get_model_info(variant=model_variant).name
+
+        if os.path.exists(ttnn_perf_metrics_output_file):
+            with open(ttnn_perf_metrics_output_file, "r") as f:
+                perf_metrics_data = json.load(f)
+            if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
+                results["config"]["ttnn_total_ops"] = perf_metrics_data["summary"]["total_ops"]
+                results["config"]["ttnn_total_shardable_ops"] = perf_metrics_data["summary"]["total_shardable_ops"]
+                results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"]["effectively_sharded_ops"]
+                results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"]["effectively_sharded_percentage"]
+                results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
 
         with open(output, "w") as file:
             json.dump(results, file, indent=2)

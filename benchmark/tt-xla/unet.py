@@ -82,6 +82,7 @@ def test_unet_torch_xla(
     variant,
     model_name,
     measure_cpu,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a UNet model using PyTorch and torch-xla.
@@ -128,6 +129,8 @@ def test_unet_torch_xla(
     options = {
         "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": MODULE_EXPORT_PATH,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -229,6 +232,7 @@ def benchmark(config: dict):
     variant = VARIANTS[0]
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
+    ttnn_perf_metrics_output_file = config.get("ttnn_perf_metrics_output_file", "")
 
     return test_unet_torch_xla(
         training=training,
@@ -240,4 +244,5 @@ def benchmark(config: dict):
         variant=variant,
         model_name=model_name,
         measure_cpu=measure_cpu,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
     )
