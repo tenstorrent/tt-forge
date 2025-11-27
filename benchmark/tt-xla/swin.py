@@ -85,7 +85,16 @@ MODULE_EXPORT_PATH = "modules"
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_swin_torch_xla(
-    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu, ttnn_perf_metrics_output_file
+    training,
+    batch_size,
+    input_size,
+    channel_size,
+    loop_count,
+    task,
+    data_format,
+    model_name,
+    measure_cpu,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a Swin model using PyTorch and torch-xla.

@@ -162,8 +162,12 @@ def test_llm(
             if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
                 results["config"]["ttnn_total_ops"] = perf_metrics_data["summary"]["total_ops"]
                 results["config"]["ttnn_total_shardable_ops"] = perf_metrics_data["summary"]["total_shardable_ops"]
-                results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"]["effectively_sharded_ops"]
-                results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"]["effectively_sharded_percentage"]
+                results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"][
+                    "effectively_sharded_ops"
+                ]
+                results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"][
+                    "effectively_sharded_percentage"
+                ]
                 results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
 
         with open(output, "w") as file:

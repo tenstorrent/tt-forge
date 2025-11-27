@@ -255,7 +255,15 @@ def bge_m3_measure_fps(compiled_model, sentences_list, encode_kwargs, loop_count
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_bge_m3_encode_torch_xla(
-    training, batch_size, loop_count, task, data_format, model_name, measure_cpu, input_sequence_length, ttnn_perf_metrics_output_file
+    training,
+    batch_size,
+    loop_count,
+    task,
+    data_format,
+    model_name,
+    measure_cpu,
+    input_sequence_length,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a BGE-M3 encode model using PyTorch and torch-xla.

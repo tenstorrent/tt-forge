@@ -88,7 +88,16 @@ LOOP_COUNT = [1, 2, 4, 8, 16, 32]
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_ufld_torch_xla(
-    training, batch_size, model_variant, channel_size, loop_count, task, data_format, model_name, measure_cpu, ttnn_perf_metrics_output_file
+    training,
+    batch_size,
+    model_variant,
+    channel_size,
+    loop_count,
+    task,
+    data_format,
+    model_name,
+    measure_cpu,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a Ultra Fast Lane Detection model using PyTorch and torch-xla.
