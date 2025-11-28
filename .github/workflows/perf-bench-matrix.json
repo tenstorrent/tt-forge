@@ -61,7 +61,7 @@
       {
         "name": "ufld",
         "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pyreq": "datasets loguru opencv-python pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "skip-device-perf": true
       },
       {
