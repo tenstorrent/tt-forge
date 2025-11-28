@@ -93,123 +93,80 @@
       },
       {
         "name": "llama_3_2_1b_instruct",
-        "variant": "llama_3_2_1b_instruct",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_2_1b",
         "skip-device-perf": true
       },
       {
         "name": "llama_3_2_3b_instruct",
-        "variant": "llama_3_2_3b_instruct",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.llama.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_2_3b",
         "skip-device-perf": true
       },
       {
         "name": "microsoft_phi-1",
-        "variant": "microsoft/phi-1",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.phi1.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_phi1",
         "skip-device-perf": true
       },
       {
         "name": "microsoft_phi-1_5",
-        "variant": "microsoft/phi-1_5",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_phi1_5",
         "skip-device-perf": true
       },
       {
         "name": "microsoft_phi-2",
-        "variant": "microsoft/phi-2",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.phi2.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_phi2",
         "skip-device-perf": true
       },
       {
         "name": "google_gemma-1.1-2b-it",
-        "variant": "google/gemma-1.1-2b-it",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.gemma.pytorch.loader",
-          "experimental_compile": false
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_gemma_1_1_2b",
+        "skip-device-perf": true
+      },
+      {
+        "name": "google_gemma-2-2b-it",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_gemma_2_2b",
         "skip-device-perf": true
       },
       {
         "name": "tiiuae_falcon3-1b-base",
-        "variant": "tiiuae/Falcon3-1B-Base",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_falcon3_1b",
         "skip-device-perf": true
       },
       {
         "name": "tiiuae_falcon3-3b-base",
-        "variant": "tiiuae/Falcon3-3B-Base",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.falcon.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_falcon3_3b",
         "skip-device-perf": true
       },
       {
         "name": "qwen_2_5_0_5b_instruct",
-        "variant": "0_5b_instruct",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_0_5b",
         "skip-device-perf": true
       },
       {
         "name": "qwen_3_0_6b",
-        "variant": "0_6b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_0_6b",
         "skip-device-perf": true
       },
       {
         "name": "qwen_3_1_7b",
-        "variant": "1_7b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_1_7b",
         "skip-device-perf": true
       },
       {
         "name": "qwen_3_4b",
-        "variant": "4b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llm",
-        "model_config": {
-          "model_loader_module": "third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader"
-        },
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_4b",
         "skip-device-perf": true
       }
     ]
