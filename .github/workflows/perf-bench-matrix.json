@@ -43,6 +43,7 @@
       },
       {
         "name": "efficientnet",
+        "bs": 8,
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "skip-device-perf": true
       },
