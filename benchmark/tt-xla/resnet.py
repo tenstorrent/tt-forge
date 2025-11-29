@@ -88,7 +88,16 @@ MODULE_EXPORT_PATH = "modules"
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_resnet_torch_xla(
-    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
+    training,
+    batch_size,
+    input_size,
+    channel_size,
+    loop_count,
+    task,
+    data_format,
+    model_name,
+    measure_cpu,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a ResNet model using PyTorch and torch-xla.
@@ -150,6 +159,8 @@ def test_resnet_torch_xla(
     options = {
         "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": MODULE_EXPORT_PATH,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -260,6 +271,7 @@ def benchmark(config: dict):
     task = config["task"]
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
+    ttnn_perf_metrics_output_file = config.get("ttnn_perf_metrics_output_file", "")
 
     return test_resnet_torch_xla(
         training=training,
@@ -271,4 +283,5 @@ def benchmark(config: dict):
         data_format=data_format,
         model_name=model_name,
         measure_cpu=measure_cpu,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
     )

@@ -242,6 +242,7 @@ def benchmark_llm_torch_xla(
     measure_cpu,
     input_sequence_length,
     experimental_compile,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates an LLM based model using PyTorch and torch-xla.
@@ -339,6 +340,8 @@ def benchmark_llm_torch_xla(
         "optimization_level": optimization_level,
         "enable_trace": trace_enabled,
         "export_path": MODULE_EXPORT_PATH,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
     }
 
     torch_xla.set_custom_compile_options(options)
