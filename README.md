@@ -190,7 +190,7 @@ flowchart TD
     %% Connect frameworks to front-ends with longer arrows
     ONX -.-> TT_FORGE_FE
     JAX -.-> TT_XLA
-    PYTORCH -.-> TT_FORGE_FE
+    PYTORCH -.-> TT_XLA
     TF -.-> TT_FORGE_FE
 
     %% Connect front-ends to tt-MLIR Compiler
