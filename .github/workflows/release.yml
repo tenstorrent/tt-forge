@@ -231,21 +231,6 @@ jobs:
           wait_for_run_url: true
           json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_demo_filter }}" }'
 
-# TODO: Re-enable this after adding tt-mlir version to frontend setup.py description
-# REF: https://github.com/tenstorrent/tt-forge/issues/170
-#      - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }}
-#        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' }}
-#        uses: ./.github/actions/trigger-workflow
-#        id: trigger-perf-test
-#        env:
-#          GH_TOKEN: ${{ github.token }}
-#        with:
-#          workflow_name: "Performance benchmark"
-#          parent_run_id: "perf-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
-#          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
-#          wait_for_run_url: true
-#          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}" }'
-
       - name: Wait for Basic tests
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
         uses: ./.github/actions/wait-workflow
@@ -350,41 +335,3 @@ jobs:
           release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
           unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
           make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
-
-
-  # TODO: Shift this back up to test release after adding tt-mlir version to frontend setup.py description
-  # REF: https://github.com/tenstorrent/tt-forge/issues/170
-  test-release-after-publish:
-    name: "${{ inputs.draft && 'Draft' || '' }} Test after publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
-    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
-    needs:
-      - build-release
-      - test-release
-      - publish-release
-      - generate-seed
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/set-release-facts
-        id: set-release-facts
-        with:
-          repo: ${{ inputs.repo }}
-          release_type: ${{ inputs.release_type }}
-          draft: ${{ inputs.draft }}
-          new_version_tag: ${{ inputs.new_version_tag }}
-
-      - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }}
-        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' }}
-        uses: ./.github/actions/trigger-workflow
-        id: trigger-perf-test
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          workflow_name: "Performance benchmark"
-          parent_run_id: "perf-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
-          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
-          wait_for_run_url: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}" }'
