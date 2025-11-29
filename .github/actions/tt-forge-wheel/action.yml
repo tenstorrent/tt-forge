@@ -77,5 +77,5 @@ runs:
         cat setup.py
         pip install wheel
         python setup.py bdist_wheel
-        mkdir -p ${{ github.workspace }}/release/artifacts
-        mv ${{ github.workspace }}/dist/*.whl ${{ github.workspace }}/release/artifacts/.
+        mkdir -p ${{ github.workspace }}/release/artifacts/tt-forge
+        mv ${{ github.workspace }}/dist/*.whl ${{ github.workspace }}/release/artifacts/tt-forge/.
