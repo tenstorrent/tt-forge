@@ -189,14 +189,10 @@ jobs:
       run: |
         echo "Dump ttir to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttir
-        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
-          else
-            cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
-          fi
-        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
+        if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+          cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
+        else
+          cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
         fi
 
     - name: Upload TTIR MLIR separately
@@ -213,14 +209,10 @@ jobs:
       run: |
         echo "Dump ttnn to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttnn
-        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
-          else
-            cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
-          fi
-        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
+        if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+          cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
+        else
+          cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
         fi
 
     - name: Upload TTNN MLIR separately
@@ -323,13 +315,7 @@ jobs:
 
         echo "Copy binaries"
         mkdir flatbuffers
-        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
-          else
-            cp ./modules/fb_*.ttnn flatbuffers
-          fi
-        fi
+        cp ./modules/*.ttnn flatbuffers
 
         echo "Run ttrt perf"
         ttrt perf flatbuffers --ignore-version
