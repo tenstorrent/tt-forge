@@ -9,116 +9,55 @@ import os
 from llm_benchmark import benchmark_llm_torch_xla
 
 # Defaults for all llms
-OPTIMIZATION_LEVEL = 1
-TRACE_ENABLED = False
-BATCH_SIZE = 32
-LOOP_COUNT = 1
-INPUT_SEQUENCE_LENGTH = 128
-DATA_FORMAT = "bfloat16"
-MEASURE_CPU = False
-TASK = "text-generation"
-
-# Path to the JSON config file
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "../../.github/workflows/perf-bench-matrix.json")
-
-
-def load_llm_configs():
-    """Load LLM model configurations from the JSON file."""
-    with open(CONFIG_PATH, "r") as f:
-        data = json.load(f)
-
-    # Find the tt-xla project
-    tt_xla_project = None
-    for project in data:
-        if project.get("project") == "tt-xla":
-            tt_xla_project = project
-            break
-
-    if not tt_xla_project:
-        raise ValueError("tt-xla project not found in perf-bench-matrix.json")
-
-    # Extract LLM configs from tests that have model_config
-    llm_configs = {}
-    for test in tt_xla_project.get("tests", []):
-        if "model_config" in test and "variant" in test:
-            variant = test["variant"]
-            llm_configs[variant] = test["model_config"]
-
-    return llm_configs
+DEFAULT_OPTIMIZATION_LEVEL = 1
+DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
+DEFAULT_TRACE_ENABLED = False
+DEFAULT_BATCH_SIZE = 32
+DEFAULT_LOOP_COUNT = 1
+DEFAULT_INPUT_SEQUENCE_LENGTH = 128
+DEFAULT_DATA_FORMAT = "bfloat16"
+DEFAULT_MEASURE_CPU = False
+DEFAULT_TASK = "text-generation"
+DEFAULT_EXPERIMENTAL_COMPILE = True
 
 
-# Load configurations from JSON file
-LLM_MODEL_CONFIGS = load_llm_configs()
+def default_read_logits_fn(output):
+    return output.logits
 
 
 def test_llm(
+    ModelLoaderModule,
     variant,
     output,
-    optimization_level,
-    trace_enabled,
-    batch_size,
-    loop_count,
-    input_sequence_length,
-    data_format,
-    measure_cpu,
-    task,
-    experimental_compile,
+    optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
+    trace_enabled=DEFAULT_TRACE_ENABLED,
+    batch_size=DEFAULT_BATCH_SIZE,
+    loop_count=DEFAULT_LOOP_COUNT,
+    input_sequence_length=DEFAULT_INPUT_SEQUENCE_LENGTH,
+    data_format=DEFAULT_DATA_FORMAT,
+    measure_cpu=DEFAULT_MEASURE_CPU,
+    task=DEFAULT_TASK,
+    experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
+    read_logits_fn=default_read_logits_fn,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
     Args:
         variant: Model variant identifier
         output: Path to save benchmark results as JSON
-        optimization_level: Optimization level (0, 1, or 2) (overrides config)
-        trace_enabled: Enable trace (overrides config)
-        batch_size: Batch size (overrides config)
-        loop_count: Number of benchmark iterations (overrides config)
-        input_sequence_length: Input sequence length (overrides config)
-        data_format: Data format (overrides config)
-        measure_cpu: Measure CPU FPS (overrides config)
-        task: Task type (overrides config)
+        optimization_level: Optimization level (0, 1, or 2)
+        trace_enabled: Enable trace
+        batch_size: Batch size
+        loop_count: Number of benchmark iterations
+        input_sequence_length: Input sequence length
+        data_format: Data format
+        measure_cpu: Measure CPU FPS
+        task: Task type
+        experimental_compile: Enable experimental compile
+        read_logits_fn: Function to extract logits from model output
     """
-    if variant is None:
-        raise ValueError("Model variant must be specified with --variant <variant_name>")
-
-    variant_config = LLM_MODEL_CONFIGS.get(variant, None)
-    if not variant_config:
-        raise ValueError(f"Variant {variant} is not available in LLM_MODEL_CONFIGS.")
-
-    module_path = variant_config["model_loader_module"]
-    model_loader_module = __import__(module_path, fromlist=["ModelLoader", "ModelVariant"])
-    ModelLoader = model_loader_module.ModelLoader
-    ModelVariant = model_loader_module.ModelVariant
-
-    if ModelVariant(variant) not in ModelLoader.query_available_variants():
-        raise ValueError(f"Variant {variant} is not available for the specified model.")
-    model_variant = ModelVariant(variant)
-    model_loader = ModelLoader(variant=model_variant)
-
-    # Get config values for the model in the following order of precedence:
-    # 1. Command line argument (if provided)
-    # 2. Variant-specific configuration from CI JSON file
-    # 3. Default constant defined at the top of this file
-    optimization_level = (
-        optimization_level
-        if optimization_level is not None
-        else variant_config.get("optimization_level", OPTIMIZATION_LEVEL)
-    )
-    trace_enabled = trace_enabled if trace_enabled is not None else variant_config.get("trace_enabled", TRACE_ENABLED)
-    batch_size = batch_size if batch_size is not None else variant_config.get("batch_size", BATCH_SIZE)
-    loop_count = loop_count if loop_count is not None else variant_config.get("loop_count", LOOP_COUNT)
-    input_sequence_length = (
-        input_sequence_length
-        if input_sequence_length is not None
-        else variant_config.get("input_sequence_length", INPUT_SEQUENCE_LENGTH)
-    )
-    data_format = data_format if data_format is not None else variant_config.get("data_format", DATA_FORMAT)
-    measure_cpu = measure_cpu if measure_cpu is not None else variant_config.get("measure_cpu", MEASURE_CPU)
-    task = task if task is not None else variant_config.get("task", TASK)
-    experimental_compile = (
-        experimental_compile if experimental_compile is not None else variant_config.get("experimental_compile", True)
-    )
-    ttnn_perf_metrics_output_file = f"LLM_{variant}_perf_metrics.json"
+    model_loader = ModelLoaderModule(variant=variant)
+    ttnn_perf_metrics_output_file = f"{variant}.json"
 
     print(f"Running LLM benchmark for variant: {variant}")
     print(
@@ -140,7 +79,7 @@ def test_llm(
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
         model_loader=model_loader,
-        model_variant=model_variant,
+        model_variant=variant,
         batch_size=batch_size,
         loop_count=loop_count,
         task=task,
@@ -150,11 +89,12 @@ def test_llm(
         training=False,
         experimental_compile=experimental_compile,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+        read_logits_fn=read_logits_fn,
     )
 
     if output:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = model_loader.get_model_info(variant=model_variant).name
+        results["model_rawname"] = model_loader.get_model_info(variant=variant).name
 
         if os.path.exists(ttnn_perf_metrics_output_file):
             with open(ttnn_perf_metrics_output_file, "r") as f:
@@ -172,3 +112,101 @@ def test_llm(
 
         with open(output, "w") as file:
             json.dump(results, file, indent=2)
+
+
+def test_llama_3_2_1b(output):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+
+
+def test_llama_3_2_3b(output):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+
+
+def test_gemma_1_1_2b(output):
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_1_1_2B_IT
+    experimental_compile = False
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, experimental_compile=experimental_compile)
+
+
+def test_gemma_2_2b(output):
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_2_2B_IT
+    experimental_compile = False
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, experimental_compile=experimental_compile)
+
+
+def test_phi1(output):
+    from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.PHI1
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+
+
+def test_phi1_5(output):
+    from third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.PHI1_5
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+
+
+def test_phi2(output):
+    from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.PHI2
+    # Disable optimizer for phi2 due to PCC issue
+    test_llm(ModelLoaderModule=ModelLoader, optimization_level=0, variant=variant, output=output)
+
+
+def test_falcon3_1b(output):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_1B
+    # Tuple format: (logits, past_key_values, ...)
+    read_logits_fn = lambda output: output[0]
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, read_logits_fn=read_logits_fn)
+
+
+def test_falcon3_3b(output):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_3B
+    # Tuple format: (logits, past_key_values, ...)
+    read_logits_fn = lambda output: output[0]
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, read_logits_fn=read_logits_fn)
+
+
+def test_qwen_2_5_0_5b(output):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_0_5B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+
+
+def test_qwen_3_0_6b(output):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_0_6B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+
+
+def test_qwen_3_1_7b(output):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_1_7B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+
+
+def test_qwen_3_4b(output):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_4B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
