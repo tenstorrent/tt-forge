@@ -180,27 +180,13 @@ jobs:
           python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
         else
           # Run with pytest
-          export PYTHONPATH="$(pwd):${PYTHONPATH}"
-
-          # Build optional arguments
-          PYTEST_OPTS=""
-          [ -n "${{ matrix.build.model_config.trace_enabled }}" ] && PYTEST_OPTS="$PYTEST_OPTS --trace-enabled ${{ matrix.build.model_config.trace_enabled }}"
-          [ -n "${{ matrix.build.model_config.batch_size }}" ] && PYTEST_OPTS="$PYTEST_OPTS --batch-size ${{ matrix.build.model_config.batch_size }}"
-          [ -n "${{ matrix.build.model_config.loop_count }}" ] && PYTEST_OPTS="$PYTEST_OPTS --loop-count ${{ matrix.build.model_config.loop_count }}"
-          [ -n "${{ matrix.build.model_config.input_sequence_length }}" ] && PYTEST_OPTS="$PYTEST_OPTS --input-sequence-length ${{ matrix.build.model_config.input_sequence_length }}"
-          [ -n "${{ matrix.build.model_config.data_format }}" ] && PYTEST_OPTS="$PYTEST_OPTS --data-format ${{ matrix.build.model_config.data_format }}"
-          [ -n "${{ matrix.build.model_config.measure_cpu }}" ] && PYTEST_OPTS="$PYTEST_OPTS --measure-cpu ${{ matrix.build.model_config.measure_cpu }}"
-          [ -n "${{ matrix.build.model_config.task }}" ] && PYTEST_OPTS="$PYTEST_OPTS --task ${{ matrix.build.model_config.task }}"
-          [ -n "${{ matrix.build.experimental_compile }}" ] && PYTEST_OPTS="$PYTEST_OPTS --experimental-compile ${{ matrix.build.experimental_compile }}"
-
-          pytest -svv "${{ matrix.build.pytest }}" --variant ${{ matrix.build.variant }} --output=${{ steps.strings.outputs.perf_report_json_file }} $PYTEST_OPTS
+          pytest -svv "${{ matrix.build.pytest }}" --output=${{ steps.strings.outputs.perf_report_json_file }}
         fi
 
-    - name: Dump ttir and ttnn to report
-      if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
+    - name: Dump ttir to report
+      if: (success() || failure()) && !matrix.build.skip-ttir-dump
       shell: bash
       run: |
-
         echo "Dump ttir to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttir
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
@@ -213,6 +199,18 @@ jobs:
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
         fi
 
+    - name: Upload TTIR MLIR separately
+      id: upload-ttir-mlir
+      uses: actions/upload-artifact@v4
+      if: (success() || failure()) && !matrix.build.skip-ttir-dump
+      with:
+        name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/ttir/
+
+    - name: Dump ttnn to report
+      if: (success() || failure()) && !matrix.build.skip-ttnn-dump
+      shell: bash
+      run: |
         echo "Dump ttnn to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttnn
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
@@ -225,18 +223,10 @@ jobs:
           cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
         fi
 
-    - name: Upload TTIR MLIR separately
-      id: upload-ttir-mlir
-      uses: actions/upload-artifact@v4
-      if: ${{ !matrix.build.skip-ttir-dump }}
-      with:
-        name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
-        path: ${{ steps.strings.outputs.perf_report_path }}/ttir/
-
     - name: Upload TTNN MLIR separately
       id: upload-ttnn-mlir
       uses: actions/upload-artifact@v4
-      if: ${{ !matrix.build.skip-ttnn-dump }}
+      if: (success() || failure()) && !matrix.build.skip-ttnn-dump
       with:
         name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttnn/
