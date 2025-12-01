@@ -97,6 +97,7 @@ def test_vovnet_torch_xla(
     data_format,
     model_name,
     measure_cpu,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a VoVNet model using PyTorch and torch-xla.
@@ -155,6 +156,8 @@ def test_vovnet_torch_xla(
     options = {
         "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": MODULE_EXPORT_PATH,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -265,6 +268,7 @@ def benchmark(config: dict):
     data_format = config["data_format"]
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
+    ttnn_perf_metrics_output_file = config.get("ttnn_perf_metrics_output_file", "")
 
     return test_vovnet_torch_xla(
         training=training,
@@ -277,4 +281,5 @@ def benchmark(config: dict):
         data_format=data_format,
         model_name=model_name,
         measure_cpu=measure_cpu,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
     )
