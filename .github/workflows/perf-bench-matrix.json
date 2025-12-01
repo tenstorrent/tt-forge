@@ -128,12 +128,6 @@
         "skip-device-perf": true
       },
       {
-        "name": "google_gemma-2-2b-it",
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_gemma_2_2b",
-        "skip-device-perf": true
-      },
-      {
         "name": "tiiuae_falcon3-1b-base",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/llms.py::test_falcon3_1b",
