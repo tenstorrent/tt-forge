@@ -142,6 +142,7 @@ def generate_and_benchmark(
     tokenizer: PreTrainedTokenizer,
     device: torch.device,
     max_tokens_to_generate: int,
+    read_logits_fn: callable,
     verbose: bool = True,
 ):
     """
@@ -168,13 +169,7 @@ def generate_and_benchmark(
             # Run forward pass
             output = model(**input_args)
 
-            if isinstance(output, tuple):
-                # Tuple format: (logits, past_key_values, ...)
-                logits: torch.Tensor = output[0].to("cpu")
-            else:
-                # Object format: CausalLMOutputWithPast
-                logits: torch.Tensor = output.logits.to("cpu")
-
+            logits = read_logits_fn(output).to("cpu")
             output_logits.append(logits)
             next_token_ids = logits[:, -1].argmax(dim=-1)
             output_text = [tokenizer.decode(token_id) for token_id in next_token_ids]
@@ -243,6 +238,7 @@ def benchmark_llm_torch_xla(
     input_sequence_length,
     experimental_compile,
     ttnn_perf_metrics_output_file,
+    read_logits_fn,
 ):
     """
     This function creates an LLM based model using PyTorch and torch-xla.
@@ -304,6 +300,7 @@ def benchmark_llm_torch_xla(
         tokenizer,
         torch.device("cpu"),
         1,
+        read_logits_fn=read_logits_fn,
         verbose=False,
     )
     # Only one output makes sense to compare.
@@ -321,6 +318,7 @@ def benchmark_llm_torch_xla(
                 tokenizer,
                 torch.device("cpu"),
                 max_tokens_to_generate,
+                read_logits_fn=read_logits_fn,
                 verbose=False,
             )
             min_time_ns = min(min_time_ns, *iteration_times)
@@ -358,6 +356,7 @@ def benchmark_llm_torch_xla(
         tokenizer,
         device,
         warmup_tokens,
+        read_logits_fn=read_logits_fn,
         verbose=False,
     )
 
@@ -373,6 +372,7 @@ def benchmark_llm_torch_xla(
         tokenizer,
         device,
         max_tokens_to_generate,
+        read_logits_fn=read_logits_fn,
         verbose=True,
     )
 
