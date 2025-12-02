@@ -109,15 +109,6 @@ outputs:
   python_version:
     description: "Python version"
     value: ${{ steps.set-manifest.outputs.python_version }}
-  test_perf_filter:
-    description: "Test perf filter"
-    value: ${{ steps.set-manifest.outputs.test_perf_filter }}
-  test_perf_sh_runner:
-    description: "Test perf sh runner"
-    value: ${{ steps.set-manifest.outputs.test_perf_sh_runner }}
-  test_perf:
-    description: "Test perf"
-    value: ${{ steps.set-manifest.outputs.test_perf }}
   basic_tests_runner_filter:
     description: "Basic tests runner filter"
     value: ${{ steps.set-manifest.outputs.basic_tests_runner_filter }}
@@ -185,12 +176,6 @@ runs:
         git_log_fail_on_error="true"
         # Filter for which demo tests to run (empty = all)
         test_demo_filter=""
-        # Run performance tests
-        test_perf="false"
-        # Run performance tests with shared CIv2 runner
-        test_perf_sh_runner="false"
-        # Filter for which performance tests to run (empty = all)
-        test_perf_filter=""
         # Wait for demo tests to complete
         test_demo_wait="false"
         # Python version to use for builds and tests
@@ -245,7 +230,6 @@ runs:
             artifact_name_prefix="xla-whl-release"
             artifact_download_glob='*{xla-whl-release,vllm-tt-whl-release,test-reports}*'
             pip_wheel_names="pjrt-plugin-tt"
-            test_perf="true"
             uplift_artifacts_by_commit="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then
             workflow="Daily Releaser"
@@ -265,11 +249,9 @@ runs:
             prerelease="true"
             # Wait for the demo test to complete only for draft releases and run only one test
             test_demo_filter="bge_m3"
-            test_perf_filter="resnet"
             test_demo_wait="true"
             # Only run basic tests on n150 for draft releases until Civ2 capacity improves
             basic_tests_runner_filter="tt-ubuntu-2204-n150-stable"
-            #test_perf_sh_runner="true"
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.
             # This is because this commit belongs to the tt-forge repo not where the artifacts are stored.
@@ -333,9 +315,6 @@ runs:
         echo "test_demo_filter=$test_demo_filter"
         echo "test_demo_wait=$test_demo_wait"
         echo "python_version=$python_version"
-        echo "test_perf_filter=$test_perf_filter"
-        echo "test_perf_sh_runner=$test_perf_sh_runner"
-        echo "test_perf=$test_perf"
         echo "basic_tests_runner_filter=$basic_tests_runner_filter"
         echo "uplift_artifacts_by_commit=$uplift_artifacts_by_commit"
         echo "artifact_name_prefix=$artifact_name_prefix"
@@ -372,9 +351,6 @@ runs:
         echo "test_demo_filter=$test_demo_filter" >> $GITHUB_OUTPUT
         echo "test_demo_wait=$test_demo_wait" >> $GITHUB_OUTPUT
         echo "python_version=$python_version" >> $GITHUB_OUTPUT
-        echo "test_perf_filter=$test_perf_filter" >> $GITHUB_OUTPUT
-        echo "test_perf_sh_runner=$test_perf_sh_runner" >> $GITHUB_OUTPUT
-        echo "test_perf=$test_perf" >> $GITHUB_OUTPUT
         echo "basic_tests_runner_filter=$basic_tests_runner_filter" >> $GITHUB_OUTPUT
         echo "uplift_artifacts_by_commit=$uplift_artifacts_by_commit" >> $GITHUB_OUTPUT
         echo "artifact_name_prefix=$artifact_name_prefix" >> $GITHUB_OUTPUT
