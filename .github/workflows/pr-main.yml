@@ -11,7 +11,6 @@ permissions:
   actions: write
 
 jobs:
-
   performance-benchmark:
     uses: ./.github/workflows/perf-benchmark.yml
     if: contains(github.event.pull_request.labels.*.name, 'uplift')
