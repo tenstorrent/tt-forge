@@ -12,16 +12,16 @@ permissions:
 
 jobs:
   performance-benchmark:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dummy fail
-        run: exit 1
-    # uses: ./.github/workflows/perf-benchmark.yml
-    # if: contains(github.event.pull_request.labels.*.name, 'uplift')
-    # secrets: inherit
-    # with:
-    #   docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
-    #   project: tt-xla
+    # runs-on: ubuntu-latest
+    # steps:
+    #   - name: Dummy fail
+    #     run: exit 1
+    uses: ./.github/workflows/perf-benchmark.yml
+    if: contains(github.event.pull_request.labels.*.name, 'uplift')
+    secrets: inherit
+    with:
+      docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
+      project: tt-xla
 
   check-all-green:
     if: always()
@@ -31,6 +31,5 @@ jobs:
       - name: Check the status of needed jobs
         uses: re-actors/alls-green@release/v1
         with:
-          allowed-skips: performance-benchmark
           allowed-failures: performance-benchmark
           jobs: ${{ toJson(needs) }}
