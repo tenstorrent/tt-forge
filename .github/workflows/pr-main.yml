@@ -12,16 +12,12 @@ permissions:
 
 jobs:
   performance-benchmark:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dummy fail
-        run: exit 1
-    # uses: ./.github/workflows/perf-benchmark.yml
-    # if: contains(github.event.pull_request.labels.*.name, 'uplift')
-    # secrets: inherit
-    # with:
-    #   docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
-    #   project: tt-xla
+    uses: ./.github/workflows/perf-benchmark.yml
+    if: contains(github.event.pull_request.labels.*.name, 'uplift')
+    secrets: inherit
+    with:
+      docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
+      project: tt-xla
 
   check-all-green:
     if: always()
