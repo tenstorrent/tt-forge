@@ -27,51 +27,52 @@
         "name": "mnist",
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "df": "bfloat16",
-        "bs": 32
+        "pytest": "benchmark/tt-xla/visions.py::test_mnist"
       },
       {
         "name": "resnet",
-        "bs": 8,
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_resnet50"
       },
       {
         "name": "mobilenetv2",
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_mobilenetv2"
       },
       {
         "name": "efficientnet",
-        "bs": 8,
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers torch==2.7.0"
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers torch==2.7.0",
+        "pytest": "benchmark/tt-xla/visions.py::test_efficientnet"
       },
       {
         "name": "segformer",
-        "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_segformer"
       },
       {
         "name": "swin",
-        "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_swin"
       },
       {
         "name": "ufld",
-        "bs": 1,
-        "pyreq": "datasets loguru opencv-python pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru opencv-python pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_ufld"
       },
       {
         "name": "unet",
-        "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_unet"
       },
       {
         "name": "vit",
-        "bs": 8,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_vit"
       },
       {
         "name": "vovnet",
-        "bs": 8,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/visions.py::test_vovnet"
       },
       {
         "name": "bge_m3_encode",
