@@ -237,6 +237,7 @@ def benchmark_llm_torch_xla(
     measure_cpu,
     input_sequence_length,
     experimental_compile,
+    enable_weight_bfp8_conversion,
     ttnn_perf_metrics_output_file,
     read_logits_fn,
 ):
@@ -340,6 +341,7 @@ def benchmark_llm_torch_xla(
         "export_path": MODULE_EXPORT_PATH,
         "ttnn_perf_metrics_enabled": True,
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
+        "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -442,6 +444,7 @@ def benchmark_llm_torch_xla(
         optimization_level=optimization_level,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         trace_enabled=trace_enabled,
+        enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         model_info=full_model_name,
         torch_xla_enabled=True,
         backend="tt",

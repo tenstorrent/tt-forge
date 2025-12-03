@@ -26,6 +26,7 @@ from benchmark.utils import get_jax_device_arch
 OPTIMIZATION_LEVEL = 1
 PROGRAM_CACHE_ENABLED = False
 TRACE_ENABLED = False
+ENABLE_WEIGHT_BFP8_CONVERSION = False
 
 
 BATCH_SIZE = [
@@ -145,6 +146,7 @@ def test_resnet(
         optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         trace_enabled=TRACE_ENABLED,
+        enable_weight_bfp8_conversion=ENABLE_WEIGHT_BFP8_CONVERSION,
         model_info=model_info,
         torch_xla_enabled=False,
         channel_size=channel_size,
