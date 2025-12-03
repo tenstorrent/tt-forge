@@ -29,7 +29,7 @@ def default_read_logits_fn(output):
 def test_llm(
     ModelLoaderModule,
     variant,
-    output,
+    output_file,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -46,7 +46,7 @@ def test_llm(
 
     Args:
         variant: Model variant identifier
-        output: Path to save benchmark results as JSON
+        output_file: Path to save benchmark results as JSON
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
         batch_size: Batch size
@@ -97,7 +97,7 @@ def test_llm(
         read_logits_fn=read_logits_fn,
     )
 
-    if output:
+    if output_file:
         results["project"] = "tt-forge/tt-xla"
         results["model_rawname"] = model_loader.get_model_info(variant=variant).name
 
@@ -115,26 +115,26 @@ def test_llm(
                 ]
                 results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
 
-        with open(output, "w") as file:
+        with open(output_file, "w") as file:
             json.dump(results, file, indent=2)
 
 
-def test_llama_3_2_1b(output):
+def test_llama_3_2_1b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_llama_3_2_3b(output):
+def test_llama_3_2_3b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
     # Disable BFP8 weight conversion due to OOM failure
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, enable_weight_bfp8_conversion=False)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False)
 
 
-def test_gemma_1_1_2b(output):
+def test_gemma_1_1_2b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_1_1_2B_IT
@@ -143,35 +143,40 @@ def test_gemma_1_1_2b(output):
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
-        output=output,
+        output_file=output_file,
         experimental_compile=experimental_compile,
         enable_weight_bfp8_conversion=False,
     )
 
 
-def test_gemma_2_2b(output):
+def test_gemma_2_2b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_2_2B_IT
     experimental_compile = False
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, experimental_compile=experimental_compile)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        experimental_compile=experimental_compile,
+    )
 
 
-def test_phi1(output):
+def test_phi1(output_file):
     from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI1
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_phi1_5(output):
+def test_phi1_5(output_file):
     from third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI1_5
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_phi2(output):
+def test_phi2(output_file):
     from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI2
@@ -181,21 +186,21 @@ def test_phi2(output):
         ModelLoaderModule=ModelLoader,
         optimization_level=0,
         variant=variant,
-        output=output,
+        output_file=output_file,
         enable_weight_bfp8_conversion=False,
     )
 
 
-def test_falcon3_1b(output):
+def test_falcon3_1b(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_1B
     # Tuple format: (logits, past_key_values, ...)
     read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, read_logits_fn=read_logits_fn)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
 
 
-def test_falcon3_3b(output):
+def test_falcon3_3b(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_3B
@@ -205,36 +210,36 @@ def test_falcon3_3b(output):
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
-        output=output,
+        output_file=output_file,
         read_logits_fn=read_logits_fn,
         enable_weight_bfp8_conversion=False,
     )
 
 
-def test_qwen_2_5_0_5b(output):
+def test_qwen_2_5_0_5b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_0_5B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_qwen_3_0_6b(output):
+def test_qwen_3_0_6b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_0_6B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_qwen_3_1_7b(output):
+def test_qwen_3_1_7b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_1_7B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_qwen_3_4b(output):
+def test_qwen_3_4b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_4B
     # Disable BFP8 weight conversion due to OOM failure
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, enable_weight_bfp8_conversion=False)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False)
