@@ -19,6 +19,7 @@ DEFAULT_DATA_FORMAT = "bfloat16"
 DEFAULT_MEASURE_CPU = False
 DEFAULT_TASK = "text-generation"
 DEFAULT_EXPERIMENTAL_COMPILE = True
+DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = True
 
 
 def default_read_logits_fn(output):
@@ -38,6 +39,7 @@ def test_llm(
     measure_cpu=DEFAULT_MEASURE_CPU,
     task=DEFAULT_TASK,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
+    enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     read_logits_fn=default_read_logits_fn,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
@@ -54,6 +56,7 @@ def test_llm(
         measure_cpu: Measure CPU FPS
         task: Task type
         experimental_compile: Enable experimental compile
+        enable_weight_bfp8_conversion: Enable BFP8 weight conversion
         read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant)
@@ -71,6 +74,7 @@ def test_llm(
     measure_cpu={measure_cpu}
     task={task}
     experimental_compile={experimental_compile}
+    enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
@@ -88,6 +92,7 @@ def test_llm(
         input_sequence_length=input_sequence_length,
         training=False,
         experimental_compile=experimental_compile,
+        enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         read_logits_fn=read_logits_fn,
     )
@@ -125,7 +130,8 @@ def test_llama_3_2_3b(output):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    # Disable BFP8 weight conversion due to OOM failure
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, enable_weight_bfp8_conversion=False)
 
 
 def test_gemma_1_1_2b(output):
@@ -133,7 +139,14 @@ def test_gemma_1_1_2b(output):
 
     variant = ModelVariant.GEMMA_1_1_2B_IT
     experimental_compile = False
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, experimental_compile=experimental_compile)
+    # Disable BFP8 weight conversion due to OOM failure
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output=output,
+        experimental_compile=experimental_compile,
+        enable_weight_bfp8_conversion=False,
+    )
 
 
 def test_gemma_2_2b(output):
@@ -163,7 +176,14 @@ def test_phi2(output):
 
     variant = ModelVariant.PHI2
     # Disable optimizer for phi2 due to PCC issue
-    test_llm(ModelLoaderModule=ModelLoader, optimization_level=0, variant=variant, output=output)
+    # Disable BFP8 weight conversion due to OOM failure
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        optimization_level=0,
+        variant=variant,
+        output=output,
+        enable_weight_bfp8_conversion=False,
+    )
 
 
 def test_falcon3_1b(output):
@@ -181,7 +201,14 @@ def test_falcon3_3b(output):
     variant = ModelVariant.FALCON_3B
     # Tuple format: (logits, past_key_values, ...)
     read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, read_logits_fn=read_logits_fn)
+    # Disable BFP8 weight conversion due to OOM failure
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output=output,
+        read_logits_fn=read_logits_fn,
+        enable_weight_bfp8_conversion=False,
+    )
 
 
 def test_qwen_2_5_0_5b(output):
@@ -209,4 +236,5 @@ def test_qwen_3_4b(output):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_4B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    # Disable BFP8 weight conversion due to OOM failure
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output, enable_weight_bfp8_conversion=False)
