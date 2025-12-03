@@ -26,7 +26,7 @@ Before running one of the demos in TT-Forge, you must:
    * Docker
    * Build From Source
 
->**NOTE:** At this time, if you want to use TT-Forge-FE, you must use Docker or the build from source option. 
+>**NOTE:** At this time, if you want to use TT-Forge-FE, you must use Docker or the build from source option.
 
 3. Follow the installation instructions from the repo for your selected setup method:
    * [TT-XLA Wheel](https://docs.tenstorrent.com/tt-xla/getting_started.html)
