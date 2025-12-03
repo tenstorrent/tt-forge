@@ -18,3 +18,14 @@ jobs:
     with:
       docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
       project: tt-xla
+
+  check-all-green:
+    if: always()
+    needs: performance-benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the status of needed jobs
+        uses: re-actors/alls-green@release/v1
+        with:
+          allowed-failures: performance-benchmark
+          jobs: ${{ toJson(needs) }}

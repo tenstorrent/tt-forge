@@ -12,6 +12,7 @@ import socket
 OPTIMIZATION_LEVEL = 2
 PROGRAM_CACHE_ENABLED = True
 TRACE_ENABLED = False
+ENABLE_WEIGHT_BFP8_CONVERSION = False
 
 if PROGRAM_CACHE_ENABLED:
     os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
@@ -85,7 +86,16 @@ MODULE_EXPORT_PATH = "modules"
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_mobilenetv2_torch_xla(
-    training, batch_size, input_size, channel_size, loop_count, task, data_format, model_name, measure_cpu
+    training,
+    batch_size,
+    input_size,
+    channel_size,
+    loop_count,
+    task,
+    data_format,
+    model_name,
+    measure_cpu,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a MobileNetV2 model using PyTorch and torch-xla.
@@ -147,6 +157,9 @@ def test_mobilenetv2_torch_xla(
     options = {
         "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": MODULE_EXPORT_PATH,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
+        "experimental_enable_weight_bfp8_conversion": ENABLE_WEIGHT_BFP8_CONVERSION,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -231,6 +244,7 @@ def test_mobilenetv2_torch_xla(
         optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         trace_enabled=TRACE_ENABLED,
+        enable_weight_bfp8_conversion=ENABLE_WEIGHT_BFP8_CONVERSION,
         model_info=model_info,
         torch_xla_enabled=True,
         backend="tt",
@@ -257,6 +271,7 @@ def benchmark(config: dict):
     task = config["task"]
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
+    ttnn_perf_metrics_output_file = config.get("ttnn_perf_metrics_output_file", "")
 
     return test_mobilenetv2_torch_xla(
         training=training,
@@ -268,4 +283,5 @@ def benchmark(config: dict):
         data_format=data_format,
         model_name=model_name,
         measure_cpu=measure_cpu,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
     )

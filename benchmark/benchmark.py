@@ -118,7 +118,9 @@ def run_benchmark(config: Dict[str, Any]) -> Dict[str, Any]:
     return results
 
 
-def save_results(config: Dict[str, Any], results: Dict[str, Any], project: str, model: str):
+def save_results(
+    config: Dict[str, Any], results: Dict[str, Any], project: str, model: str, ttnn_perf_metrics_output_file: str
+):
     """
     Save the benchmark results to a JSON file.
 
@@ -141,6 +143,20 @@ def save_results(config: Dict[str, Any], results: Dict[str, Any], project: str, 
         output_file = config["output"]
     else:
         output_file = os.path.join(f"{project}_{model}.json")
+
+    # If the perf_metrics report file exists, load existing results and append to config, the only appendable field for superset
+    print(f"Looking for perf report file at: {ttnn_perf_metrics_output_file}")
+    if os.path.exists(ttnn_perf_metrics_output_file):
+        with open(ttnn_perf_metrics_output_file, "r") as f:
+            perf_metrics_data = json.load(f)
+        if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
+            results["config"]["ttnn_total_ops"] = perf_metrics_data["summary"]["total_ops"]
+            results["config"]["ttnn_total_shardable_ops"] = perf_metrics_data["summary"]["total_shardable_ops"]
+            results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"]["effectively_sharded_ops"]
+            results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"][
+                "effectively_sharded_percentage"
+            ]
+            results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
 
     with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
@@ -258,13 +274,15 @@ def main():
     # Read the arguments from the command line.
     config = read_args()
 
+    config["ttnn_perf_metrics_output_file"] = config["model"] + "_perf_metrics.json"
+
     # Run the benchmark
     results = run_benchmark(config)
     results["project"] = config["run_origin"] + "/" + config["project"]
     results["model_rawname"] = config["model"]
 
     # Save the results
-    save_results(config, results, config["project"], config["model"])
+    save_results(config, results, config["project"], config["model"], config["ttnn_perf_metrics_output_file"])
 
     print("Done.")
 

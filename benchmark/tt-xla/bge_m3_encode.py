@@ -34,6 +34,7 @@ os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 OPTIMIZATION_LEVEL = 0
 PROGRAM_CACHE_ENABLED = True
 TRACE_ENABLED = False
+ENABLE_WEIGHT_BFP8_CONVERSION = True
 
 if PROGRAM_CACHE_ENABLED:
     os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
@@ -255,7 +256,15 @@ def bge_m3_measure_fps(compiled_model, sentences_list, encode_kwargs, loop_count
 @pytest.mark.parametrize("task", TASK, ids=[f"task={item}" for item in TASK])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
 def test_bge_m3_encode_torch_xla(
-    training, batch_size, loop_count, task, data_format, model_name, measure_cpu, input_sequence_length
+    training,
+    batch_size,
+    loop_count,
+    task,
+    data_format,
+    model_name,
+    measure_cpu,
+    input_sequence_length,
+    ttnn_perf_metrics_output_file,
 ):
     """
     This function creates a BGE-M3 encode model using PyTorch and torch-xla.
@@ -308,6 +317,9 @@ def test_bge_m3_encode_torch_xla(
     options = {
         "optimization_level": OPTIMIZATION_LEVEL,
         "export_path": MODULE_EXPORT_PATH,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
+        "experimental_enable_weight_bfp8_conversion": ENABLE_WEIGHT_BFP8_CONVERSION,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -391,6 +403,7 @@ def test_bge_m3_encode_torch_xla(
         optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         trace_enabled=TRACE_ENABLED,
+        enable_weight_bfp8_conversion=ENABLE_WEIGHT_BFP8_CONVERSION,
         model_info="BAAI/bge-m3",
         torch_xla_enabled=True,
         backend="tt",
@@ -416,6 +429,7 @@ def benchmark(config: dict):
     model_name = config["model"]
     measure_cpu = config["measure_cpu"]
     input_sequence_length = config["input_sequence_length"]
+    ttnn_perf_metrics_output_file = config.get("ttnn_perf_metrics_output_file", "")
 
     return test_bge_m3_encode_torch_xla(
         training=training,
@@ -426,4 +440,5 @@ def benchmark(config: dict):
         model_name=model_name,
         measure_cpu=measure_cpu,
         input_sequence_length=input_sequence_length,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
     )

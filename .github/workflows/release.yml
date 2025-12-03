@@ -102,7 +102,7 @@ jobs:
         latest_branch_commit: ${{ inputs.latest_branch_commit }}
 
     - name: Free Disk Space (Ubuntu)
-      if: ${{ steps.set-release-facts.outputs.repo_short == 'tt-forge' }}
+      if: ${{ steps.set-release-facts.outputs.repo_short == 'tt-forge' || steps.set-release-facts.outputs.repo_short == 'tt-xla' }}
       uses: jlumbroso/free-disk-space@main
       with:
         android: true
