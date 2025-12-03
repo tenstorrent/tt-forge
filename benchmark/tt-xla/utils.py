@@ -213,6 +213,7 @@ def create_benchmark_result(
     optimization_level: int = 0,
     program_cache_enabled: bool = False,
     trace_enabled: bool = False,
+    enable_weight_bfp8_conversion: bool = False,
     model_info: str = "",
     torch_xla_enabled: bool = True,
     backend: str = "tt",
@@ -266,6 +267,7 @@ def create_benchmark_result(
         "optimization_level": optimization_level,
         "program_cache_enabled": program_cache_enabled,
         "trace_enabled": trace_enabled,
+        "enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
         "model_info": model_info,
     }
 

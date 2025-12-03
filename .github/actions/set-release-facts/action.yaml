@@ -243,8 +243,8 @@ runs:
                 workflow="On push"
             fi
             artifact_name_prefix="xla-whl-release"
-            artifact_download_glob='*{xla-whl-release,test-reports}*'
-            pip_wheel_names="pjrt-plugin-tt"
+            artifact_download_glob='*{xla-whl-release,vllm-tt-whl-release,test-reports}*'
+            pip_wheel_names="pjrt-plugin-tt vllm-tt"
             test_perf="true"
             uplift_artifacts_by_commit="true"
         elif [[ "${{ inputs.repo }}" =~ "tt-forge" ]]; then

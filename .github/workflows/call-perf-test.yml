@@ -180,63 +180,45 @@ jobs:
           python benchmark/benchmark.py -p ${{ matrix.build.project}} -m ${{ matrix.build.name }} -bs ${{ matrix.build.bs }} -df ${{ matrix.build.df }} -lp ${{ matrix.build.lp }} ${{ matrix.build.input_sequence_length && format('-isl {0}', matrix.build.input_sequence_length) }} -ts ${{ matrix.build.ts }} -o ${{ steps.strings.outputs.perf_report_json_file }} ${{ inputs.run_id_source && format('-r {0}', inputs.run_id_source) }}
         else
           # Run with pytest
-          export PYTHONPATH="$(pwd):${PYTHONPATH}"
-
-          # Build optional arguments
-          PYTEST_OPTS=""
-          [ -n "${{ matrix.build.model_config.trace_enabled }}" ] && PYTEST_OPTS="$PYTEST_OPTS --trace-enabled ${{ matrix.build.model_config.trace_enabled }}"
-          [ -n "${{ matrix.build.model_config.batch_size }}" ] && PYTEST_OPTS="$PYTEST_OPTS --batch-size ${{ matrix.build.model_config.batch_size }}"
-          [ -n "${{ matrix.build.model_config.loop_count }}" ] && PYTEST_OPTS="$PYTEST_OPTS --loop-count ${{ matrix.build.model_config.loop_count }}"
-          [ -n "${{ matrix.build.model_config.input_sequence_length }}" ] && PYTEST_OPTS="$PYTEST_OPTS --input-sequence-length ${{ matrix.build.model_config.input_sequence_length }}"
-          [ -n "${{ matrix.build.model_config.data_format }}" ] && PYTEST_OPTS="$PYTEST_OPTS --data-format ${{ matrix.build.model_config.data_format }}"
-          [ -n "${{ matrix.build.model_config.measure_cpu }}" ] && PYTEST_OPTS="$PYTEST_OPTS --measure-cpu ${{ matrix.build.model_config.measure_cpu }}"
-          [ -n "${{ matrix.build.model_config.task }}" ] && PYTEST_OPTS="$PYTEST_OPTS --task ${{ matrix.build.model_config.task }}"
-          [ -n "${{ matrix.build.experimental_compile }}" ] && PYTEST_OPTS="$PYTEST_OPTS --experimental-compile ${{ matrix.build.experimental_compile }}"
-
-          pytest -svv "${{ matrix.build.pytest }}" --variant ${{ matrix.build.variant }} --output=${{ steps.strings.outputs.perf_report_json_file }} $PYTEST_OPTS
+          pytest -svv "${{ matrix.build.pytest }}" --output=${{ steps.strings.outputs.perf_report_json_file }}
         fi
 
-    - name: Dump ttir and ttnn to report
-      if: ${{ !matrix.build.skip-ttir-dump && !matrix.build.skip-ttnn-dump }}
+    - name: Dump ttir to report
+      if: (success() || failure()) && !matrix.build.skip-ttir-dump
       shell: bash
       run: |
-
         echo "Dump ttir to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttir
-        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
-          else
-            cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
-          fi
-        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
-        fi
-
-        echo "Dump ttnn to report"
-        mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttnn
-        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
-          else
-            cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
-          fi
-        elif [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
-          cp ~/testify/ll-sw/${{ matrix.build.dir }}/mlir_reports/ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
+        if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+          cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
+        else
+          cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
         fi
 
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
       uses: actions/upload-artifact@v4
-      if: ${{ !matrix.build.skip-ttir-dump }}
+      if: (success() || failure()) && !matrix.build.skip-ttir-dump
       with:
         name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttir/
 
+    - name: Dump ttnn to report
+      if: (success() || failure()) && !matrix.build.skip-ttnn-dump
+      shell: bash
+      run: |
+        echo "Dump ttnn to report"
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttnn
+        if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+          cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
+        else
+          cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
+        fi
+
     - name: Upload TTNN MLIR separately
       id: upload-ttnn-mlir
       uses: actions/upload-artifact@v4
-      if: ${{ !matrix.build.skip-ttnn-dump }}
+      if: (success() || failure()) && !matrix.build.skip-ttnn-dump
       with:
         name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttnn/
@@ -327,18 +309,30 @@ jobs:
       shell: bash
       run: |
         source ttrt-venv/bin/activate
+
         echo "Save artifacts"
         ttrt query --save-artifacts
-        chmod ugo+x ./benchmark/ttrt_perf.sh
-        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
-            cp ./modules/${{ matrix.build.name }}.ttnn ${{ matrix.build.name }}.ttnn
-          else
-            cp ./modules/fb_*.ttnn ${{ matrix.build.name }}.ttnn
-          fi
-        fi
+
+        echo "Copy binaries"
+        mkdir flatbuffers
+        cp ./modules/*.ttnn flatbuffers
+
         echo "Run ttrt perf"
-        ./benchmark/ttrt_perf.sh ${{ matrix.build.name }}.ttnn ${{ steps.strings.outputs.perf_report_json_file }} || true
+        ttrt perf flatbuffers --ignore-version
+
+        echo "Write device perf to report"
+        python ./benchmark/device_perf.py ttrt-artifacts ${{ steps.strings.outputs.perf_report_json_file }}
+
+        echo "Copy device perf CSVs"
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}/device_perf
+        for dir in ttrt-artifacts/*/; do
+          binary_name=$(basename "$dir")
+          csv_file="$dir/perf/ops_perf_results_minus_const_eval_and_input_layout_conversions.csv"
+          if [ -f "$csv_file" ]; then
+            cp "$csv_file" "${{ steps.strings.outputs.perf_report_path }}/device_perf/${binary_name}.csv"
+            echo "Copied $csv_file to ${binary_name}.csv"
+          fi
+        done
 
     - name: Upload Device Perf separately
       id: upload-device-perf
@@ -346,7 +340,7 @@ jobs:
       if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' }}
       with:
         name: device-perf-${{ steps.fetch-job-id.outputs.job_id }}
-        path: ${{ steps.strings.outputs.perf_report_path }}/*.csv
+        path: ${{ steps.strings.outputs.perf_report_path }}/device_perf/
         compression-level: 0
 
     - name: Add config fields to perf report
