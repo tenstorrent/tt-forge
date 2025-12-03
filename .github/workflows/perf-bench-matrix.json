@@ -27,61 +27,51 @@
         "name": "mnist",
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "df": "bfloat16",
-        "bs": 32,
-        "skip-device-perf": true
+        "bs": 32
       },
       {
         "name": "resnet",
         "bs": 8,
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "mobilenetv2",
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "efficientnet",
         "bs": 8,
-        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers torch==2.7.0",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers torch==2.7.0"
       },
       {
         "name": "segformer",
         "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "swin",
         "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "ufld",
         "bs": 1,
-        "pyreq": "datasets loguru opencv-python pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru opencv-python pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "unet",
         "bs": 1,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "vit",
         "bs": 8,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "vovnet",
         "bs": 8,
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1"
       },
       {
         "name": "bge_m3_encode",
@@ -95,74 +85,62 @@
       {
         "name": "llama_3_2_1b_instruct",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_2_1b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_2_1b"
       },
       {
         "name": "llama_3_2_3b_instruct",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_2_3b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_2_3b"
       },
       {
         "name": "microsoft_phi-1",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_phi1",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_phi1"
       },
       {
         "name": "microsoft_phi-1_5",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_phi1_5",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_phi1_5"
       },
       {
         "name": "microsoft_phi-2",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_phi2",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_phi2"
       },
       {
         "name": "google_gemma-1.1-2b-it",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_gemma_1_1_2b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_gemma_1_1_2b"
       },
       {
         "name": "tiiuae_falcon3-1b-base",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_falcon3_1b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_falcon3_1b"
       },
       {
         "name": "tiiuae_falcon3-3b-base",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_falcon3_3b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_falcon3_3b"
       },
       {
         "name": "qwen_2_5_0_5b_instruct",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_0_5b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_0_5b"
       },
       {
         "name": "qwen_3_0_6b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_0_6b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_0_6b"
       },
       {
         "name": "qwen_3_1_7b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_1_7b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_1_7b"
       },
       {
         "name": "qwen_3_4b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_4b",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_4b"
       }
     ]
   }

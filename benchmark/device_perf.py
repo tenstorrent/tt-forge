@@ -2,248 +2,165 @@
 
 # SPDX-License-Identifier: Apache-2.0
 
-# Built-in modules
-import os
-import json
-import argparse
+"""
+Script to sum device performance metrics across multiple modules of a single model and write to benchmark report JSON.
 
-# Third-party modules
+Usage:
+    python benchmark/device_perf.py <ttrt-artifacts-dir> <perf-report-json>
+
+Example:
+    python benchmark/device_perf.py ttrt-artifacts benchmark_report.json
+"""
+
+import os
+import sys
+import json
 import pandas as pd
 
 DEVICE_FW_DURATION = "DEVICE FW DURATION [ns]"
 DEVICE_KERNEL_DURATION = "DEVICE KERNEL DURATION [ns]"
 NANO_SEC = 1e-9
+PERF_CSV_NAME = "ops_perf_results_minus_const_eval_and_input_layout_conversions.csv"
 
 
-def create_device_perf(device_perf_path, perf_report_path):
+def find_perf_csv_files(artifacts_dir):
     """
-    This function creates a device performance data file for testing purposes.
-    It actually calls two functions that parse and write the device performance data.
+    Find all performance CSV files in the ttrt-artifacts directory structure.
 
-    Parameters:
-    ----------
-    device_perf_path: str
-        The path to the device performance data.
-
-    perf_report_path: str
-        The path to the JSON benchmark report.
+    Args:
+        artifacts_dir: Path to ttrt-artifacts directory
 
     Returns:
-    -------
-    None
+        List of paths to performance CSV files
     """
+    csv_files = []
 
-    # Test the parse_device_perf function
-    perf_data = parse_device_perf(device_perf_path)
+    # Each binary creates a subdirectory in ttrt-artifacts
+    # We only want the perf CSV from each binary's subdirectory
+    for entry in os.listdir(artifacts_dir):
+        entry_path = os.path.join(artifacts_dir, entry)
+        if os.path.isdir(entry_path):
+            csv_path = os.path.join(entry_path, "perf", PERF_CSV_NAME)
+            csv_files.append(csv_path)
 
-    # Test the write_device_perf function
-    write_device_perf(perf_report_path, perf_data, False)
+    return csv_files
 
 
-def create_ttir(ttir_path):
+def sum_device_perf(csv_files):
     """
-    Create a TTIR file from the given path. TTIR is a JSON file that contains the model's information.
+    Sum device performance metrics across multiple CSV files.
 
-    Parameters:
-    ----------
-    ttir_path: str
-        The path to the TTIR file.
+    Args:
+        csv_files: List of paths to CSV files
 
     Returns:
-    -------
-    None
-
+        Dictionary with summed device_fw_duration and device_kernel_duration
     """
+    total_fw_duration = 0.0
+    total_kernel_duration = 0.0
 
-    with open(ttir_path, "r") as file:
-        content = file.read()
+    print(f"Processing {len(csv_files)} device performance CSV file(s)")
 
-    import regex as re
+    for csv_path in csv_files:
+        print(f"  Processing: {csv_path}")
+        try:
+            df = pd.read_csv(csv_path)
+            device_sum = df[[DEVICE_FW_DURATION, DEVICE_KERNEL_DURATION]].sum()
+            fw_duration = device_sum[DEVICE_FW_DURATION] * NANO_SEC
+            kernel_duration = device_sum[DEVICE_KERNEL_DURATION] * NANO_SEC
 
-    content = re.sub(r"attributes {ttcore.system_desc = .*}", "attributes {}", content)
-    content = re.sub(r"attributes {tt.system_desc = .*}", "attributes {}", content)
+            total_fw_duration += fw_duration
+            total_kernel_duration += kernel_duration
 
-    ttir_path_out = ttir_path.replace(".mlir", "_out.mlir")
+            print(f"    FW: {fw_duration:.6f}s, Kernel: {kernel_duration:.6f}s")
+        except Exception as e:
+            print(f"  Warning: Error processing {csv_path}: {e}")
+            continue
 
-    # Write the modified content to the TTIR file
-    with open(ttir_path_out, "w") as file:
-        file.write(content)
+    print(f"\nTotal summed performance:")
+    print(f"  FW Duration: {total_fw_duration:.6f}s")
+    print(f"  Kernel Duration: {total_kernel_duration:.6f}s")
+
+    return {"device_fw_duration": total_fw_duration, "device_kernel_duration": total_kernel_duration}
 
 
-def parse_device_perf(device_perf_path):
+def write_to_perf_report(perf_report_path, perf_data):
     """
-    Parse the device performance data and prepare it for writing to the JSON benchmark report.
+    Write device performance data to the benchmark report JSON.
 
-    Parameters:
-    ----------
-    device_perf_path: str
-        The path to the device performance data.
-
-    Returns:
-    -------
-    perf_data: dict
-        A dictionary containing the device performance data.
+    Args:
+        perf_report_path: Path to the JSON benchmark report
+        perf_data: Dictionary with device_fw_duration and device_kernel_duration
     """
-
-    # Read the device performance data
-    df = pd.read_csv(device_perf_path)
-
-    # Get total device fw duration and device kernel duration
-    device_sum = df[[DEVICE_FW_DURATION, DEVICE_KERNEL_DURATION]].sum()
-    device_fw_duration = device_sum[DEVICE_FW_DURATION] * NANO_SEC
-    device_kernel_duration = device_sum[DEVICE_KERNEL_DURATION] * NANO_SEC
-
-    perf_data = {"device_fw_duration": device_fw_duration, "device_kernel_duration": device_kernel_duration}
-
-    return perf_data
-
-
-def write_device_perf(perf_report_path, perf_data, write_new_path=False):
-    """
-    Write the device performance data to the JSON benchmark report.
-
-    Parameters:
-    ----------
-    perf_report_path: str
-        The path to the JSON benchmark report.
-    perf_data: dict
-        A dictionary containing the device performance data.
-
-    Returns:
-    -------
-    None
-    """
-
-    # Read perf report JSON file
     try:
-        with open(perf_report_path, "r") as file:
-            perf_report = json.load(file)
+        with open(perf_report_path, "r") as f:
+            perf_report = json.load(f)
     except FileNotFoundError:
         print(f"Error: Performance report file '{perf_report_path}' not found.")
-        return
+        sys.exit(1)
     except json.JSONDecodeError:
         print(f"Error: Performance report file '{perf_report_path}' contains invalid JSON.")
-        return
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        return
+        sys.exit(1)
 
-    # Upate the measurements
-    # Add the device firmware duration
+    # Get template from first measurement
+    template = perf_report["measurements"][0]
+
+    # Add device firmware duration measurement
     perf_report["measurements"].append(
         {
-            "iteration": perf_report["measurements"][0]["iteration"],
-            "step_name": perf_report["measurements"][0]["step_name"],
-            "step_warm_up_num_iterations": perf_report["measurements"][0]["step_warm_up_num_iterations"],
+            "iteration": template["iteration"],
+            "step_name": template["step_name"],
+            "step_warm_up_num_iterations": template["step_warm_up_num_iterations"],
             "measurement_name": "device_fw_duration",
             "value": perf_data["device_fw_duration"],
-            "target": perf_report["measurements"][0]["target"],
-            "device_power": perf_report["measurements"][0]["device_power"],
-            "device_temperature": perf_report["measurements"][0]["device_temperature"],
+            "target": template["target"],
+            "device_power": template["device_power"],
+            "device_temperature": template["device_temperature"],
         }
     )
-    # Add the device kernel duration
+
+    # Add device kernel duration measurement
     perf_report["measurements"].append(
         {
-            "iteration": perf_report["measurements"][0]["iteration"],
-            "step_name": perf_report["measurements"][0]["step_name"],
-            "step_warm_up_num_iterations": perf_report["measurements"][0]["step_warm_up_num_iterations"],
+            "iteration": template["iteration"],
+            "step_name": template["step_name"],
+            "step_warm_up_num_iterations": template["step_warm_up_num_iterations"],
             "measurement_name": "device_kernel_duration",
             "value": perf_data["device_kernel_duration"],
-            "target": perf_report["measurements"][0]["target"],
-            "device_power": perf_report["measurements"][0]["device_power"],
-            "device_temperature": perf_report["measurements"][0]["device_temperature"],
+            "target": template["target"],
+            "device_power": template["device_power"],
+            "device_temperature": template["device_temperature"],
         }
     )
 
-    if write_new_path:
-        perf_report_path_out = perf_report_path.replace(".json", "_out.json")
-    else:
-        perf_report_path_out = perf_report_path
+    # Save updated report
+    with open(perf_report_path, "w") as f:
+        json.dump(perf_report, f)
 
-    # Save the results to the performance report file
-    with open(perf_report_path_out, "w") as file:
-        json.dump(perf_report, file)
-
-
-def read_args():
-    """
-    Read the arguments from the command line.
-
-    Parameters:
-    ----------
-    None
-
-    Returns:
-    -------
-    parsed_args: dict
-        The parsed arguments from the command line.
-    """
-
-    parser = argparse.ArgumentParser(description="Get device perf for benchmark end-to-end tests.")
-
-    parser.add_argument("-ct", "--create-ttir", help="Create TTIR file from the given path.")
-
-    parser.add_argument("-cdp", "--create-device-perf", nargs=2, help="Create device performance data.")
-
-    args = parser.parse_args()
-
-    if not args.create_ttir and not args.create_device_perf:
-        parser.error("\n\nNo arguments provided.\n\n")
-        print(parser.print_help())
-        exit(1)
-
-    if args.create_ttir and args.create_device_perf:
-        parser.error("\n\nBoth arguments cannot be provided.\n\n")
-        print(parser.print_help())
-        exit(1)
-
-    return args
+    print(f"\nWritten device perf data to {perf_report_path}")
 
 
 def main():
-    """
-    The main function that creates the device performance data and the TTIR file.
+    if len(sys.argv) != 3:
+        print("Usage: python benchmark/device_perf.py <ttrt-artifacts-dir> <perf-report-json>")
+        print("Example: python benchmark/device_perf.py ttrt-artifacts benchmark_report.json")
+        sys.exit(1)
 
-    Parameters:
-    ----------
-    None
+    artifacts_dir = sys.argv[1]
+    perf_report_path = sys.argv[2]
 
-    Returns:
-    -------
-    None
+    # Find all perf CSV files
+    csv_files = find_perf_csv_files(artifacts_dir)
 
-    Example:
-    -------
-    From the root directory, run the following command:
-        python ./forge/test/benchmark/device_perf.py -ct ./forge/test/benchmark/test_data/device_perf/ttir.mlir
+    if not csv_files:
+        print(f"Error: No performance CSV files found in {artifacts_dir}")
+        sys.exit(1)
 
-    It will create a TTIR file from the given path.
-    And put the output file in the same directory.
-    Name of the output file will be ttir_out.mlir.
+    # Sum the performance metrics
+    perf_data = sum_device_perf(csv_files)
 
-    When we run ttrt on the output file, we will get .csv file with device performance data.
-
-    Now, run the following command:
-        python ./forge/test/benchmark/device_perf.py -cdp ./forge/test/benchmark/test_data/device_perf/ops_perf_results.csv ./forge/test/benchmark/test_data/device_perf/perf_report.json
-
-    This command will parse the device performance data and write it to the JSON benchmark report.
-
-    Note:
-        Inside the benchmark folder, you can find the test_data/device_per folder that contains the data we are using in the example.
-    """
-
-    # Read the arguments
-    args = read_args()
-
-    if args.create_ttir:
-        ttir_path = args.create_ttir
-        create_ttir(ttir_path)
-        print(ttir_path)
-    elif args.create_device_perf:
-        device_perf_path = args.create_device_perf[0]
-        perf_report_path = args.create_device_perf[1]
-        create_device_perf(device_perf_path, perf_report_path)
+    # Write to benchmark report
+    write_to_perf_report(perf_report_path, perf_data)
 
 
 if __name__ == "__main__":
