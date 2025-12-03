@@ -34,6 +34,7 @@ os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 OPTIMIZATION_LEVEL = 0
 PROGRAM_CACHE_ENABLED = True
 TRACE_ENABLED = False
+ENABLE_WEIGHT_BFP8_CONVERSION = True
 
 if PROGRAM_CACHE_ENABLED:
     os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
@@ -318,6 +319,7 @@ def test_bge_m3_encode_torch_xla(
         "export_path": MODULE_EXPORT_PATH,
         "ttnn_perf_metrics_enabled": True,
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
+        "experimental_enable_weight_bfp8_conversion": ENABLE_WEIGHT_BFP8_CONVERSION,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -401,6 +403,7 @@ def test_bge_m3_encode_torch_xla(
         optimization_level=OPTIMIZATION_LEVEL,
         program_cache_enabled=PROGRAM_CACHE_ENABLED,
         trace_enabled=TRACE_ENABLED,
+        enable_weight_bfp8_conversion=ENABLE_WEIGHT_BFP8_CONVERSION,
         model_info="BAAI/bge-m3",
         torch_xla_enabled=True,
         backend="tt",
