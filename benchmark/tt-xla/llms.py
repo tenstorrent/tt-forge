@@ -118,7 +118,7 @@ def test_llama_3_2_1b(output):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output=output)
+    test_llm(ModelLoaderModule=ModelLoader, optimization_level=0, variant=variant, output=output)
 
 
 def test_llama_3_2_3b(output):
