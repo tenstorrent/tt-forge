@@ -24,12 +24,15 @@ Before running one of the demos in TT-Forge, you must:
 2. Decide what setup you want to use for the frontend:
    * Wheel
    * Docker
+   * Build From Source
+
+>**NOTE:** At this time, if you want to use TT-Forge-FE, you must use Docker or the build from source option. 
 
 3. Follow the installation instructions from the repo for your selected setup method:
    * [TT-XLA Wheel](https://docs.tenstorrent.com/tt-xla/getting_started.html)
    * [TT-XLA Docker](https://docs.tenstorrent.com/tt-xla/getting_started_docker.html)
-   * [TT-Forge-FE Wheel](https://docs.tenstorrent.com/tt-forge-fe/getting_started.html)
    * [TT-Forge-FE Docker](https://docs.tenstorrent.com/tt-forge-fe/getting_started_docker.html)
+   * [TT-Forge-FE Build From Source](https://docs.tenstorrent.com/tt-forge-fe/getting_started_build_from_source.html)
    * [TT-Torch Wheel](https://docs.tenstorrent.com/tt-torch/getting_started.html) - (deprecated)
    * [TT-Torch Docker](https://docs.tenstorrent.com/tt-torch/getting_started_docker.html) - (deprecated)
 
@@ -45,18 +48,24 @@ To run a demo, do the following:
 git clone https://github.com/tenstorrent/tt-forge.git
 ```
 
-2. Navigate to the folder for the frontend you want:
+2. Navigate into TT-Forge and run the following command:
+
+```bash
+git submodule update --init --recursive
+```
+
+3. Navigate to the folder for the frontend you want:
    * [TT-XLA Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla)
    * [TT-Forge-FE Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-fe)
    * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch) - (deprecated)
 
-3. In this walkthrough, [**resnet_50_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-forge-fe/cnn/resnet_50_demo.py) from the TT-Forge-FE folder is used.
+In this walkthrough, the [**resnet_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-xla/cnn/resnet_demo.py) from the TT-XLA folder is used.
 
-4. From the TT-Forge-FE folder for models, run the **resnet_50_demo.py** script. Navigate to the [main folder in the TT-Forge repository](https://github.com/tenstorrent/tt-forge/tree/main) and run the following commands:
+4. From the TT-XLA folder for models, run the **resnet_demo.py** script. Navigate to the [main folder in the TT-Forge repository](https://github.com/tenstorrent/tt-forge/tree/main) and run the following commands (add the appropriate path for `PYTHONPATH`):
 
 ```bash
 export PYTHONPATH=.
-python3 demos/tt-forge-fe/cnn/resnet_50_demo.py
+python demos/tt-forge-fe/cnn/resnet_demo.py
 ```
 
 If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
