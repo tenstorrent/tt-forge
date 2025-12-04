@@ -26,53 +26,52 @@
       {
         "name": "mnist",
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "df": "bfloat16",
-        "pytest": "benchmark/tt-xla/visions.py::test_mnist"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_mnist"
       },
       {
         "name": "resnet",
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_resnet50"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_resnet50"
       },
       {
         "name": "mobilenetv2",
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_mobilenetv2"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_mobilenetv2"
       },
       {
         "name": "efficientnet",
         "pyreq": "datasets loguru pytest requests tabulate timm tqdm transformers torch==2.7.0",
-        "pytest": "benchmark/tt-xla/visions.py::test_efficientnet"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_efficientnet"
       },
       {
         "name": "segformer",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_segformer"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_segformer"
       },
       {
         "name": "swin",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_swin"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_swin"
       },
       {
         "name": "ufld",
         "pyreq": "datasets loguru opencv-python pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_ufld"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_ufld"
       },
       {
         "name": "unet",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_unet"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_unet"
       },
       {
         "name": "vit",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_vit"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_vit"
       },
       {
         "name": "vovnet",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/visions.py::test_vovnet"
+        "pytest": "benchmark/tt-xla/vision_models.py::test_vovnet"
       },
       {
         "name": "bge_m3_encode",

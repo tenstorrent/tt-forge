@@ -31,14 +31,10 @@ from utils import (
     compute_pcc,
 )
 
-os.environ["PJRT_DEVICE"] = "TT"
+xr.set_device_type("TT")
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
-PROGRAM_CACHE_ENABLED = True
 MIN_STEPS = 16
-
-if PROGRAM_CACHE_ENABLED:
-    os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 # Default input prompt
 DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
@@ -242,8 +238,31 @@ def benchmark_llm_torch_xla(
     read_logits_fn,
 ):
     """
-    This function creates an LLM based model using PyTorch and torch-xla.
-    It is used for benchmarking purposes.
+    Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
+
+    This function loads an LLM, compiles it with torch-xla for the Tenstorrent backend,
+    and measures its text generation performance. It performs warmup runs, collects token
+    generation metrics, and validates output correctness via PCC (Pearson Correlation Coefficient).
+    The benchmark measures tokens per second on both CPU and device backends.
+
+    Args:
+        model_loader: Model loader instance for loading the LLM
+        model_variant: Specific variant/version of the model to benchmark
+        optimization_level: tt-mlir optimization level for compilation
+        training: Whether to run in training mode (not supported)
+        batch_size: Batch size for text generation
+        loop_count: Number of inference iterations
+        task: Task type
+        data_format: Data precision format
+        measure_cpu: Whether to measure CPU baseline performance
+        input_sequence_length: Length of input sequence for generation context
+        experimental_compile: Whether to use experimental compilation features
+        enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
+        ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
+        read_logits_fn: Callback function to extract logits from model output
+
+    Returns:
+        Benchmark result containing token generation performance metrics and model information
     """
 
     if training:
@@ -442,7 +461,7 @@ def benchmark_llm_torch_xla(
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
         optimization_level=optimization_level,
-        program_cache_enabled=PROGRAM_CACHE_ENABLED,
+        program_cache_enabled=True,
         trace_enabled=trace_enabled,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         model_info=full_model_name,

@@ -131,7 +131,9 @@ def test_llama_3_2_3b(output_file):
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
     # Disable BFP8 weight conversion due to OOM failure
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False)
+    test_llm(
+        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False
+    )
 
 
 def test_gemma_1_1_2b(output_file):
@@ -242,4 +244,6 @@ def test_qwen_3_4b(output_file):
 
     variant = ModelVariant.QWEN_3_4B
     # Disable BFP8 weight conversion due to OOM failure
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False)
+    test_llm(
+        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False
+    )

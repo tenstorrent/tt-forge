@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import pytest
 import os
 
 from vision_benchmark import benchmark_vision_torch_xla

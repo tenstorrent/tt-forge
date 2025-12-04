@@ -24,14 +24,10 @@ from utils import (
     compute_pcc,
 )
 
-os.environ["PJRT_DEVICE"] = "TT"
+xr.set_device_type("TT")
 os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
-PROGRAM_CACHE_ENABLED = True
 MIN_STEPS = 16
-
-if PROGRAM_CACHE_ENABLED:
-    os.environ["TT_RUNTIME_ENABLE_PROGRAM_CACHE"] = "1"
 
 MODULE_EXPORT_PATH = "modules"
 
@@ -117,16 +113,35 @@ def benchmark_vision_torch_xla(
     required_pcc=0.97,
 ):
     """
-    This function creates a vision model using PyTorch and torch-xla.
-    It is used for benchmarking purposes.
+    Benchmark a vision model using PyTorch and torch-xla.
+
+    This function loads a vision model, compiles it with torch-xla for the Tenstorrent backend,
+    and measures its inference performance. It performs warmup runs, collects inference metrics,
+    and validates output correctness via PCC (Pearson Correlation Coefficient).
+
+    Args:
+        model_loader: Model loader instance for loading the vision model
+        model_variant: Specific variant/version of the model to benchmark
+        optimization_level: tt-mlir optimization level for compilation
+        training: Whether to run in training mode (not supported)
+        batch_size: Batch size for inference
+        input_size: Tuple of (height, width) for model inputs
+        channel_size: Number of input channels
+        loop_count: Number of inference iterations to benchmark
+        data_format: Data precision format
+        measure_cpu: Whether to measure CPU baseline performance
+        experimental_compile: Whether to use experimental compilation features
+        ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
+        required_pcc: Minimum PCC threshold for output validation
+
+    Returns:
+        Benchmark result containing performance metrics and model information
     """
 
     if training:
         pytest.skip("Training is not supported")
 
     xr.set_device_type("TT")
-    cache_dir = f"{os.getcwd()}/cachedir"
-    xr.initialize_cache(cache_dir)
 
     # Construct inputs
     inputs = construct_inputs(
@@ -137,11 +152,13 @@ def benchmark_vision_torch_xla(
         data_format=data_format,
     )
 
-    warmup_inputs = [torch.randn(batch_size, channel_size, *input_size)] * loop_count
-    if data_format == "bfloat16":
-        warmup_inputs = [item.to(torch.bfloat16) for item in warmup_inputs]
-    elif data_format == "float32":
-        warmup_inputs = [item.to(torch.float32) for item in warmup_inputs]
+    warmup_inputs = construct_inputs(
+        batch_size=batch_size,
+        channel_size=channel_size,
+        input_size=input_size,
+        loop_count=loop_count,
+        data_format=data_format,
+    )
 
     # Load model
     framework_model, model_info = setup_model(model_loader, model_variant, data_format)
@@ -178,8 +195,6 @@ def benchmark_vision_torch_xla(
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
-    elif data_format == "float32":
-        framework_model = framework_model.to(device, dtype=torch.float32)
     else:
         framework_model = framework_model.to(device)
 
@@ -247,7 +262,7 @@ def benchmark_vision_torch_xla(
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
         optimization_level=optimization_level,
-        program_cache_enabled=PROGRAM_CACHE_ENABLED,
+        program_cache_enabled=True,
         trace_enabled=trace_enabled,
         model_info=model_info,
         torch_xla_enabled=True,
