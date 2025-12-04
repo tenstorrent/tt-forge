@@ -191,7 +191,7 @@ def benchmark_vision_torch_xla(
     # Compile model
     framework_model.compile(backend="tt", options={"tt_experimental_compile": experimental_compile})
 
-    device = xm.xla_device()
+    device = torch_xla.device()
 
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)

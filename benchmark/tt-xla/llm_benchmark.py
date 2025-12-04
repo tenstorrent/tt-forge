@@ -302,7 +302,7 @@ def benchmark_llm_torch_xla(
     max_cache_len: int = input_sequence_length
 
     # Connect the device
-    device: torch.device = xm.xla_device()
+    device: torch.device = torch_xla.device()
 
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
