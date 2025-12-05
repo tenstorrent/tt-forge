@@ -9,7 +9,7 @@ import os
 from llm_benchmark import benchmark_llm_torch_xla
 
 # Defaults for all llms
-DEFAULT_OPTIMIZATION_LEVEL = 1
+DEFAULT_OPTIMIZATION_LEVEL = 2
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 32
