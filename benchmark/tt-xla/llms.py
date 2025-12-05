@@ -134,8 +134,8 @@ def test_llm(
                 # Calculate aggregated percentage
                 if total_shardable_ops > 0:
                     results["config"]["ttnn_effectively_sharded_percentage"] = (
-                        (effectively_sharded_ops / total_shardable_ops) * 100
-                    )
+                        effectively_sharded_ops / total_shardable_ops
+                    ) * 100
                 else:
                     results["config"]["ttnn_effectively_sharded_percentage"] = 0.0
 
