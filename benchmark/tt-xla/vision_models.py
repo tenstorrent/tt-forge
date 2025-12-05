@@ -97,9 +97,8 @@ def test_vision(
         results["model_rawname"] = model_info_name
 
         # If the perf_metrics report files exist, load and aggregate results from all graphs
-        import glob
-
-        perf_files = glob.glob(f"{ttnn_perf_metrics_output_file}*.json")
+        base_name = os.path.basename(ttnn_perf_metrics_output_file)
+        perf_files = [f for f in os.listdir(".") if f.startswith(base_name) and f.endswith(".json")]
         
         if perf_files:
             # Initialize aggregated metrics
