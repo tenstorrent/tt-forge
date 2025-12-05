@@ -99,7 +99,7 @@ def test_vision(
         # If the perf_metrics report files exist, load and aggregate results from all graphs
         base_name = os.path.basename(ttnn_perf_metrics_output_file)
         perf_files = [f for f in os.listdir(".") if f.startswith(base_name) and f.endswith(".json")]
-        
+
         if perf_files:
             # Initialize aggregated metrics
             total_ops = 0
@@ -129,8 +129,8 @@ def test_vision(
                 # Calculate aggregated percentage
                 if total_shardable_ops > 0:
                     results["config"]["ttnn_effectively_sharded_percentage"] = (
-                        (effectively_sharded_ops / total_shardable_ops) * 100
-                    )
+                        effectively_sharded_ops / total_shardable_ops
+                    ) * 100
                 else:
                     results["config"]["ttnn_effectively_sharded_percentage"] = 0.0
 
