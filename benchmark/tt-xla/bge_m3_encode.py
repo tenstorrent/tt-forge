@@ -327,7 +327,7 @@ def test_bge_m3_encode_torch_xla(
     # Compile model with TT backend
     compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": False})
 
-    device = xm.xla_device()
+    device = torch_xla.device()
     # Send actual device to model encode
 
     if data_format == "bfloat16":
