@@ -91,7 +91,7 @@ def make_validator_optimization_level(option_name):
 
 def pytest_addoption(parser):
     """Adds a custom command-line option to pytest."""
-    parser.addoption("--output", action="store", default=None, help="Path to save benchmark results as JSON.")
+    parser.addoption("--output-file", action="store", default=None, help="Path to save benchmark results as JSON.")
     parser.addoption(
         "--variant",
         action="store",
@@ -165,8 +165,8 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def output(request):
-    return request.config.getoption("--output")
+def output_file(request):
+    return request.config.getoption("--output-file")
 
 
 @pytest.fixture
