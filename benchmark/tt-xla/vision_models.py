@@ -96,19 +96,46 @@ def test_vision(
         results["project"] = "tt-forge/tt-xla"
         results["model_rawname"] = model_info_name
 
-        if os.path.exists(ttnn_perf_metrics_output_file):
-            with open(ttnn_perf_metrics_output_file, "r") as f:
-                perf_metrics_data = json.load(f)
-            if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
-                results["config"]["ttnn_total_ops"] = perf_metrics_data["summary"]["total_ops"]
-                results["config"]["ttnn_total_shardable_ops"] = perf_metrics_data["summary"]["total_shardable_ops"]
-                results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"][
-                    "effectively_sharded_ops"
-                ]
-                results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"][
-                    "effectively_sharded_percentage"
-                ]
-                results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
+        # If the perf_metrics report files exist, load and aggregate results from all graphs
+        import glob
+
+        perf_files = glob.glob(f"{ttnn_perf_metrics_output_file}*.json")
+        
+        if perf_files:
+            # Initialize aggregated metrics
+            total_ops = 0
+            total_shardable_ops = 0
+            effectively_sharded_ops = 0
+            system_memory_ops = 0
+            num_graphs_with_metrics = 0
+
+            for perf_file in sorted(perf_files):
+                with open(perf_file, "r") as f:
+                    perf_metrics_data = json.load(f)
+
+                if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
+                    summary = perf_metrics_data["summary"]
+                    total_ops += summary.get("total_ops", 0)
+                    total_shardable_ops += summary.get("total_shardable_ops", 0)
+                    effectively_sharded_ops += summary.get("effectively_sharded_ops", 0)
+                    system_memory_ops += summary.get("system_memory_ops", 0)
+                    num_graphs_with_metrics += 1
+
+            if num_graphs_with_metrics > 0:
+                results["config"]["ttnn_total_ops"] = total_ops
+                results["config"]["ttnn_total_shardable_ops"] = total_shardable_ops
+                results["config"]["ttnn_effectively_sharded_ops"] = effectively_sharded_ops
+                results["config"]["ttnn_system_memory_ops"] = system_memory_ops
+
+                # Calculate aggregated percentage
+                if total_shardable_ops > 0:
+                    results["config"]["ttnn_effectively_sharded_percentage"] = (
+                        (effectively_sharded_ops / total_shardable_ops) * 100
+                    )
+                else:
+                    results["config"]["ttnn_effectively_sharded_percentage"] = 0.0
+
+                results["config"]["ttnn_num_graphs"] = num_graphs_with_metrics
 
         with open(output_file, "w") as file:
             json.dump(results, file, indent=2)
