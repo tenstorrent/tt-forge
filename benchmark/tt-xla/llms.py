@@ -20,6 +20,7 @@ DEFAULT_MEASURE_CPU = False
 DEFAULT_TASK = "text-generation"
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = True
+DEFAULT_ENABLE_PERMUTE_MATMUL_FUSION = True
 
 
 def default_read_logits_fn(output):
@@ -40,6 +41,7 @@ def test_llm(
     task=DEFAULT_TASK,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
+    enable_permute_matmul_fusion=DEFAULT_ENABLE_PERMUTE_MATMUL_FUSION,
     read_logits_fn=default_read_logits_fn,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
@@ -57,6 +59,7 @@ def test_llm(
         task: Task type
         experimental_compile: Enable experimental compile
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
+        enable_permute_matmul_fusion: Enable transpose + matmul and transpose + linear fusion
         read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant)
@@ -75,6 +78,7 @@ def test_llm(
     task={task}
     experimental_compile={experimental_compile}
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
+    enable_permute_matmul_fusion={enable_permute_matmul_fusion}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
@@ -93,6 +97,7 @@ def test_llm(
         training=False,
         experimental_compile=experimental_compile,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        enable_permute_matmul_fusion=enable_permute_matmul_fusion,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         read_logits_fn=read_logits_fn,
     )
@@ -123,7 +128,12 @@ def test_llama_3_2_1b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        enable_permute_matmul_fusion=False,
+    )
 
 
 def test_llama_3_2_3b(output_file):
@@ -168,7 +178,7 @@ def test_phi1(output_file):
     from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI1
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_permute_matmul_fusion=False)
 
 
 def test_phi1_5(output_file):
@@ -190,6 +200,7 @@ def test_phi2(output_file):
         variant=variant,
         output_file=output_file,
         enable_weight_bfp8_conversion=False,
+        enable_permute_matmul_fusion=False
     )
 
 
@@ -199,7 +210,7 @@ def test_falcon3_1b(output_file):
     variant = ModelVariant.FALCON_1B
     # Tuple format: (logits, past_key_values, ...)
     read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn, enable_permute_matmul_fusion=False)
 
 
 def test_falcon3_3b(output_file):

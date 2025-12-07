@@ -234,6 +234,7 @@ def benchmark_llm_torch_xla(
     input_sequence_length,
     experimental_compile,
     enable_weight_bfp8_conversion,
+    enable_permute_matmul_fusion,
     ttnn_perf_metrics_output_file,
     read_logits_fn,
 ):
@@ -258,6 +259,7 @@ def benchmark_llm_torch_xla(
         input_sequence_length: Length of input sequence for generation context
         experimental_compile: Whether to use experimental compilation features
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
+        enable_permute_matmul_fusion: Whether to enable transpose + matmul and transpose + linear fusion
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         read_logits_fn: Callback function to extract logits from model output
 
@@ -361,6 +363,7 @@ def benchmark_llm_torch_xla(
         "ttnn_perf_metrics_enabled": True,
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
+        "enable_permute_matmul_fusion": enable_permute_matmul_fusion,
     }
 
     torch_xla.set_custom_compile_options(options)
