@@ -4,8 +4,8 @@
 
 import json
 import pytest
-import os
 
+from benchmark.utils import aggregate_ttnn_perf_metrics
 from llm_benchmark import benchmark_llm_torch_xla
 
 # Defaults for all llms
@@ -101,45 +101,7 @@ def test_llm(
         results["project"] = "tt-forge/tt-xla"
         results["model_rawname"] = model_loader.get_model_info(variant=variant).name
 
-        # If the perf_metrics report files exist, load and aggregate results from all graphs
-        base_name = os.path.basename(ttnn_perf_metrics_output_file)
-        perf_files = [f for f in os.listdir(".") if f.startswith(base_name) and f.endswith(".json")]
-
-        if perf_files:
-            # Initialize aggregated metrics
-            total_ops = 0
-            total_shardable_ops = 0
-            effectively_sharded_ops = 0
-            system_memory_ops = 0
-            num_graphs_with_metrics = 0
-
-            for perf_file in sorted(perf_files):
-                with open(perf_file, "r") as f:
-                    perf_metrics_data = json.load(f)
-
-                if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
-                    summary = perf_metrics_data["summary"]
-                    total_ops += summary.get("total_ops", 0)
-                    total_shardable_ops += summary.get("total_shardable_ops", 0)
-                    effectively_sharded_ops += summary.get("effectively_sharded_ops", 0)
-                    system_memory_ops += summary.get("system_memory_ops", 0)
-                    num_graphs_with_metrics += 1
-
-            if num_graphs_with_metrics > 0:
-                results["config"]["ttnn_total_ops"] = total_ops
-                results["config"]["ttnn_total_shardable_ops"] = total_shardable_ops
-                results["config"]["ttnn_effectively_sharded_ops"] = effectively_sharded_ops
-                results["config"]["ttnn_system_memory_ops"] = system_memory_ops
-
-                # Calculate aggregated percentage
-                if total_shardable_ops > 0:
-                    results["config"]["ttnn_effectively_sharded_percentage"] = (
-                        effectively_sharded_ops / total_shardable_ops
-                    ) * 100
-                else:
-                    results["config"]["ttnn_effectively_sharded_percentage"] = 0.0
-
-                results["config"]["ttnn_num_graphs"] = num_graphs_with_metrics
+        aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results)
 
         with open(output_file, "w") as file:
             json.dump(results, file, indent=2)
