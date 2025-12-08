@@ -216,7 +216,7 @@ def benchmark_vision_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = f"{model_info} Torch-XLA"
+    full_model_name = f"{model_info}"
     model_type = "Vision, Random Input Data"
     dataset_name = "Random Data"
     num_layers = -1
