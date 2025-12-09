@@ -264,7 +264,10 @@ def main():
     # Read the arguments from the command line.
     config = read_args()
 
-    config["ttnn_perf_metrics_output_file"] = config["model"] + "_perf_metrics"
+    # Standardize perf metrics filename: {project}_{model}_perf_metrics (backend adds .json)
+    project_prefix = config["project"].replace("-", "_")
+    model_prefix = config["model"].replace("-", "_")
+    config["ttnn_perf_metrics_output_file"] = f"{project_prefix}_{model_prefix}_perf_metrics"
 
     # Run the benchmark
     results = run_benchmark(config)

@@ -56,7 +56,7 @@ def test_vision(
     model_info_name = (
         model_loader.get_model_info(variant=variant).name if variant else model_loader.get_model_info().name
     )
-    ttnn_perf_metrics_output_file = f"tt-xla_{model_info_name.replace(' ', '_').lower()}.json"
+    ttnn_perf_metrics_output_file = f"tt_xla_{model_info_name.replace(' ', '_').replace('-', '_').lower()}_perf_metrics"
 
     print(f"Running vision benchmark for model: {model_info_name}")
     print(
