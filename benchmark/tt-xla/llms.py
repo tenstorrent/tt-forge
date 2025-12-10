@@ -6,6 +6,7 @@ import json
 import os
 from loguru import logger
 
+from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
 
 # Defaults for all llms
@@ -60,8 +61,8 @@ def test_llm(
         read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant)
-    # Sanitize variant name: replace / and - with _ to avoid directory paths, lowercase for consistency
-    sanitized_variant = str(variant).replace("/", "_").replace("-", "_").lower()
+    # Sanitize variant name for safe filesystem usage
+    sanitized_variant = sanitize_filename(str(variant))
     ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_variant}_perf_metrics"
 
     print(f"Running LLM benchmark for variant: {variant}")

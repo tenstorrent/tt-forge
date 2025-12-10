@@ -10,7 +10,7 @@ import os
 import sys
 from typing import Dict, Any
 
-from utils import aggregate_ttnn_perf_metrics
+from utils import aggregate_ttnn_perf_metrics, sanitize_filename
 
 
 def load_module(module_path: str, module_name: str):
@@ -265,9 +265,10 @@ def main():
     config = read_args()
 
     # Standardize perf metrics filename: {project}_{model}_perf_metrics (backend adds .json)
-    project_prefix = config["project"].replace("-", "_")
-    model_prefix = config["model"].replace("-", "_")
-    config["ttnn_perf_metrics_output_file"] = f"{project_prefix}_{model_prefix}_perf_metrics"
+    # Sanitize project and model names for safe filesystem usage
+    sanitized_project = sanitize_filename(config["project"])
+    sanitized_model = sanitize_filename(config["model"])
+    config["ttnn_perf_metrics_output_file"] = f"{sanitized_project}_{sanitized_model}_perf_metrics"
 
     # Run the benchmark
     results = run_benchmark(config)

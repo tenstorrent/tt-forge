@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import os
 
-from benchmark.utils import aggregate_ttnn_perf_metrics
+from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from vision_benchmark import benchmark_vision_torch_xla
 
 # Defaults for all vision models
@@ -56,7 +57,9 @@ def test_vision(
     model_info_name = (
         model_loader.get_model_info(variant=variant).name if variant else model_loader.get_model_info().name
     )
-    ttnn_perf_metrics_output_file = f"tt_xla_{model_info_name.replace(' ', '_').replace('-', '_').lower()}_perf_metrics"
+    # Sanitize model name for safe filesystem usage
+    sanitized_model_name = sanitize_filename(model_info_name)
+    ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
 
     print(f"Running vision benchmark for model: {model_info_name}")
     print(

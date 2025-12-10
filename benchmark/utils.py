@@ -4,6 +4,7 @@
 from typing import Any, Callable, Optional
 from loguru import logger
 import random
+import re
 import requests
 import time
 import os
@@ -303,6 +304,20 @@ def measure_cpu_fps(model, input, iterations=512):
         end = time.perf_counter()
         best_time = min(best_time, end - start)
     return 1 / best_time
+
+
+def sanitize_filename(name: str) -> str:
+    """
+    Sanitize a string to be safe for use in filenames.
+    Replaces illegal filesystem characters with underscores and converts to lowercase.
+    """
+    # Replace illegal filesystem characters: / \ : * ? " < > | and spaces
+    # Also replace dots and dashes for consistency
+    sanitized = re.sub(r'[/\\:*?"<>|\s.\-]', "_", str(name))
+    # Remove consecutive underscores
+    sanitized = re.sub(r"_+", "_", sanitized)
+    # Remove leading/trailing underscores and convert to lowercase
+    return sanitized.strip("_").lower()
 
 
 def aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results):
