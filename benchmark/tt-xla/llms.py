@@ -4,7 +4,6 @@
 
 import json
 import os
-import pytest
 from loguru import logger
 
 from llm_benchmark import benchmark_llm_torch_xla
