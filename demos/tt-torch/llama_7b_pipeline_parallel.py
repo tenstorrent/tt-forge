@@ -6,7 +6,7 @@ from tt_torch.tools.utils import CompilerConfig
 from tt_torch.dynamo.backend import backend, BackendOptions
 import torch
 from tt_torch.tools.device_manager import DeviceManager
-from transformers import AutoModelForCausalLM, AutoTokenizer  # need transformers <= 4.52.4
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from accelerate import infer_auto_device_map
 
 
