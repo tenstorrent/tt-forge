@@ -20,6 +20,7 @@ DEFAULT_MEASURE_CPU = False
 DEFAULT_TASK = "text-generation"
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = True
+DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION = False
 
 
 def default_read_logits_fn(output):
@@ -40,6 +41,7 @@ def test_llm(
     task=DEFAULT_TASK,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
+    experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
     read_logits_fn=default_read_logits_fn,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
@@ -57,6 +59,7 @@ def test_llm(
         task: Task type
         experimental_compile: Enable experimental compile
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
+        experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
         read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant)
@@ -75,6 +78,7 @@ def test_llm(
     task={task}
     experimental_compile={experimental_compile}
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
+    experimental_enable_permute_matmul_fusion={experimental_enable_permute_matmul_fusion}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
@@ -93,6 +97,7 @@ def test_llm(
         training=False,
         experimental_compile=experimental_compile,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         read_logits_fn=read_logits_fn,
     )
@@ -130,10 +135,7 @@ def test_llama_3_2_3b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
-    # Disable BFP8 weight conversion due to OOM failure
-    test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False
-    )
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
 def test_gemma_1_1_2b(output_file):
@@ -141,13 +143,11 @@ def test_gemma_1_1_2b(output_file):
 
     variant = ModelVariant.GEMMA_1_1_2B_IT
     experimental_compile = False
-    # Disable BFP8 weight conversion due to OOM failure
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
         experimental_compile=experimental_compile,
-        enable_weight_bfp8_conversion=False,
     )
 
 
@@ -159,8 +159,8 @@ def test_gemma_2_2b(output_file):
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
-        output_file=output_file,
         experimental_compile=experimental_compile,
+        output_file=output_file,
     )
 
 
@@ -182,14 +182,10 @@ def test_phi2(output_file):
     from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI2
-    # Disable optimizer for phi2 due to PCC issue
-    # Disable BFP8 weight conversion due to OOM failure
     test_llm(
         ModelLoaderModule=ModelLoader,
-        optimization_level=0,
         variant=variant,
         output_file=output_file,
-        enable_weight_bfp8_conversion=False,
     )
 
 
@@ -208,13 +204,11 @@ def test_falcon3_3b(output_file):
     variant = ModelVariant.FALCON_3B
     # Tuple format: (logits, past_key_values, ...)
     read_logits_fn = lambda output: output[0]
-    # Disable BFP8 weight conversion due to OOM failure
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
         read_logits_fn=read_logits_fn,
-        enable_weight_bfp8_conversion=False,
     )
 
 
@@ -244,6 +238,100 @@ def test_qwen_3_4b(output_file):
 
     variant = ModelVariant.QWEN_3_4B
     # Disable BFP8 weight conversion due to OOM failure
-    test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, enable_weight_bfp8_conversion=False
-    )
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+def test_qwen_2_5_1_5b(output_file):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_1_5B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+def test_qwen_2_5_3b(output_file):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_3B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: Out of Memory: Not enough space to allocate 100663296 B DRAM buffer across 12 banks
+def test_qwen_3_8b(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_8B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: Out of Memory: Not enough space to allocate 135790592 B DRAM buffer across 12 banks
+def test_qwen_2_5_7b(output_file):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_7B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: KeyError: "L['self'].model.lifted_tensor_0"
+def test_gemma_1_1_7b(output_file):
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_1_1_7B_IT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: TypeError: Phi3ForCausalLM.forward() got an unexpected keyword argument 'cache_position'
+def test_phi3_mini(output_file):
+    from third_party.tt_forge_models.phi3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MINI_4K
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: KeyError: 'lifted_tensor_0'
+def test_phi3_5_mini(output_file):
+    from third_party.tt_forge_models.phi3.phi_3_5.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MINI_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: AttributeError: 'MambaConfig' object has no attribute 'num_attention_heads'
+def test_mamba_2_8b(output_file):
+    from third_party.tt_forge_models.mamba.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MAMBA_2_8B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
+def test_falcon3_7b(output_file):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_7B
+    # Tuple format: (logits, past_key_values, ...)
+    read_logits_fn = lambda output: output[0]
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
+
+
+# FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
+def test_mistral_7b(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_7B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
+def test_ministral_8b(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MINISTRAL_8B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: Out of Memory: Not enough space to allocate 117440512 B DRAM buffer across 12 banks
+def test_llama_3_1_8b(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
