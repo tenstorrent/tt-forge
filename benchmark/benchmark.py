@@ -10,6 +10,8 @@ import os
 import sys
 from typing import Dict, Any
 
+from utils import aggregate_ttnn_perf_metrics, sanitize_filename
+
 
 def load_module(module_path: str, module_name: str):
     """
@@ -144,19 +146,7 @@ def save_results(
     else:
         output_file = os.path.join(f"{project}_{model}.json")
 
-    # If the perf_metrics report file exists, load existing results and append to config, the only appendable field for superset
-    print(f"Looking for perf report file at: {ttnn_perf_metrics_output_file}")
-    if os.path.exists(ttnn_perf_metrics_output_file):
-        with open(ttnn_perf_metrics_output_file, "r") as f:
-            perf_metrics_data = json.load(f)
-        if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
-            results["config"]["ttnn_total_ops"] = perf_metrics_data["summary"]["total_ops"]
-            results["config"]["ttnn_total_shardable_ops"] = perf_metrics_data["summary"]["total_shardable_ops"]
-            results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"]["effectively_sharded_ops"]
-            results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"][
-                "effectively_sharded_percentage"
-            ]
-            results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
+    aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results)
 
     with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
@@ -274,7 +264,11 @@ def main():
     # Read the arguments from the command line.
     config = read_args()
 
-    config["ttnn_perf_metrics_output_file"] = config["model"] + "_perf_metrics.json"
+    # Standardize perf metrics filename: {project}_{model}_perf_metrics (backend adds .json)
+    # Sanitize project and model names for safe filesystem usage
+    sanitized_project = sanitize_filename(config["project"])
+    sanitized_model = sanitize_filename(config["model"])
+    config["ttnn_perf_metrics_output_file"] = f"{sanitized_project}_{sanitized_model}_perf_metrics"
 
     # Run the benchmark
     results = run_benchmark(config)

@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import pytest
 import os
+from loguru import logger
 
+from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
 
 # Defaults for all llms
@@ -60,7 +61,9 @@ def test_llm(
         read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant)
-    ttnn_perf_metrics_output_file = f"{variant}.json"
+    # Sanitize variant name for safe filesystem usage
+    sanitized_variant = sanitize_filename(str(variant))
+    ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_variant}_perf_metrics"
 
     print(f"Running LLM benchmark for variant: {variant}")
     print(
@@ -101,19 +104,37 @@ def test_llm(
         results["project"] = "tt-forge/tt-xla"
         results["model_rawname"] = model_loader.get_model_info(variant=variant).name
 
-        if os.path.exists(ttnn_perf_metrics_output_file):
-            with open(ttnn_perf_metrics_output_file, "r") as f:
+        # LLM-specific perf metrics handling: Use only decode graph (second file)
+        # LLMs split into 2 graphs: prefill (index 0) and decode (index 1)
+        # Only decode is relevant for throughput
+        base_name = os.path.basename(ttnn_perf_metrics_output_file)
+        perf_files = [f for f in os.listdir(".") if f.startswith(base_name) and f.endswith(".json")]
+        perf_files = sorted(perf_files)
+
+        if len(perf_files) == 2:
+            # Use only the decode graph (second file)
+            decode_perf_file = perf_files[1]
+            print(f"Using decode graph perf metrics from: {decode_perf_file}")
+
+            with open(decode_perf_file, "r") as f:
                 perf_metrics_data = json.load(f)
+
             if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
-                results["config"]["ttnn_total_ops"] = perf_metrics_data["summary"]["total_ops"]
-                results["config"]["ttnn_total_shardable_ops"] = perf_metrics_data["summary"]["total_shardable_ops"]
-                results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"][
-                    "effectively_sharded_ops"
-                ]
-                results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"][
-                    "effectively_sharded_percentage"
-                ]
-                results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
+                summary = perf_metrics_data["summary"]
+                results["config"]["ttnn_total_ops"] = summary.get("total_ops", 0)
+                results["config"]["ttnn_total_shardable_ops"] = summary.get("total_shardable_ops", 0)
+                results["config"]["ttnn_effectively_sharded_ops"] = summary.get("effectively_sharded_ops", 0)
+                results["config"]["ttnn_system_memory_ops"] = summary.get("system_memory_ops", 0)
+                results["config"]["ttnn_effectively_sharded_percentage"] = summary.get(
+                    "effectively_sharded_percentage", 0.0
+                )
+                results["config"]["ttnn_num_graphs"] = 2  # prefill + decode
+        else:
+            logger.warning(
+                f"Expected 2 perf metrics files (prefill + decode) for LLM, but found {len(perf_files)}: {perf_files}. "
+                f"Skipping perf metrics."
+            )
+            results["config"]["ttnn_num_graphs"] = len(perf_files)
 
         with open(output_file, "w") as file:
             json.dump(results, file, indent=2)

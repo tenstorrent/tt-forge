@@ -4,6 +4,7 @@
 from typing import Any, Callable, Optional
 from loguru import logger
 import random
+import re
 import requests
 import time
 import os
@@ -303,3 +304,71 @@ def measure_cpu_fps(model, input, iterations=512):
         end = time.perf_counter()
         best_time = min(best_time, end - start)
     return 1 / best_time
+
+
+def sanitize_filename(name: str) -> str:
+    """
+    Sanitize a string to be safe for use in filenames.
+    Replaces illegal filesystem characters with underscores and converts to lowercase.
+    """
+    # Replace illegal filesystem characters: / \ : * ? " < > | and spaces
+    # Also replace dots and dashes for consistency
+    sanitized = re.sub(r'[/\\:*?"<>|\s.\-]', "_", str(name))
+    # Remove consecutive underscores
+    sanitized = re.sub(r"_+", "_", sanitized)
+    # Remove leading/trailing underscores and convert to lowercase
+    return sanitized.strip("_").lower()
+
+
+def aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results):
+    """
+    Aggregate TTNN performance metrics from multiple graph files and update results.
+
+    Parameters:
+    ----------
+    ttnn_perf_metrics_output_file: str
+        Base name for the perf metrics files to aggregate.
+    results: dict
+        Results dictionary to update with aggregated metrics. Modified in place.
+    """
+    import json
+
+    # If the perf_metrics report files exist, load and aggregate results from all graphs
+    base_name = os.path.basename(ttnn_perf_metrics_output_file)
+    perf_files = [f for f in os.listdir(".") if f.startswith(base_name) and f.endswith(".json")]
+
+    if perf_files:
+        # Initialize aggregated metrics
+        total_ops = 0
+        total_shardable_ops = 0
+        effectively_sharded_ops = 0
+        system_memory_ops = 0
+        num_graphs_with_metrics = 0
+
+        for perf_file in sorted(perf_files):
+            with open(perf_file, "r") as f:
+                perf_metrics_data = json.load(f)
+
+            if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
+                summary = perf_metrics_data["summary"]
+                total_ops += summary.get("total_ops", 0)
+                total_shardable_ops += summary.get("total_shardable_ops", 0)
+                effectively_sharded_ops += summary.get("effectively_sharded_ops", 0)
+                system_memory_ops += summary.get("system_memory_ops", 0)
+                num_graphs_with_metrics += 1
+
+        if num_graphs_with_metrics > 0:
+            results["config"]["ttnn_total_ops"] = total_ops
+            results["config"]["ttnn_total_shardable_ops"] = total_shardable_ops
+            results["config"]["ttnn_effectively_sharded_ops"] = effectively_sharded_ops
+            results["config"]["ttnn_system_memory_ops"] = system_memory_ops
+
+            # Calculate aggregated percentage
+            if total_shardable_ops > 0:
+                results["config"]["ttnn_effectively_sharded_percentage"] = (
+                    effectively_sharded_ops / total_shardable_ops
+                ) * 100
+            else:
+                results["config"]["ttnn_effectively_sharded_percentage"] = 0.0
+
+            results["config"]["ttnn_num_graphs"] = num_graphs_with_metrics

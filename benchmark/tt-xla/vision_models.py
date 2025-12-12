@@ -5,6 +5,7 @@
 import json
 import os
 
+from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from vision_benchmark import benchmark_vision_torch_xla
 
 # Defaults for all vision models
@@ -56,7 +57,9 @@ def test_vision(
     model_info_name = (
         model_loader.get_model_info(variant=variant).name if variant else model_loader.get_model_info().name
     )
-    ttnn_perf_metrics_output_file = f"tt-xla_{model_info_name.replace(' ', '_').lower()}.json"
+    # Sanitize model name for safe filesystem usage
+    sanitized_model_name = sanitize_filename(model_info_name)
+    ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
 
     print(f"Running vision benchmark for model: {model_info_name}")
     print(
@@ -96,19 +99,7 @@ def test_vision(
         results["project"] = "tt-forge/tt-xla"
         results["model_rawname"] = model_info_name
 
-        if os.path.exists(ttnn_perf_metrics_output_file):
-            with open(ttnn_perf_metrics_output_file, "r") as f:
-                perf_metrics_data = json.load(f)
-            if "summary" in perf_metrics_data and isinstance(perf_metrics_data["summary"], dict):
-                results["config"]["ttnn_total_ops"] = perf_metrics_data["summary"]["total_ops"]
-                results["config"]["ttnn_total_shardable_ops"] = perf_metrics_data["summary"]["total_shardable_ops"]
-                results["config"]["ttnn_effectively_sharded_ops"] = perf_metrics_data["summary"][
-                    "effectively_sharded_ops"
-                ]
-                results["config"]["ttnn_effectively_sharded_percentage"] = perf_metrics_data["summary"][
-                    "effectively_sharded_percentage"
-                ]
-                results["config"]["ttnn_system_memory_ops"] = perf_metrics_data["summary"]["system_memory_ops"]
+        aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results)
 
         with open(output_file, "w") as file:
             json.dump(results, file, indent=2)
