@@ -128,6 +128,16 @@
         "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_0_5b"
       },
       {
+        "name": "qwen_2_5_1_5b_instruct",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_1_5b"
+      },
+      {
+        "name": "qwen_2_5_3b_instruct",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_3b"
+      },
+      {
         "name": "qwen_3_0_6b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_0_6b"
