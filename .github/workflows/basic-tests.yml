@@ -29,8 +29,8 @@ on:
         required: false
         type: choice
         options:
-          - tt-ubuntu-2204-n150-stable
-          - tt-ubuntu-2204-p150b-stable
+          - n150
+          - p150
           - All
         default: All
 
@@ -56,7 +56,7 @@ jobs:
           project_filter="${{ inputs.project-filter }}"
 
           if [ "${{ inputs.runner-filter }}" == "All" ]; then
-            runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
+            runs_on="n150 p150"
           else
             runs_on="${{ inputs.runner-filter }}"
           fi
@@ -91,7 +91,7 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.build_matrix.outputs.json_matrix) }}
 
-    runs-on: ${{ matrix.run_on }}
+    runs-on: ${{ fromJson(format('["in-service", "{0}"]', matrix.run_on)) }}
     container:
       image: ${{ inputs.docker-image }}
       options: --device /dev/tenstorrent
