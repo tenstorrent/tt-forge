@@ -71,7 +71,7 @@ jobs:
             for run_on in $runs_on; do
               json_matrix=$(echo $json_matrix | jq -r -c --arg frontend "$frontend" --arg run_on "$run_on" '. += [{
               "frontend": $frontend,
-              "run_on": $run_on,
+              "runs_on": ["in-service", $run_on]
 
               }]')
             done
@@ -84,14 +84,14 @@ jobs:
 
 
   basic-test:
-    name: Basic test ${{ matrix.frontend }} on ${{ matrix.run_on }}
+    name: Basic test ${{ matrix.frontend }} on ${{ matrix.runs_on }}
     needs: build_matrix
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.build_matrix.outputs.json_matrix) }}
 
-    runs-on: ${{ fromJson(format('["in-service", "{0}"]', matrix.run_on)) }}
+    runs-on: ${{ matrix.runs_on }}
     container:
       image: ${{ inputs.docker-image }}
       options: --device /dev/tenstorrent
