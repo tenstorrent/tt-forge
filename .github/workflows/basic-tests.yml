@@ -71,7 +71,7 @@ jobs:
             for run_on in $runs_on; do
               json_matrix=$(echo $json_matrix | jq -r -c --arg frontend "$frontend" --arg run_on "$run_on" '. += [{
               "frontend": $frontend,
-              "runs_on": ["in-service", $run_on]
+              "runs_on": $run_on
 
               }]')
             done
@@ -91,7 +91,7 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.build_matrix.outputs.json_matrix) }}
 
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: ${{ fromJson(format('["in-service", "{0}"]', matrix.runs_on)) }}
     container:
       image: ${{ inputs.docker-image }}
       options: --device /dev/tenstorrent
