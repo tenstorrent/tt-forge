@@ -224,9 +224,6 @@ runs:
 
         if [[ "${{ inputs.repo }}" =~ "tt-forge-fe" ]]; then
             workflow="On nightly"
-            if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
-                workflow="On push"
-            fi
             artifact_download_glob='*{wheel,test-reports}*'
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
             workflow_result_in_job="fail-notify"
