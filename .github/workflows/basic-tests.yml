@@ -8,7 +8,7 @@ on:
         description: "Docker image used in tests"
         required: false
         type: string
-        default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+        default: "ghcr.io/tenstorrent/tt-forge-slim:nightly-latest"
       parent_run_id:
         description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
         required: false
