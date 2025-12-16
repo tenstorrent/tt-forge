@@ -8,7 +8,7 @@ on:
         description: "Docker image used in tests"
         required: false
         type: string
-        default: "harbor.ci.tenstorrent.net/ghcr.io/tenstorrent/tt-forge/tt-forge-slim:latest"
+        default: "ghcr.io/tenstorrent/tt-forge-slim:nightly-latest"
       parent_run_id:
         description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
         required: false
@@ -29,8 +29,8 @@ on:
         required: false
         type: choice
         options:
-          - tt-ubuntu-2204-n150-stable
-          - tt-ubuntu-2204-p150b-stable
+          - n150
+          - p150
           - All
         default: All
 
@@ -56,7 +56,7 @@ jobs:
           project_filter="${{ inputs.project-filter }}"
 
           if [ "${{ inputs.runner-filter }}" == "All" ]; then
-            runs_on="tt-ubuntu-2204-n150-stable tt-ubuntu-2204-p150b-stable"
+            runs_on="n150 p150"
           else
             runs_on="${{ inputs.runner-filter }}"
           fi
@@ -71,7 +71,7 @@ jobs:
             for run_on in $runs_on; do
               json_matrix=$(echo $json_matrix | jq -r -c --arg frontend "$frontend" --arg run_on "$run_on" '. += [{
               "frontend": $frontend,
-              "run_on": $run_on,
+              "runs_on": $run_on
 
               }]')
             done
@@ -84,14 +84,14 @@ jobs:
 
 
   basic-test:
-    name: Basic test ${{ matrix.frontend }} on ${{ matrix.run_on }}
+    name: Basic test ${{ matrix.frontend }} on ${{ matrix.runs_on }}
     needs: build_matrix
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.build_matrix.outputs.json_matrix) }}
 
-    runs-on: ${{ matrix.run_on }}
+    runs-on: ${{ fromJson(format('["in-service", "{0}"]', matrix.runs_on)) }}
     container:
       image: ${{ inputs.docker-image }}
       options: --device /dev/tenstorrent

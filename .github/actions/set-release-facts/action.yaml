@@ -265,7 +265,7 @@ runs:
             test_perf_filter="resnet"
             test_demo_wait="true"
             # Only run basic tests on n150 for draft releases until Civ2 capacity improves
-            basic_tests_runner_filter="tt-ubuntu-2204-n150-stable"
+            basic_tests_runner_filter="n150"
             #test_perf_sh_runner="true"
 
             # null out the commit to so integration testing can pick up the arfiacts from the repo.

@@ -216,7 +216,7 @@ jobs:
           parent_run_id: "basic-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
           wait: false
           wait_for_run_url: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "runner-filter": "${{ steps.set-release-facts.outputs.basic_tests_runner_filter }}" }'
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "runner-filter": "${{ steps.set-release-facts.outputs.basic_tests_runner_filter }}" }'
 
       - name: Trigger Docker Demo test ${{ steps.set-release-facts.outputs.repo_short }}
         if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
