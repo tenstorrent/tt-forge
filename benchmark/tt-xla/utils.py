@@ -308,7 +308,7 @@ def create_benchmark_result(
     }
 
 
-def torch_xla_warmup_model(model, inputs, device, loop_count):
+def torch_xla_warmup_model(model, inputs, device, loop_count, read_logits_fn=None):
     """
     Warmup the model for a given number of loop_count.
 
@@ -322,11 +322,16 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
         The device to run the warmup on.
     loop_count: int
         The number of loop_count to warmup the model.
+    read_logits_fn: Callable, optional
+        Function to extract logits from model output. If None, uses default logic.
     """
     print("Warming up the device...")
 
     if len(inputs) != loop_count:
         raise ValueError("Number of inputs must be equal to loop count.")
+
+    if read_logits_fn is None:
+        read_logits_fn = lambda output: output.logits if hasattr(output, "logits") else output
 
     with torch.no_grad():
         for i in range(loop_count):
@@ -334,8 +339,7 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
             device_input = inputs[i].to(device)
             # Model forward, non blocking.
             output = model(device_input)
-            if hasattr(output, "logits"):
-                output = output.logits
+            output = read_logits_fn(output)
 
             if type(output) is torch.Tensor:
                 output.to("cpu")
@@ -347,7 +351,7 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
     print("Warming up completed.")
 
 
-def torch_xla_measure_fps(model, inputs, device, loop_count):
+def torch_xla_measure_fps(model, inputs, device, loop_count, read_logits_fn=None):
     """
     Benchmark the model for a given number of loop_count.
 
@@ -361,6 +365,8 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
         The device to run the benchmark on.
     loop_count: int
         Number of batches to process.
+    read_logits_fn: Callable, optional
+        Function to extract logits from model output. If None, uses default logic.
 
     Returns:
     -------
@@ -371,6 +377,9 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
     """
     if len(inputs) != loop_count:
         raise ValueError("Number of inputs must be equal to loop count.")
+
+    if read_logits_fn is None:
+        read_logits_fn = lambda output: output.logits if hasattr(output, "logits") else output
 
     print("Starting benchmark loop...")
 
@@ -387,8 +396,7 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
             # Model forward, non blocking.
             output = model(device_input)
 
-            if hasattr(output, "logits"):
-                output = output.logits
+            output = read_logits_fn(output)
             outputs.append(output)
 
             end_time = time.perf_counter_ns()

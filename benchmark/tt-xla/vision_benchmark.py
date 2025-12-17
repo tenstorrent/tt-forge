@@ -111,6 +111,7 @@ def benchmark_vision_torch_xla(
     experimental_compile,
     ttnn_perf_metrics_output_file,
     required_pcc=0.97,
+    read_logits_fn=None,
 ):
     """
     Benchmark a vision model using PyTorch and torch-xla.
@@ -133,6 +134,7 @@ def benchmark_vision_torch_xla(
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         required_pcc: Minimum PCC threshold for output validation
+        read_logits_fn: Callback function to extract logits from model output
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -140,6 +142,9 @@ def benchmark_vision_torch_xla(
 
     if training:
         pytest.skip("Training is not supported")
+
+    if read_logits_fn is None:
+        read_logits_fn = lambda output: output.logits if hasattr(output, "logits") else output
 
     xr.set_device_type("TT")
 
@@ -174,8 +179,7 @@ def benchmark_vision_torch_xla(
     golden_input = inputs[0]
     with torch.no_grad():
         golden_output = framework_model(golden_input)
-        if hasattr(golden_output, "logits"):
-            golden_output = golden_output.logits
+        golden_output = read_logits_fn(golden_output)
 
     # Set XLA compilation options
     options = {
@@ -199,11 +203,13 @@ def benchmark_vision_torch_xla(
         framework_model = framework_model.to(device)
 
     # Warmup
-    torch_xla_warmup_model(model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count)
+    torch_xla_warmup_model(
+        model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count, read_logits_fn=read_logits_fn
+    )
 
     # Benchmark
     predictions, total_time = torch_xla_measure_fps(
-        model=framework_model, inputs=inputs, device=device, loop_count=loop_count
+        model=framework_model, inputs=inputs, device=device, loop_count=loop_count, read_logits_fn=read_logits_fn
     )
 
     # Evaluate PCC
