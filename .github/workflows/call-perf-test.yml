@@ -156,6 +156,7 @@ jobs:
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
         HF_HOME: /mnt/dockercache/huggingface
+        TORCH_HOME: /mnt/dockercache/torchhub
         HF_HUB_DISABLE_PROGRESS_BARS: 1
       run: |
         echo "Create perf report directory"
