@@ -131,6 +131,12 @@ jobs:
           if [ "${{ matrix.pyreq_file }}" == "true" ]; then
             REQUIREMENTS_PATH=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
             
+            # Check if requirements include EasyDeL and install uv if needed
+            if grep -q "erfanzar/EasyDeL.git" "$REQUIREMENTS_PATH/requirements.txt"; then
+              echo "Installing uv for EasyDeL build backend..."
+              pip install uv
+            fi
+            
             # Install each requirement separately to handle git+https URLs with special flags
             while IFS= read -r requirement; do
               # Skip empty lines and comments
