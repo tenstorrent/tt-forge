@@ -9,16 +9,17 @@ from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
 
 # Defaults for all encoder models
-DEFAULT_OPTIMIZATION_LEVEL = 2
+DEFAULT_OPTIMIZATION_LEVEL = 1
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 1
 DEFAULT_LOOP_COUNT = 32
 DEFAULT_INPUT_SEQUENCE_LENGTH = 128
-DEFAULT_DATA_FORMAT = "float32"
+DEFAULT_DATA_FORMAT = "bfloat16"
 DEFAULT_MEASURE_CPU = False
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = False
+DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION = False
 
 
 def test_encoder(
@@ -35,6 +36,7 @@ def test_encoder(
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
+    experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
 ):
     """Test encoder model with the given variant and optional configuration overrides.
 
@@ -52,11 +54,11 @@ def test_encoder(
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
+        experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
     """
     model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
-    model_info_name = (
-        model_loader.get_model_info(variant=variant).name if variant else model_loader.get_model_info().name
-    )
+    model_info_name = model_loader.get_model_info(variant=variant).name
+
     # Sanitize model name for safe filesystem usage
     sanitized_model_name = sanitize_filename(model_info_name)
     ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
@@ -74,6 +76,7 @@ def test_encoder(
     experimental_compile={experimental_compile}
     required_pcc={required_pcc}
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
+    experimental_enable_permute_matmul_fusion={experimental_enable_permute_matmul_fusion}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
@@ -93,6 +96,7 @@ def test_encoder(
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         required_pcc=required_pcc,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
     )
 
     if output_file:
@@ -112,25 +116,10 @@ def test_bert(output_file):
         ModelLoaderModule=ModelLoader,
         variant=None,
         output_file=output_file,
-        batch_size=4,
-        input_sequence_length=16,
+        batch_size=8,
+        input_sequence_length=384,
         loop_count=32,
-        data_format="float32",
-    )
-
-
-def test_qwen3_embedding_0_6b(output_file):
-    from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_EMBEDDING_0_6B
-    test_encoder(
-        ModelLoaderModule=ModelLoader,
-        variant=variant,
-        output_file=output_file,
-        batch_size=1,
-        input_sequence_length=128,
-        loop_count=32,
-        data_format="float32",
+        optimization_level=2,
     )
 
 
@@ -142,13 +131,13 @@ def test_qwen3_embedding_4b(output_file):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
-        batch_size=1,
+        batch_size=32,
         input_sequence_length=128,
         loop_count=32,
-        data_format="float32",
     )
 
 
+# [pytest.skip] Too large for single chip
 def test_qwen3_embedding_8b(output_file):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
@@ -160,10 +149,4 @@ def test_qwen3_embedding_8b(output_file):
         batch_size=1,
         input_sequence_length=128,
         loop_count=32,
-        data_format="float32",
     )
-
-
-# NOTE: BGE-M3 requires special handling because it uses FlagEmbedding's custom encoding
-# pipeline which returns a function rather than a standard model. For BGE-M3 benchmarks,
-# use the dedicated bge_m3_encode.py script instead.

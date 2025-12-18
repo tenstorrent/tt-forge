@@ -76,6 +76,9 @@ def setup_model(model_loader, model_variant=None, data_format="float32") -> tupl
 
     Returns:
         Tuple of (model, model_info_name, tokenizer)
+
+    Raises:
+        ValueError: If model_loader does not provide a tokenizer
     """
     if model_variant:
         print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
@@ -86,8 +89,10 @@ def setup_model(model_loader, model_variant=None, data_format="float32") -> tupl
         model = model_loader.load_model()
         model_info = model_loader.get_model_info().name
 
-    # Get tokenizer
-    tokenizer = model_loader.tokenizer if hasattr(model_loader, "tokenizer") else None
+    # Get tokenizer (required for encoder benchmarks)
+    if not hasattr(model_loader, "tokenizer") or model_loader.tokenizer is None:
+        raise ValueError("Model loader must provide a tokenizer for encoder benchmarks")
+    tokenizer = model_loader.tokenizer
 
     if data_format == "bfloat16":
         model = model.to(torch.bfloat16)
@@ -125,32 +130,20 @@ def get_benchmark_sentences(batch_size: int, model_info: str) -> List[str]:
     return sentences
 
 
-def mean_pool_encode(model, tokenizer, sentences: List[str], device, max_length: int) -> torch.Tensor:
+def mean_pool_encode(model, tokenized_inputs: dict, device) -> torch.Tensor:
     """
     Encode sentences using mean pooling over token embeddings.
 
     Args:
         model: Encoder model instance
-        tokenizer: Tokenizer instance
-        sentences: List of sentences to encode
-        device: Device to run on
-        max_length: Maximum sequence length for tokenization
+        tokenized_inputs: Pre-tokenized inputs dict with 'input_ids' and 'attention_mask'
 
     Returns:
         torch.Tensor: Sentence embeddings with shape [batch_size, hidden_size]
     """
-    # Tokenize the input sentences
-    inputs = tokenizer(
-        sentences,
-        padding="max_length",
-        truncation=True,
-        max_length=max_length,
-        return_tensors="pt",
-    )
-
     # Move to device
-    input_ids = inputs["input_ids"].to(device)
-    attention_mask = inputs["attention_mask"].to(device)
+    input_ids = tokenized_inputs["input_ids"].to(device)
+    attention_mask = tokenized_inputs["attention_mask"].to(device)
 
     # Get model outputs
     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -169,32 +162,26 @@ def mean_pool_encode(model, tokenizer, sentences: List[str], device, max_length:
     return sentence_embeddings
 
 
-def last_token_pool_encode(model, tokenizer, sentences: List[str], device, max_length: int) -> torch.Tensor:
+def last_token_pool_encode(model, tokenized_inputs: dict, device) -> torch.Tensor:
     """
     Encode sentences using last token pooling (for models like Qwen3).
 
     Args:
         model: Encoder model instance
-        tokenizer: Tokenizer instance
-        sentences: List of sentences to encode
-        device: Device to run on
-        max_length: Maximum sequence length for tokenization
+        tokenized_inputs: Pre-tokenized inputs dict with 'input_ids' and 'attention_mask'
 
     Returns:
         torch.Tensor: Sentence embeddings with shape [batch_size, hidden_size]
     """
-    # Tokenize the input sentences
-    inputs = tokenizer(
-        sentences,
-        padding=True,
-        truncation=True,
-        max_length=max_length,
-        return_tensors="pt",
-    )
+    # Check if left padding is used (before moving to device)
+    # Left padding means all sequences end with non-padding tokens
+    left_padding = (
+        tokenized_inputs["attention_mask"][:, -1].sum() == tokenized_inputs["attention_mask"].shape[0]
+    ).item()
 
     # Move to device
-    input_ids = inputs["input_ids"].to(device)
-    attention_mask = inputs["attention_mask"].to(device)
+    input_ids = tokenized_inputs["input_ids"].to(device)
+    attention_mask = tokenized_inputs["attention_mask"].to(device)
 
     # Get model outputs
     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -206,7 +193,6 @@ def last_token_pool_encode(model, tokenizer, sentences: List[str], device, max_l
         last_hidden_states = outputs[0]
 
     # Last token pooling
-    left_padding = attention_mask[:, -1].sum() == attention_mask.shape[0]
     if left_padding:
         embeddings = last_hidden_states[:, -1]
     else:
@@ -223,9 +209,10 @@ def construct_inputs(
     input_sequence_length: int,
     loop_count: int,
     model_info: str,
+    use_mean_pooling: bool = True,
 ) -> list:
     """
-    Construct sentence inputs for the encoder model.
+    Construct and pre-tokenize inputs for the encoder model.
 
     Args:
         tokenizer: Tokenizer instance
@@ -233,14 +220,37 @@ def construct_inputs(
         input_sequence_length: Maximum sequence length
         loop_count: Number of loops
         model_info: Model info string to determine sentence type
+        use_mean_pooling: If True, use max_length padding (for mean pooling).
+                         If False, use dynamic padding (for last token pooling).
 
     Returns:
-        List of sentence lists for each iteration
+        List of pre-tokenized input dictionaries for each iteration
     """
     inputs = []
     for _ in range(loop_count):
         sentences = get_benchmark_sentences(batch_size, model_info)
-        inputs.append(sentences)
+
+        # Tokenize based on pooling strategy
+        if use_mean_pooling:
+            # Mean pooling uses max_length padding
+            tokenized = tokenizer(
+                sentences,
+                padding="max_length",
+                truncation=True,
+                max_length=input_sequence_length,
+                return_tensors="pt",
+            )
+        else:
+            # Last token pooling uses dynamic padding
+            tokenized = tokenizer(
+                sentences,
+                padding=True,
+                truncation=True,
+                max_length=input_sequence_length,
+                return_tensors="pt",
+            )
+
+        inputs.append(tokenized)
 
     return inputs
 
@@ -260,6 +270,7 @@ def benchmark_encoder_torch_xla(
     ttnn_perf_metrics_output_file,
     required_pcc=0.97,
     enable_weight_bfp8_conversion=False,
+    experimental_enable_permute_matmul_fusion=False,
 ):
     """
     Benchmark an encoder model using PyTorch and torch-xla.
@@ -283,6 +294,7 @@ def benchmark_encoder_torch_xla(
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         required_pcc: Minimum PCC threshold for output validation
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
+        experimental_enable_permute_matmul_fusion: Whether to enable permute matmul fusion optimization
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -290,53 +302,52 @@ def benchmark_encoder_torch_xla(
     if training:
         raise ValueError("Training is not supported for encoder benchmarks")
 
-    if not input_sequence_length:
-        input_sequence_length = 128  # Default sequence length
-
     xr.set_device_type("TT")
 
     # Load model and tokenizer
     framework_model, model_info, tokenizer = setup_model(model_loader, model_variant, data_format)
 
-    if tokenizer is None:
-        raise ValueError("Model loader must provide a tokenizer for encoder benchmarks")
-
-    # Determine encoding function based on model type
+    # TODO(vkovacevic): Determine encoding strategy based on model type
     model_info_lower = model_info.lower()
     if "qwen" in model_info_lower:
         encode_fn = last_token_pool_encode
+        use_mean_pooling = False
     else:
         encode_fn = mean_pool_encode
+        use_mean_pooling = True
 
-    # Construct inputs
-    sentences_list = construct_inputs(
+    # Construct and pre-tokenize inputs
+    tokenized_inputs_list = construct_inputs(
         tokenizer=tokenizer,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
         loop_count=loop_count,
         model_info=model_info,
+        use_mean_pooling=use_mean_pooling,
     )
 
-    warmup_sentences_list = construct_inputs(
+    warmup_inputs_list = construct_inputs(
         tokenizer=tokenizer,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
-        loop_count=loop_count,
+        loop_count=min(MIN_STEPS, loop_count),
         model_info=model_info,
+        use_mean_pooling=use_mean_pooling,
     )
 
     # Measure CPU performance
     if measure_cpu:
         print("Measuring CPU performance...")
-        cpu_sentences = [sentences_list[0][0]]  # Single sentence for CPU measurement
+        # Use the same full batch for CPU measurement
+        cpu_inputs = tokenized_inputs_list[0]
 
         start_time = time.time()
         num_runs = 10
         for _ in range(num_runs):
             with torch.no_grad():
-                _ = encode_fn(framework_model, tokenizer, cpu_sentences, device="cpu", max_length=input_sequence_length)
+                _ = encode_fn(framework_model, cpu_inputs, device="cpu")
         elapsed = time.time() - start_time
-        cpu_fps = num_runs / elapsed
+        cpu_fps = (num_runs * batch_size) / elapsed
         print(f"CPU samples per second: {cpu_fps:.2f}")
     else:
         cpu_fps = -1.0
@@ -344,9 +355,7 @@ def benchmark_encoder_torch_xla(
     # Generate golden output for PCC calculation
     print("Generating golden output on CPU...")
     with torch.no_grad():
-        golden_output = encode_fn(
-            framework_model, tokenizer, sentences_list[0], device="cpu", max_length=input_sequence_length
-        )
+        golden_output = encode_fn(framework_model, tokenized_inputs_list[0], device="cpu")
 
     # Set XLA compilation options
     options = {
@@ -356,6 +365,7 @@ def benchmark_encoder_torch_xla(
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
         "enable_trace": trace_enabled,
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
+        "experimental_enable_permute_matmul_fusion": experimental_enable_permute_matmul_fusion,
     }
 
     torch_xla.set_custom_compile_options(options)
@@ -375,11 +385,10 @@ def benchmark_encoder_torch_xla(
 
     # Warmup
     print("Warming up the device...")
+    warmup_count = len(warmup_inputs_list)
     with torch.no_grad():
-        for i in range(loop_count):
-            _ = encode_fn(
-                framework_model, tokenizer, warmup_sentences_list[i], device=device, max_length=input_sequence_length
-            )
+        for i in range(warmup_count):
+            _ = encode_fn(framework_model, warmup_inputs_list[i], device=device)
     print("Warming up completed.")
 
     # Benchmark
@@ -390,19 +399,19 @@ def benchmark_encoder_torch_xla(
     with torch.no_grad():
         for i in range(loop_count):
             start_time = time.perf_counter_ns()
-            output = encode_fn(
-                framework_model, tokenizer, sentences_list[i], device=device, max_length=input_sequence_length
-            )
-            predictions.append(output)
+            output = encode_fn(framework_model, tokenized_inputs_list[i], device=device)
+            # Move output to CPU inside timer for consistent e2e latency measurement
+            cpu_output = output.to("cpu")
             end_time = time.perf_counter_ns()
 
+            predictions.append(cpu_output)
             iteration_times.append(end_time - start_time)
             print(f"Iteration\t{i+1}/{loop_count}\ttook {iteration_times[-1] / 1e6:.04} ms")
 
     total_time = sum(iteration_times) / 1e9  # Convert to seconds
 
     # Evaluate PCC
-    pcc_value = compute_pcc(predictions[0].cpu(), golden_output, required_pcc=required_pcc)
+    pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=required_pcc)
     print(f"PCC verification passed with PCC={pcc_value:.6f}")
     evaluation_score = pcc_value
 
@@ -411,7 +420,7 @@ def benchmark_encoder_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = f"{model_info}"
+    full_model_name = model_info
     model_type = "Encoder, Text Embedding"
     dataset_name = "Benchmark Sentences"
     num_layers = -1

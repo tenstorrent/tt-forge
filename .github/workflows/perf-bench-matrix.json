@@ -156,6 +156,16 @@
         "name": "qwen_3_4b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_4b"
+      },
+      {
+        "name": "qwen_3_4b_embedding",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/encoders.py::test_qwen3_embedding_4b"
+      },
+      {
+        "name": "bert",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/encoders.py::test_bert"
       }
     ]
   }
