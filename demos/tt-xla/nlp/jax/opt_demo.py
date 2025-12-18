@@ -85,7 +85,6 @@ if __name__ == "__main__":
         OPTVariant._350M,
         OPTVariant._1_3B,
         OPTVariant._2_7B,
-        OPTVariant._6_7B,
     ]
 
     # Run each demo case
