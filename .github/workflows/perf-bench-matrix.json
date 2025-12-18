@@ -14,7 +14,7 @@
       "libreq": "libgl1-mesa-glx libglib2.0-0",
       "skip-ttir-dump": false,
       "skip-ttnn-dump": false,
-      "skip-device-perf": true
+      "skip-device-perf": false
     },
     "tests": [
       {
