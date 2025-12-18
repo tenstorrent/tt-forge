@@ -19,12 +19,7 @@ DEFAULT_DATA_FORMAT = "bfloat16"
 DEFAULT_MEASURE_CPU = False
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
-
-
-def default_read_logits_fn(output):
-    if hasattr(output, "logits"):
-        return output.logits
-    return output
+DEFAULT_READ_LOGITS_FN = lambda output: output
 
 
 def test_vision(
@@ -41,7 +36,7 @@ def test_vision(
     measure_cpu=DEFAULT_MEASURE_CPU,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
-    read_logits_fn=default_read_logits_fn,
+    read_logits_fn=DEFAULT_READ_LOGITS_FN,
 ):
     """Test vision model with the given variant and optional configuration overrides.
 
@@ -145,12 +140,14 @@ def test_resnet50(output_file):
     from third_party.tt_forge_models.resnet.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.RESNET_50_HF
+    read_logits_fn = lambda output: output.logits
     test_vision(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
         batch_size=8,
         required_pcc=0.90,
+        read_logits_fn=read_logits_fn,
     )
 
 
@@ -158,12 +155,14 @@ def test_segformer(output_file):
     from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.B0_FINETUNED
+    read_logits_fn = lambda output: output.logits
     test_vision(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
         batch_size=1,
         input_size=(512, 512),
+        read_logits_fn=read_logits_fn,
     )
 
 
@@ -231,7 +230,14 @@ def test_vit(output_file):
     from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.BASE
-    test_vision(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, batch_size=8)
+    read_logits_fn = lambda output: output.logits
+    test_vision(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        batch_size=8,
+        read_logits_fn=read_logits_fn,
+    )
 
 
 def test_vovnet(output_file):

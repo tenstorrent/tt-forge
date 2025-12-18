@@ -308,7 +308,7 @@ def create_benchmark_result(
     }
 
 
-def torch_xla_warmup_model(model, inputs, device, loop_count, read_logits_fn=None):
+def torch_xla_warmup_model(model, inputs, device, loop_count, read_logits_fn):
     """
     Warmup the model for a given number of loop_count.
 
@@ -322,16 +322,13 @@ def torch_xla_warmup_model(model, inputs, device, loop_count, read_logits_fn=Non
         The device to run the warmup on.
     loop_count: int
         The number of loop_count to warmup the model.
-    read_logits_fn: Callable, optional
-        Function to extract logits from model output. If None, uses default logic.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
     """
     print("Warming up the device...")
 
     if len(inputs) != loop_count:
         raise ValueError("Number of inputs must be equal to loop count.")
-
-    if read_logits_fn is None:
-        read_logits_fn = lambda output: output.logits if hasattr(output, "logits") else output
 
     with torch.no_grad():
         for i in range(loop_count):
@@ -351,7 +348,7 @@ def torch_xla_warmup_model(model, inputs, device, loop_count, read_logits_fn=Non
     print("Warming up completed.")
 
 
-def torch_xla_measure_fps(model, inputs, device, loop_count, read_logits_fn=None):
+def torch_xla_measure_fps(model, inputs, device, loop_count, read_logits_fn):
     """
     Benchmark the model for a given number of loop_count.
 
@@ -365,8 +362,8 @@ def torch_xla_measure_fps(model, inputs, device, loop_count, read_logits_fn=None
         The device to run the benchmark on.
     loop_count: int
         Number of batches to process.
-    read_logits_fn: Callable, optional
-        Function to extract logits from model output. If None, uses default logic.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
 
     Returns:
     -------
@@ -377,9 +374,6 @@ def torch_xla_measure_fps(model, inputs, device, loop_count, read_logits_fn=None
     """
     if len(inputs) != loop_count:
         raise ValueError("Number of inputs must be equal to loop count.")
-
-    if read_logits_fn is None:
-        read_logits_fn = lambda output: output.logits if hasattr(output, "logits") else output
 
     print("Starting benchmark loop...")
 

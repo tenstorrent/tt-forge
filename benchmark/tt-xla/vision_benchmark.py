@@ -110,8 +110,8 @@ def benchmark_vision_torch_xla(
     measure_cpu,
     experimental_compile,
     ttnn_perf_metrics_output_file,
+    read_logits_fn,
     required_pcc=0.97,
-    read_logits_fn=None,
 ):
     """
     Benchmark a vision model using PyTorch and torch-xla.
@@ -142,9 +142,6 @@ def benchmark_vision_torch_xla(
 
     if training:
         pytest.skip("Training is not supported")
-
-    if read_logits_fn is None:
-        read_logits_fn = lambda output: output.logits if hasattr(output, "logits") else output
 
     xr.set_device_type("TT")
 
