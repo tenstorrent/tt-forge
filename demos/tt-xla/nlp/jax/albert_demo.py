@@ -52,7 +52,7 @@ def run_albert_demo_case(variant):
 
     # Find the [MASK] token position
     mask_token_id = tokenizer.mask_token_id
-    mask_positions = np.where(input_ids[0] == mask_token_id)[0]
+    mask_positions = np.where(np.array(input_ids)[0] == mask_token_id)[0]
 
     if len(mask_positions) > 0:
         mask_position = mask_positions[0]
