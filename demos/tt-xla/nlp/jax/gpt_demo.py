@@ -6,6 +6,7 @@
 import sys
 import jax
 import jax.numpy as jnp
+from jax.sharding import Mesh
 import numpy as np
 from flax import nnx
 from third_party.tt_forge_models.gpt2.causal_lm.jax import (
@@ -16,12 +17,15 @@ from third_party.tt_forge_models.gpt2.causal_lm.jax import (
 
 def run_gpt2_demo_case(variant):
 
-    print("Your model will run on the following device:", jax.devices()[0])
-
+    # Load model, tokenizer, and inputs
     loader = GPT2Loader(variant=variant)
     model = loader.load_model()
     tokenizer = loader._load_tokenizer()
     input_ids = loader.load_inputs()
+
+    # Configure single device mesh - automatically uses first available device (CPU or TT)
+    mesh = Mesh(jax.devices()[:1], axis_names=("x",))
+    model.config.set_model_mesh(mesh)
 
     # Define the forward function for JAX compilation
     graphdef = nnx.split(model)[0]

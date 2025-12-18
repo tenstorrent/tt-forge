@@ -1,4 +1,4 @@
-transformers==4.52.4
+jax==0.7.1
 sentencepiece
 flax
 git+https://github.com/erfanzar/EasyDeL.git@77ced9d2f2ab6a3d705936d26112eb97d9f9e64a
