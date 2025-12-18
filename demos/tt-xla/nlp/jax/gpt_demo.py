@@ -29,6 +29,7 @@ def run_gpt2_demo_case(variant):
 
     # Define the forward function for JAX compilation
     graphdef = nnx.split(model)[0]
+
     def generate_logits(input_ids, params):
         model_ = nnx.merge(graphdef, params)
         outputs = model_(input_ids)
@@ -95,4 +96,3 @@ if __name__ == "__main__":
     # Run each demo case
     for variant in demo_cases:
         run_gpt2_demo_case(variant)
-
