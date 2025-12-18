@@ -129,11 +129,20 @@ jobs:
           fi
 
           if [ "${{ matrix.pyreq_file }}" == "true" ]; then
-            # Install uv to handle packages that require it
-            pip install uv
-            
             REQUIREMENTS_PATH=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
-            pip install -r $REQUIREMENTS_PATH/requirements.txt
+            
+            # Install each requirement separately to handle git+https URLs with special flags
+            while IFS= read -r requirement; do
+              # Skip empty lines and comments
+              [[ -z "$requirement" || "$requirement" =~ ^[[:space:]]*# ]] && continue
+              
+              # Check if it's the EasyDeL git requirement that needs --no-build-isolation
+              if [[ "$requirement" == *"erfanzar/EasyDeL.git"* ]]; then
+                pip install --no-build-isolation "$requirement"
+              else
+                pip install "$requirement"
+              fi
+            done < "$REQUIREMENTS_PATH/requirements.txt"
           fi
 
       - name: Run ${{ matrix.project }} demo ${{ matrix.name }}
