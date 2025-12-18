@@ -129,6 +129,9 @@ jobs:
           fi
 
           if [ "${{ matrix.pyreq_file }}" == "true" ]; then
+            # Install uv to handle packages that require it
+            pip install uv
+            
             REQUIREMENTS_PATH=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
             pip install -r $REQUIREMENTS_PATH/requirements.txt
           fi
