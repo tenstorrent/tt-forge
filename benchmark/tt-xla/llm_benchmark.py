@@ -17,6 +17,7 @@ import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
+import torch_xla.distributed.spmd as xs
 import tt_torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
@@ -239,6 +240,8 @@ def benchmark_llm_torch_xla(
     experimental_enable_permute_matmul_fusion,
     ttnn_perf_metrics_output_file,
     read_logits_fn,
+    mesh,
+    shard_spec_fn
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -300,6 +303,17 @@ def benchmark_llm_torch_xla(
     # Check transformers version
     check_transformers_version()
 
+    xr.set_device_type("TT")
+
+    # Set up for multi-chip if applicable
+    if mesh is not None and shard_spec_fn is not None:
+        is_multichip = len(mesh.device_ids) > 1
+        if is_multichip:
+            os.environ["CONVERT_SHLO_TO_SHARDY"] = "1"
+            xr.use_spmd()
+    else:
+        is_multichip = False
+
     # Set up config variables
     max_cache_len: int = input_sequence_length
 
@@ -354,6 +368,21 @@ def benchmark_llm_torch_xla(
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
     input_args = transfer_to_device(input_args, device)
     model = model.to(device, dtype=torch.bfloat16)
+
+    # Shard model if shard spec function is provided
+    if is_multichip:
+        shard_specs = shard_spec_fn(model_loader, model)
+        if shard_specs is not None:
+            for tensor, shard_spec in shard_specs.items():
+                xs.mark_sharding(tensor, mesh, shard_spec)
+
+        # Also shard KV cache tensors created in input_args
+        for key, value in zip(
+            input_args["past_key_values"].key_cache,
+            input_args["past_key_values"].value_cache,
+        ):
+            xs.mark_sharding(key, mesh, (None, "model", None, None))
+            xs.mark_sharding(value, mesh, (None, "model", None, None))
 
     # Set XLA compilation options
     options = {
