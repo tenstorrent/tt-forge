@@ -7,6 +7,7 @@ import sys
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flax import nnx
 from third_party.tt_forge_models.gpt2.causal_lm.jax import (
     ModelLoader as GPT2Loader,
     ModelVariant as GPT2Variant,
@@ -15,28 +16,28 @@ from third_party.tt_forge_models.gpt2.causal_lm.jax import (
 
 def run_gpt2_demo_case(variant):
 
-    # Load Model and inputs using thirdparty loader on CPU first
-    with jax.default_device(jax.devices("cpu")[0]):
-        loader = GPT2Loader(variant=variant)
-        model = loader.load_model()
-        tokenizer = loader._load_tokenizer()
-        input_dict = loader.load_inputs()
+    print("Your model will run on the following devices:", jax.devices())
 
-    # Get input_ids from the loaded inputs
-    input_ids = input_dict["input_ids"]
+    loader = GPT2Loader(variant=variant)
+    model = loader.load_model()
+    tokenizer = loader._load_tokenizer()
+    input_ids = loader.load_inputs()
 
     # Define the forward function for JAX compilation
+    graphdef = nnx.split(model)[0]
     def generate_logits(input_ids, params):
-        outputs = model(input_ids=input_ids, params=params)
+        model_ = nnx.merge(graphdef, params)
+        outputs = model_(input_ids)
         return outputs.logits
 
-    # Compile the model using JAX JIT with TT backend
+    # Compile the model using JAX JIT
     compiled_generate_logits = jax.jit(
         generate_logits,
     )
 
-    # Run inference on TT device
-    outputs = compiled_generate_logits(input_ids, model.params)
+    # Run inference
+    with model.mesh:
+        outputs = compiled_generate_logits(input_ids, nnx.split(model)[1])
 
     # Convert to numpy for post-processing
     logits = np.array(outputs)
@@ -90,3 +91,4 @@ if __name__ == "__main__":
     # Run each demo case
     for variant in demo_cases:
         run_gpt2_demo_case(variant)
+
