@@ -1,4 +1,3 @@
 transformers==4.52.4
 sentencepiece
 flax
-easydel
