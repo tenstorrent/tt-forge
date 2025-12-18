@@ -16,7 +16,7 @@ from third_party.tt_forge_models.gpt2.causal_lm.jax import (
 
 def run_gpt2_demo_case(variant):
 
-    print("Your model will run on the following devices:", jax.devices())
+    print("Your model will run on the following device:", jax.devices()[0])
 
     loader = GPT2Loader(variant=variant)
     model = loader.load_model()
