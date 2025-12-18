@@ -388,27 +388,40 @@ def benchmark_encoder_torch_xla(
     warmup_count = len(warmup_inputs_list)
     with torch.no_grad():
         for i in range(warmup_count):
-            _ = encode_fn(framework_model, warmup_inputs_list[i], device=device)
+            output = encode_fn(framework_model, warmup_inputs_list[i], device=device)
+            _ = output.to("cpu")
     print("Warming up completed.")
 
     # Benchmark
     print("\nStarting benchmark loop...")
     predictions = []
     iteration_times = []
+    outputs = []
 
     with torch.no_grad():
         for i in range(loop_count):
             start_time = time.perf_counter_ns()
             output = encode_fn(framework_model, tokenized_inputs_list[i], device=device)
-            # Move output to CPU inside timer for consistent e2e latency measurement
-            cpu_output = output.to("cpu")
+            outputs.append(output)
             end_time = time.perf_counter_ns()
 
-            predictions.append(cpu_output)
             iteration_times.append(end_time - start_time)
             print(f"Iteration\t{i+1}/{loop_count}\ttook {iteration_times[-1] / 1e6:.04} ms")
 
-    total_time = sum(iteration_times) / 1e9  # Convert to seconds
+        # Move all outputs to CPU, waits for model execution to finish
+        output_start = time.perf_counter_ns()
+        for output in outputs:
+            cpu_output = output.to("cpu")
+            predictions.append(cpu_output)
+        output_end = time.perf_counter_ns()
+
+        output_time = output_end - output_start
+        print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
+
+    total_time_iterations = sum(iteration_times)
+    total_time = total_time_iterations + output_time
+    # Convert to seconds
+    total_time /= 1e9
 
     # Evaluate PCC
     pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=required_pcc)
