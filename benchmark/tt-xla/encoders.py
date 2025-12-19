@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import os
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
@@ -54,7 +53,7 @@ def test_encoder(
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
-        experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
+        experimental_enable_permute_matmul_fusion: Enable permute matmul fusion
     """
     model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
     model_info_name = model_loader.get_model_info(variant=variant).name

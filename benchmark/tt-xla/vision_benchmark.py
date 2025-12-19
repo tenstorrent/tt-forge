@@ -24,7 +24,6 @@ from utils import (
 )
 
 xr.set_device_type("TT")
-os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 MIN_STEPS = 16
 
@@ -253,8 +252,6 @@ def benchmark_vision_torch_xla(
 
     if training:
         pytest.skip("Training is not supported")
-
-    xr.set_device_type("TT")
 
     # Construct inputs
     inputs = construct_inputs(

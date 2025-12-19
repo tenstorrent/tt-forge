@@ -28,7 +28,6 @@ from .utils import (
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
-os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 # Common constants
 OPTIMIZATION_LEVEL = 0

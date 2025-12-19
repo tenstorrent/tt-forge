@@ -11,7 +11,6 @@ from typing import List
 # Third-party modules
 import torch
 import torch_xla
-import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 
 from benchmark.utils import get_xla_device_arch
@@ -23,35 +22,11 @@ from utils import (
 )
 
 xr.set_device_type("TT")
-os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
-MIN_STEPS = 16
+MIN_STEPS = 16  # Minimum warmup steps
 
 MODULE_EXPORT_PATH = "modules"
 
-
-# Default benchmark sentences for different model types
-BERT_SENTENCES = [
-    "Bu örnek bir cümle",
-    "Yapay zeka sistemleri tıp alanında giderek daha fazla kullanılıyor",
-    "İklim değişikliği zamanımızın en acil sorunlarından biridir",
-    "Kuantum bilgisayarlar karmaşık problemleri çözmeyi vaat ediyor",
-    "Türkiye'nin başkenti Ankara'dır ve en büyük şehri İstanbul'dur",
-    "Makine öğrenimi algoritmaları büyük veri setlerinden öğrenebilir",
-    "Doğal dil işleme teknolojileri hızla gelişiyor",
-    "Derin öğrenme modelleri görüntü tanıma görevlerinde başarılıdır",
-]
-
-QWEN_SENTENCES = [
-    "What is the capital of China?",
-    "Explain quantum computing in simple terms",
-    "How does machine learning work?",
-    "What are the benefits of renewable energy?",
-    "Describe the process of photosynthesis",
-    "What is artificial intelligence?",
-    "How do neural networks learn?",
-    "What is climate change?",
-]
 
 MULTILINGUAL_SENTENCES = [
     "The quick brown fox jumps over the lazy dog while the sun shines brightly.",
@@ -65,7 +40,7 @@ MULTILINGUAL_SENTENCES = [
 ]
 
 
-def setup_model(model_loader, model_variant=None, data_format="float32") -> tuple[torch.nn.Module, str, object]:
+def setup_model(model_loader, data_format, model_variant=None) -> tuple[torch.nn.Module, str, object]:
     """
     Instantiate model and tokenizer.
 
@@ -80,24 +55,26 @@ def setup_model(model_loader, model_variant=None, data_format="float32") -> tupl
     Raises:
         ValueError: If model_loader does not provide a tokenizer
     """
+    # Convert data_format string to torch.dtype
+    dtype_override = None
+    if data_format == "bfloat16":
+        dtype_override = torch.bfloat16
+    elif data_format == "float32":
+        dtype_override = torch.float32
+
     if model_variant:
         print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
-        model = model_loader.load_model()
+        model = model_loader.load_model(dtype_override=dtype_override)
         model_info = model_loader.get_model_info(model_variant).name
     else:
         print(f"Loading model {model_loader.get_model_info().name}...")
-        model = model_loader.load_model()
+        model = model_loader.load_model(dtype_override=dtype_override)
         model_info = model_loader.get_model_info().name
 
     # Get tokenizer (required for encoder benchmarks)
     if not hasattr(model_loader, "tokenizer") or model_loader.tokenizer is None:
         raise ValueError("Model loader must provide a tokenizer for encoder benchmarks")
     tokenizer = model_loader.tokenizer
-
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    elif data_format == "float32":
-        model = model.to(torch.float32)
 
     model = model.eval()
 
@@ -113,14 +90,7 @@ def get_benchmark_sentences(batch_size: int, model_info: str) -> List[str]:
         batch_size: Number of sentences to return
         model_info: Model info string to determine sentence type
     """
-    # Select sentences based on model type
-    model_info_lower = model_info.lower()
-    if "bert" in model_info_lower and "turkish" in model_info_lower:
-        base_sentences = BERT_SENTENCES
-    elif "qwen" in model_info_lower:
-        base_sentences = QWEN_SENTENCES
-    else:
-        base_sentences = MULTILINGUAL_SENTENCES
+    base_sentences = MULTILINGUAL_SENTENCES
 
     # Extend to match batch size by repeating sentences
     sentences = []
@@ -302,10 +272,8 @@ def benchmark_encoder_torch_xla(
     if training:
         raise ValueError("Training is not supported for encoder benchmarks")
 
-    xr.set_device_type("TT")
-
     # Load model and tokenizer
-    framework_model, model_info, tokenizer = setup_model(model_loader, model_variant, data_format)
+    framework_model, model_info, tokenizer = setup_model(model_loader, data_format, model_variant)
 
     # TODO(vkovacevic): Determine encoding strategy based on model type
     model_info_lower = model_info.lower()
@@ -371,17 +339,11 @@ def benchmark_encoder_torch_xla(
     torch_xla.set_custom_compile_options(options)
 
     # Compile model
-    print("Compiling model for TT backend...")
     framework_model.compile(backend="tt", options={"tt_experimental_compile": experimental_compile})
 
     device = torch_xla.device()
 
-    if data_format == "bfloat16":
-        framework_model = framework_model.to(device, dtype=torch.bfloat16)
-    elif data_format == "float32":
-        framework_model = framework_model.to(device, dtype=torch.float32)
-    else:
-        framework_model = framework_model.to(device)
+    framework_model = framework_model.to(device)
 
     # Warmup
     print("Warming up the device...")

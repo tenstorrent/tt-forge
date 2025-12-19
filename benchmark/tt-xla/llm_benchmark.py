@@ -32,7 +32,6 @@ from utils import (
 )
 
 xr.set_device_type("TT")
-os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 MIN_STEPS = 16
 
@@ -297,8 +296,6 @@ def benchmark_llm_torch_xla(
 
     # Check transformers version
     check_transformers_version()
-
-    xr.set_device_type("TT")
 
     # Set up config variables
     max_cache_len: int = input_sequence_length
