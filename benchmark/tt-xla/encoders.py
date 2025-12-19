@@ -19,6 +19,8 @@ DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = False
 DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION = False
+DEFAULT_USE_MEAN_POOLING = True
+DEFAULT_READ_HIDDEN_STATE_FN = lambda output: output.last_hidden_state
 
 
 def test_encoder(
@@ -36,6 +38,8 @@ def test_encoder(
     required_pcc=DEFAULT_REQUIRED_PCC,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
+    read_hidden_state_fn=DEFAULT_READ_HIDDEN_STATE_FN,
+    use_mean_pooling=DEFAULT_USE_MEAN_POOLING,
 ):
     """Test encoder model with the given variant and optional configuration overrides.
 
@@ -54,6 +58,8 @@ def test_encoder(
         required_pcc: Required PCC threshold
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion
+        read_hidden_state_fn: Function to extract hidden states from model output
+        use_mean_pooling: If True, use mean pooling. If False, use last token pooling.
     """
     model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
     model_info_name = model_loader.get_model_info(variant=variant).name
@@ -76,6 +82,7 @@ def test_encoder(
     required_pcc={required_pcc}
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
     experimental_enable_permute_matmul_fusion={experimental_enable_permute_matmul_fusion}
+    use_mean_pooling={use_mean_pooling}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
@@ -96,6 +103,8 @@ def test_encoder(
         required_pcc=required_pcc,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
+        read_hidden_state_fn=read_hidden_state_fn,
+        use_mean_pooling=use_mean_pooling,
     )
 
     if output_file:
@@ -119,6 +128,7 @@ def test_bert(output_file):
         input_sequence_length=384,
         loop_count=32,
         optimization_level=2,
+        use_mean_pooling=True,
     )
 
 
@@ -133,6 +143,7 @@ def test_qwen3_embedding_4b(output_file):
         batch_size=32,
         input_sequence_length=128,
         loop_count=32,
+        use_mean_pooling=False,
     )
 
 
@@ -148,4 +159,5 @@ def test_qwen3_embedding_8b(output_file):
         batch_size=1,
         input_sequence_length=128,
         loop_count=32,
+        use_mean_pooling=False,
     )

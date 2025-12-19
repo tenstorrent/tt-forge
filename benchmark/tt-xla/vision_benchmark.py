@@ -94,7 +94,7 @@ def construct_inputs(
     return inputs
 
 
-def warmup_vision_model(model, inputs, device, loop_count):
+def warmup_vision_model(model, inputs, device, loop_count, read_logits_fn):
     """
     Warmup the model for a given number of loop_count.
 
@@ -108,6 +108,8 @@ def warmup_vision_model(model, inputs, device, loop_count):
         The device to run the warmup on.
     loop_count: int
         The number of loop_count to warmup the model.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
     """
     print("Warming up the device...")
 
@@ -120,8 +122,7 @@ def warmup_vision_model(model, inputs, device, loop_count):
             device_input = inputs[i].to(device)
             # Model forward, non blocking.
             output = model(device_input)
-            if hasattr(output, "logits"):
-                output = output.logits
+            output = read_logits_fn(output)
 
             if type(output) is torch.Tensor:
                 output.to("cpu")
@@ -133,7 +134,7 @@ def warmup_vision_model(model, inputs, device, loop_count):
     print("Warming up completed.")
 
 
-def measure_fps_vision_model(model, inputs, device, loop_count):
+def measure_fps_vision_model(model, inputs, device, loop_count, read_logits_fn):
     """
     Benchmark the model for a given number of loop_count.
 
@@ -147,6 +148,8 @@ def measure_fps_vision_model(model, inputs, device, loop_count):
         The device to run the benchmark on.
     loop_count: int
         Number of batches to process.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
 
     Returns:
     -------
@@ -173,8 +176,7 @@ def measure_fps_vision_model(model, inputs, device, loop_count):
             # Model forward, non blocking.
             output = model(device_input)
 
-            if hasattr(output, "logits"):
-                output = output.logits
+            output = read_logits_fn(output)
             outputs.append(output)
 
             end_time = time.perf_counter_ns()
@@ -308,11 +310,13 @@ def benchmark_vision_torch_xla(
         framework_model = framework_model.to(device)
 
     # Warmup
-    warmup_vision_model(model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count)
+    warmup_vision_model(
+        model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count, read_logits_fn=read_logits_fn
+    )
 
     # Benchmark
     predictions, total_time = measure_fps_vision_model(
-        model=framework_model, inputs=inputs, device=device, loop_count=loop_count
+        model=framework_model, inputs=inputs, device=device, loop_count=loop_count, read_logits_fn=read_logits_fn
     )
 
     # Evaluate PCC
