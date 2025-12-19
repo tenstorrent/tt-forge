@@ -10,7 +10,6 @@ import pytest
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
 
-from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 import torch_xla.runtime as xr
 from torch_xla.distributed.spmd import Mesh
 import numpy as np
@@ -171,8 +170,10 @@ def test_llama_3_2_3b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# LLMbox test
+# llmbox TP test
 def test_llama_3_8b(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
     num_devices = xr.global_runtime_device_count()
     # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
     arch = "wormhole_llmbox"
