@@ -19,6 +19,7 @@ DEFAULT_DATA_FORMAT = "bfloat16"
 DEFAULT_MEASURE_CPU = False
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
+DEFAULT_READ_LOGITS_FN = lambda output: output
 
 
 def test_vision(
@@ -35,6 +36,7 @@ def test_vision(
     measure_cpu=DEFAULT_MEASURE_CPU,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
+    read_logits_fn=DEFAULT_READ_LOGITS_FN,
 ):
     """Test vision model with the given variant and optional configuration overrides.
 
@@ -52,6 +54,7 @@ def test_vision(
         measure_cpu: Measure CPU FPS
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
+        read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
     model_info_name = (
@@ -93,6 +96,7 @@ def test_vision(
         experimental_compile=experimental_compile,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         required_pcc=required_pcc,
+        read_logits_fn=read_logits_fn,
     )
 
     if output_file:
@@ -136,12 +140,14 @@ def test_resnet50(output_file):
     from third_party.tt_forge_models.resnet.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.RESNET_50_HF
+    read_logits_fn = lambda output: output.logits
     test_vision(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
         batch_size=8,
         required_pcc=0.90,
+        read_logits_fn=read_logits_fn,
     )
 
 
@@ -149,12 +155,14 @@ def test_segformer(output_file):
     from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.B0_FINETUNED
+    read_logits_fn = lambda output: output.logits
     test_vision(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
         batch_size=1,
         input_size=(512, 512),
+        read_logits_fn=read_logits_fn,
     )
 
 
@@ -188,6 +196,24 @@ def test_ufld(output_file):
     )
 
 
+def test_ufld_v2(output_file):
+    from third_party.tt_forge_models.ultra_fast_lane_detection_v2.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.TUSIMPLE_RESNET34
+    model_loader = ModelLoader(variant)
+    input_size = (model_loader.config.input_height, model_loader.config.input_width)
+    read_logits_fn = lambda output: output[0]
+
+    test_vision(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        batch_size=1,
+        input_size=input_size,
+        read_logits_fn=read_logits_fn,
+    )
+
+
 def test_unet(output_file):
     from third_party.tt_forge_models.vgg19_unet.pytorch.loader import ModelLoader
 
@@ -204,7 +230,14 @@ def test_vit(output_file):
     from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.BASE
-    test_vision(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, batch_size=8)
+    read_logits_fn = lambda output: output.logits
+    test_vision(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        batch_size=8,
+        read_logits_fn=read_logits_fn,
+    )
 
 
 def test_vovnet(output_file):

@@ -308,7 +308,7 @@ def create_benchmark_result(
     }
 
 
-def torch_xla_warmup_model(model, inputs, device, loop_count):
+def torch_xla_warmup_model(model, inputs, device, loop_count, read_logits_fn):
     """
     Warmup the model for a given number of loop_count.
 
@@ -322,6 +322,8 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
         The device to run the warmup on.
     loop_count: int
         The number of loop_count to warmup the model.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
     """
     print("Warming up the device...")
 
@@ -334,8 +336,7 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
             device_input = inputs[i].to(device)
             # Model forward, non blocking.
             output = model(device_input)
-            if hasattr(output, "logits"):
-                output = output.logits
+            output = read_logits_fn(output)
 
             if type(output) is torch.Tensor:
                 output.to("cpu")
@@ -347,7 +348,7 @@ def torch_xla_warmup_model(model, inputs, device, loop_count):
     print("Warming up completed.")
 
 
-def torch_xla_measure_fps(model, inputs, device, loop_count):
+def torch_xla_measure_fps(model, inputs, device, loop_count, read_logits_fn):
     """
     Benchmark the model for a given number of loop_count.
 
@@ -361,6 +362,8 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
         The device to run the benchmark on.
     loop_count: int
         Number of batches to process.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
 
     Returns:
     -------
@@ -387,8 +390,7 @@ def torch_xla_measure_fps(model, inputs, device, loop_count):
             # Model forward, non blocking.
             output = model(device_input)
 
-            if hasattr(output, "logits"):
-                output = output.logits
+            output = read_logits_fn(output)
             outputs.append(output)
 
             end_time = time.perf_counter_ns()

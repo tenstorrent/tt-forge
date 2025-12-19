@@ -59,6 +59,11 @@
         "pytest": "benchmark/tt-xla/vision_models.py::test_ufld"
       },
       {
+        "name": "ufld_v2",
+        "pyreq": "datasets loguru opencv-python pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/vision_models.py::test_ufld_v2"
+      },
+      {
         "name": "unet",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/vision_models.py::test_unet"
