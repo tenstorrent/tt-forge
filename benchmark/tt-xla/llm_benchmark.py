@@ -101,6 +101,15 @@ def construct_inputs(
         device="cpu",
         dtype=torch.bfloat16,
     )
+    head_dim = getattr(model_config, "head_dim", model_config.hidden_size // model_config.num_attention_heads)
+    num_key_value_heads = getattr(model_config, "num_key_value_heads", model_config.num_attention_heads)
+    static_cache.early_initialization(
+        batch_size=batch_size,
+        num_heads=num_key_value_heads,
+        head_dim=head_dim,
+        dtype=torch.bfloat16,
+        device="cpu",
+    )
     cache_position: torch.Tensor = torch.arange(0, inputs.input_ids.shape[1])
 
     input_args = {
@@ -124,8 +133,9 @@ def transfer_to_device(input_args: dict, device: torch.device) -> tuple[torch.nn
     Returns:
         Tuple input_args on device
     """
-    input_args["past_key_values"].key_cache = [k.to(device) for k in input_args["past_key_values"].key_cache]
-    input_args["past_key_values"].value_cache = [v.to(device) for v in input_args["past_key_values"].value_cache]
+    for layer in input_args["past_key_values"].layers:
+        layer.keys = layer.keys.to(device)
+        layer.values = layer.values.to(device)
     input_args["input_ids"] = input_args["input_ids"].to(device)
     input_args["cache_position"] = input_args["cache_position"].to(device)
 
@@ -201,22 +211,17 @@ def generate_and_benchmark(
 
 def check_transformers_version():
     """
-    Check that transformers version is <= 4.52.4.
+    Check that transformers version is <= 4.57.1.
     Raises RuntimeError if version is incompatible.
-
-    This is because transformers SDPA implementation changed in later versions,
-    which causes dynamo trace to fail.
-
-    See https://github.com/tenstorrent/tt-xla/issues/1020
     """
     import packaging.version
 
     current_version = packaging.version.parse(transformers.__version__)
-    max_version = packaging.version.parse("4.52.4")
+    max_version = packaging.version.parse("4.57.1")
 
     if current_version > max_version:
         raise RuntimeError(
-            f"Transformers version {transformers.__version__} is not supported. " f"Please use version <= 4.52.4"
+            f"Transformers version {transformers.__version__} is not supported. " f"Please use version <= 4.57.1"
         )
 
 
