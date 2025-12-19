@@ -256,6 +256,7 @@ def benchmark_llm_torch_xla(
     read_logits_fn,
     mesh,
     shard_spec_fn,
+    arch,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -537,7 +538,7 @@ def benchmark_llm_torch_xla(
         torch_xla_enabled=True,
         backend="tt",
         device_name=socket.gethostname(),
-        arch=get_xla_device_arch(),
+        arch=arch or get_xla_device_arch(),
         input_is_image=False,
         input_sequence_length=input_sequence_length,
     )
