@@ -5,6 +5,7 @@
 import json
 import os
 from loguru import logger
+import pytest
 
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
@@ -51,6 +52,7 @@ def test_llm(
     read_logits_fn=default_read_logits_fn,
     mesh=None,
     shard_spec_fn=None,
+    arch=None,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -112,6 +114,7 @@ def test_llm(
         read_logits_fn=read_logits_fn,
         mesh=mesh,
         shard_spec_fn=shard_spec_fn,
+        arch=arch,
     )
 
     if output_file:
@@ -171,7 +174,9 @@ def test_llama_3_2_3b(output_file):
 # LLMbox test
 def test_llama_3_8b(output_file):
     num_devices = xr.global_runtime_device_count()
-    # Create a mesh.
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+
     mesh_shape = (1, num_devices)
     device_ids = np.array(range(num_devices))
     mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
@@ -187,6 +192,7 @@ def test_llama_3_8b(output_file):
         mesh=mesh,
         batch_size=32,
         input_sequence_length=128,
+        arch=arch,
     )
 
 
