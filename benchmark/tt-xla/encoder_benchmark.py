@@ -22,74 +22,29 @@ from utils import (
 
 xr.set_device_type("TT")
 
-MIN_STEPS = 16  # Minimum warmup steps
+WARMUP_STEPS = 3  # Number of warmup iterations before benchmarking
 
 MODULE_EXPORT_PATH = "modules"
-
-
-def apply_mean_pooling(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-    """Apply mean pooling over hidden states.
-
-    Args:
-        hidden_states: Token embeddings with shape [batch_size, seq_len, hidden_size]
-        attention_mask: Attention mask with shape [batch_size, seq_len]
-
-    Returns:
-        Sentence embeddings with shape [batch_size, hidden_size]
-    """
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
-    sentence_embeddings = torch.sum(hidden_states * input_mask_expanded, 1) / torch.clamp(
-        input_mask_expanded.sum(1), min=1e-9
-    )
-    return sentence_embeddings
-
-
-def apply_last_token_pooling(
-    hidden_states: torch.Tensor, attention_mask: torch.Tensor, left_padding: bool
-) -> torch.Tensor:
-    """Apply last token pooling over hidden states.
-
-    Args:
-        hidden_states: Token embeddings with shape [batch_size, seq_len, hidden_size]
-        attention_mask: Attention mask with shape [batch_size, seq_len]
-        left_padding: Whether left padding was used (all sequences end with non-padding tokens)
-
-    Returns:
-        Sentence embeddings with shape [batch_size, hidden_size]
-    """
-    if left_padding:
-        return hidden_states[:, -1]
-    sequence_lengths = attention_mask.sum(dim=1) - 1
-    batch_size = hidden_states.shape[0]
-    return hidden_states[torch.arange(batch_size, device=hidden_states.device), sequence_lengths]
 
 
 def encode_sentences(
     model,
     tokenized_inputs: dict,
     device,
-    read_hidden_state_fn,
-    use_mean_pooling: bool,
+    output_processor_fn,
 ) -> torch.Tensor:
-    """Encode sentences using the specified pooling strategy.
+    """Encode sentences using the provided output processor.
 
     Args:
         model: Encoder model instance
         tokenized_inputs: Pre-tokenized inputs dict with 'input_ids' and 'attention_mask'
         device: Device to run inference on
-        read_hidden_state_fn: Function to extract hidden states from model output
-        use_mean_pooling: If True, use mean pooling. If False, use last token pooling.
+        output_processor_fn: Function to process model outputs into embeddings.
+            Signature: fn(outputs, attention_mask) -> embeddings
 
     Returns:
         torch.Tensor: Sentence embeddings with shape [batch_size, hidden_size]
     """
-    # Check left padding before moving to device (needed for last token pooling)
-    left_padding = None
-    if not use_mean_pooling:
-        left_padding = (
-            tokenized_inputs["attention_mask"][:, -1].sum() == tokenized_inputs["attention_mask"].shape[0]
-        ).item()
-
     # Move to device
     input_ids = tokenized_inputs["input_ids"].to(device)
     attention_mask = tokenized_inputs["attention_mask"].to(device)
@@ -97,14 +52,8 @@ def encode_sentences(
     # Get model outputs
     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
 
-    # Extract hidden states using the provided function
-    hidden_states = read_hidden_state_fn(outputs)
-
-    # Apply pooling strategy
-    if use_mean_pooling:
-        return apply_mean_pooling(hidden_states, attention_mask)
-    else:
-        return apply_last_token_pooling(hidden_states, attention_mask, left_padding)
+    # Process outputs using the provided function
+    return output_processor_fn(outputs, attention_mask)
 
 
 MULTILINGUAL_SENTENCES = [
@@ -141,14 +90,9 @@ def setup_model(model_loader, data_format, model_variant=None) -> tuple[torch.nn
     elif data_format == "float32":
         dtype_override = torch.float32
 
-    if model_variant:
-        print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
-        model = model_loader.load_model(dtype_override=dtype_override)
-        model_info = model_loader.get_model_info(model_variant).name
-    else:
-        print(f"Loading model {model_loader.get_model_info().name}...")
-        model = model_loader.load_model(dtype_override=dtype_override)
-        model_info = model_loader.get_model_info().name
+    model_info = model_loader.get_model_info(variant=model_variant).name
+    print(f"Loading model {model_info}...")
+    model = model_loader.load_model(dtype_override=dtype_override)
 
     # Get tokenizer (required for encoder benchmarks)
     if not hasattr(model_loader, "tokenizer") or model_loader.tokenizer is None:
@@ -183,7 +127,7 @@ def construct_inputs(
     batch_size: int,
     input_sequence_length: int,
     loop_count: int,
-    use_mean_pooling: bool = True,
+    padding="max_length",
 ) -> list:
     """
     Construct and pre-tokenize inputs for the encoder model.
@@ -193,8 +137,7 @@ def construct_inputs(
         batch_size: Batch size
         input_sequence_length: Maximum sequence length
         loop_count: Number of loops
-        use_mean_pooling: If True, use max_length padding (for mean pooling).
-                         If False, use dynamic padding (for last token pooling).
+        padding: Padding strategy ("max_length" or True for dynamic padding)
 
     Returns:
         List of pre-tokenized input dictionaries for each iteration
@@ -203,25 +146,13 @@ def construct_inputs(
     for _ in range(loop_count):
         sentences = get_benchmark_sentences(batch_size)
 
-        # Tokenize based on pooling strategy
-        if use_mean_pooling:
-            # Mean pooling uses max_length padding
-            tokenized = tokenizer(
-                sentences,
-                padding="max_length",
-                truncation=True,
-                max_length=input_sequence_length,
-                return_tensors="pt",
-            )
-        else:
-            # Last token pooling uses dynamic padding
-            tokenized = tokenizer(
-                sentences,
-                padding=True,
-                truncation=True,
-                max_length=input_sequence_length,
-                return_tensors="pt",
-            )
+        tokenized = tokenizer(
+            sentences,
+            padding=padding,
+            truncation=True,
+            max_length=input_sequence_length,
+            return_tensors="pt",
+        )
 
         inputs.append(tokenized)
 
@@ -241,11 +172,12 @@ def benchmark_encoder_torch_xla(
     measure_cpu,
     experimental_compile,
     ttnn_perf_metrics_output_file,
+    output_processor_fn,
     required_pcc=0.97,
     enable_weight_bfp8_conversion=False,
     experimental_enable_permute_matmul_fusion=False,
-    read_hidden_state_fn=None,
-    use_mean_pooling=True,
+    padding_side="right",
+    padding="max_length",
 ):
     """
     Benchmark an encoder model using PyTorch and torch-xla.
@@ -267,13 +199,15 @@ def benchmark_encoder_torch_xla(
         measure_cpu: Whether to measure CPU baseline performance
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
+        output_processor_fn: Function to process model outputs into embeddings.
+            Signature: fn(outputs, attention_mask) -> embeddings.
+            This function should extract hidden states and apply the appropriate pooling.
         required_pcc: Minimum PCC threshold for output validation
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
         experimental_enable_permute_matmul_fusion: Whether to enable permute matmul fusion optimization
-        read_hidden_state_fn: Function to extract hidden states from model output.
-            Defaults to default_read_hidden_state_fn which handles most transformer models.
-        use_mean_pooling: If True, use mean pooling. If False, use last token pooling.
-            This also affects tokenization padding strategy.
+        padding_side: Tokenizer padding side ("right" or "left"). Use "left" for models
+            that use last-token pooling (e.g., decoder-based models like Qwen).
+        padding: Padding strategy ("max_length" or True for dynamic padding).
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -284,21 +218,24 @@ def benchmark_encoder_torch_xla(
     # Load model and tokenizer
     framework_model, model_info, tokenizer = setup_model(model_loader, data_format, model_variant)
 
+    # Set tokenizer padding side (use "left" for last-token pooling models like Qwen)
+    tokenizer.padding_side = padding_side
+
     # Construct and pre-tokenize inputs
     tokenized_inputs_list = construct_inputs(
         tokenizer=tokenizer,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
         loop_count=loop_count,
-        use_mean_pooling=use_mean_pooling,
+        padding=padding,
     )
 
     warmup_inputs_list = construct_inputs(
         tokenizer=tokenizer,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
-        loop_count=min(MIN_STEPS, loop_count),
-        use_mean_pooling=use_mean_pooling,
+        loop_count=min(WARMUP_STEPS, loop_count),
+        padding=padding,
     )
 
     # Measure CPU performance
@@ -311,7 +248,7 @@ def benchmark_encoder_torch_xla(
         num_runs = 10
         for _ in range(num_runs):
             with torch.no_grad():
-                _ = encode_sentences(framework_model, cpu_inputs, "cpu", read_hidden_state_fn, use_mean_pooling)
+                _ = encode_sentences(framework_model, cpu_inputs, "cpu", output_processor_fn)
         elapsed = time.time() - start_time
         cpu_fps = (num_runs * batch_size) / elapsed
         print(f"CPU samples per second: {cpu_fps:.2f}")
@@ -321,9 +258,7 @@ def benchmark_encoder_torch_xla(
     # Generate golden output for PCC calculation
     print("Generating golden output on CPU...")
     with torch.no_grad():
-        golden_output = encode_sentences(
-            framework_model, tokenized_inputs_list[0], "cpu", read_hidden_state_fn, use_mean_pooling
-        )
+        golden_output = encode_sentences(framework_model, tokenized_inputs_list[0], "cpu", output_processor_fn)
 
     # Set XLA compilation options
     options = {
@@ -350,9 +285,7 @@ def benchmark_encoder_torch_xla(
     warmup_count = len(warmup_inputs_list)
     with torch.no_grad():
         for i in range(warmup_count):
-            output = encode_sentences(
-                framework_model, warmup_inputs_list[i], device, read_hidden_state_fn, use_mean_pooling
-            )
+            output = encode_sentences(framework_model, warmup_inputs_list[i], device, output_processor_fn)
             _ = output.to("cpu")
     print("Warming up completed.")
 
@@ -365,9 +298,7 @@ def benchmark_encoder_torch_xla(
     with torch.no_grad():
         for i in range(loop_count):
             start_time = time.perf_counter_ns()
-            output = encode_sentences(
-                framework_model, tokenized_inputs_list[i], device, read_hidden_state_fn, use_mean_pooling
-            )
+            output = encode_sentences(framework_model, tokenized_inputs_list[i], device, output_processor_fn)
             outputs.append(output)
             end_time = time.perf_counter_ns()
 

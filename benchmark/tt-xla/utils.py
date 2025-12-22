@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import time
 import socket
-import os
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from collections.abc import Sequence
@@ -306,3 +304,44 @@ def create_benchmark_result(
             "chips": chips,
         },
     }
+
+
+# ============================================================================
+# Pooling functions for encoder models
+# ============================================================================
+
+
+def apply_mean_pooling(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    """Apply mean pooling over hidden states.
+
+    Args:
+        hidden_states: Token embeddings with shape [batch_size, seq_len, hidden_size]
+        attention_mask: Attention mask with shape [batch_size, seq_len]
+
+    Returns:
+        Sentence embeddings with shape [batch_size, hidden_size]
+    """
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
+    sentence_embeddings = torch.sum(hidden_states * input_mask_expanded, 1) / torch.clamp(
+        input_mask_expanded.sum(1), min=1e-9
+    )
+    return sentence_embeddings
+
+
+def apply_last_token_pooling(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    """Apply last token pooling over hidden states.
+
+    Args:
+        hidden_states: Token embeddings with shape [batch_size, seq_len, hidden_size]
+        attention_mask: Attention mask with shape [batch_size, seq_len]
+
+    Returns:
+        Sentence embeddings with shape [batch_size, hidden_size]
+    """
+    # Check if left padding was used (all sequences end with non-padding tokens)
+    left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0]).item()
+    if left_padding:
+        return hidden_states[:, -1]
+    sequence_lengths = attention_mask.sum(dim=1) - 1
+    batch_size = hidden_states.shape[0]
+    return hidden_states[torch.arange(batch_size, device=hidden_states.device), sequence_lengths]
