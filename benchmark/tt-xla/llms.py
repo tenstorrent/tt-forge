@@ -170,8 +170,7 @@ def test_llama_3_2_3b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# llmbox TP test
-def test_llama_3_1_8b(output_file):
+def test_llama_3_8b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -184,7 +183,7 @@ def test_llama_3_1_8b(output_file):
 
     shard_spec_fn = ModelLoader.load_shard_spec
 
-    variant = ModelVariant.LLAMA_3_1_8B
+    variant = ModelVariant.LLAMA_3_8B
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
@@ -300,7 +299,6 @@ def test_qwen_3_4b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# llmbox TP test
 def test_qwen_3_14b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -440,4 +438,12 @@ def test_ministral_8b(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINISTRAL_8B
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+# FAILED: Out of Memory: Not enough space to allocate 117440512 B DRAM buffer across 12 banks
+def test_llama_3_1_8b(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
