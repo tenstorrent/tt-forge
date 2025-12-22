@@ -106,7 +106,6 @@ jobs:
           demo_file=$(basename "${{ matrix.path }}")
           demo_folder=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
 
-          export PYTHONPATH=$(pwd) # Add repository root to PYTHONPATH so demos can find models in third_party folder
           cd $demo_folder
           pip install -r requirements.txt
           python $demo_file

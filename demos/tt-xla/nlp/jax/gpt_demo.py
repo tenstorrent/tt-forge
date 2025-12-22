@@ -9,6 +9,15 @@ import jax.numpy as jnp
 from jax.sharding import Mesh
 import numpy as np
 from flax import nnx
+# Add repository root to path to locate third_party modules
+from pathlib import Path
+repo_root = Path(__file__).resolve()
+while repo_root != repo_root.parent and not (repo_root / "third_party").exists():
+    repo_root = repo_root.parent
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
+
 from third_party.tt_forge_models.gpt2.causal_lm.jax import (
     ModelLoader as GPT2Loader,
     ModelVariant as GPT2Variant,

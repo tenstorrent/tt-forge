@@ -9,6 +9,15 @@ from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 from tt_torch.backend.backend import xla_backend
+# Add repository root to path to locate third_party modules
+from pathlib import Path
+repo_root = Path(__file__).resolve()
+while repo_root != repo_root.parent and not (repo_root / "third_party").exists():
+    repo_root = repo_root.parent
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
+
 from third_party.tt_forge_models.albert.masked_lm.pytorch import (
     ModelLoader as MaskedLMLoader,
     ModelVariant as MaskedLMVariant,
