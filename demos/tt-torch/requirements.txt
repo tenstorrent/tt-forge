@@ -1,0 +1,2 @@
+# No additional dependencies required for tt-torch demos
+# Dependencies are specified via pyreq in the models-matrix.json
