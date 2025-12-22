@@ -45,12 +45,13 @@ pytest -svv benchmark/tt-xla/vision_models.py::test_mobilenetv2
 pytest -svv benchmark/tt-xla/vision_models.py::test_efficientnet
 ```
 
-### Pre-commit Hooks
+After running benchmarks, look for the `Sample per second:` line in the output for performance results.
 
+### Performance Benchmark Workflow
+
+Run performance benchmarks in CI with optional filtering:
 ```bash
-pip install pre-commit
-pre-commit install
-pre-commit run --all-files
+gh workflow run "Performance benchmark" --ref <branch> -f test-filter="llama,phi,gemma" -f project-filter=tt-xla -f runs-on-filter=n150
 ```
 
 ### Device Reset
@@ -80,6 +81,8 @@ tt-smi --reset 0
 3. **TT-Metalium Layer**: TTNN (neural network ops) + TTMetal (low-level programming)
 
 4. **Hardware**: Wormhole (N150, N300), Blackhole (P150B)
+
+
 ## Coding Standards
 
 ### File Headers
@@ -98,6 +101,14 @@ All source files must include SPDX headers:
 **Branch naming:**
 ```
 <user>/<issue_number>[-optional-description]
+```
+
+### Pre-commit Hooks
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
 ```
 
 ## Documentation
