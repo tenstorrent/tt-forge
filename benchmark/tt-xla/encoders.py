@@ -4,9 +4,18 @@
 
 import json
 
+import torch
+import torch.nn as nn
+
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
 from utils import apply_mean_pooling, apply_last_token_pooling
+
+
+def apply_identity_pooling(outputs, attention_mask):
+    """No-op pooling for models that return pre-pooled embeddings."""
+    return outputs.last_hidden_state.squeeze(1)
+
 
 # Defaults for all encoder models
 DEFAULT_OPTIMIZATION_LEVEL = 1
@@ -169,4 +178,71 @@ def test_qwen3_embedding_8b(output_file):
         loop_count=32,
         padding_side="left",
         padding="max_length",
+    )
+
+
+# BGE-M3 Wrapper Classes
+# These adapt the BGE-M3 model interface to the standard encoder benchmark interface
+class BGEM3Output:
+    """Mimics standard encoder output structure for BGE-M3."""
+
+    def __init__(self, dense_vecs):
+        # dense_vecs is already [batch_size, hidden_size] - no pooling needed
+        # Add seq_len=1 dim for compatibility with pooling functions
+        self.last_hidden_state = dense_vecs.unsqueeze(1)
+
+
+class BGEM3EncoderWrapper(nn.Module):
+    """Wraps BGE-M3 model to match standard encoder interface."""
+
+    def __init__(self, bge_model):
+        super().__init__()
+        self.model = bge_model
+
+    def forward(self, input_ids, attention_mask):
+        text_input = {"input_ids": input_ids, "attention_mask": attention_mask}
+        outputs = self.model(
+            text_input=text_input,
+            return_dense=True,
+            return_sparse=False,
+            return_colbert_vecs=False,
+        )
+        return BGEM3Output(dense_vecs=outputs["dense_vecs"])
+
+
+class BGEM3EncoderLoader:
+    """Wrapper loader that adapts BGE-M3 to encoder benchmark interface."""
+
+    def __init__(self, variant=None):
+        from third_party.tt_forge_models.bge_m3.pytorch.loader import ModelLoader, ModelVariant
+
+        self._inner_loader = ModelLoader(variant=variant or ModelVariant.BASE)
+        self.tokenizer = None
+
+    def get_model_info(self, variant=None):
+        return self._inner_loader.get_model_info(variant=variant)
+
+    def load_model(self, dtype_override=None):
+        # Load the underlying BGE-M3 model (XLM-RoBERTa based)
+        bge_model = self._inner_loader.load_model(dtype_override=dtype_override)
+        # Get tokenizer from the loaded model
+        self.tokenizer = self._inner_loader.model.tokenizer
+
+        # Wrap it to adapt interface
+        wrapper = BGEM3EncoderWrapper(bge_model)
+        return wrapper
+
+
+def test_bge_m3_encode(output_file):
+    test_encoder(
+        ModelLoaderModule=BGEM3EncoderLoader,
+        variant=None,
+        output_file=output_file,
+        output_processor_fn=apply_identity_pooling,
+        batch_size=4,
+        input_sequence_length=512,
+        loop_count=32,
+        optimization_level=0,
+        enable_weight_bfp8_conversion=True,
+        data_format="float32",
     )
