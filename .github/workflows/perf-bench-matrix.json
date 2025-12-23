@@ -99,6 +99,12 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llama_3_1_8b"
       },
       {
+        "name": "llama_3_8b",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_8b",
+        "runs-on": "llmbox"
+      },
+      {
         "name": "microsoft_phi-1",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/llms.py::test_phi1"
