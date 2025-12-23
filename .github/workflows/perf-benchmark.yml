@@ -43,6 +43,11 @@ on:
           - n150
           - p150
         default: n150
+      perf_regression_check:
+        description: "Enable perf metrics regression testing"
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       docker-image:
@@ -75,8 +80,8 @@ on:
         description: "Run on shared runner"
         required: false
         type: boolean
-      on_uplift_pr:
-        description: "Performance benchmark triggered from an uplift PR"
+      perf_regression_check:
+        description: "Enable perf metrics regression testing"
         required: false
         type: boolean
       runs-on-filter:
@@ -166,7 +171,7 @@ jobs:
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
-      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
+      perf_regression_check: ${{ inputs.perf_regression_check || false }}
 
   run-p150-perf-benchmarks:
     needs: filter-tests
@@ -184,7 +189,7 @@ jobs:
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
-      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
+      perf_regression_check: ${{ inputs.perf_regression_check || false }}
 
   fail-notify:
     if: always()

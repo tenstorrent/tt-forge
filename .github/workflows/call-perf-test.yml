@@ -27,8 +27,8 @@ on:
         description: "Run on shared runner"
         required: false
         type: boolean
-      on_uplift_pr:
-        description: "Performance benchmark triggered from an uplift PR"
+      perf_regression_check:
+        description: "Enable perf metrics regression testing"
         required: false
         type: boolean
       docker-image:
@@ -372,7 +372,7 @@ jobs:
     # perf data present, not only at the last nigthly
     - name: Set perf query strings
       id: set-query-strings
-      if: inputs.on_uplift_pr
+      if: inputs.perf_regression_check
       shell: bash
       run: |
         echo "model_name=$(cat ${{ steps.strings.outputs.perf_report_json_file }} | jq -r '.model')" >> $GITHUB_OUTPUT
@@ -394,14 +394,14 @@ jobs:
 
     - name: Fetch previous perf results
       id: prev-perf
-      if: inputs.on_uplift_pr
+      if: inputs.perf_regression_check
       uses: ./.github/actions/superset-api
       with:
         query: 'benchmarks/last_measurement'
         query_params: '{"project":"tt-forge/${{ matrix.build.project }}","ml_model_name":"${{ steps.set-query-strings.outputs.model_name }}","batch_size":"${{ matrix.build.bs }}","precision":"${{ matrix.build.df }}","github_pipeline_id":"${{ steps.set-query-strings.outputs.last_nightly_workflow_id }}","arch":"${{ steps.set-query-strings.outputs.arch }}"}'
 
     - name: Check perf regression
-      if: inputs.on_uplift_pr
+      if: inputs.perf_regression_check
       shell: bash
       run: |
         if [[ "${{ steps.prev-perf.outputs.response }}" == "[]" ]]; then
