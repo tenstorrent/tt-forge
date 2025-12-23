@@ -306,7 +306,7 @@ jobs:
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
 
     - name: Run Device Perf
-      if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' }}
+      if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' && matrix.build.runs-on != 'llmbox' }}
       shell: bash
       run: |
         source ttrt-venv/bin/activate
@@ -338,7 +338,7 @@ jobs:
     - name: Upload Device Perf separately
       id: upload-device-perf
       uses: actions/upload-artifact@v4
-      if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' }}
+      if: ${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' && matrix.build.runs-on != 'llmbox' }}
       with:
         name: device-perf-${{ steps.fetch-job-id.outputs.job_id }}
         path: ${{ steps.strings.outputs.perf_report_path }}/device_perf/
@@ -350,7 +350,7 @@ jobs:
         PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_json_file }}"
         TTIR_URL="${{ !matrix.build.skip-ttir-dump && steps.upload-ttir-mlir.outputs.artifact-url || '' }}"
         TTNN_URL="${{ !matrix.build.skip-ttnn-dump && steps.upload-ttnn-mlir.outputs.artifact-url || '' }}"
-        DEVICE_PERF_URL="${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' && steps.upload-device-perf.outputs.artifact-url || '' }}"
+        DEVICE_PERF_URL="${{ !matrix.build.skip-device-perf && matrix.build.runs-on != 'p150' && matrix.build.runs-on != 'llmbox' && steps.upload-device-perf.outputs.artifact-url || '' }}"
         MLIR_SHA="${{ steps.find-run.outputs.mlir_sha || '' }}"
         JOB_ID_URL="https://github.com/tenstorrent/tt-forge/actions/runs/${{ github.run_id }}/job/${{ steps.fetch-job-id.outputs.job_id }}"
 
@@ -384,10 +384,12 @@ jobs:
         echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
         arch=""
-        if [[ "${{ matrix.build.runs-on-original }}" == "n150" ]]; then
+        if [[ "${{ matrix.build.runs-on }}" == "n150" ]]; then
           arch="wormhole"
-        elif [[ "${{ matrix.build.runs-on-original }}" == "p150" ]]; then
+        elif [[ "${{ matrix.build.runs-on }}" == "p150" ]]; then
           arch="blackhole"
+        elif [[ "${{ matrix.build.runs-on }}" == "llmbox" ]]; then
+          arch="wormhole_llmbox"
         fi
         echo "arch=$arch" >> $GITHUB_OUTPUT
 
