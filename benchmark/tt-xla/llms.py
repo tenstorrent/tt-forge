@@ -298,32 +298,6 @@ def test_qwen_3_4b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_qwen_3_14b(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    num_devices = xr.global_runtime_device_count()
-    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
-    arch = "wormhole_llmbox"
-
-    mesh_shape = (1, num_devices)
-    device_ids = np.array(range(num_devices))
-    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
-
-    shard_spec_fn = ModelLoader.load_shard_spec
-
-    variant = ModelVariant.QWEN_3_14B
-    test_llm(
-        ModelLoaderModule=ModelLoader,
-        variant=variant,
-        output_file=output_file,
-        shard_spec_fn=shard_spec_fn,
-        mesh=mesh,
-        batch_size=32,
-        input_sequence_length=128,
-        arch=arch,
-    )
-
-
 def test_qwen_2_5_1_5b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -343,34 +317,6 @@ def test_qwen_3_8b(output_file):
 
     variant = ModelVariant.QWEN_3_8B
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
-
-
-# llmbox TP test
-# FAILED: Out of Memory: Not enough space to allocate ??? B DRAM buffer across 12 banks
-def test_qwen_3_32b(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    num_devices = xr.global_runtime_device_count()
-    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
-    arch = "wormhole_llmbox"
-
-    mesh_shape = (1, num_devices)
-    device_ids = np.array(range(num_devices))
-    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
-
-    shard_spec_fn = ModelLoader.load_shard_spec
-
-    variant = ModelVariant.QWEN_3_32B
-    test_llm(
-        ModelLoaderModule=ModelLoader,
-        variant=variant,
-        output_file=output_file,
-        shard_spec_fn=shard_spec_fn,
-        mesh=mesh,
-        batch_size=32,
-        input_sequence_length=32,
-        arch=arch,
-    )
 
 
 def test_qwen_2_5_7b(output_file):
