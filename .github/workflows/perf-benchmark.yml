@@ -42,6 +42,7 @@ on:
           - All
           - n150
           - p150
+          - llmbox
         default: n150
       perf_regression_check:
         description: "Enable perf metrics regression testing"
@@ -100,8 +101,10 @@ jobs:
     outputs:
       matrix_n150: ${{ steps.set-perf-benchmarks.outputs.matrix_n150 }}
       matrix_p150: ${{ steps.set-perf-benchmarks.outputs.matrix_p150 }}
+      matrix_llmbox: ${{ steps.set-perf-benchmarks.outputs.matrix_llmbox }}
       matrix_n150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_n150_skip }}
       matrix_p150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_p150_skip }}
+      matrix_llmbox_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_llmbox_skip }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -124,9 +127,11 @@ jobs:
         matrix=$(echo $result | jq -r -c '.matrix')
         matrix_n150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("n150")))')
         matrix_p150=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("p150")))')
+        matrix_llmbox=$(echo $result | jq -r -c '.matrix | map(select(."runs-on" | contains("llmbox")))')
 
         matrix_n150_skip="false"
         matrix_p150_skip="false"
+        matrix_llmbox_skip="false"
 
         if [ "$matrix_n150" == "[]" ]; then
           matrix_n150_skip="true"
@@ -134,18 +139,29 @@ jobs:
         if [ "$matrix_p150" == "[]" ]; then
           matrix_p150_skip="true"
         fi
+        if [ "$matrix_llmbox" == "[]" ]; then
+          matrix_llmbox_skip="true"
+        fi
 
         if [ "${{ inputs.runs-on-filter }}" == "n150" ]; then
           matrix_p150_skip="true"
+          matrix_llmbox_skip="true"
         fi
         if [ "${{ inputs.runs-on-filter }}" == "p150" ]; then
           matrix_n150_skip="true"
+          matrix_llmbox_skip="true"
+        fi
+        if [ "${{ inputs.runs-on-filter }}" == "llmbox" ]; then
+          matrix_n150_skip="true"
+          matrix_p150_skip="true"
         fi
 
         echo "matrix_n150=$matrix_n150" >> $GITHUB_OUTPUT
         echo "matrix_p150=$matrix_p150" >> $GITHUB_OUTPUT
+        echo "matrix_llmbox=$matrix_llmbox" >> $GITHUB_OUTPUT
         echo "matrix_n150_skip=$matrix_n150_skip" >> $GITHUB_OUTPUT
         echo "matrix_p150_skip=$matrix_p150_skip" >> $GITHUB_OUTPUT
+        echo "matrix_llmbox_skip=$matrix_llmbox_skip" >> $GITHUB_OUTPUT
 
         # Set up the summary for the job
         echo "### Perf benchmarks inputs" >> $GITHUB_STEP_SUMMARY
@@ -191,11 +207,30 @@ jobs:
       ref: ${{ inputs.ref }}
       perf_regression_check: ${{ inputs.perf_regression_check || false }}
 
+  run-llmbox-perf-benchmarks:
+    needs: filter-tests
+    if: ${{ needs.filter-tests.outputs.matrix_llmbox_skip == 'false' }}
+    secrets: inherit
+    uses: ./.github/workflows/call-perf-test.yml
+    with:
+      matrix: ${{ needs.filter-tests.outputs.matrix_llmbox }}
+      docker-image: ${{ inputs.docker-image }}
+      project-filter: ${{ inputs.project-filter }}
+      project: ${{ inputs.project }}
+      update-wheel: ${{ inputs.update-wheel || false }}
+      sh-runner: ${{ inputs.sh-runner }}
+      parent_run_id: ${{ inputs.parent_run_id }}
+      run_id_source: ${{ inputs.run_id_source }}
+      run_id: ${{ inputs.run_id }}
+      ref: ${{ inputs.ref }}
+      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
+
   fail-notify:
     if: always()
     needs:
       - run-n150-perf-benchmarks
       - run-p150-perf-benchmarks
+      - run-llmbox-perf-benchmarks
     runs-on: ubuntu-latest
     outputs:
       is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
@@ -230,7 +265,7 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: run-n150-perf-benchmarks, run-p150-perf-benchmarks
+          allowed-skips: run-n150-perf-benchmarks, run-p150-perf-benchmarks, run-llmbox-perf-benchmarks
 
   fail-send-msg:
     if: always()
