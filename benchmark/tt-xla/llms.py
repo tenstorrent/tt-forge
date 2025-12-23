@@ -5,7 +5,6 @@
 import json
 import os
 from loguru import logger
-import pytest
 
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla

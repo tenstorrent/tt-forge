@@ -384,11 +384,11 @@ jobs:
         echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
         arch=""
-        if [[ "${{ matrix.build.runs-on }}" == "n150" ]]; then
+        if [[ "${{ matrix.build.runs-on-original }}" == "n150" ]]; then
           arch="wormhole"
-        elif [[ "${{ matrix.build.runs-on }}" == "p150" ]]; then
+        elif [[ "${{ matrix.build.runs-on-original }}" == "p150" ]]; then
           arch="blackhole"
-        elif [[ "${{ matrix.build.runs-on }}" == "llmbox" ]]; then
+        elif [[ "${{ matrix.build.runs-on-original }}" == "llmbox" ]]; then
           arch="wormhole_llmbox"
         fi
         echo "arch=$arch" >> $GITHUB_OUTPUT
