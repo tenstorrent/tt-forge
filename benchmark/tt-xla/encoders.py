@@ -3,18 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+from collections import defaultdict
 
+import numpy as np
 import torch
 import torch.nn as nn
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
 from utils import apply_mean_pooling, apply_last_token_pooling
-
-
-def apply_identity_pooling(outputs, attention_mask):
-    """No-op pooling for models that return pre-pooled embeddings."""
-    return outputs.last_hidden_state.squeeze(1)
 
 
 # Defaults for all encoder models
@@ -183,31 +180,103 @@ def test_qwen3_embedding_8b(output_file):
 
 # BGE-M3 Wrapper Classes
 # These adapt the BGE-M3 model interface to the standard encoder benchmark interface
-class BGEM3Output:
-    """Mimics standard encoder output structure for BGE-M3."""
+# Output processing logic adapted from bge_m3_encode.py
 
-    def __init__(self, dense_vecs):
+
+class BGEM3Output:
+    """Mimics standard encoder output structure for BGE-M3.
+
+    Holds all three BGE-M3 output types:
+    - dense_vecs: Standard dense embeddings [batch_size, hidden_size]
+    - lexical_weights: Token-level weights for BM25-style matching (list of dicts)
+    - colbert_vecs: Per-token embeddings for late interaction (list of arrays)
+    """
+
+    def __init__(self, dense_vecs, lexical_weights=None, colbert_vecs=None):
         # dense_vecs is already [batch_size, hidden_size] - no pooling needed
         # Add seq_len=1 dim for compatibility with pooling functions
         self.last_hidden_state = dense_vecs.unsqueeze(1)
+        self.dense_vecs = dense_vecs
+        self.lexical_weights = lexical_weights
+        self.colbert_vecs = colbert_vecs
 
 
 class BGEM3EncoderWrapper(nn.Module):
-    """Wraps BGE-M3 model to match standard encoder interface."""
+    """Wraps BGE-M3 model to match standard encoder interface.
 
-    def __init__(self, bge_model):
+    Processes all three output types (dense, sparse, colbert) using the same
+    logic as bge_m3_encode.py.
+    """
+
+    def __init__(self, bge_model, tokenizer):
         super().__init__()
         self.model = bge_model
+        self.tokenizer = tokenizer
+        # Cache special token IDs for sparse processing
+        self._unused_tokens = self._get_unused_tokens()
+
+    def _get_unused_tokens(self):
+        """Get set of special token IDs to filter from sparse outputs."""
+        unused_tokens = set()
+        for token_name in ["cls_token", "eos_token", "pad_token", "unk_token"]:
+            if token_name in self.tokenizer.special_tokens_map:
+                token_id = self.tokenizer.convert_tokens_to_ids(self.tokenizer.special_tokens_map[token_name])
+                unused_tokens.add(token_id)
+        return unused_tokens
+
+    def _process_token_weights(self, token_weights: np.ndarray, input_ids: list) -> dict:
+        """Process sparse vectors into token weight dictionary.
+
+        Filters out special tokens and keeps only positive weights.
+        Adapted from bge_m3_encode.py.
+        """
+        result = defaultdict(int)
+        for weight, token_id in zip(token_weights, input_ids):
+            if token_id not in self._unused_tokens and weight > 0:
+                token_id_str = str(token_id)
+                if weight > result[token_id_str]:
+                    result[token_id_str] = weight
+        return dict(result)
+
+    def _process_colbert_vecs(self, colbert_vecs: np.ndarray, attention_mask: list) -> np.ndarray:
+        """Trim colbert vectors to valid token count.
+
+        Removes padding and special tokens based on attention mask.
+        Adapted from bge_m3_encode.py.
+        """
+        tokens_num = np.sum(attention_mask)
+        return colbert_vecs[: tokens_num - 1]
 
     def forward(self, input_ids, attention_mask):
         text_input = {"input_ids": input_ids, "attention_mask": attention_mask}
         outputs = self.model(
             text_input=text_input,
             return_dense=True,
-            return_sparse=False,
-            return_colbert_vecs=False,
+            return_sparse=True,
+            return_colbert_vecs=True,
         )
-        return BGEM3Output(dense_vecs=outputs["dense_vecs"])
+
+        # Get dense embeddings
+        dense_vecs = outputs["dense_vecs"]
+
+        # Process sparse vectors into lexical weights
+        token_weights = outputs["sparse_vecs"].squeeze(-1)
+        input_ids_np = input_ids.cpu().detach().numpy().tolist()
+        token_weights_np = token_weights.cpu().detach().numpy()
+
+        lexical_weights = list(map(self._process_token_weights, token_weights_np, input_ids_np))
+
+        # Process colbert vectors
+        colbert_vecs_raw = outputs["colbert_vecs"].cpu().detach().numpy()
+        attention_mask_np = attention_mask.cpu().detach().numpy()
+
+        colbert_vecs = list(map(self._process_colbert_vecs, colbert_vecs_raw, attention_mask_np))
+
+        return BGEM3Output(
+            dense_vecs=dense_vecs,
+            lexical_weights=lexical_weights,
+            colbert_vecs=colbert_vecs,
+        )
 
 
 class BGEM3EncoderLoader:
@@ -228,9 +297,18 @@ class BGEM3EncoderLoader:
         # Get tokenizer from the loaded model
         self.tokenizer = self._inner_loader.model.tokenizer
 
-        # Wrap it to adapt interface
-        wrapper = BGEM3EncoderWrapper(bge_model)
+        # Wrap it with tokenizer for output processing
+        wrapper = BGEM3EncoderWrapper(bge_model, self.tokenizer)
         return wrapper
+
+
+def apply_identity_pooling(outputs, attention_mask):
+    """No-op pooling for models that return pre-pooled embeddings.
+
+    Returns dense_vecs for PCC verification. The lexical_weights and
+    colbert_vecs are also computed and available on the outputs object.
+    """
+    return outputs.last_hidden_state.squeeze(1)
 
 
 def test_bge_m3_encode(output_file):
