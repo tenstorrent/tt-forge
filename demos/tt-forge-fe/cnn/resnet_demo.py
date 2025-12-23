@@ -34,11 +34,11 @@ def run_resnet_demo_case(variant):
         # Load tiny dataset
         dataset = load_dataset("zh-plus/tiny-imagenet")
         images = random.sample(dataset["valid"]["image"], 10)
-        loader.post_process(
+        loader.output_postprocess(
             framework_model=model, compiled_model=compiled_model, inputs=images, dtype_override=torch.bfloat16
         )
     else:
-        loader.post_process(output)
+        loader.output_postprocess(output)
 
     print("=" * 60, flush=True)
 
