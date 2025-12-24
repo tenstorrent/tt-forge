@@ -25,6 +25,8 @@ from .utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    get_export_options,
+    MODULE_EXPORT_PATH,
 )
 
 os.environ["PJRT_DEVICE"] = "TT"
@@ -58,8 +60,6 @@ DATA_FORMAT = [
 
 # Loop count configurations
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
-
-MODULE_EXPORT_PATH = "modules"
 
 
 # Adapted from FlagEmbedding's BGEM3 encode function, removing overhead handled by TT backend
@@ -314,14 +314,18 @@ def test_bge_m3_encode_torch_xla(
     # Get golden output for PCC verification using bge_m3.encode()
     golden_output = bge_m3.encode(sentences, return_dense=True, return_sparse=True, return_colbert_vecs=True)
 
-    options = {
-        "optimization_level": OPTIMIZATION_LEVEL,
-        "export_path": MODULE_EXPORT_PATH,
-        "ttnn_perf_metrics_enabled": True,
-        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
-        "experimental_enable_weight_bfp8_conversion": ENABLE_WEIGHT_BFP8_CONVERSION,
-    }
-
+    # Get export options using shared utility
+    model_nickname = model_name.replace("/", "_").replace("-", "_").lower()
+    options = get_export_options(
+        model_name=model_nickname,
+        batch_size=batch_size,
+        optimization_level=OPTIMIZATION_LEVEL,
+        trace_enabled=TRACE_ENABLED,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+        enable_weight_bfp8_conversion=ENABLE_WEIGHT_BFP8_CONVERSION,
+    )
+    export_model_name = options["export_model_name"]
+    print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
     torch_xla.set_custom_compile_options(options)
 
     # Compile model with TT backend
