@@ -3,10 +3,62 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import socket
+import secrets
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from collections.abc import Sequence
 import torch
+
+
+# Default export path for generated MLIR files
+MODULE_EXPORT_PATH = "modules"
+
+
+def get_export_options(
+    model_name: str,
+    mode: str = "full",
+    batch_size: int = 1,
+    export_path: str = MODULE_EXPORT_PATH,
+    optimization_level: int = 0,
+    trace_enabled: bool = False,
+    ttnn_perf_metrics_output_file: str = "",
+    enable_weight_bfp8_conversion: bool = False,
+    **extra_options
+) -> Dict[str, Any]:
+    """
+    Generate standardized export options for any benchmark.
+    
+    Args:
+        model_name: Name of the model (e.g., "phi1_5", "resnet50")
+        mode: Export mode tag - "blk" (block), "lyr" (layer), or "full" (default)
+        batch_size: Batch size used for the model
+        export_path: Directory to export MLIR files to
+        optimization_level: XLA optimization level
+        trace_enabled: Whether tracing is enabled
+        ttnn_perf_metrics_output_file: Path for performance metrics output
+        enable_weight_bfp8_conversion: Whether to enable BFP8 weight conversion
+        **extra_options: Additional options to include
+    
+    Returns:
+        Dict with export options including a unique export_model_name
+    """
+    run_id = secrets.token_hex(2)  # 4 hex chars, e.g., "a7f3"
+    export_model_name = f"{mode}_{model_name}_bs{batch_size}_{run_id}"
+    
+    options = {
+        "optimization_level": optimization_level,
+        "export_path": export_path,
+        "export_model_name": export_model_name,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
+        "enable_trace": trace_enabled,
+        "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
+    }
+    
+    # Add any extra options
+    options.update(extra_options)
+    
+    return options
 
 
 def _compute_pcc_single(golden_flat: torch.Tensor, device_flat: torch.Tensor) -> float:
