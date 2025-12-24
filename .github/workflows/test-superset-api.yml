@@ -27,7 +27,7 @@ jobs:
         uses: ./.github/actions/superset-api
         with:
           query: 'benchmarks/last_measurement'
-          query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"pytorch_vovnet_ese_vovnet19b_dw.ra_in1k_cv_image_cls_timm","batch_size":"12","precision":"bfloat16","github_pipeline_id":"20451489242","arch":"wormhole"}'
+          query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"pytorch_vovnet_ese_vovnet19b_dw.ra_in1k_cv_image_cls_timm","batch_size":"8","precision":"bfloat16","github_pipeline_id":"20451489242","arch":"wormhole"}'
 
       - name: Display Response
         run: |
