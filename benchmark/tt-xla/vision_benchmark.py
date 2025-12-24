@@ -32,7 +32,7 @@ MIN_STEPS = 16
 MODULE_EXPORT_PATH = "modules"
 
 
-def setup_model(model_loader, model_variant=None, data_format="bfloat16") -> tuple[torch.nn.Module, str]:
+def setup_model(model_loader, model_variant=None, data_format="bfloat16"):
     """
     Instantiate model.
 
@@ -42,16 +42,16 @@ def setup_model(model_loader, model_variant=None, data_format="bfloat16") -> tup
         data_format: Data format (bfloat16 or float32).
 
     Returns:
-        Tuple of (model, model_info_name)
+        Tuple of (model, model_info)
     """
     if model_variant:
-        print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
+        model_info = model_loader.get_model_info(variant=model_variant)
+        print(f"Loading model {model_info.name}...")
         model = model_loader.load_model()
-        model_info = model_loader.get_model_info(model_variant).name
     else:
-        print(f"Loading model {model_loader.get_model_info().name}...")
+        model_info = model_loader.get_model_info()
+        print(f"Loading model {model_info.name}...")
         model = model_loader.load_model()
-        model_info = model_loader.get_model_info().name
 
     if data_format == "bfloat16":
         model = model.to(torch.bfloat16)
@@ -219,8 +219,8 @@ def benchmark_vision_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = f"{model_info}"
-    model_type = "Vision, Random Input Data"
+    full_model_name = model_info.name
+    model_type = str(model_info.task)
     dataset_name = "Random Data"
     num_layers = -1
 
@@ -267,7 +267,7 @@ def benchmark_vision_torch_xla(
         optimization_level=optimization_level,
         program_cache_enabled=True,
         trace_enabled=trace_enabled,
-        model_info=model_info,
+        model_info=model_info.name,
         torch_xla_enabled=True,
         backend="tt",
         channel_size=channel_size,
