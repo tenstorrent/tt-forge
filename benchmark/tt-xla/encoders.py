@@ -145,7 +145,7 @@ def test_encoder(
 
     if output_file:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = model_info_name_name
+        results["model_rawname"] = model_info_name
 
         aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results)
 
@@ -209,9 +209,9 @@ def test_qwen3_embedding_4b(output_file):
     input_sequence_length = 128
 
     # Load model with specified dtype
-    loader = ModelLoader(variant=variant)
     variant = ModelVariant.QWEN_3_EMBEDDING_4B
-    model_info_name = loader.get_model_info(variant=variant)
+    loader = ModelLoader(variant=variant)
+    model_info_name = loader.get_model_info(variant=variant).name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
 
