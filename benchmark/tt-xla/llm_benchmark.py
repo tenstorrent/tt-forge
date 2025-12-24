@@ -412,8 +412,9 @@ def benchmark_llm_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = model_loader.get_model_info(variant=model_variant).name
-    model_type = "text-generation"
+    model_info = model_loader.get_model_info(variant=model_variant)
+    full_model_name = model_info.name
+    model_type = str(model_info.task)
     dataset_name = "Random Data"
 
     # Extract number of layers from model config if available
