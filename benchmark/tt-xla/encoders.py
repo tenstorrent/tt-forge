@@ -3,15 +3,44 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from collections import defaultdict
+from typing import List
 
-import numpy as np
 import torch
-import torch.nn as nn
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
 from utils import apply_mean_pooling, apply_last_token_pooling
+
+
+DTYPE_MAP = {
+    "bfloat16": torch.bfloat16,
+    "float32": torch.float32,
+}
+
+MULTILINGUAL_SENTENCES = [
+    "The quick brown fox jumps over the lazy dog while the sun shines brightly.",
+    "Machine learning has revolutionized the way we process data.",
+    "Climate change represents one of the most pressing challenges of our time.",
+    "人工知能システムは医療分野にますます統合されています。",
+    "기후 변화는 우리 시대의 가장 시급한 과제입니다.",
+    "La inteligencia artificial está transformando muchas industrias.",
+    "L'apprentissage automatique change notre façon de comprendre les données.",
+    "Die künstliche Intelligenz entwickelt sich rasant weiter.",
+]
+
+
+def get_default_inputs(batch_size: int, sentences=MULTILINGUAL_SENTENCES) -> List[str]:
+    """
+    Get default benchmark sentences for encoder models.
+    Returns a list of sentences, repeating as needed to match batch_size.
+
+    Args:
+        batch_size: Number of sentences to return
+    """
+    inputs = []
+    for i in range(batch_size):
+        inputs.append(sentences[i % len(sentences)])
+    return inputs
 
 
 # Defaults for all encoder models
@@ -26,15 +55,15 @@ DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = False
 DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION = False
-DEFAULT_PADDING_SIDE = "right"
-DEFAULT_PADDING = "max_length"
 
 
 def test_encoder(
-    ModelLoaderModule,
-    variant,
+    model,
+    model_info_name,
     output_file,
+    load_inputs_fn,
     output_processor_fn,
+    preprocess_fn,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -46,34 +75,31 @@ def test_encoder(
     required_pcc=DEFAULT_REQUIRED_PCC,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
-    padding_side=DEFAULT_PADDING_SIDE,
-    padding=DEFAULT_PADDING,
 ):
     """Test encoder model with the given variant and optional configuration overrides.
 
     Args:
-        ModelLoaderModule: Model loader class
-        variant: Model variant identifier (can be None for models without variants)
+        model: Loaded model instance in eval mode
+        model_info_name: Model information for identification and reporting
         output_file: Path to save benchmark results as JSON
         output_processor_fn: Function to process model outputs into embeddings.
-            Signature: fn(outputs, attention_mask) -> embeddings
+            Signature: fn(outputs, model_inputs) -> embeddings
+        preprocess_fn: Function to preprocess inputs (tokenization + device placement).
+            Signature: fn(sentences, device) -> dict with model input kwargs
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
         batch_size: Batch size
         loop_count: Number of benchmark iterations
-        input_sequence_length: Input sequence length
+        input_sequence_length: Length of input sentence
         data_format: Data format
         measure_cpu: Measure CPU FPS
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion
-        padding_side: Tokenizer padding side ("right" or "left")
-        padding: Padding strategy ("max_length" or True for dynamic)
+        load_inputs_fn: Optional function to load raw inputs.
+            Signature: fn(batch_size) -> List[str]. Defaults to get_default_inputs.
     """
-    model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
-    model_info_name = model_loader.get_model_info(variant=variant).name
-
     # Sanitize model name for safe filesystem usage
     sanitized_model_name = sanitize_filename(model_info_name)
     ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
@@ -97,8 +123,8 @@ def test_encoder(
     )
 
     results = benchmark_encoder_torch_xla(
-        model_loader=model_loader,
-        model_variant=variant,
+        model=model,
+        model_info_name=model_info_name,
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
         training=False,
@@ -109,17 +135,17 @@ def test_encoder(
         measure_cpu=measure_cpu,
         experimental_compile=experimental_compile,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
         output_processor_fn=output_processor_fn,
         required_pcc=required_pcc,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
-        padding_side=padding_side,
-        padding=padding,
     )
 
     if output_file:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = model_info_name
+        results["model_rawname"] = model_info_name_name
 
         aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results)
 
@@ -130,13 +156,46 @@ def test_encoder(
 def test_bert(output_file):
     from third_party.tt_forge_models.bert.sentence_embedding_generation.pytorch.loader import ModelLoader
 
+    # Configuration
+    data_format = "bfloat16"
+    input_sequence_length = 384
+
+    # Load model with specified dtype
+    loader = ModelLoader()
+    model_info_name = loader.get_model_info().name
+    print(f"\nLoading model {model_info_name}...")
+    model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
+
+    # Create function for loading raw inputs
+    load_inputs_fn = get_default_inputs
+
+    # Create input preprocessing function
+    tokenizer = loader.tokenizer
+    tokenizer.padding_side = "right"
+    preprocess_fn = lambda sentences, device: {
+        k: v.to(device)
+        for k, v in tokenizer(
+            sentences,
+            padding="max_length",
+            truncation=True,
+            max_length=input_sequence_length,
+            return_tensors="pt",
+        ).items()
+    }
+
+    # Create output processing function
+    output_processor_fn = lambda out, inputs: apply_mean_pooling(out.last_hidden_state, inputs["attention_mask"])
+
     test_encoder(
-        ModelLoaderModule=ModelLoader,
-        variant=None,
+        model=model,
+        model_info_name=model_info_name,
         output_file=output_file,
-        output_processor_fn=lambda out, mask: apply_mean_pooling(out.last_hidden_state, mask),
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+        data_format=data_format,
         batch_size=8,
-        input_sequence_length=384,
+        input_sequence_length=input_sequence_length,
         loop_count=32,
         optimization_level=2,
     )
@@ -145,17 +204,48 @@ def test_bert(output_file):
 def test_qwen3_embedding_4b(output_file):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
+    # Configuration
+    data_format = "bfloat16"
+    input_sequence_length = 128
+
+    # Load model with specified dtype
+    loader = ModelLoader(variant=variant)
     variant = ModelVariant.QWEN_3_EMBEDDING_4B
+    model_info_name = loader.get_model_info(variant=variant)
+    print(f"\nLoading model {model_info_name}...")
+    model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
+
+    # Create function for loading raw inputs
+    load_inputs_fn = get_default_inputs
+
+    # Create input preprocessing function
+    tokenizer = loader.tokenizer
+    tokenizer.padding_side = "left"
+    preprocess_fn = lambda sentences, device: {
+        k: v.to(device)
+        for k, v in tokenizer(
+            sentences,
+            padding="max_length",
+            truncation=True,
+            max_length=input_sequence_length,
+            return_tensors="pt",
+        ).items()
+    }
+
+    # Create output processing function
+    output_processor_fn = lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"])
+
     test_encoder(
-        ModelLoaderModule=ModelLoader,
-        variant=variant,
+        model=model,
+        model_info_name=model_info_name,
         output_file=output_file,
-        output_processor_fn=lambda out, mask: apply_last_token_pooling(out.last_hidden_state, mask),
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+        data_format=data_format,
         batch_size=32,
-        input_sequence_length=128,
+        input_sequence_length=input_sequence_length,
         loop_count=32,
-        padding_side="left",
-        padding="max_length",
         optimization_level=0,
     )
 
@@ -164,163 +254,191 @@ def test_qwen3_embedding_4b(output_file):
 def test_qwen3_embedding_8b(output_file):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
+    # Configuration
+    data_format = "bfloat16"
+    input_sequence_length = 128
+
+    # Load model with specified dtype
+    loader = ModelLoader(variant=variant)
     variant = ModelVariant.QWEN_3_EMBEDDING_8B
+    model_info_name = loader.get_model_info(variant=variant)
+    print(f"\nLoading model {model_info_name}...")
+    model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
+
+    # Create function for loading raw inputs
+    load_inputs_fn = get_default_inputs
+
+    # Create input preprocessing function
+    tokenizer = loader.tokenizer
+    tokenizer.padding_side = "left"
+    preprocess_fn = lambda sentences, device: {
+        k: v.to(device)
+        for k, v in tokenizer(
+            sentences,
+            padding="max_length",
+            truncation=True,
+            max_length=input_sequence_length,
+            return_tensors="pt",
+        ).items()
+    }
+
+    # Create output processing function
+    output_processor_fn = lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"])
+
     test_encoder(
-        ModelLoaderModule=ModelLoader,
-        variant=variant,
+        model=model,
+        model_info_name=model_info_name,
         output_file=output_file,
-        output_processor_fn=lambda out, mask: apply_last_token_pooling(out.last_hidden_state, mask),
+        load_inputs_fn=load_inputs_fn,
+        output_processor_fn=output_processor_fn,
+        preprocess_fn=preprocess_fn,
+        data_format=data_format,
         batch_size=1,
-        input_sequence_length=128,
+        input_sequence_length=input_sequence_length,
         loop_count=32,
-        padding_side="left",
-        padding="max_length",
     )
 
 
-# BGE-M3 Wrapper Classes
-# These adapt the BGE-M3 model interface to the standard encoder benchmark interface
-# Output processing logic adapted from bge_m3_encode.py
+def test_bge_m3(output_file):
+    """Test BGE-M3 encoder model with custom postprocessing.
 
-
-class BGEM3Output:
-    """Mimics standard encoder output structure for BGE-M3.
-
-    Holds all three BGE-M3 output types:
-    - dense_vecs: Standard dense embeddings [batch_size, hidden_size]
-    - lexical_weights: Token-level weights for BM25-style matching (list of dicts)
-    - colbert_vecs: Per-token embeddings for late interaction (list of arrays)
+    BGE-M3 has a unique architecture that produces dense, sparse, and colbert embeddings.
+    This test includes all the necessary postprocessing but returns only dense_vecs for PCC calculation.
     """
+    import torch
+    import numpy as np
+    from collections import defaultdict
+    from third_party.tt_forge_models.bge_m3.encode.pytorch.loader import ModelLoader
+    from FlagEmbedding import BGEM3FlagModel
 
-    def __init__(self, dense_vecs, lexical_weights=None, colbert_vecs=None):
-        # dense_vecs is already [batch_size, hidden_size] - no pooling needed
-        # Add seq_len=1 dim for compatibility with pooling functions
-        self.last_hidden_state = dense_vecs.unsqueeze(1)
-        self.dense_vecs = dense_vecs
-        self.lexical_weights = lexical_weights
-        self.colbert_vecs = colbert_vecs
+    # Configuration
+    data_format = "float32"
+    input_sequence_length = 512
 
+    # Load bge-m3 model
+    loader = ModelLoader()
+    model_info_name = loader.get_model_info().name
+    print(f"\nLoading model {model_info_name}...")
+    model = BGEM3FlagModel("BAAI/bge-m3").model
+    if data_format == "bfloat16":
+        model = model.to(torch.bfloat16)
+    model = model.eval()
 
-class BGEM3EncoderWrapper(nn.Module):
-    """Wraps BGE-M3 model to match standard encoder interface.
+    # Create function for loading raw inputs
+    load_inputs_fn = get_default_inputs
 
-    Processes all three output types (dense, sparse, colbert) using the same
-    logic as bge_m3_encode.py.
-    """
+    # Create bge-m3 preprocessing function
+    tokenizer = model.tokenizer
 
-    def __init__(self, bge_model, tokenizer):
-        super().__init__()
-        self.model = bge_model
-        self.tokenizer = tokenizer
-        # Cache special token IDs for sparse processing
-        self._unused_tokens = self._get_unused_tokens()
-
-    def _get_unused_tokens(self):
-        """Get set of special token IDs to filter from sparse outputs."""
-        unused_tokens = set()
-        for token_name in ["cls_token", "eos_token", "pad_token", "unk_token"]:
-            if token_name in self.tokenizer.special_tokens_map:
-                token_id = self.tokenizer.convert_tokens_to_ids(self.tokenizer.special_tokens_map[token_name])
-                unused_tokens.add(token_id)
-        return unused_tokens
-
-    def _process_token_weights(self, token_weights: np.ndarray, input_ids: list) -> dict:
-        """Process sparse vectors into token weight dictionary.
-
-        Filters out special tokens and keeps only positive weights.
-        Adapted from bge_m3_encode.py.
-        """
-        result = defaultdict(int)
-        for weight, token_id in zip(token_weights, input_ids):
-            if token_id not in self._unused_tokens and weight > 0:
-                token_id_str = str(token_id)
-                if weight > result[token_id_str]:
-                    result[token_id_str] = weight
-        return dict(result)
-
-    def _process_colbert_vecs(self, colbert_vecs: np.ndarray, attention_mask: list) -> np.ndarray:
-        """Trim colbert vectors to valid token count.
-
-        Removes padding and special tokens based on attention mask.
-        Adapted from bge_m3_encode.py.
-        """
-        tokens_num = np.sum(attention_mask)
-        return colbert_vecs[: tokens_num - 1]
-
-    def forward(self, input_ids, attention_mask):
-        text_input = {"input_ids": input_ids, "attention_mask": attention_mask}
-        outputs = self.model(
-            text_input=text_input,
-            return_dense=True,
-            return_sparse=True,
-            return_colbert_vecs=True,
+    def bge_m3_preprocess(sentences, device):
+        """Tokenize sentences for BGE-M3 and prepare model inputs."""
+        tokenized = tokenizer(
+            sentences,
+            padding="max_length",
+            truncation=True,
+            max_length=input_sequence_length,
+            return_tensors="pt",
         )
+        # Move to device, convert to dtype, and wrap in text_input dict as expected by BGE-M3
+        text_input = {k: v.to(device) for k, v in tokenized.items()}
+        return {
+            "text_input": text_input,
+            "return_dense": True,
+            "return_sparse": True,
+            "return_colbert_vecs": True,
+            "return_sparse_embedding": False,
+        }
 
-        # Get dense embeddings
-        dense_vecs = outputs["dense_vecs"]
+    # Create bge-m3 output processing function
+    def bge_m3_output_processor(outputs, model_inputs):
+        """Process BGE-M3 outputs with full postprocessing.
 
-        # Process sparse vectors into lexical weights
+        This includes all postprocessing from bge_m3_encode.py:
+        - Length-based sorting and unsorting
+        - Processing dense vectors (normalization already done in model)
+        - Processing sparse vectors (token weights)
+        - Processing colbert vectors
+
+        Returns only dense_vecs for PCC calculation.
+        """
+        # Extract input_ids and attention_mask from model_inputs
+        text_input = model_inputs["text_input"]
+        input_ids = text_input["input_ids"]
+        attention_mask = text_input["attention_mask"]
+
+        def _process_token_weights(token_weights: np.ndarray, input_ids_item: list):
+            """Process token weights for sparse embeddings."""
+            result = defaultdict(int)
+            unused_tokens = set()
+            for _token in ["cls_token", "eos_token", "pad_token", "unk_token"]:
+                if _token in tokenizer.special_tokens_map:
+                    _token_id = tokenizer.convert_tokens_to_ids(tokenizer.special_tokens_map[_token])
+                    unused_tokens.add(_token_id)
+            for w, idx in zip(token_weights, input_ids_item):
+                if idx not in unused_tokens and w > 0:
+                    idx = str(idx)
+                    if w > result[idx]:
+                        result[idx] = w
+            return result
+
+        def _process_colbert_vecs(colbert_vecs: np.ndarray, attention_mask_item: list):
+            """Process colbert vectors."""
+            tokens_num = np.sum(attention_mask_item)
+            return colbert_vecs[: tokens_num - 1]
+
+        # Initialize output containers (same as bge_m3_encode.py)
+        all_dense_embeddings, all_lexical_weights, all_colbert_vecs = [], [], []
+
+        # Get batch size and create length-based sorting indices (same as bge_m3_encode.py)
+        batch_size = input_ids.shape[0]
+        length_sorted_idx = np.argsort([-len(input_ids[i]) for i in range(batch_size)])
+
+        # Process dense embeddings (same as bge_m3_encode.py)
+        all_dense_embeddings.append(outputs["dense_vecs"].cpu().detach())
+        all_dense_embeddings = np.concatenate(all_dense_embeddings, axis=0)
+        all_dense_embeddings = all_dense_embeddings[np.argsort(length_sorted_idx)]
+
+        # Process sparse embeddings (lexical weights) (same as bge_m3_encode.py)
         token_weights = outputs["sparse_vecs"].squeeze(-1)
-        input_ids_np = input_ids.cpu().detach().numpy().tolist()
-        token_weights_np = token_weights.cpu().detach().numpy()
-
-        lexical_weights = list(map(self._process_token_weights, token_weights_np, input_ids_np))
-
-        # Process colbert vectors
-        colbert_vecs_raw = outputs["colbert_vecs"].cpu().detach().numpy()
-        attention_mask_np = attention_mask.cpu().detach().numpy()
-
-        colbert_vecs = list(map(self._process_colbert_vecs, colbert_vecs_raw, attention_mask_np))
-
-        return BGEM3Output(
-            dense_vecs=dense_vecs,
-            lexical_weights=lexical_weights,
-            colbert_vecs=colbert_vecs,
+        all_lexical_weights.extend(
+            list(
+                map(
+                    _process_token_weights,
+                    token_weights.cpu().detach().numpy(),
+                    input_ids.cpu().detach().numpy().tolist(),
+                )
+            )
         )
+        all_lexical_weights = [all_lexical_weights[i] for i in np.argsort(length_sorted_idx)]
 
+        # Process colbert vectors (same as bge_m3_encode.py)
+        all_colbert_vecs.extend(
+            list(
+                map(
+                    _process_colbert_vecs,
+                    outputs["colbert_vecs"].cpu().detach().numpy(),
+                    attention_mask.cpu().detach().numpy(),
+                )
+            )
+        )
+        all_colbert_vecs = [all_colbert_vecs[i] for i in np.argsort(length_sorted_idx)]
 
-class BGEM3EncoderLoader:
-    """Wrapper loader that adapts BGE-M3 to encoder benchmark interface."""
+        # Return only dense_vecs for PCC calculation
+        # The other embeddings (lexical_weights, colbert_vecs) were processed
+        # to ensure their computation is included in the benchmark timing
+        return torch.tensor(all_dense_embeddings)
 
-    def __init__(self, variant=None):
-        from third_party.tt_forge_models.bge_m3.pytorch.loader import ModelLoader, ModelVariant
-
-        self._inner_loader = ModelLoader(variant=variant or ModelVariant.BASE)
-        self.tokenizer = None
-
-    def get_model_info(self, variant=None):
-        return self._inner_loader.get_model_info(variant=variant)
-
-    def load_model(self, dtype_override=None):
-        # Load the underlying BGE-M3 model (XLM-RoBERTa based)
-        bge_model = self._inner_loader.load_model(dtype_override=dtype_override)
-        # Get tokenizer from the loaded model
-        self.tokenizer = self._inner_loader.model.tokenizer
-
-        # Wrap it with tokenizer for output processing
-        wrapper = BGEM3EncoderWrapper(bge_model, self.tokenizer)
-        return wrapper
-
-
-def apply_identity_pooling(outputs, attention_mask):
-    """No-op pooling for models that return pre-pooled embeddings.
-
-    Returns dense_vecs for PCC verification. The lexical_weights and
-    colbert_vecs are also computed and available on the outputs object.
-    """
-    return outputs.last_hidden_state.squeeze(1)
-
-
-def test_bge_m3_encode(output_file):
     test_encoder(
-        ModelLoaderModule=BGEM3EncoderLoader,
-        variant=None,
+        model=model,
+        model_info_name=model_info_name,
         output_file=output_file,
-        output_processor_fn=apply_identity_pooling,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=bge_m3_preprocess,
+        output_processor_fn=bge_m3_output_processor,
+        data_format=data_format,
         batch_size=4,
-        input_sequence_length=512,
+        input_sequence_length=input_sequence_length,
         loop_count=32,
         optimization_level=0,
-        enable_weight_bfp8_conversion=True,
-        data_format="float32",
+        required_pcc=0.97,
     )
