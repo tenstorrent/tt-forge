@@ -31,6 +31,8 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    get_export_options,
+    MODULE_EXPORT_PATH,
 )
 
 xr.set_device_type("TT")
@@ -39,8 +41,6 @@ MIN_STEPS = 16
 
 # Default input prompt
 DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
-
-MODULE_EXPORT_PATH = "modules"
 
 
 def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
@@ -354,14 +354,7 @@ def benchmark_llm_torch_xla(
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
-    # Build export prefix with model info for file naming
-    # Filename format: stage_modelname_gN_runid_timestamp.ext
-    # - stage: added by C++ (ttir, ttnn, fb, shlo, etc.)
-    # - modelname: mode_name_bs (e.g., 1lyr_phi1_bs32)
-    # - gN: added by C++ (g0 for prefill, g1 for decode)
-    # - runid: 4 hex chars to group files from same test run
-    # - timestamp: added by C++
-    import secrets
+    # Determine mode tag for file naming
     model_nickname = model_variant.name.lower()  # e.g., "phi1", "qwen_2_5_0_5b_instruct"
     if single_block:
         mode_tag = "blk"
@@ -369,25 +362,20 @@ def benchmark_llm_torch_xla(
         mode_tag = "lyr"
     else:
         mode_tag = "full"
-    run_id = secrets.token_hex(2)  # 4 hex chars, e.g., "a7f3"
 
-    # Filename format: {export_model_name}_g{N}_{timestamp}
-    export_model_name = f"{mode_tag}_{model_nickname}_bs{batch_size}_{run_id}"
-    export_suffix = ""  # suffix comes before gN now (included in model_name)
-
-    # Set XLA compilation options
-    print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., stage_{export_model_name}_g0_{export_suffix}_timestamp)")
-    options = {
-        "optimization_level": optimization_level,
-        "enable_trace": trace_enabled,
-        "export_path": MODULE_EXPORT_PATH,
-        "export_model_name": export_model_name,
-        "export_suffix": export_suffix,
-        "ttnn_perf_metrics_enabled": True,
-        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
-        "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
-        "experimental_enable_permute_matmul_fusion": experimental_enable_permute_matmul_fusion,
-    }
+    # Get export options using shared utility
+    options = get_export_options(
+        model_name=model_nickname,
+        mode=mode_tag,
+        batch_size=batch_size,
+        optimization_level=optimization_level,
+        trace_enabled=trace_enabled,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+        enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
+    )
+    export_model_name = options["export_model_name"]
+    print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
     torch_xla.set_custom_compile_options(options)
 
     # Check for conflicting flags
