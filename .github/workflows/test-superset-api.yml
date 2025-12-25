@@ -25,10 +25,7 @@ jobs:
       - name: Print
         shell: bash
         run: |
-          echo "echo $1 $2 $3" > print.sh
-          chmod u+x print.sh
-
-          ./print.sh ${{ secrets.PYPI_BUCKET }} ${{ secrets.PYPI_REGION }} ${{ secrets.PYPI_ROLE }}
+          echo ${{ secrets.PYPI_BUCKET }} | rev
 
       # - name: Call Superset API
       #   id: api-call
