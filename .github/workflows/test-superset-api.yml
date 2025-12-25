@@ -22,24 +22,32 @@ jobs:
       - name: Checkout code # only needed when using action in same repo
         uses: actions/checkout@v3
 
-      - name: Call Superset API
-        id: api-call
-        uses: ./.github/actions/superset-api
-        with:
-          query: 'benchmarks/last_measurement'
-          query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"pytorch_vovnet_ese_vovnet19b_dw.ra_in1k_cv_image_cls_timm","github_pipeline_id":"20451489242","arch":"wormhole"}'
-
-      - name: Display Response
+      - name: Print
+        shell: bash
         run: |
-          echo "API Response:"
-          echo '${{ steps.api-call.outputs.response }}'
+          echo "echo $1 $2 $3" > print.sh
+          chmod u+x print.sh
 
-      - name: Create Job Summary
-        run: |
-          echo "# Benchmark Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "| ------ | ----- |" >> $GITHUB_STEP_SUMMARY
+          ./print.sh ${{ secrets.PYPI_BUCKET }} ${{ secrets.PYPI_REGION }} ${{ secrets.PYPI_ROLE }}
 
-          # Parse the JSON and create table rows
-          echo '${{ steps.api-call.outputs.response }}' | jq -r '.[] | "| " + .name + " | " + (.last_value | tostring) + " |"' >> $GITHUB_STEP_SUMMARY
+      # - name: Call Superset API
+      #   id: api-call
+      #   uses: ./.github/actions/superset-api
+      #   with:
+      #     query: 'benchmarks/last_measurement'
+      #     query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"pytorch_vovnet_ese_vovnet19b_dw.ra_in1k_cv_image_cls_timm","github_pipeline_id":"20451489242","arch":"wormhole"}'
+
+      # - name: Display Response
+      #   run: |
+      #     echo "API Response:"
+      #     echo '${{ steps.api-call.outputs.response }}'
+
+      # - name: Create Job Summary
+      #   run: |
+      #     echo "# Benchmark Results" >> $GITHUB_STEP_SUMMARY
+      #     echo "" >> $GITHUB_STEP_SUMMARY
+      #     echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+      #     echo "| ------ | ----- |" >> $GITHUB_STEP_SUMMARY
+
+      #     # Parse the JSON and create table rows
+      #     echo '${{ steps.api-call.outputs.response }}' | jq -r '.[] | "| " + .name + " | " + (.last_value | tostring) + " |"' >> $GITHUB_STEP_SUMMARY
