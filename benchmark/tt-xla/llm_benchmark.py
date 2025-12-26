@@ -137,7 +137,7 @@ def generate_and_benchmark(
     tokenizer: PreTrainedTokenizer,
     device: torch.device,
     max_tokens_to_generate: int,
-    read_logits_fn: callable,
+    output_processor_fn: callable,
     verbose: bool = True,
 ):
     """
@@ -149,6 +149,7 @@ def generate_and_benchmark(
         tokenizer: Tokenizer instance
         device: Device
         max_tokens_to_generate: Maximum number of tokens to generate
+        output_processor_fn: Function to process model outputs
         verbose: Whether to print generation output
 
     Returns:
@@ -164,7 +165,7 @@ def generate_and_benchmark(
             # Run forward pass
             output = model(**input_args)
 
-            logits = read_logits_fn(output).to("cpu")
+            logits = output_processor_fn(output).to("cpu")
             output_logits.append(logits)
             next_token_ids = logits[:, -1].argmax(dim=-1)
             output_text = [tokenizer.decode(token_id) for token_id in next_token_ids]
@@ -235,7 +236,9 @@ def benchmark_llm_torch_xla(
     enable_weight_bfp8_conversion,
     experimental_enable_permute_matmul_fusion,
     ttnn_perf_metrics_output_file,
-    read_logits_fn,
+    load_inputs_fn,
+    preprocess_fn,
+    output_processor_fn,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -260,7 +263,9 @@ def benchmark_llm_torch_xla(
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
         experimental_enable_permute_matmul_fusion: Whether to enable permute matmul fusion optimization
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
-        read_logits_fn: Callback function to extract logits from model output
+        load_inputs_fn: Function to load raw inputs. Signature: fn(batch_size) -> List[str]
+        preprocess_fn: Function to preprocess inputs (tokenization + device placement). Signature: fn(prompts, device) -> dict
+        output_processor_fn: Function to process model outputs. Signature: fn(output) -> logits
 
     Returns:
         Benchmark result containing token generation performance metrics and model information
@@ -306,8 +311,11 @@ def benchmark_llm_torch_xla(
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
-    # Construct inputs, including static cache
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
+    # Load raw prompts
+    prompts = load_inputs_fn(batch_size)
+
+    # Get input args on CPU for golden output
+    input_args = preprocess_fn(prompts, torch.device("cpu"))
 
     # Limit maximum generation count to fit within preallocated static cache
     max_tokens_to_generate: int = max_cache_len - input_args["input_ids"].shape[1]
@@ -319,7 +327,7 @@ def benchmark_llm_torch_xla(
         tokenizer,
         torch.device("cpu"),
         1,
-        read_logits_fn=read_logits_fn,
+        output_processor_fn=output_processor_fn,
         verbose=False,
     )
     # Only one output makes sense to compare.
@@ -330,14 +338,15 @@ def benchmark_llm_torch_xla(
         # Measure CPU performance by taking the best of each token over 256 iterations
         min_time_ns = sys.maxsize
         for i in range(MIN_STEPS):
-            input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
+            prompts = load_inputs_fn(batch_size)
+            input_args = preprocess_fn(prompts, torch.device("cpu"))
             _, iteration_times = generate_and_benchmark(
                 model,
                 input_args,
                 tokenizer,
                 torch.device("cpu"),
                 max_tokens_to_generate,
-                read_logits_fn=read_logits_fn,
+                output_processor_fn=output_processor_fn,
                 verbose=False,
             )
             min_time_ns = min(min_time_ns, *iteration_times)
@@ -348,8 +357,8 @@ def benchmark_llm_torch_xla(
         cpu_tokens_per_second = -1.0
 
     # Transfer model and inputs to device
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
-    input_args = transfer_to_device(input_args, device)
+    prompts = load_inputs_fn(batch_size)
+    input_args = preprocess_fn(prompts, device)
     model = model.to(device, dtype=torch.bfloat16)
 
     # Set XLA compilation options
@@ -377,13 +386,13 @@ def benchmark_llm_torch_xla(
         tokenizer,
         device,
         warmup_tokens,
-        read_logits_fn=read_logits_fn,
+        output_processor_fn=output_processor_fn,
         verbose=False,
     )
 
     # Reconstruct inputs for the actual benchmark run
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
-    input_args = transfer_to_device(input_args, device)
+    prompts = load_inputs_fn(batch_size)
+    input_args = preprocess_fn(prompts, device)
 
     # Run benchmark once
     print(f"\nStarting benchmark...")
@@ -393,7 +402,7 @@ def benchmark_llm_torch_xla(
         tokenizer,
         device,
         max_tokens_to_generate,
-        read_logits_fn=read_logits_fn,
+        output_processor_fn=output_processor_fn,
         verbose=True,
     )
 

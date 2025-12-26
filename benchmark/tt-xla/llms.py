@@ -6,8 +6,57 @@ import json
 import os
 from loguru import logger
 
+import torch
+from transformers.cache_utils import StaticCache
+
 from benchmark.utils import sanitize_filename
-from llm_benchmark import benchmark_llm_torch_xla
+from llm_benchmark import benchmark_llm_torch_xla, transfer_to_device
+
+# Default input prompt
+DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
+
+
+def create_standard_llm_functions(model, tokenizer, max_cache_len, output_format="logits"):
+    """Helper to create standard LLM functions for models with typical output formats.
+
+    Args:
+        model: The loaded model instance
+        tokenizer: The tokenizer instance
+        max_cache_len: Maximum cache length for static cache
+        output_format: Either "logits" for output.logits or "tuple" for output[0]
+
+    Returns:
+        Tuple of (load_inputs_fn, preprocess_fn, output_processor_fn)
+    """
+    load_inputs_fn = lambda batch_size: [DEFAULT_INPUT_PROMPT] * batch_size
+
+    def preprocess_fn(prompts, device):
+        inputs = tokenizer(prompts, return_tensors="pt", max_length=max_cache_len, truncation=True, padding=True)
+        static_cache = StaticCache(
+            config=model.config,
+            max_batch_size=len(prompts),
+            max_cache_len=max_cache_len,
+            device="cpu",
+            dtype=torch.bfloat16,
+        )
+        cache_position = torch.arange(0, inputs.input_ids.shape[1])
+        input_args = {
+            "input_ids": inputs.input_ids,
+            "past_key_values": static_cache,
+            "cache_position": cache_position,
+            "use_cache": True,
+        }
+        return transfer_to_device(input_args, device)
+
+    if output_format == "logits":
+        output_processor_fn = lambda output: output.logits
+    elif output_format == "tuple":
+        output_processor_fn = lambda output: output[0]
+    else:
+        raise ValueError(f"Unknown output_format: {output_format}")
+
+    return load_inputs_fn, preprocess_fn, output_processor_fn
+
 
 # Defaults for all llms
 DEFAULT_OPTIMIZATION_LEVEL = 1
@@ -32,6 +81,9 @@ def test_llm(
     ModelLoaderModule,
     variant,
     output_file,
+    load_inputs_fn,
+    preprocess_fn,
+    output_processor_fn,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -43,13 +95,16 @@ def test_llm(
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
-    read_logits_fn=default_read_logits_fn,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
     Args:
+        ModelLoaderModule: Model loader class
         variant: Model variant identifier
         output_file: Path to save benchmark results as JSON
+        load_inputs_fn: Function to load raw inputs. Signature: fn(batch_size) -> List[str]
+        preprocess_fn: Function to preprocess inputs. Signature: fn(prompts, device) -> dict
+        output_processor_fn: Function to process model outputs. Signature: fn(output) -> logits
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
         batch_size: Batch size
@@ -61,7 +116,6 @@ def test_llm(
         experimental_compile: Enable experimental compile
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
-        read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant)
     # Sanitize variant name for safe filesystem usage
@@ -102,7 +156,9 @@ def test_llm(
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
-        read_logits_fn=read_logits_fn,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
     )
 
     if output_file:
@@ -149,26 +205,69 @@ def test_llama_3_2_1b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_llama_3_2_3b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_gemma_1_1_2b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_1_1_2B_IT
-    experimental_compile = False
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
-        experimental_compile=experimental_compile,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+        experimental_compile=False,
     )
 
 
@@ -176,12 +275,23 @@ def test_gemma_2_2b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_2_2B_IT
-    experimental_compile = False
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
-        experimental_compile=experimental_compile,
         output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+        experimental_compile=False,
     )
 
 
@@ -189,24 +299,68 @@ def test_phi1(output_file):
     from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI1
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_phi1_5(output_file):
     from third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI1_5
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_phi2(output_file):
     from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI2
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
     )
 
 
@@ -214,22 +368,45 @@ def test_falcon3_1b(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_1B
-    # Tuple format: (logits, past_key_values, ...)
-    read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper (Falcon uses tuple output format)
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="tuple"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_falcon3_3b(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_3B
-    # Tuple format: (logits, past_key_values, ...)
-    read_logits_fn = lambda output: output[0]
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper (Falcon uses tuple output format)
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="tuple"
+    )
+
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
-        read_logits_fn=read_logits_fn,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
     )
 
 
@@ -237,43 +414,138 @@ def test_qwen_2_5_0_5b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_0_5B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_qwen_3_0_6b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_0_6B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_qwen_3_1_7b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_1_7B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_qwen_3_4b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_4B
-    # Disable BFP8 weight conversion due to OOM failure
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_qwen_2_5_1_5b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_1_5B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 def test_qwen_2_5_3b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_3B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: Out of Memory: Not enough space to allocate 100663296 B DRAM buffer across 12 banks
@@ -281,7 +553,23 @@ def test_qwen_3_8b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: Out of Memory: Not enough space to allocate 135790592 B DRAM buffer across 12 banks
@@ -289,7 +577,23 @@ def test_qwen_2_5_7b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_7B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: KeyError: "L['self'].model.lifted_tensor_0"
@@ -297,7 +601,23 @@ def test_gemma_1_1_7b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_1_1_7B_IT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: TypeError: Phi3ForCausalLM.forward() got an unexpected keyword argument 'cache_position'
@@ -305,7 +625,23 @@ def test_phi3_mini(output_file):
     from third_party.tt_forge_models.phi3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINI_4K
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: KeyError: 'lifted_tensor_0'
@@ -313,7 +649,23 @@ def test_phi3_5_mini(output_file):
     from third_party.tt_forge_models.phi3.phi_3_5.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINI_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: AttributeError: 'MambaConfig' object has no attribute 'num_attention_heads'
@@ -321,7 +673,23 @@ def test_mamba_2_8b(output_file):
     from third_party.tt_forge_models.mamba.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MAMBA_2_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
@@ -329,9 +697,23 @@ def test_falcon3_7b(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_7B
-    # Tuple format: (logits, past_key_values, ...)
-    read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper (Falcon uses tuple output format)
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="tuple"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
@@ -339,7 +721,23 @@ def test_mistral_7b(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MISTRAL_7B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
@@ -347,7 +745,23 @@ def test_ministral_8b(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINISTRAL_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
 
 
 # FAILED: Out of Memory: Not enough space to allocate 117440512 B DRAM buffer across 12 banks
@@ -355,4 +769,20 @@ def test_llama_3_1_8b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    model_loader = ModelLoader(variant=variant)
+    model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
+    model = model.eval()
+
+    # Create 3 functions using helper
+    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
+        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
+    )
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        preprocess_fn=preprocess_fn,
+        output_processor_fn=output_processor_fn,
+    )
