@@ -162,6 +162,11 @@
         "name": "bert",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/encoders.py::test_bert"
+      },
+      {
+        "name": "unet_for_conditional_generation",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1 diffusers==0.36.0",
+        "pytest": "benchmark/tt-xla/encoders.py::test_unet_for_conditional_generation"
       }
     ]
   }
