@@ -445,7 +445,7 @@ def test_bge_m3(output_file):
 
 
 def test_unet_for_conditional_generation(output_file):
-    """Test UNet for Conditional Generation model."""
+    """Test UNet for Conditional Generation model. This is a core component of the Stable Diffusion XL pipeline (https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0)"""
     from third_party.tt_forge_models.unet_for_conditional_generation.pytorch.loader import ModelLoader
 
     def inputs_to_device(inputs, device):
