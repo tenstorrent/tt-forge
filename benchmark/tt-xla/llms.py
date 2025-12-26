@@ -9,10 +9,12 @@ from loguru import logger
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
 
+os.environ["TT_RUNTIME_TRACE_REGION_SIZE"] = str(20 * 2**20) # 20 MB
+
 # Defaults for all llms
 DEFAULT_OPTIMIZATION_LEVEL = 1
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
-DEFAULT_TRACE_ENABLED = False
+DEFAULT_TRACE_ENABLED = True
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_LOOP_COUNT = 1
 DEFAULT_INPUT_SEQUENCE_LENGTH = 128
