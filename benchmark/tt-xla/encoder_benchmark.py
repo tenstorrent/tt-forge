@@ -27,7 +27,7 @@ WARMUP_STEPS = 3  # Number of warmup iterations before benchmarking
 MODULE_EXPORT_PATH = "modules"
 
 
-def encode_sentences(
+def run_encoder_model(
     model,
     raw_inputs: List[str],
     preprocess_fn,
@@ -52,6 +52,83 @@ def encode_sentences(
     outputs = model(**model_inputs)
 
     return output_processor_fn(outputs, model_inputs)
+
+
+def warmup_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn, loop_count):
+    """
+    Warmup the encoder model for a given number of iterations.
+
+    Parameters:
+    ----------
+    model: Callable
+        The model to warmup.
+    raw_inputs: List[str]
+        Raw input sentences for the model.
+    preprocess_fn: Callable
+        Function to preprocess inputs (tokenization + device placement).
+    device: torch.device
+        The device to run the warmup on.
+    output_processor_fn: Callable
+        Function to process model outputs into embeddings.
+    loop_count: int
+        The number of iterations to warmup the model.
+    """
+    print("Warming up the device...")
+
+    with torch.no_grad():
+        for i in range(loop_count):
+            output = run_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn)
+            _ = output.to("cpu")
+
+    print("Warming up completed.")
+
+
+def measure_fps_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn, loop_count):
+    """
+    Benchmark the encoder model for a given number of iterations.
+
+    Parameters:
+    ----------
+    model: Callable
+        The model to benchmark.
+    raw_inputs: List[str]
+        Raw input sentences for the model.
+    preprocess_fn: Callable
+        Function to preprocess inputs (tokenization + device placement).
+    device: torch.device
+        The device to run the benchmark on.
+    output_processor_fn: Callable
+        Function to process model outputs into embeddings.
+    loop_count: int
+        Number of iterations to process.
+
+    Returns:
+    -------
+    predictions: list of torch.Tensor
+        The predictions made by the model.
+    total_time: float
+        The total time taken to process the inputs in seconds.
+    """
+    print("Starting benchmark loop...")
+
+    predictions = []
+    iteration_times = []
+
+    with torch.no_grad():
+        for i in range(loop_count):
+            start_time = time.perf_counter_ns()
+            output = run_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn)
+            predictions.append(output.to("cpu"))
+            end_time = time.perf_counter_ns()
+
+            iteration_times.append(end_time - start_time)
+            print(f"Iteration\t{i+1}/{loop_count}\ttook {iteration_times[-1] / 1e6:.04} ms")
+
+    total_time = sum(iteration_times)
+    # Convert to seconds
+    total_time /= 1e9
+
+    return predictions, total_time
 
 
 def benchmark_encoder_torch_xla(
@@ -127,7 +204,7 @@ def benchmark_encoder_torch_xla(
         num_runs = 10
         for _ in range(num_runs):
             with torch.no_grad():
-                _ = encode_sentences(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
+                _ = run_encoder_model(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
         elapsed = time.time() - start_time
         cpu_fps = (num_runs * batch_size) / elapsed
         print(f"CPU samples per second: {cpu_fps:.2f}")
@@ -137,7 +214,7 @@ def benchmark_encoder_torch_xla(
     # Generate golden output for PCC calculation
     print("Generating golden output on CPU...")
     with torch.no_grad():
-        golden_output = encode_sentences(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
+        golden_output = run_encoder_model(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
 
     # Set XLA compilation options
     options = {
@@ -160,32 +237,25 @@ def benchmark_encoder_torch_xla(
     framework_model = framework_model.to(device)
 
     # Warmup
-    print("Warming up the device...")
     warmup_count = min(WARMUP_STEPS, loop_count)
-    with torch.no_grad():
-        for i in range(warmup_count):
-            output = encode_sentences(framework_model, raw_inputs, preprocess_fn, device, output_processor_fn)
-            _ = output.to("cpu")
-    print("Warming up completed.")
+    warmup_encoder_model(
+        model=framework_model,
+        raw_inputs=raw_inputs,
+        preprocess_fn=preprocess_fn,
+        device=device,
+        output_processor_fn=output_processor_fn,
+        loop_count=warmup_count,
+    )
 
     # Benchmark
-    print("\nStarting benchmark loop...")
-    predictions = []
-    iteration_times = []
-
-    with torch.no_grad():
-        for i in range(loop_count):
-            start_time = time.perf_counter_ns()
-            output = encode_sentences(framework_model, raw_inputs, preprocess_fn, device, output_processor_fn)
-            predictions.append(output.to("cpu"))
-            end_time = time.perf_counter_ns()
-
-            iteration_times.append(end_time - start_time)
-            print(f"Iteration\t{i+1}/{loop_count}\ttook {iteration_times[-1] / 1e6:.04} ms")
-
-    total_time = sum(iteration_times)
-    # Convert to seconds
-    total_time /= 1e9
+    predictions, total_time = measure_fps_encoder_model(
+        model=framework_model,
+        raw_inputs=raw_inputs,
+        preprocess_fn=preprocess_fn,
+        device=device,
+        output_processor_fn=output_processor_fn,
+        loop_count=loop_count,
+    )
 
     # Evaluate PCC
     pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=required_pcc)
