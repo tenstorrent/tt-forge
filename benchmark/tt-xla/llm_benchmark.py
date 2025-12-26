@@ -123,10 +123,17 @@ def transfer_to_device(input_args: dict, device: torch.device) -> tuple[torch.nn
     Returns:
         Tuple input_args on device
     """
-    input_args["past_key_values"].key_cache = [k.to(device) for k in input_args["past_key_values"].key_cache]
-    input_args["past_key_values"].value_cache = [v.to(device) for v in input_args["past_key_values"].value_cache]
+    # Transfer cache if present (for attention-based models)
+    if "past_key_values" in input_args:
+        input_args["past_key_values"].key_cache = [k.to(device) for k in input_args["past_key_values"].key_cache]
+        input_args["past_key_values"].value_cache = [v.to(device) for v in input_args["past_key_values"].value_cache]
+
+    # Transfer input_ids (always present)
     input_args["input_ids"] = input_args["input_ids"].to(device)
-    input_args["cache_position"] = input_args["cache_position"].to(device)
+
+    # Transfer cache_position if present (for attention-based models)
+    if "cache_position" in input_args:
+        input_args["cache_position"] = input_args["cache_position"].to(device)
 
     return input_args
 
@@ -184,9 +191,11 @@ def generate_and_benchmark(
             # Update inputs for next iteration
             input_args["input_ids"] = next_token_ids.unsqueeze(-1).to(device)
 
-            host_cache_pos = input_args["cache_position"].to("cpu")
-            host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
-            input_args["cache_position"] = host_cache_pos.to(device)
+            # Only update cache_position if model uses it (e.g., attention-based models)
+            if "cache_position" in input_args:
+                host_cache_pos = input_args["cache_position"].to("cpu")
+                host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
+                input_args["cache_position"] = host_cache_pos.to(device)
 
             end = time.perf_counter_ns()
             iteration_times.append(end - start)

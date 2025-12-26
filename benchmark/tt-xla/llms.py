@@ -668,7 +668,6 @@ def test_phi3_5_mini(output_file):
     )
 
 
-# FAILED: AttributeError: 'MambaConfig' object has no attribute 'num_attention_heads'
 def test_mamba_2_8b(output_file):
     from third_party.tt_forge_models.mamba.pytorch.loader import ModelLoader, ModelVariant
 
@@ -677,10 +676,19 @@ def test_mamba_2_8b(output_file):
     model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
     model = model.eval()
 
-    # Create 3 functions using helper
-    load_inputs_fn, preprocess_fn, output_processor_fn = create_standard_llm_functions(
-        model, tokenizer, DEFAULT_INPUT_SEQUENCE_LENGTH, output_format="logits"
-    )
+    # Mamba is a state-space model and doesn't use attention mechanism (no StaticCache needed)
+    load_inputs_fn = lambda batch_size: [DEFAULT_INPUT_PROMPT] * batch_size
+
+    def preprocess_fn(prompts, device):
+        inputs = tokenizer(
+            prompts, return_tensors="pt", max_length=DEFAULT_INPUT_SEQUENCE_LENGTH, truncation=True, padding=True
+        )
+        input_args = {
+            "input_ids": inputs.input_ids,
+        }
+        return transfer_to_device(input_args, device)
+
+    output_processor_fn = lambda output: output.logits
 
     test_llm(
         ModelLoaderModule=ModelLoader,
