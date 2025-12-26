@@ -32,7 +32,6 @@ from utils import (
 )
 
 xr.set_device_type("TT")
-os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 MIN_STEPS = 16
 
@@ -84,12 +83,15 @@ def construct_inputs(
     input_prompt = DEFAULT_INPUT_PROMPT
     input_prompt = [input_prompt] * batch_size
 
+    # TODO: Only works on same length inputs for now
+    prompt_len = len(input_prompt[0])
+    assert all(len(prompt) == prompt_len for prompt in input_prompt), "All input prompts must have the same length"
+
     inputs = tokenizer(
         input_prompt,
         return_tensors="pt",
         max_length=max_cache_len,
         truncation=True,
-        padding=True,
     )
 
     # Static cache should be initialized on CPU and separately transferred to device
@@ -297,8 +299,6 @@ def benchmark_llm_torch_xla(
 
     # Check transformers version
     check_transformers_version()
-
-    xr.set_device_type("TT")
 
     # Set up config variables
     max_cache_len: int = input_sequence_length

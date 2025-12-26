@@ -6,6 +6,7 @@
 import os
 import socket
 import pytest
+import time
 
 # Third-party modules
 import torch
@@ -19,13 +20,10 @@ from utils import (
     get_benchmark_metadata,
     print_benchmark_results,
     create_benchmark_result,
-    torch_xla_measure_fps,
-    torch_xla_warmup_model,
     compute_pcc,
 )
 
 xr.set_device_type("TT")
-os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 MIN_STEPS = 16
 
@@ -96,6 +94,120 @@ def construct_inputs(
     return inputs
 
 
+def warmup_vision_model(model, inputs, device, loop_count, read_logits_fn):
+    """
+    Warmup the model for a given number of loop_count.
+
+    Parameters:
+    ----------
+    model: Callable
+        The model to warmup.
+    input: Any
+        The input to the model.
+    device: torch.device
+        The device to run the warmup on.
+    loop_count: int
+        The number of loop_count to warmup the model.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
+    """
+    print("Warming up the device...")
+
+    if len(inputs) != loop_count:
+        raise ValueError("Number of inputs must be equal to loop count.")
+
+    with torch.no_grad():
+        for i in range(loop_count):
+            # Move input to device.
+            device_input = inputs[i].to(device)
+            # Model forward, non blocking.
+            output = model(device_input)
+            output = read_logits_fn(output)
+
+            if type(output) is torch.Tensor:
+                output.to("cpu")
+            elif type(output) is tuple:
+                for out in output:
+                    out.to("cpu")
+            else:
+                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
+    print("Warming up completed.")
+
+
+def measure_fps_vision_model(model, inputs, device, loop_count, read_logits_fn):
+    """
+    Benchmark the model for a given number of loop_count.
+
+    Parameters:
+    ----------
+    model: Callable
+        The model to benchmark.
+    inputs: Any
+        The input data for benchmarking.
+    device: torch.device
+        The device to run the benchmark on.
+    loop_count: int
+        Number of batches to process.
+    read_logits_fn: Callable
+        Function to extract logits from model output.
+
+    Returns:
+    -------
+    predictions: list of Any
+        The predictions made by the model.
+    total_time: float
+        The total time taken to process the inputs in seconds.
+    """
+    if len(inputs) != loop_count:
+        raise ValueError("Number of inputs must be equal to loop count.")
+
+    print("Starting benchmark loop...")
+
+    predictions = []
+    itteration_times = []
+    with torch.no_grad():
+        outputs = []
+        for i in range(loop_count):
+            start_time = time.perf_counter_ns()
+
+            # Move input to device.
+            device_input = inputs[i].to(device)
+
+            # Model forward, non blocking.
+            output = model(device_input)
+
+            output = read_logits_fn(output)
+            outputs.append(output)
+
+            end_time = time.perf_counter_ns()
+            itteration_times.append(end_time - start_time)
+
+            print(f"Iteration\t{i+1}/{loop_count}\ttook {itteration_times[-1] / 1e6:.04} ms")
+
+        # Move all outputs to CPU, waits for model execution to finish.
+        output_start = time.perf_counter_ns()
+        for output in outputs:
+            if type(output) is torch.Tensor:
+                cpu_output = output.to("cpu")
+                predictions.append(cpu_output)
+            elif type(output) is tuple:
+                cpu_output = tuple(out.to("cpu") for out in output)
+                predictions.append(cpu_output)
+            else:
+                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
+        output_end = time.perf_counter_ns()
+
+        output_time = output_end - output_start
+        print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
+
+    total_time_itterations = sum(itteration_times)
+    total_time = total_time_itterations + output_time
+
+    # Convert to seconds
+    total_time /= 1e9
+    return predictions, total_time
+
+
 def benchmark_vision_torch_xla(
     model_loader,
     model_variant,
@@ -110,6 +222,7 @@ def benchmark_vision_torch_xla(
     measure_cpu,
     experimental_compile,
     ttnn_perf_metrics_output_file,
+    read_logits_fn,
     required_pcc=0.97,
 ):
     """
@@ -133,6 +246,7 @@ def benchmark_vision_torch_xla(
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         required_pcc: Minimum PCC threshold for output validation
+        read_logits_fn: Callback function to extract logits from model output
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -140,8 +254,6 @@ def benchmark_vision_torch_xla(
 
     if training:
         pytest.skip("Training is not supported")
-
-    xr.set_device_type("TT")
 
     # Construct inputs
     inputs = construct_inputs(
@@ -174,8 +286,7 @@ def benchmark_vision_torch_xla(
     golden_input = inputs[0]
     with torch.no_grad():
         golden_output = framework_model(golden_input)
-        if hasattr(golden_output, "logits"):
-            golden_output = golden_output.logits
+        golden_output = read_logits_fn(golden_output)
 
     # Set XLA compilation options
     options = {
@@ -199,11 +310,13 @@ def benchmark_vision_torch_xla(
         framework_model = framework_model.to(device)
 
     # Warmup
-    torch_xla_warmup_model(model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count)
+    warmup_vision_model(
+        model=framework_model, inputs=warmup_inputs, device=device, loop_count=loop_count, read_logits_fn=read_logits_fn
+    )
 
     # Benchmark
-    predictions, total_time = torch_xla_measure_fps(
-        model=framework_model, inputs=inputs, device=device, loop_count=loop_count
+    predictions, total_time = measure_fps_vision_model(
+        model=framework_model, inputs=inputs, device=device, loop_count=loop_count, read_logits_fn=read_logits_fn
     )
 
     # Evaluate PCC

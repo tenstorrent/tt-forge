@@ -100,64 +100,16 @@ jobs:
           fetch-depth: 0  # Fetch all history for all branches and tags
           submodules: 'recursive'
 
-      - name: Fix HOME Directory
-        shell: bash
-        run: |
-          # Issue [HOME is overridden for containers](https://github.com/actions/runner/issues/863)
-          h=$(getent passwd $(id -un) | cut -d: -f6)
-          if [ "$h" = "$HOME" ]; then
-            echo "HOME fine: $HOME"
-            exit 0
-          fi
-          echo "HOME=$HOME was broken. Setting it to $h"
-          ls -ld $HOME
-          ls -ld $h
-          echo "USER: $USER"
-          echo "id: $(id)"
-          echo "HOME=$h" >> $GITHUB_ENV
-
-      - name: Install system and python dependencies
-        shell: bash
-        run: |
-          if [ -n "${{ matrix.libreq }}" ]; then
-            apt-get update -y -qq
-            apt-get install -y -qq --no-install-recommends ${{ matrix.libreq }}
-          fi
-
-          if [ -n "${{ matrix.pyreq }}" ]; then
-            pip install ${{ matrix.pyreq }}
-          fi
-
-          if [ "${{ matrix.pyreq_file }}" == "true" ]; then
-            REQUIREMENTS_PATH=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
-            pip install -r $REQUIREMENTS_PATH/requirements.txt
-          fi
-
       - name: Run ${{ matrix.project }} demo ${{ matrix.name }}
         shell: bash
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_HOME: /home/forge/huggingface
-          # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
-          TRACY_NO_INVARIANT_CHECK: 1
-          IRD_LF_CACHE: ${{ vars.IRD_LF_CACHE }}
         run: |
-
-          third_party_models="$(realpath third_party)"
-          demo_folder=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
-          cd $demo_folder
-          ln -s $third_party_models third_party
           demo_file=$(basename "${{ matrix.path }}")
+          demo_folder=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
 
-          SITE_PACKAGES_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
-          if [ "${{ matrix.project }}" == "tt-forge-fe" ]; then
-            export TT_METAL_HOME="$SITE_PACKAGES_DIR/forge/tt-metal"
-          elif [ "${{ matrix.project }}" == "tt-xla" ]; then
-            export TT_METAL_HOME="$SITE_PACKAGES_DIR/pjrt_plugin_tt/tt-metal"
-          fi
-
+          export PYTHONPATH=$(pwd) # Add repository root to PYTHONPATH so demos can find models in third_party folder
+          cd $demo_folder
+          pip install -r requirements.txt
           python $demo_file
-
 
   fail-notify:
     if: always()
