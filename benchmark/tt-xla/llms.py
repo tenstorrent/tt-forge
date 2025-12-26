@@ -258,7 +258,6 @@ def test_qwen_3_4b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_4B
-    # Disable BFP8 weight conversion due to OOM failure
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
@@ -276,7 +275,6 @@ def test_qwen_2_5_3b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# FAILED: Out of Memory: Not enough space to allocate 100663296 B DRAM buffer across 12 banks
 def test_qwen_3_8b(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -284,7 +282,6 @@ def test_qwen_3_8b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# FAILED: Out of Memory: Not enough space to allocate 135790592 B DRAM buffer across 12 banks
 def test_qwen_2_5_7b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -324,7 +321,6 @@ def test_mamba_2_8b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
 def test_falcon3_7b(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
@@ -334,7 +330,6 @@ def test_falcon3_7b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
 
 
-# FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
 def test_mistral_7b(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
@@ -342,7 +337,6 @@ def test_mistral_7b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
 def test_ministral_8b(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
@@ -350,7 +344,6 @@ def test_ministral_8b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-# FAILED: Out of Memory: Not enough space to allocate 117440512 B DRAM buffer across 12 banks
 def test_llama_3_1_8b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
