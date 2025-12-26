@@ -676,7 +676,7 @@ def test_mamba_2_8b(output_file):
     model, tokenizer = model_loader.load_model(dtype_override=torch.bfloat16), model_loader.tokenizer
     model = model.eval()
 
-    # Mamba is a state-space model and doesn't use attention mechanism (no StaticCache needed)
+    # Mamba is a state-space model and uses cache_params (MambaCache) instead of past_key_values
     load_inputs_fn = lambda batch_size: [DEFAULT_INPUT_PROMPT] * batch_size
 
     def preprocess_fn(prompts, device):
@@ -685,6 +685,7 @@ def test_mamba_2_8b(output_file):
         )
         input_args = {
             "input_ids": inputs.input_ids,
+            "use_cache": True,  # Enable cache for Mamba state management
         }
         return transfer_to_device(input_args, device)
 

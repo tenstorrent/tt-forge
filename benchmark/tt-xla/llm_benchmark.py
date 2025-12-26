@@ -135,6 +135,8 @@ def transfer_to_device(input_args: dict, device: torch.device) -> tuple[torch.nn
     if "cache_position" in input_args:
         input_args["cache_position"] = input_args["cache_position"].to(device)
 
+    # Note: cache_params (for Mamba) and use_cache are not tensors, so no device transfer needed
+
     return input_args
 
 
@@ -191,11 +193,16 @@ def generate_and_benchmark(
             # Update inputs for next iteration
             input_args["input_ids"] = next_token_ids.unsqueeze(-1).to(device)
 
-            # Only update cache_position if model uses it (e.g., attention-based models)
+            # Update cache for next iteration (different cache types for different models)
             if "cache_position" in input_args:
+                # Attention-based models (Transformer architecture)
                 host_cache_pos = input_args["cache_position"].to("cpu")
                 host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
                 input_args["cache_position"] = host_cache_pos.to(device)
+
+            # Handle Mamba cache_params (state-space models)
+            if hasattr(output, "cache_params") and output.cache_params is not None:
+                input_args["cache_params"] = output.cache_params
 
             end = time.perf_counter_ns()
             iteration_times.append(end - start)
