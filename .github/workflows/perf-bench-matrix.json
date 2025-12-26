@@ -80,12 +80,8 @@
       },
       {
         "name": "bge_m3_encode",
-        "bs": 4,
-        "lp": 32,
-        "df": "float32",
-        "input_sequence_length": 512,
         "pyreq": "FlagEmbedding datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "skip-device-perf": true
+        "pytest": "benchmark/tt-xla/encoders.py::test_bge_m3"
       },
       {
         "name": "llama_3_2_1b_instruct",
@@ -156,6 +152,16 @@
         "name": "qwen_3_4b",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_4b"
+      },
+      {
+        "name": "qwen_3_4b_embedding",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/encoders.py::test_qwen3_embedding_4b"
+      },
+      {
+        "name": "bert",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/encoders.py::test_bert"
       }
     ]
   }

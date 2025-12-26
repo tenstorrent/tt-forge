@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import time
 import socket
-import os
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from collections.abc import Sequence
@@ -308,115 +306,42 @@ def create_benchmark_result(
     }
 
 
-def torch_xla_warmup_model(model, inputs, device, loop_count, read_logits_fn):
-    """
-    Warmup the model for a given number of loop_count.
-
-    Parameters:
-    ----------
-    model: Callable
-        The model to warmup.
-    input: Any
-        The input to the model.
-    device: torch.device
-        The device to run the warmup on.
-    loop_count: int
-        The number of loop_count to warmup the model.
-    read_logits_fn: Callable
-        Function to extract logits from model output.
-    """
-    print("Warming up the device...")
-
-    if len(inputs) != loop_count:
-        raise ValueError("Number of inputs must be equal to loop count.")
-
-    with torch.no_grad():
-        for i in range(loop_count):
-            # Move input to device.
-            device_input = inputs[i].to(device)
-            # Model forward, non blocking.
-            output = model(device_input)
-            output = read_logits_fn(output)
-
-            if type(output) is torch.Tensor:
-                output.to("cpu")
-            elif type(output) is tuple:
-                for out in output:
-                    out.to("cpu")
-            else:
-                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
-    print("Warming up completed.")
+# ============================================================================
+# Pooling functions for encoder models
+# ============================================================================
 
 
-def torch_xla_measure_fps(model, inputs, device, loop_count, read_logits_fn):
-    """
-    Benchmark the model for a given number of loop_count.
+def apply_mean_pooling(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    """Apply mean pooling over hidden states.
 
-    Parameters:
-    ----------
-    model: Callable
-        The model to benchmark.
-    inputs: Any
-        The input data for benchmarking.
-    device: torch.device
-        The device to run the benchmark on.
-    loop_count: int
-        Number of batches to process.
-    read_logits_fn: Callable
-        Function to extract logits from model output.
+    Args:
+        hidden_states: Token embeddings with shape [batch_size, seq_len, hidden_size]
+        attention_mask: Attention mask with shape [batch_size, seq_len]
 
     Returns:
-    -------
-    predictions: list of Any
-        The predictions made by the model.
-    total_time: float
-        The total time taken to process the inputs in seconds.
+        Sentence embeddings with shape [batch_size, hidden_size]
     """
-    if len(inputs) != loop_count:
-        raise ValueError("Number of inputs must be equal to loop count.")
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
+    sentence_embeddings = torch.sum(hidden_states * input_mask_expanded, 1) / torch.clamp(
+        input_mask_expanded.sum(1), min=1e-9
+    )
+    return sentence_embeddings
 
-    print("Starting benchmark loop...")
 
-    predictions = []
-    itteration_times = []
-    with torch.no_grad():
-        outputs = []
-        for i in range(loop_count):
-            start_time = time.perf_counter_ns()
+def apply_last_token_pooling(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    """Apply last token pooling over hidden states.
 
-            # Move input to device.
-            device_input = inputs[i].to(device)
+    Args:
+        hidden_states: Token embeddings with shape [batch_size, seq_len, hidden_size]
+        attention_mask: Attention mask with shape [batch_size, seq_len]
 
-            # Model forward, non blocking.
-            output = model(device_input)
-
-            output = read_logits_fn(output)
-            outputs.append(output)
-
-            end_time = time.perf_counter_ns()
-            itteration_times.append(end_time - start_time)
-
-            print(f"Iteration\t{i+1}/{loop_count}\ttook {itteration_times[-1] / 1e6:.04} ms")
-
-        # Move all outputs to CPU, waits for model execution to finish.
-        output_start = time.perf_counter_ns()
-        for output in outputs:
-            if type(output) is torch.Tensor:
-                cpu_output = output.to("cpu")
-                predictions.append(cpu_output)
-            elif type(output) is tuple:
-                cpu_output = tuple(out.to("cpu") for out in output)
-                predictions.append(cpu_output)
-            else:
-                raise ValueError(f"Unsupported output type: {type(output)}. Supported types are: torch.Tensor, tuple.")
-        output_end = time.perf_counter_ns()
-
-        output_time = output_end - output_start
-        print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
-
-    total_time_itterations = sum(itteration_times)
-    total_time = total_time_itterations + output_time
-
-    # Convert to seconds
-    total_time /= 1e9
-    return predictions, total_time
+    Returns:
+        Sentence embeddings with shape [batch_size, hidden_size]
+    """
+    # Check if left padding was used (all sequences end with non-padding tokens)
+    left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0]).item()
+    if left_padding:
+        return hidden_states[:, -1]
+    sequence_lengths = attention_mask.sum(dim=1) - 1
+    batch_size = hidden_states.shape[0]
+    return hidden_states[torch.arange(batch_size, device=hidden_states.device), sequence_lengths]
