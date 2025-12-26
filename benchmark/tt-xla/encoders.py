@@ -471,7 +471,6 @@ def test_unet_for_conditional_generation(output_file):
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
 
-
     load_inputs_fn = lambda batch_size: loader.load_inputs(batch_size=batch_size, dtype_override=DTYPE_MAP[data_format])
     preprocess_fn = lambda raw_inputs, device: inputs_to_device(raw_inputs, device)
     output_processor_fn = lambda out, inputs: out.sample
@@ -485,7 +484,7 @@ def test_unet_for_conditional_generation(output_file):
         output_processor_fn=output_processor_fn,
         data_format=data_format,
         batch_size=batch_size,
-        input_sequence_length=unet_max_seqlen, # for UNet it is always set to the max sequence length
+        input_sequence_length=unet_max_seqlen,  # for UNet it is always set to the max sequence length
         loop_count=128,
         optimization_level=2,
     )
