@@ -403,12 +403,16 @@ def benchmark_llm_torch_xla(
     if len(iteration_times) < 10:
         raise RuntimeError("LLM benchmark failed: insufficient number of iterations completed.")
 
-    total_time_ns = sum(iteration_times)
-    total_time = total_time_ns / 1e9
+    ttft_ns = iteration_times[0]
+    ttft_ms = ttft_ns / 1e6
 
-    # Calculate metrics
-    total_tokens = len(output_logits)
-    tokens_per_second = total_tokens / total_time
+    decode_iteration_times = iteration_times[1:]
+    decode_total_time_ns = sum(decode_iteration_times)
+    decode_total_time = decode_total_time_ns / 1e9
+
+    # Calculate metrics (ignore first iteration for samples/sec)
+    decode_total_tokens = len(decode_iteration_times)
+    tokens_per_second = (decode_total_tokens / decode_total_time) if decode_total_time > 0 else 0.0
 
     metadata = get_benchmark_metadata()
 
@@ -425,7 +429,12 @@ def benchmark_llm_torch_xla(
             "measurement_name": "cpu_fps",
             "value": cpu_tokens_per_second,
             "target": -1,
-        }
+        },
+        {
+            "measurement_name": "ttft",
+            "value": ttft_ms,
+            "target": -1,
+        },
     ]
 
     print_benchmark_results(
@@ -435,14 +444,15 @@ def benchmark_llm_torch_xla(
         dataset_name=dataset_name,
         date=metadata["date"],
         machine_name=metadata["machine_name"],
-        total_time=total_time,
-        total_samples=total_tokens,
+        total_time=decode_total_time,
+        total_samples=decode_total_tokens,
         samples_per_sec=tokens_per_second,
         cpu_samples_per_sec=cpu_tokens_per_second,
         evaluation_score=evaluation_score,
         batch_size=batch_size,
         data_format=data_format,
         input_sequence_length=input_sequence_length,
+        ttft_ms=ttft_ms,
     )
 
     # Check PCC
@@ -459,8 +469,8 @@ def benchmark_llm_torch_xla(
         loop_count=loop_count,
         data_format=data_format,
         training=training,
-        total_time=total_time,
-        total_samples=total_tokens,
+        total_time=decode_total_time,
+        total_samples=decode_total_tokens,
         evaluation_score=evaluation_score,
         custom_measurements=custom_measurements,
         optimization_level=optimization_level,

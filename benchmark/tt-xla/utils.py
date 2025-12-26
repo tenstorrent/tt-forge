@@ -128,6 +128,7 @@ def print_benchmark_results(
     samples_per_sec: float,
     cpu_samples_per_sec: Optional[float] = None,
     evaluation_score: Optional[float] = None,
+    ttft_ms: Optional[float] = None,
     batch_size: int = None,
     data_format: str = None,
     input_size: tuple = None,
@@ -152,6 +153,9 @@ def print_benchmark_results(
 
     if evaluation_score is not None:
         print(f"| Evaluation score: {evaluation_score}")
+
+    if ttft_ms is not None:
+        print(f"| TTFT (ms): {ttft_ms}")
 
     if batch_size is not None:
         print(f"| Batch size: {batch_size}")
