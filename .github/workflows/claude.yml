@@ -47,7 +47,7 @@ jobs:
           additional_permissions: |
             actions: write
 
-          # Allow Claude to use gh cli for issues and PRs
+          # Allow Claude to use gh cli for issues, PRs, and CI
           allowed_tools: |
             Bash(gh issue create:*)
             Bash(gh issue view:*)
@@ -58,6 +58,10 @@ jobs:
             Bash(gh pr diff:*)
             Bash(gh pr view:*)
             Bash(gh pr list:*)
+            Bash(gh run list:*)
+            Bash(gh run view:*)
+            Bash(gh workflow list:*)
+            Bash(gh workflow view:*)
 
           # Use prompt from workflow_dispatch input when triggered manually
           prompt: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.prompt || '' }}
