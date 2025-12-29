@@ -48,20 +48,7 @@ jobs:
             actions: write
 
           # Allow Claude to use gh cli for issues, PRs, and CI
-          allowed_tools: |
-            Bash(gh issue create:*)
-            Bash(gh issue view:*)
-            Bash(gh issue list:*)
-            Bash(gh search:*)
-            Bash(gh pr create:*)
-            Bash(gh pr comment:*)
-            Bash(gh pr diff:*)
-            Bash(gh pr view:*)
-            Bash(gh pr list:*)
-            Bash(gh run list:*)
-            Bash(gh run view:*)
-            Bash(gh workflow list:*)
-            Bash(gh workflow view:*)
+          claude_args: '--allowed-tools "Bash(gh issue create:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),Bash(gh pr create:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh workflow list:*),Bash(gh workflow view:*)"'
 
           # Use prompt from workflow_dispatch input when triggered manually
           prompt: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.prompt || '' }}
