@@ -333,7 +333,7 @@ def test_falcon3_7b(output_file):
 def test_mistral_7b(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.MISTRAL_7B
+    variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
