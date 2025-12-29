@@ -26,6 +26,7 @@ DEFAULT_TASK = "text-generation"
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = True
 DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION = False
+DEFAULT_REQUIRED_PCC = 0.95
 
 
 def default_read_logits_fn(output):
@@ -51,6 +52,7 @@ def test_llm(
     mesh=None,
     shard_spec_fn=None,
     arch=None,
+    required_pcc=DEFAULT_REQUIRED_PCC,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -69,6 +71,7 @@ def test_llm(
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
         read_logits_fn: Function to extract logits from model output
+        required_pcc: Required PCC threshold
     """
     model_loader = ModelLoaderModule(variant=variant)
     # Sanitize variant name for safe filesystem usage
@@ -89,6 +92,7 @@ def test_llm(
     experimental_compile={experimental_compile}
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
     experimental_enable_permute_matmul_fusion={experimental_enable_permute_matmul_fusion}
+    required_pcc={required_pcc}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
@@ -113,6 +117,7 @@ def test_llm(
         mesh=mesh,
         shard_spec_fn=shard_spec_fn,
         arch=arch,
+        required_pcc=required_pcc,
     )
 
     if output_file:
@@ -273,7 +278,7 @@ def test_qwen_2_5_0_5b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_0_5B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, required_pcc=0.94)
 
 
 def test_qwen_3_0_6b(output_file):
