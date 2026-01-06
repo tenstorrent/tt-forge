@@ -223,7 +223,7 @@ jobs:
       run_id_source: ${{ inputs.run_id_source }}
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
-      on_uplift_pr: ${{ inputs.on_uplift_pr || false }}
+      perf_regression_check: ${{ inputs.perf_regression_check || false }}
 
   fail-notify:
     if: always()
