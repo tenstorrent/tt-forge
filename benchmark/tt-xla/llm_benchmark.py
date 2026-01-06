@@ -17,6 +17,8 @@ import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
+import torch_xla.distributed.spmd as xs
+from torch_xla.distributed.spmd import Mesh
 import tt_torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
@@ -142,6 +144,8 @@ def generate_and_benchmark(
     max_tokens_to_generate: int,
     read_logits_fn: callable,
     verbose: bool = True,
+    is_multichip: bool = False,
+    mesh: Mesh = None,
 ):
     """
     Run the generation loop and measure time.
@@ -189,6 +193,17 @@ def generate_and_benchmark(
             host_cache_pos = input_args["cache_position"].to("cpu")
             host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
             input_args["cache_position"] = host_cache_pos.to(device)
+            # Reapply shardings for static cache if SPMD is enabled
+            # See https://github.com/tenstorrent/tt-xla/issues/1641
+            if is_multichip:
+                for i, (key, value) in enumerate(
+                    zip(
+                        input_args["past_key_values"].key_cache,
+                        input_args["past_key_values"].value_cache,
+                    )
+                ):
+                    xs.mark_sharding(key, mesh, (None, "model", None, None))
+                    xs.mark_sharding(value, mesh, (None, "model", None, None))
 
             end = time.perf_counter_ns()
             iteration_times.append(end - start)
@@ -239,6 +254,9 @@ def benchmark_llm_torch_xla(
     experimental_enable_permute_matmul_fusion,
     ttnn_perf_metrics_output_file,
     read_logits_fn,
+    mesh,
+    shard_spec_fn,
+    arch,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -300,6 +318,17 @@ def benchmark_llm_torch_xla(
     # Check transformers version
     check_transformers_version()
 
+    xr.set_device_type("TT")
+
+    # Set up for multi-chip if applicable
+    if mesh is not None and shard_spec_fn is not None:
+        is_multichip = len(mesh.device_ids) > 1
+        if is_multichip:
+            os.environ["CONVERT_SHLO_TO_SHARDY"] = "1"
+            xr.use_spmd()
+    else:
+        is_multichip = False
+
     # Set up config variables
     max_cache_len: int = input_sequence_length
 
@@ -355,6 +384,21 @@ def benchmark_llm_torch_xla(
     input_args = transfer_to_device(input_args, device)
     model = model.to(device, dtype=torch.bfloat16)
 
+    # Shard model if shard spec function is provided
+    if is_multichip:
+        shard_specs = shard_spec_fn(model_loader, model)
+        if shard_specs is not None:
+            for tensor, shard_spec in shard_specs.items():
+                xs.mark_sharding(tensor, mesh, shard_spec)
+
+        # Also shard KV cache tensors created in input_args
+        for key, value in zip(
+            input_args["past_key_values"].key_cache,
+            input_args["past_key_values"].value_cache,
+        ):
+            xs.mark_sharding(key, mesh, (None, "model", None, None))
+            xs.mark_sharding(value, mesh, (None, "model", None, None))
+
     # Set XLA compilation options
     options = {
         "optimization_level": optimization_level,
@@ -382,11 +426,22 @@ def benchmark_llm_torch_xla(
         warmup_tokens,
         read_logits_fn=read_logits_fn,
         verbose=False,
+        is_multichip=is_multichip,
+        mesh=mesh,
     )
 
     # Reconstruct inputs for the actual benchmark run
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
     input_args = transfer_to_device(input_args, device)
+
+    # Re-shard KV cache tensors created in input_args
+    if is_multichip:
+        for key, value in zip(
+            input_args["past_key_values"].key_cache,
+            input_args["past_key_values"].value_cache,
+        ):
+            xs.mark_sharding(key, mesh, (None, "model", None, None))
+            xs.mark_sharding(value, mesh, (None, "model", None, None))
 
     # Run benchmark once
     print(f"\nStarting benchmark...")
@@ -398,6 +453,8 @@ def benchmark_llm_torch_xla(
         max_tokens_to_generate,
         read_logits_fn=read_logits_fn,
         verbose=True,
+        is_multichip=is_multichip,
+        mesh=mesh,
     )
 
     if len(iteration_times) < 10:
@@ -481,7 +538,7 @@ def benchmark_llm_torch_xla(
         torch_xla_enabled=True,
         backend="tt",
         device_name=socket.gethostname(),
-        arch=get_xla_device_arch(),
+        arch=arch or get_xla_device_arch(),
         input_is_image=False,
         input_sequence_length=input_sequence_length,
     )

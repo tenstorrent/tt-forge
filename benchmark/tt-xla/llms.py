@@ -9,6 +9,10 @@ from loguru import logger
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
 
+import torch_xla.runtime as xr
+from torch_xla.distributed.spmd import Mesh
+import numpy as np
+
 # Defaults for all llms
 DEFAULT_OPTIMIZATION_LEVEL = 1
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
@@ -44,6 +48,9 @@ def test_llm(
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
     read_logits_fn=default_read_logits_fn,
+    mesh=None,
+    shard_spec_fn=None,
+    arch=None,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -103,6 +110,9 @@ def test_llm(
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         read_logits_fn=read_logits_fn,
+        mesh=mesh,
+        shard_spec_fn=shard_spec_fn,
+        arch=arch,
     )
 
     if output_file:
@@ -157,6 +167,32 @@ def test_llama_3_2_3b(output_file):
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+def test_llama_3_8b(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    num_devices = xr.global_runtime_device_count()
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+
+    mesh_shape = (1, num_devices)
+    device_ids = np.array(range(num_devices))
+    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
+
+    shard_spec_fn = ModelLoader.load_shard_spec
+
+    variant = ModelVariant.LLAMA_3_8B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        shard_spec_fn=shard_spec_fn,
+        mesh=mesh,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+    )
 
 
 def test_gemma_1_1_2b(output_file):
