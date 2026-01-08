@@ -27,6 +27,34 @@ WARMUP_STEPS = 3  # Number of warmup iterations before benchmarking
 MODULE_EXPORT_PATH = "modules"
 
 
+def move_to_cpu(data):
+    """Recursively move all tensors in a data structure to CPU.
+
+    Handles dicts, lists, tuples, and HuggingFace ModelOutput objects.
+    Preserves the original data structure types.
+    """
+    if isinstance(data, torch.Tensor):
+        return data.cpu()
+    # Check for HuggingFace ModelOutput BEFORE dict (ModelOutput inherits from OrderedDict)
+    # ModelOutput has to_tuple() method which plain dicts don't have
+    elif hasattr(data, "to_tuple") and hasattr(data, "keys"):
+        # HuggingFace ModelOutput - modify in-place to preserve the object type
+        for key in list(data.keys()):
+            value = data[key]
+            if isinstance(value, torch.Tensor):
+                data[key] = value.cpu()
+            elif value is not None:
+                data[key] = move_to_cpu(value)
+        return data
+    elif isinstance(data, dict):
+        # Plain dicts - recursively move values
+        return {k: move_to_cpu(v) for k, v in data.items()}
+    elif isinstance(data, (list, tuple)):
+        moved = [move_to_cpu(item) for item in data]
+        return type(data)(moved)
+    return data
+
+
 def run_encoder_model(
     model,
     raw_inputs: List[str],
@@ -50,6 +78,11 @@ def run_encoder_model(
     """
     model_inputs = preprocess_fn(raw_inputs, device)
     outputs = model(**model_inputs)
+
+    # Move all outputs to CPU before running processor_fn to avoid
+    # creating extra XLA graphs for post-processing operations
+    outputs = move_to_cpu(outputs)
+    model_inputs = move_to_cpu(model_inputs)
 
     return output_processor_fn(outputs, model_inputs)
 
