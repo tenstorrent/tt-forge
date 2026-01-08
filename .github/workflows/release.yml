@@ -387,4 +387,17 @@ jobs:
           parent_run_id: "perf-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
           wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
           wait_for_run_url: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}", "perf_regression_check": "true" }'
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}", "perf_regression_check": "true", "runs-on-filter": "n150" }'
+
+      - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }} (llmbox)
+        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' && steps.set-release-facts.outputs.repo_short == 'tt-xla' }}
+        uses: ./.github/actions/trigger-workflow
+        id: trigger-perf-test-llmbox
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          workflow_name: "Performance benchmark"
+          parent_run_id: "perf-test-llmbox-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
+          wait_for_run_url: true
+          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}", "perf_regression_check": "true", "runs-on-filter": "llmbox" }'
