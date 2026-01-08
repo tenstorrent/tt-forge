@@ -262,8 +262,8 @@ runs:
             prerelease="true"
             # Wait for the demo test to complete only for draft releases and run only one test
             test_demo_filter="bge_m3"
-            test_perf_filter="resnet"
-            test_demo_wait="true"
+            # test_perf_filter="resnet"
+            # test_demo_wait="true"
             # Only run basic tests on n150 for draft releases until Civ2 capacity improves
             basic_tests_runner_filter="n150"
             #test_perf_sh_runner="true"
