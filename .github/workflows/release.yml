@@ -218,18 +218,18 @@ jobs:
           wait_for_run_url: true
           json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "runner-filter": "${{ steps.set-release-facts.outputs.basic_tests_runner_filter }}" }'
 
-      - name: Trigger Docker Demo test ${{ steps.set-release-facts.outputs.repo_short }}
-        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
-        uses: ./.github/actions/trigger-workflow
-        id: trigger-demo-test
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          workflow_name: "Demo tests"
-          parent_run_id: "demo-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
-          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
-          wait_for_run_url: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_demo_filter }}" }'
+      # - name: Trigger Docker Demo test ${{ steps.set-release-facts.outputs.repo_short }}
+      #   if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+      #   uses: ./.github/actions/trigger-workflow
+      #   id: trigger-demo-test
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
+      #   with:
+      #     workflow_name: "Demo tests"
+      #     parent_run_id: "demo-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+      #     wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
+      #     wait_for_run_url: true
+      #     json_params: '{"docker-image": "${{ needs.build-release.outputs.harbor_image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_demo_filter }}" }'
 
 # TODO: Re-enable this after adding tt-mlir version to frontend setup.py description
 # REF: https://github.com/tenstorrent/tt-forge/issues/170

@@ -66,21 +66,21 @@ jobs:
       with:
         repo: ${{ inputs.repo }}
 
-  update-releases:
-    if: ${{ !inputs.draft }}
-    needs:
-      - get-repos
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.get-repos.outputs.schedule_rc_stable_update_repos_results) }}
-    uses: ./.github/workflows/update-releases.yml
-    secrets: inherit
-    name: ${{ matrix.repo_short }} Update RC and Stable
-    with:
-      draft: ${{ inputs.draft || false}}
-      repo: ${{ matrix.repo }}
-      overwrite_releases: false
+  # update-releases:
+  #   if: ${{ !inputs.draft }}
+  #   needs:
+  #     - get-repos
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include: ${{ fromJson(needs.get-repos.outputs.schedule_rc_stable_update_repos_results) }}
+  #   uses: ./.github/workflows/update-releases.yml
+  #   secrets: inherit
+  #   name: ${{ matrix.repo_short }} Update RC and Stable
+  #   with:
+  #     draft: ${{ inputs.draft || false}}
+  #     repo: ${{ matrix.repo }}
+  #     overwrite_releases: false
 
   release-nightly:
     needs: get-repos
