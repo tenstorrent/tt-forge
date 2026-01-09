@@ -23,11 +23,11 @@ def get_export_options(
     trace_enabled: bool = False,
     ttnn_perf_metrics_output_file: str = "",
     enable_weight_bfp8_conversion: bool = False,
-    **extra_options
+    **extra_options,
 ) -> Dict[str, Any]:
     """
     Generate standardized export options for any benchmark.
-    
+
     Args:
         model_name: Name of the model (e.g., "phi1_5", "resnet50")
         mode: Export mode tag - "blk" (block), "lyr" (layer), or "full" (default)
@@ -38,13 +38,13 @@ def get_export_options(
         ttnn_perf_metrics_output_file: Path for performance metrics output
         enable_weight_bfp8_conversion: Whether to enable BFP8 weight conversion
         **extra_options: Additional options to include
-    
+
     Returns:
         Dict with export options including a unique export_model_name
     """
     run_id = secrets.token_hex(2)  # 4 hex chars, e.g., "a7f3"
     export_model_name = f"{mode}_{model_name}_bs{batch_size}_{run_id}"
-    
+
     options = {
         "optimization_level": optimization_level,
         "export_path": export_path,
@@ -54,10 +54,10 @@ def get_export_options(
         "enable_trace": trace_enabled,
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
     }
-    
+
     # Add any extra options
     options.update(extra_options)
-    
+
     return options
 
 
