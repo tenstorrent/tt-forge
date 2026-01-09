@@ -5,6 +5,7 @@ loguru
 pytest
 pytorchcv
 requests
+sentencepiece
 tabulate
 timm
 torchvision==0.22.0
