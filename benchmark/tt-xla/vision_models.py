@@ -50,8 +50,7 @@ def test_vision(
             Signature: fn(batch_size, loop_count, channel_size, input_size) -> List[Tensor]
         preprocess_fn: Function to preprocess inputs (dtype conversion + device placement).
             Signature: fn(input_tensor, device, data_format) -> tensor on device
-        output_processor_fn: Function to process model outputs (extract logits + move to CPU).
-            Signature: fn(output) -> tensor on CPU
+        output_processor_fn: Function to process model outputs (e.g. extract logits).
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
         batch_size: Batch size
@@ -142,7 +141,7 @@ def test_efficientnet(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.to("cpu")
+        return output
 
     test_vision(
         model=model,
@@ -185,7 +184,7 @@ def test_mnist(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.to("cpu")
+        return output
 
     test_vision(
         model=model,
@@ -229,7 +228,7 @@ def test_mobilenetv2(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.to("cpu")
+        return output
 
     test_vision(
         model=model,
@@ -273,7 +272,7 @@ def test_resnet50(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.logits.to("cpu")
+        return output.logits
 
     test_vision(
         model=model,
@@ -318,7 +317,7 @@ def test_segformer(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.logits.to("cpu")
+        return output.logits
 
     test_vision(
         model=model,
@@ -362,7 +361,7 @@ def test_swin(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.to("cpu")
+        return output
 
     test_vision(
         model=model,
@@ -407,7 +406,7 @@ def test_ufld(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.to("cpu")
+        return output
 
     test_vision(
         model=model,
@@ -451,7 +450,7 @@ def test_ufld_v2(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output[0].to("cpu")
+        return output[0]
 
     test_vision(
         model=model,
@@ -494,7 +493,7 @@ def test_unet(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.to("cpu")
+        return output
 
     test_vision(
         model=model,
@@ -538,7 +537,7 @@ def test_vit(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.logits.to("cpu")
+        return output.logits
 
     test_vision(
         model=model,
@@ -582,7 +581,7 @@ def test_vovnet(output_file):
         return input_tensor.to(device)
 
     def output_processor_fn(output):
-        return output.to("cpu")
+        return output
 
     test_vision(
         model=model,

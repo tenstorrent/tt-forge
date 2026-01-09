@@ -18,6 +18,7 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    move_to_cpu,
 )
 
 xr.set_device_type("TT")
@@ -45,8 +46,7 @@ def warmup_vision_model(model, inputs, device, loop_count, preprocess_fn, output
         Function to preprocess input (dtype conversion + device placement).
         Signature: fn(input_tensor, device, data_format) -> tensor on device.
     output_processor_fn: Callable
-        Function to process model output (extract logits + move to CPU).
-        Signature: fn(output) -> tensor on CPU.
+        Function to process model output (e.g. extract logits).
     data_format: str
         Data format (bfloat16 or float32).
     """
@@ -62,7 +62,7 @@ def warmup_vision_model(model, inputs, device, loop_count, preprocess_fn, output
             # Model forward, non blocking.
             output = model(device_input)
             # Process output (extract logits + move to CPU)
-            _ = output_processor_fn(output)
+            _ = move_to_cpu(output_processor_fn(output))
 
     print("Warming up completed.")
 
@@ -85,8 +85,7 @@ def measure_fps_vision_model(model, inputs, device, loop_count, preprocess_fn, o
         Function to preprocess input (dtype conversion + device placement).
         Signature: fn(input_tensor, device, data_format) -> tensor on device.
     output_processor_fn: Callable
-        Function to process model output (extract logits + move to CPU).
-        Signature: fn(output) -> tensor on CPU.
+        Function to process model output (e.g. extract logits).
     data_format: str
         Data format (bfloat16 or float32).
 
@@ -115,8 +114,8 @@ def measure_fps_vision_model(model, inputs, device, loop_count, preprocess_fn, o
             output = model(device_input)
 
             # Process output (extract logits + move to CPU)
-            cpu_output = output_processor_fn(output)
-            predictions.append(cpu_output)
+            output_cpu = move_to_cpu(output_processor_fn(output))
+            predictions.append(output_cpu)
 
             end_time = time.perf_counter_ns()
             iteration_times.append(end_time - start_time)
@@ -174,8 +173,7 @@ def benchmark_vision_torch_xla(
             Signature: fn(batch_size, loop_count, channel_size, input_size) -> List[Tensor]
         preprocess_fn: Function to preprocess inputs (dtype conversion + device placement).
             Signature: fn(input_tensor, device, data_format) -> tensor on device
-        output_processor_fn: Function to process model outputs (extract logits + move to CPU).
-            Signature: fn(output) -> tensor on CPU
+        output_processor_fn: Function to process model outputs (e.g. extract logits).
         required_pcc: Minimum PCC threshold for output validation
 
     Returns:
@@ -255,11 +253,6 @@ def benchmark_vision_torch_xla(
         data_format=data_format,
     )
 
-    # Evaluate PCC
-    pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=required_pcc)
-    print(f"PCC verification passed with PCC={pcc_value:.6f}")
-    evaluation_score = 0.0
-
     total_samples = batch_size * loop_count
     samples_per_sec = total_samples / total_time
 
@@ -278,6 +271,7 @@ def benchmark_vision_torch_xla(
         }
     ]
 
+    evaluation_score = 0.0
     print_benchmark_results(
         model_title=full_model_name,
         full_model_name=full_model_name,
@@ -295,6 +289,10 @@ def benchmark_vision_torch_xla(
         input_size=input_size,
         channel_size=channel_size,
     )
+
+    # Evaluate PCC
+    pcc_value = compute_pcc(predictions[0], golden_output, required_pcc=required_pcc)
+    print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     result = create_benchmark_result(
         full_model_name=full_model_name,
