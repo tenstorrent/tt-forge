@@ -18,6 +18,7 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    move_to_cpu,
 )
 
 xr.set_device_type("TT")
@@ -25,34 +26,6 @@ xr.set_device_type("TT")
 WARMUP_STEPS = 3  # Number of warmup iterations before benchmarking
 
 MODULE_EXPORT_PATH = "modules"
-
-
-def move_to_cpu(data):
-    """Recursively move all tensors in a data structure to CPU.
-
-    Handles dicts, lists, tuples, and HuggingFace ModelOutput objects.
-    Preserves the original data structure types.
-    """
-    if isinstance(data, torch.Tensor):
-        return data.cpu()
-    # Check for HuggingFace ModelOutput BEFORE dict (ModelOutput inherits from OrderedDict)
-    # ModelOutput has to_tuple() method which plain dicts don't have
-    elif hasattr(data, "to_tuple") and hasattr(data, "keys"):
-        # HuggingFace ModelOutput - modify in-place to preserve the object type
-        for key in list(data.keys()):
-            value = data[key]
-            if isinstance(value, torch.Tensor):
-                data[key] = value.cpu()
-            elif value is not None:
-                data[key] = move_to_cpu(value)
-        return data
-    elif isinstance(data, dict):
-        # Plain dicts - recursively move values
-        return {k: move_to_cpu(v) for k, v in data.items()}
-    elif isinstance(data, (list, tuple)):
-        moved = [move_to_cpu(item) for item in data]
-        return type(data)(moved)
-    return data
 
 
 def run_encoder_model(
@@ -111,7 +84,6 @@ def warmup_encoder_model(model, raw_inputs, preprocess_fn, device, output_proces
     with torch.no_grad():
         for i in range(loop_count):
             output = run_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn)
-            _ = output.to("cpu")
 
     print("Warming up completed.")
 
@@ -151,7 +123,7 @@ def measure_fps_encoder_model(model, raw_inputs, preprocess_fn, device, output_p
         for i in range(loop_count):
             start_time = time.perf_counter_ns()
             output = run_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn)
-            predictions.append(output.to("cpu"))
+            predictions.append(output)
             end_time = time.perf_counter_ns()
 
             iteration_times.append(end_time - start_time)

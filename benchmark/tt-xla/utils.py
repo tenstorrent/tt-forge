@@ -349,3 +349,31 @@ def apply_last_token_pooling(hidden_states: torch.Tensor, attention_mask: torch.
     sequence_lengths = attention_mask.sum(dim=1) - 1
     batch_size = hidden_states.shape[0]
     return hidden_states[torch.arange(batch_size, device=hidden_states.device), sequence_lengths]
+
+
+def move_to_cpu(data):
+    """Recursively move all tensors in a data structure to CPU.
+
+    Handles dicts, lists, tuples, and HuggingFace ModelOutput objects.
+    Preserves the original data structure types.
+    """
+    if isinstance(data, torch.Tensor):
+        return data.cpu()
+    # Check for HuggingFace ModelOutput BEFORE dict (ModelOutput inherits from OrderedDict)
+    # ModelOutput has to_tuple() method which plain dicts don't have
+    elif hasattr(data, "to_tuple") and hasattr(data, "keys"):
+        # HuggingFace ModelOutput - modify in-place to preserve the object type
+        for key in list(data.keys()):
+            value = data[key]
+            if isinstance(value, torch.Tensor):
+                data[key] = value.cpu()
+            elif value is not None:
+                data[key] = move_to_cpu(value)
+        return data
+    elif isinstance(data, dict):
+        # Plain dicts - recursively move values
+        return {k: move_to_cpu(v) for k, v in data.items()}
+    elif isinstance(data, (list, tuple)):
+        moved = [move_to_cpu(item) for item in data]
+        return type(data)(moved)
+    return data
