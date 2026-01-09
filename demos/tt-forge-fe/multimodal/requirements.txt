@@ -1,1 +1,0 @@
-# No additional dependencies required for tt-forge-fe multimodal demos

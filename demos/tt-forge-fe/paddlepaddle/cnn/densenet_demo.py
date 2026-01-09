@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# Bloom Demo Script
+# Densenet Demo Script
 
 import forge
-from third_party.tt_forge_models.bloom.pytorch import ModelLoader
+from third_party.tt_forge_models.densenet.image_classification.paddlepaddle import ModelLoader
 
 # Load model and input
 loader = ModelLoader()
@@ -12,10 +12,10 @@ model = loader.load_model()
 inputs = loader.load_inputs()
 
 # Compile the model using Forge
-compiled_model = forge.compile(model, sample_inputs=[inputs["input_ids"], inputs["attention_mask"]])
+compiled_model = forge.compile(model, inputs)
 
 # Run inference on Tenstorrent device
-output = compiled_model(inputs)
+output = compiled_model(*inputs)
 
-# Decode the output
-loader.decode_output(output)
+# Post-process the output
+loader.print_results(output)

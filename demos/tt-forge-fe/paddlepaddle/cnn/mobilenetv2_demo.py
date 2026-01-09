@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# MGP-STR  Demo Script
+# MobileNetV2 Demo Script
 
 import forge
-from third_party.tt_forge_models.mgp_str_base.pytorch import ModelLoader
+from third_party.tt_forge_models.mobilenetv2.image_classification.paddlepaddle import ModelLoader
 
 # Load model and input
 loader = ModelLoader()
@@ -12,10 +12,10 @@ model = loader.load_model()
 inputs = loader.load_inputs()
 
 # Compile the model using Forge
-compiled_model = forge.compile(model, sample_inputs=[inputs])
+compiled_model = forge.compile(model, inputs)
 
 # Run inference on Tenstorrent device
-output = compiled_model(inputs)
+output = compiled_model(*inputs)
 
 # Post-process the output
-loader.decode_output(output)
+loader.print_results(output)
