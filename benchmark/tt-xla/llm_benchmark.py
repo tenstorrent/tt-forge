@@ -367,8 +367,7 @@ def benchmark_llm_torch_xla(
     # Check for conflicting flags
     if single_block and single_layer:
         raise ValueError(
-            "Cannot use --generate-block-test and --generate-layer-test together. "
-            "Run them as separate commands."
+            "Cannot use --generate-block-test and --generate-layer-test together. " "Run them as separate commands."
         )
 
     # =========================================================================
@@ -394,6 +393,7 @@ def benchmark_llm_torch_xla(
 
         # Find generated TTIR files (IR files are in irs/ subdirectory)
         import glob
+
         generated_files = sorted(glob.glob(f"{MODULE_EXPORT_PATH}/irs/ttir_{export_model_name}_g*.mlir"))
         if generated_files:
             print(f"Generated single block test:")
@@ -421,7 +421,7 @@ def benchmark_llm_torch_xla(
         print("Compiling prefill and decode graphs...")
         input_args = construct_inputs(tokenizer, model.config, batch_size, seq_len)
         input_args = transfer_to_device(input_args, device)
-        
+
         with torch.no_grad():
             # Prefill (g0): full sequence
             _ = compiled_model(**input_args)
@@ -435,6 +435,7 @@ def benchmark_llm_torch_xla(
 
         # Find generated TTIR files (IR files are in irs/ subdirectory)
         import glob
+
         generated_files = sorted(glob.glob(f"{MODULE_EXPORT_PATH}/irs/ttir_{export_model_name}_g*.mlir"))
         if generated_files:
             print(f"Generated single layer test (prefill + decode):")

@@ -37,17 +37,17 @@ import sys
 
 def discover_test_models():
     """Discover LLM test models from llms.py that support single_block/single_layer.
-    
+
     Filters out tests that have '# FAILED' comments before them.
     """
     llms_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "llms.py")
     with open(llms_path, "r") as f:
         source = f.read()
-    
+
     # Parse AST and keep raw lines for comment checking
     tree = ast.parse(source)
     lines = source.splitlines()
-    
+
     models = []
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
@@ -64,7 +64,7 @@ def discover_test_models():
                     prev_line = lines[func_line - 1].strip()
                     if prev_line.startswith("# FAILED"):
                         is_failed = True
-                
+
                 if not is_failed:
                     # Extract model name by removing "test_" prefix
                     model_name = node.name[5:]  # Remove "test_"
@@ -91,7 +91,7 @@ EXPECTED_FILES = ["_decode_block.mlir", "_prefill_layer.mlir", "_decode_layer.ml
 
 def check_model_status(models: list, output_dir: str) -> dict:
     """Check which models have complete/incomplete file sets.
-    
+
     Returns:
         Dict with keys: 'complete', 'incomplete', 'missing_files'
         - complete: list of model names with all 3 files
@@ -101,25 +101,21 @@ def check_model_status(models: list, output_dir: str) -> dict:
     complete = []
     incomplete = []
     missing_files = {}
-    
+
     for model in models:
         missing = []
         for suffix in EXPECTED_FILES:
             filepath = os.path.join(output_dir, f"{model}{suffix}")
             if not os.path.exists(filepath):
                 missing.append(suffix)
-        
+
         if missing:
             incomplete.append(model)
             missing_files[model] = missing
         else:
             complete.append(model)
-    
-    return {
-        "complete": complete,
-        "incomplete": incomplete,
-        "missing_files": missing_files
-    }
+
+    return {"complete": complete, "incomplete": incomplete, "missing_files": missing_files}
 
 
 def print_status_report(status: dict, total_models: int):
@@ -127,57 +123,54 @@ def print_status_report(status: dict, total_models: int):
     complete = status["complete"]
     incomplete = status["incomplete"]
     missing_files = status["missing_files"]
-    
+
     print(f"\n{'='*60}")
     print("PROGRESS REPORT")
     print(f"{'='*60}")
     print(f"Complete: {len(complete)}/{total_models} models ({100*len(complete)//total_models}%)")
     print(f"Incomplete: {len(incomplete)}/{total_models} models")
-    
+
     if complete:
         print(f"\n✓ Complete models ({len(complete)}):")
         for model in complete:
             print(f"    {model}")
-    
+
     if incomplete:
         print(f"\n✗ Incomplete models ({len(incomplete)}):")
         for model in incomplete:
             missing = missing_files[model]
             missing_short = [s.replace(".mlir", "").replace("_", " ").strip() for s in missing]
             print(f"    {model}: missing {', '.join(missing_short)}")
-    
+
     print(f"{'='*60}\n")
 
 
 def run_pytest(test_name: str, flag: str, dry_run: bool = False) -> tuple[bool, str]:
     """Run pytest for a specific test with the given flag.
-    
+
     Runs pytest from the script's directory to ensure conftest.py is found.
-    
+
     Returns:
         Tuple of (success: bool, error_message: str)
     """
     cmd = [
-        sys.executable, "-m", "pytest", "-svv",
+        sys.executable,
+        "-m",
+        "pytest",
+        "-svv",
         f"llms.py::test_{test_name}",
         flag,
     ]
     print(f"\n{'[DRY-RUN] ' if dry_run else ''}Running: {' '.join(cmd)}")
     print(f"  (from directory: {SCRIPT_DIR})")
-    
+
     if dry_run:
         return True, ""
-    
+
     try:
         # Run pytest from the script's directory so conftest.py is found
         # Capture output so we can extract error details on failure
-        result = subprocess.run(
-            cmd, 
-            check=True, 
-            capture_output=True, 
-            text=True,
-            cwd=SCRIPT_DIR
-        )
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=SCRIPT_DIR)
         # Print output on success too (so user sees progress)
         if result.stdout:
             print(result.stdout)
@@ -194,19 +187,19 @@ def run_pytest(test_name: str, flag: str, dry_run: bool = False) -> tuple[bool, 
 def extract_error_from_output(stdout: str, stderr: str) -> str:
     """Extract the most relevant error message from pytest output."""
     combined = stdout + "\n" + stderr
-    
+
     # Look for common error patterns (most specific first)
     patterns = [
         # Python exceptions with message
-        r'((?:AssertionError|RuntimeError|ValueError|TypeError|AttributeError|KeyError|ModuleNotFoundError|ImportError|FileNotFoundError|NameError|IndexError|NotImplementedError)[:\s]+[^\n]+)',
+        r"((?:AssertionError|RuntimeError|ValueError|TypeError|AttributeError|KeyError|ModuleNotFoundError|ImportError|FileNotFoundError|NameError|IndexError|NotImplementedError)[:\s]+[^\n]+)",
         # FAILED line from pytest
-        r'(FAILED[^\n]+)',
+        r"(FAILED[^\n]+)",
         # Error with traceback context
-        r'(E\s+[A-Z][a-zA-Z]+Error[:\s]+[^\n]+)',
+        r"(E\s+[A-Z][a-zA-Z]+Error[:\s]+[^\n]+)",
         # Any line starting with "Error:"
-        r'(Error:[^\n]+)',
+        r"(Error:[^\n]+)",
     ]
-    
+
     for pattern in patterns:
         match = re.search(pattern, combined, re.IGNORECASE)
         if match:
@@ -215,64 +208,64 @@ def extract_error_from_output(stdout: str, stderr: str) -> str:
             if len(error) > 200:
                 error = error[:200] + "..."
             return error
-    
+
     # If no pattern matched, get last non-empty lines from stderr
-    lines = [l.strip() for l in combined.split('\n') if l.strip()]
+    lines = [l.strip() for l in combined.split("\n") if l.strip()]
     if lines:
         # Return last few lines that might contain the error
         return " | ".join(lines[-3:])[:200]
-    
+
     return "Unknown error (check full output above)"
 
 
 def find_and_copy_ttir(model_name: str, mode: str, output_dir: str, dry_run: bool = False) -> list:
     """Find generated TTIR files and copy them with clean names.
-    
+
     Args:
         model_name: e.g., "phi_1", "falcon_3_1b" (test function name without "test_")
         mode: "blk" for block, "lyr" for layer
         output_dir: destination directory
         dry_run: if True, only print what would be done
-    
+
     Returns:
         List of copied file paths
     """
     copied_files = []
-    
+
     # Pattern: ttir_{mode}_{model}*_bs{batch}_{runid}_g{N}_{timestamp}.mlir
     # Use * after model name to catch variants
     pattern = f"{MODULES_DIR}/ttir_{mode}_{model_name}*_bs*_g*.mlir"
     all_files = glob.glob(pattern)
-    
+
     if not all_files:
         print(f"WARNING: No TTIR files found matching {pattern}")
         return copied_files
-    
+
     # Group files by graph number, keep only the most recent (highest timestamp)
     graph_files = {}  # graph_num -> (timestamp, filepath)
     for f in all_files:
-        match = re.search(r'_g(\d+)_(\d+)\.mlir$', f)
+        match = re.search(r"_g(\d+)_(\d+)\.mlir$", f)
         if not match:
             continue
         graph_num = int(match.group(1))
         timestamp = int(match.group(2))
-        
+
         if graph_num not in graph_files or timestamp > graph_files[graph_num][0]:
             graph_files[graph_num] = (timestamp, f)
-    
+
     # For block mode, only need g0; for layer mode, only need g0 and g1
     if mode == "blk":
         wanted_graphs = [0]
     else:
         wanted_graphs = [0, 1]
-    
+
     for graph_num in wanted_graphs:
         if graph_num not in graph_files:
             print(f"WARNING: Missing g{graph_num} for {model_name} {mode}")
             continue
-        
+
         src_file = graph_files[graph_num][1]
-        
+
         # Determine output name
         if mode == "blk":
             dst_name = f"{model_name}_decode_block.mlir"
@@ -281,17 +274,17 @@ def find_and_copy_ttir(model_name: str, mode: str, output_dir: str, dry_run: boo
                 dst_name = f"{model_name}_prefill_layer.mlir"
             else:
                 dst_name = f"{model_name}_decode_layer.mlir"
-        
+
         dst_file = os.path.join(output_dir, dst_name)
-        
+
         if dry_run:
             print(f"[DRY-RUN] Would copy: {src_file} -> {dst_file}")
         else:
             shutil.copy2(src_file, dst_file)
             print(f"Copied: {src_file} -> {dst_file}")
-        
+
         copied_files.append(dst_file)
-    
+
     return copied_files
 
 
@@ -301,46 +294,28 @@ def main():
         "--models",
         type=str,
         default=None,
-        help=f"Comma-separated list of models or prefixes (e.g., 'gemma' matches all gemma models). Available: {','.join(ALL_MODELS)}"
+        help=f"Comma-separated list of models or prefixes (e.g., 'gemma' matches all gemma models). Available: {','.join(ALL_MODELS)}",
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print what would be done without actually running tests"
+        "--dry-run", action="store_true", help="Print what would be done without actually running tests"
+    )
+    parser.add_argument("--skip-block", action="store_true", help="Skip block tests (--generate-block-test)")
+    parser.add_argument("--skip-layer", action="store_true", help="Skip layer tests (--generate-layer-test)")
+    parser.add_argument(
+        "--clean-dir", action="store_true", help="Clear output directory (llm_blocks_and_layers) before running"
     )
     parser.add_argument(
-        "--skip-block",
-        action="store_true",
-        help="Skip block tests (--generate-block-test)"
-    )
-    parser.add_argument(
-        "--skip-layer",
-        action="store_true",
-        help="Skip layer tests (--generate-layer-test)"
-    )
-    parser.add_argument(
-        "--clean-dir",
-        action="store_true",
-        help="Clear output directory (llm_blocks_and_layers) before running"
-    )
-    parser.add_argument(
-        "--copy-only",
-        action="store_true",
-        help="Skip pytest, only find and copy existing TTIR files from modules/irs/"
+        "--copy-only", action="store_true", help="Skip pytest, only find and copy existing TTIR files from modules/irs/"
     )
     parser.add_argument(
         "--continue",
         dest="continue_mode",
         action="store_true",
-        help="Continue from previous run: show progress, skip complete models, redo incomplete ones"
+        help="Continue from previous run: show progress, skip complete models, redo incomplete ones",
     )
-    parser.add_argument(
-        "--status-only",
-        action="store_true",
-        help="Only show status report, don't run any tests"
-    )
+    parser.add_argument("--status-only", action="store_true", help="Only show status report, don't run any tests")
     args = parser.parse_args()
-    
+
     # Parse models - supports exact names or prefixes (e.g., "gemma" matches all gemma models)
     if args.models:
         patterns = [m.strip() for m in args.models.split(",")]
@@ -361,25 +336,25 @@ def main():
         models = list(dict.fromkeys(models))
     else:
         models = ALL_MODELS
-    
+
     # Clear output directory if requested
     if args.clean_dir and os.path.exists(OUTPUT_DIR):
         shutil.rmtree(OUTPUT_DIR)
         print(f"Cleared output directory: {OUTPUT_DIR}")
-    
+
     # Create output directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print(f"Output directory: {OUTPUT_DIR}")
-    
+
     # Handle --continue and --status-only modes
     if args.continue_mode or args.status_only:
         status = check_model_status(models, OUTPUT_DIR)
         print_status_report(status, len(models))
-        
+
         if args.status_only:
             # Exit after showing status
             return
-        
+
         # In continue mode, only process incomplete models
         if status["incomplete"]:
             print(f"Continuing with {len(status['incomplete'])} incomplete model(s)...\n")
@@ -387,15 +362,15 @@ def main():
         else:
             print("All models complete! Nothing to do.")
             return
-    
+
     # Track results
     results = {"success": [], "failed": [], "skipped": []}
-    
+
     for model in models:
         print(f"\n{'='*60}")
         print(f"Processing: {model}")
         print(f"{'='*60}")
-        
+
         # Run block test
         if not args.skip_block:
             if args.copy_only:
@@ -411,7 +386,7 @@ def main():
                     results["skipped"].append(f"{model}_block")
             else:
                 results["failed"].append((f"{model}_block", error_msg))
-        
+
         # Run layer test
         if not args.skip_layer:
             if args.copy_only:
@@ -427,7 +402,7 @@ def main():
                     results["skipped"].append(f"{model}_layer")
             else:
                 results["failed"].append((f"{model}_layer", error_msg))
-    
+
     # Print summary
     print(f"\n{'='*60}")
     print("SUMMARY")
@@ -435,13 +410,13 @@ def main():
     print(f"Success: {len(results['success'])} files")
     for f in results["success"]:
         print(f"  ✓ {f}")
-    
+
     if results["skipped"]:
         print(f"\n⚠ Files not found: {len(results['skipped'])} tests (test passed but TTIR files not matched)")
         print(f"  This is likely a naming mismatch - check modules/irs/ for actual filenames")
         for f in results["skipped"]:
             print(f"  ⊘ {f}")
-    
+
     if results["failed"]:
         print(f"\nFailed: {len(results['failed'])} tests")
         for test_name, error_msg in results["failed"]:
@@ -449,10 +424,9 @@ def main():
             if error_msg:
                 print(f"      → {error_msg}")
         sys.exit(1)
-    
+
     print(f"\nAll files saved to: {OUTPUT_DIR}/")
 
 
 if __name__ == "__main__":
     main()
-
