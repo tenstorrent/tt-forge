@@ -21,13 +21,13 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    get_export_options,
+    MODULE_EXPORT_PATH,
 )
 
 xr.set_device_type("TT")
 
 MIN_STEPS = 16
-
-MODULE_EXPORT_PATH = "modules"
 
 
 def setup_model(model_loader, model_variant=None, data_format="bfloat16") -> tuple[torch.nn.Module, str]:
@@ -288,15 +288,18 @@ def benchmark_vision_torch_xla(
         golden_output = framework_model(golden_input)
         golden_output = read_logits_fn(golden_output)
 
-    # Set XLA compilation options
-    options = {
-        "optimization_level": optimization_level,
-        "export_path": MODULE_EXPORT_PATH,
-        "ttnn_perf_metrics_enabled": True,
-        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
-        "enable_trace": trace_enabled,
-    }
-
+    # Get export options using shared utility
+    # Extract a clean model nickname from model_info (e.g., "pytorch_resnet_ResNet50_...")
+    model_nickname = model_info.replace("/", "_").replace("-", "_").lower()
+    options = get_export_options(
+        model_name=model_nickname,
+        batch_size=batch_size,
+        optimization_level=optimization_level,
+        trace_enabled=trace_enabled,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+    )
+    export_model_name = options["export_model_name"]
+    print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
     torch_xla.set_custom_compile_options(options)
 
     # Compile model

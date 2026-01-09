@@ -31,6 +31,8 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    get_export_options,
+    MODULE_EXPORT_PATH,
 )
 
 xr.set_device_type("TT")
@@ -39,8 +41,6 @@ MIN_STEPS = 16
 
 # Default input prompt
 DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
-
-MODULE_EXPORT_PATH = "modules"
 
 
 def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
@@ -257,6 +257,8 @@ def benchmark_llm_torch_xla(
     mesh,
     shard_spec_fn,
     arch,
+    single_block=False,
+    single_layer=False,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -338,6 +340,116 @@ def benchmark_llm_torch_xla(
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
+    # Determine mode tag for file naming
+    model_nickname = model_variant.name.lower()  # e.g., "phi1", "qwen_2_5_0_5b_instruct"
+    if single_block:
+        mode_tag = "blk"
+    elif single_layer:
+        mode_tag = "lyr"
+    else:
+        mode_tag = "full"
+
+    # Get export options using shared utility
+    options = get_export_options(
+        model_name=model_nickname,
+        mode=mode_tag,
+        batch_size=batch_size,
+        optimization_level=optimization_level,
+        trace_enabled=trace_enabled,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+        enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
+    )
+    export_model_name = options["export_model_name"]
+    print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
+    torch_xla.set_custom_compile_options(options)
+
+    # Check for conflicting flags
+    if single_block and single_layer:
+        raise ValueError(
+            "Cannot use --generate-block-test and --generate-layer-test together. " "Run them as separate commands."
+        )
+
+    # =========================================================================
+    # SINGLE BLOCK MODE: Compile and export decoder block only (no benchmarking)
+    # =========================================================================
+    if single_block:
+        hidden_size = model.hidden_size
+        seq_len = 1  # Decode block: single token
+
+        # Create hidden_states input (the wrapper handles position_ids internally)
+        hidden_states = torch.randn(batch_size, seq_len, hidden_size, dtype=torch.bfloat16)
+
+        # Transfer to device
+        model = model.to(device, dtype=torch.bfloat16)
+        hidden_states = hidden_states.to(device)
+
+        # Compile and run once to generate MLIR
+        compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": experimental_compile})
+
+        with torch.no_grad():
+            _ = compiled_model(hidden_states)
+        xm.mark_step()
+
+        # Find generated TTIR files (IR files are in irs/ subdirectory)
+        import glob
+
+        generated_files = sorted(glob.glob(f"{MODULE_EXPORT_PATH}/irs/ttir_{export_model_name}_g*.mlir"))
+        if generated_files:
+            print(f"Generated single block test:")
+            for f in generated_files:
+                print(f"  {f}")
+        else:
+            print(f"Generated single block test: {export_model_name} (files not found in {MODULE_EXPORT_PATH}/irs/)")
+
+        return {"status": "success", "mode": "single_block", "model": model_variant.name}
+
+    # =========================================================================
+    # SINGLE LAYER MODE: Compile and export model with num_layers=1 (no benchmarking)
+    # =========================================================================
+    if single_layer:
+        seq_len = input_sequence_length
+
+        # Transfer model to device
+        model = model.to(device, dtype=torch.bfloat16)
+
+        # Compile model
+        compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": experimental_compile})
+
+        # Use pre-constructed inputs with StaticCache (avoids HybridCache tracing issues)
+        # This is required for models like Gemma 2 that create caches internally
+        print("Compiling prefill and decode graphs...")
+        input_args = construct_inputs(tokenizer, model.config, batch_size, seq_len)
+        input_args = transfer_to_device(input_args, device)
+
+        with torch.no_grad():
+            # Prefill (g0): full sequence
+            _ = compiled_model(**input_args)
+            xm.mark_step()
+
+            # Decode (g1): update cache_position for next token
+            input_args["input_ids"] = torch.randint(0, model.config.vocab_size, (batch_size, 1)).to(device)
+            input_args["cache_position"] = torch.tensor([seq_len]).to(device)
+            _ = compiled_model(**input_args)
+            xm.mark_step()
+
+        # Find generated TTIR files (IR files are in irs/ subdirectory)
+        import glob
+
+        generated_files = sorted(glob.glob(f"{MODULE_EXPORT_PATH}/irs/ttir_{export_model_name}_g*.mlir"))
+        if generated_files:
+            print(f"Generated single layer test (prefill + decode):")
+            for f in generated_files:
+                print(f"  {f}")
+        else:
+            print(f"Generated single layer test: {export_model_name} (files not found in {MODULE_EXPORT_PATH}/irs/)")
+
+        return {"status": "success", "mode": "single_layer", "model": model_variant.name}
+
+    # =========================================================================
+    # FULL MODEL MODE: Autoregressive text generation benchmark
+    # =========================================================================
+
     # Construct inputs, including static cache
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
 
@@ -399,11 +511,12 @@ def benchmark_llm_torch_xla(
             xs.mark_sharding(key, mesh, (None, "model", None, None))
             xs.mark_sharding(value, mesh, (None, "model", None, None))
 
-    # Set XLA compilation options
+    # Set XLA compilation options (reuse export_model_name from earlier setup)
     options = {
         "optimization_level": optimization_level,
         "enable_trace": trace_enabled,
         "export_path": MODULE_EXPORT_PATH,
+        "export_model_name": export_model_name,
         "ttnn_perf_metrics_enabled": True,
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
