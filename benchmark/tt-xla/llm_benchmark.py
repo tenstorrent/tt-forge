@@ -510,11 +510,12 @@ def benchmark_llm_torch_xla(
             xs.mark_sharding(key, mesh, (None, "model", None, None))
             xs.mark_sharding(value, mesh, (None, "model", None, None))
 
-    # Set XLA compilation options
+    # Set XLA compilation options (reuse export_model_name from earlier setup)
     options = {
         "optimization_level": optimization_level,
         "enable_trace": trace_enabled,
         "export_path": MODULE_EXPORT_PATH,
+        "export_model_name": export_model_name,
         "ttnn_perf_metrics_enabled": True,
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
