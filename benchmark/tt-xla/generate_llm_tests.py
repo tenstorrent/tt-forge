@@ -9,7 +9,7 @@ This script:
 1. Runs --generate-block-test for each LLM (decoder block only)
 2. Runs --generate-layer-test for each LLM (prefill g0 + decode g1)
 3. Copies TTIRs to llm_blocks_and_layers/ with clean names:
-   - {model}_block.mlir
+   - {model}_decode_block.mlir
    - {model}_prefill_layer.mlir
    - {model}_decode_layer.mlir
 
@@ -21,6 +21,8 @@ Example:
     python generate_llm_tests.py --models gemma  # Run all gemma models
     python generate_llm_tests.py --models qwen   # Run all qwen models
     python generate_llm_tests.py  # Run all models
+    python generate_llm_tests.py --continue      # Resume: skip complete models, redo incomplete
+    python generate_llm_tests.py --status-only   # Just show progress report
 """
 
 import argparse
@@ -82,6 +84,69 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Directory for output (in script directory)
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "llm_blocks_and_layers")
 MODULES_DIR = os.path.join(SCRIPT_DIR, "modules/irs")
+
+# Expected files per model (all 3 required for "complete")
+EXPECTED_FILES = ["_decode_block.mlir", "_prefill_layer.mlir", "_decode_layer.mlir"]
+
+
+def check_model_status(models: list, output_dir: str) -> dict:
+    """Check which models have complete/incomplete file sets.
+    
+    Returns:
+        Dict with keys: 'complete', 'incomplete', 'missing_files'
+        - complete: list of model names with all 3 files
+        - incomplete: list of model names missing at least one file
+        - missing_files: dict mapping model -> list of missing file suffixes
+    """
+    complete = []
+    incomplete = []
+    missing_files = {}
+    
+    for model in models:
+        missing = []
+        for suffix in EXPECTED_FILES:
+            filepath = os.path.join(output_dir, f"{model}{suffix}")
+            if not os.path.exists(filepath):
+                missing.append(suffix)
+        
+        if missing:
+            incomplete.append(model)
+            missing_files[model] = missing
+        else:
+            complete.append(model)
+    
+    return {
+        "complete": complete,
+        "incomplete": incomplete,
+        "missing_files": missing_files
+    }
+
+
+def print_status_report(status: dict, total_models: int):
+    """Print a status report of complete/incomplete models."""
+    complete = status["complete"]
+    incomplete = status["incomplete"]
+    missing_files = status["missing_files"]
+    
+    print(f"\n{'='*60}")
+    print("PROGRESS REPORT")
+    print(f"{'='*60}")
+    print(f"Complete: {len(complete)}/{total_models} models ({100*len(complete)//total_models}%)")
+    print(f"Incomplete: {len(incomplete)}/{total_models} models")
+    
+    if complete:
+        print(f"\n✓ Complete models ({len(complete)}):")
+        for model in complete:
+            print(f"    {model}")
+    
+    if incomplete:
+        print(f"\n✗ Incomplete models ({len(incomplete)}):")
+        for model in incomplete:
+            missing = missing_files[model]
+            missing_short = [s.replace(".mlir", "").replace("_", " ").strip() for s in missing]
+            print(f"    {model}: missing {', '.join(missing_short)}")
+    
+    print(f"{'='*60}\n")
 
 
 def run_pytest(test_name: str, flag: str, dry_run: bool = False) -> tuple[bool, str]:
@@ -164,7 +229,7 @@ def find_and_copy_ttir(model_name: str, mode: str, output_dir: str, dry_run: boo
     """Find generated TTIR files and copy them with clean names.
     
     Args:
-        model_name: e.g., "phi1", "falcon3_1b" (test function name without "test_")
+        model_name: e.g., "phi_1", "falcon_3_1b" (test function name without "test_")
         mode: "blk" for block, "lyr" for layer
         output_dir: destination directory
         dry_run: if True, only print what would be done
@@ -175,20 +240,9 @@ def find_and_copy_ttir(model_name: str, mode: str, output_dir: str, dry_run: boo
     copied_files = []
     
     # Pattern: ttir_{mode}_{model}*_bs{batch}_{runid}_g{N}_{timestamp}.mlir
-    # Use * after model_name to catch variants like llama_3_2_1b_instruct
+    # Use * after model name to catch variants
     pattern = f"{MODULES_DIR}/ttir_{mode}_{model_name}*_bs*_g*.mlir"
     all_files = glob.glob(pattern)
-    
-    # Fallback: model variant name may differ from test name (e.g., falcon3_1b vs falcon_1b)
-    # Try without version numbers in the name
-    if not all_files:
-        # Try stripping digits between name parts: falcon3_1b -> falcon*1b
-        alt_pattern = re.sub(r'(\d+)_', r'*', model_name, count=1)
-        if alt_pattern != model_name:
-            pattern = f"{MODULES_DIR}/ttir_{mode}_{alt_pattern}*_bs*_g*.mlir"
-            all_files = glob.glob(pattern)
-            if all_files:
-                print(f"  (matched with alternate pattern: {alt_pattern})")
     
     if not all_files:
         print(f"WARNING: No TTIR files found matching {pattern}")
@@ -274,6 +328,17 @@ def main():
         action="store_true",
         help="Skip pytest, only find and copy existing TTIR files from modules/irs/"
     )
+    parser.add_argument(
+        "--continue",
+        dest="continue_mode",
+        action="store_true",
+        help="Continue from previous run: show progress, skip complete models, redo incomplete ones"
+    )
+    parser.add_argument(
+        "--status-only",
+        action="store_true",
+        help="Only show status report, don't run any tests"
+    )
     args = parser.parse_args()
     
     # Parse models - supports exact names or prefixes (e.g., "gemma" matches all gemma models)
@@ -305,6 +370,23 @@ def main():
     # Create output directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print(f"Output directory: {OUTPUT_DIR}")
+    
+    # Handle --continue and --status-only modes
+    if args.continue_mode or args.status_only:
+        status = check_model_status(models, OUTPUT_DIR)
+        print_status_report(status, len(models))
+        
+        if args.status_only:
+            # Exit after showing status
+            return
+        
+        # In continue mode, only process incomplete models
+        if status["incomplete"]:
+            print(f"Continuing with {len(status['incomplete'])} incomplete model(s)...\n")
+            models = status["incomplete"]
+        else:
+            print("All models complete! Nothing to do.")
+            return
     
     # Track results
     results = {"success": [], "failed": [], "skipped": []}
