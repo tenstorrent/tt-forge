@@ -257,6 +257,7 @@ def benchmark_llm_torch_xla(
     mesh,
     shard_spec_fn,
     arch,
+    required_pcc,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -282,6 +283,7 @@ def benchmark_llm_torch_xla(
         experimental_enable_permute_matmul_fusion: Whether to enable permute matmul fusion optimization
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         read_logits_fn: Callback function to extract logits from model output
+        required_pcc: Required PCC threshold for validation
 
     Returns:
         Benchmark result containing token generation performance metrics and model information
@@ -513,7 +515,7 @@ def benchmark_llm_torch_xla(
     )
 
     # Check PCC
-    pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=0.95)
+    pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=required_pcc)
     print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     result = create_benchmark_result(
