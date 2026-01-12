@@ -11,6 +11,7 @@ import time
 import torch
 import torch_xla
 import torch_xla.runtime as xr
+import torch.nn as nn
 
 from benchmark.utils import get_xla_device_arch
 from utils import (
@@ -28,7 +29,7 @@ MIN_STEPS = 16
 MODULE_EXPORT_PATH = "modules"
 
 
-def warmup_vision_model(model, inputs, device, loop_count, preprocess_fn, output_processor_fn, data_format):
+def warmup_vision_model(model, inputs, device, loop_count, extract_output_tensor_fn):
     """
     Warmup the model for a given number of loop_count.
 
@@ -37,18 +38,13 @@ def warmup_vision_model(model, inputs, device, loop_count, preprocess_fn, output
     model: Callable
         The model to warmup.
     inputs: list
-        List of input tensors for the model.
+        List of preprocessed input tensors for the model.
     device: torch.device
         The device to run the warmup on.
     loop_count: int
         The number of loop_count to warmup the model.
-    preprocess_fn: Callable
-        Function to preprocess input (dtype conversion + device placement).
-        Signature: fn(input_tensor, device, data_format) -> tensor on device.
-    output_processor_fn: Callable
-        Function to process model output (e.g. extract logits).
-    data_format: str
-        Data format (bfloat16 or float32).
+    extract_output_tensor_fn: Callable
+        Function to extract tensor from model output (e.g. get .logits from HF output).
     """
     print("Warming up the device...")
 
@@ -57,17 +53,17 @@ def warmup_vision_model(model, inputs, device, loop_count, preprocess_fn, output
 
     with torch.no_grad():
         for i in range(loop_count):
-            # Preprocess input (dtype conversion + device placement)
-            device_input = preprocess_fn(inputs[i], device, data_format)
+            # Move input to device
+            device_input = inputs[i].to(device)
             # Model forward, non blocking.
             output = model(device_input)
-            # Process output (extract logits + move to CPU)
-            _ = move_to_cpu(output_processor_fn(output))
+            # Extract output tensor and move to CPU
+            _ = move_to_cpu(extract_output_tensor_fn(output))
 
     print("Warming up completed.")
 
 
-def measure_fps_vision_model(model, inputs, device, loop_count, preprocess_fn, output_processor_fn, data_format):
+def measure_fps_vision_model(model, inputs, device, loop_count, extract_output_tensor_fn):
     """
     Benchmark the model for a given number of loop_count.
 
@@ -76,18 +72,13 @@ def measure_fps_vision_model(model, inputs, device, loop_count, preprocess_fn, o
     model: Callable
         The model to benchmark.
     inputs: list
-        List of input tensors for benchmarking.
+        List of preprocessed input tensors for benchmarking.
     device: torch.device
         The device to run the benchmark on.
     loop_count: int
         Number of batches to process.
-    preprocess_fn: Callable
-        Function to preprocess input (dtype conversion + device placement).
-        Signature: fn(input_tensor, device, data_format) -> tensor on device.
-    output_processor_fn: Callable
-        Function to process model output (e.g. extract logits).
-    data_format: str
-        Data format (bfloat16 or float32).
+    extract_output_tensor_fn: Callable
+        Function to extract tensor from model output (e.g. get .logits from HF output).
 
     Returns:
     -------
@@ -107,14 +98,14 @@ def measure_fps_vision_model(model, inputs, device, loop_count, preprocess_fn, o
         for i in range(loop_count):
             start_time = time.perf_counter_ns()
 
-            # Preprocess input (dtype conversion + device placement)
-            device_input = preprocess_fn(inputs[i], device, data_format)
+            # Move input to device
+            device_input = inputs[i].to(device)
 
             # Model forward, non blocking.
             output = model(device_input)
 
-            # Process output (extract logits + move to CPU)
-            output_cpu = move_to_cpu(output_processor_fn(output))
+            # Extract output tensor and move to CPU
+            output_cpu = move_to_cpu(extract_output_tensor_fn(output))
             predictions.append(output_cpu)
 
             end_time = time.perf_counter_ns()
@@ -142,8 +133,7 @@ def benchmark_vision_torch_xla(
     experimental_compile,
     ttnn_perf_metrics_output_file,
     load_inputs_fn,
-    preprocess_fn,
-    output_processor_fn,
+    extract_output_tensor_fn,
     required_pcc=0.97,
 ):
     """
@@ -165,11 +155,9 @@ def benchmark_vision_torch_xla(
         data_format: Data precision format
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
-        load_inputs_fn: Function to load raw inputs for the model.
-            Signature: fn(batch_size, loop_count, channel_size, input_size) -> List[Tensor]
-        preprocess_fn: Function to preprocess inputs (dtype conversion + device placement).
-            Signature: fn(input_tensor, device, data_format) -> tensor on device
-        output_processor_fn: Function to process model outputs (e.g. extract logits).
+        load_inputs_fn: Function to load preprocessed inputs for the model.
+            Signature: fn(batch_size, loop_count) -> List[Tensor]
+        extract_output_tensor_fn: Function to extract tensor from model outputs (e.g. get .logits).
         required_pcc: Minimum PCC threshold for output validation
 
     Returns:
@@ -178,15 +166,14 @@ def benchmark_vision_torch_xla(
 
     framework_model = model
 
-    # Load inputs using provided function
-    inputs = load_inputs_fn(batch_size, loop_count, channel_size, input_size)
-    warmup_inputs = load_inputs_fn(batch_size, loop_count, channel_size, input_size)
+    # Load preprocessed inputs using provided function
+    inputs = load_inputs_fn(batch_size, loop_count)
+    warmup_inputs = load_inputs_fn(batch_size, loop_count)
 
     # Generate golden output for PCC calculation (run on CPU)
-    golden_input = preprocess_fn(inputs[0], device="cpu", data_format=data_format)
     with torch.no_grad():
-        golden_output = framework_model(golden_input)
-        golden_output = output_processor_fn(golden_output)
+        golden_output = framework_model(inputs[0])
+        golden_output = extract_output_tensor_fn(golden_output)
 
     # Set XLA compilation options
     options = {
@@ -223,9 +210,7 @@ def benchmark_vision_torch_xla(
         inputs=warmup_inputs,
         device=device,
         loop_count=loop_count,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
-        data_format=data_format,
+        extract_output_tensor_fn=extract_output_tensor_fn,
     )
 
     # Benchmark
@@ -234,9 +219,7 @@ def benchmark_vision_torch_xla(
         inputs=inputs,
         device=device,
         loop_count=loop_count,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
-        data_format=data_format,
+        extract_output_tensor_fn=extract_output_tensor_fn,
     )
 
     total_samples = batch_size * loop_count
