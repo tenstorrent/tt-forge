@@ -117,6 +117,13 @@ def construct_inputs(
     return input_args
 
 
+def get_mesh(model_loader, mesh_config_fn):
+    num_devices = xr.global_runtime_device_count()
+    mesh_shape, mesh_name = mesh_config_fn(model_loader, num_devices)
+    device_ids = np.array(range(num_devices))
+    return Mesh(device_ids, mesh_shape, mesh_name)
+
+
 def transfer_to_device(input_args: dict, device: torch.device) -> tuple[torch.nn.Module, dict]:
     """
     Transfer inputs to device.
@@ -254,7 +261,7 @@ def benchmark_llm_torch_xla(
     experimental_enable_permute_matmul_fusion,
     ttnn_perf_metrics_output_file,
     read_logits_fn,
-    mesh,
+    mesh_config_fn,
     shard_spec_fn,
     arch,
 ):
@@ -321,8 +328,8 @@ def benchmark_llm_torch_xla(
     xr.set_device_type("TT")
 
     # Set up for multi-chip if applicable
-    if mesh is not None and shard_spec_fn is not None:
-        is_multichip = len(mesh.device_ids) > 1
+    if mesh_config_fn is not None and shard_spec_fn is not None:
+        is_multichip = xr.global_runtime_device_count() > 1
         if is_multichip:
             os.environ["CONVERT_SHLO_TO_SHARDY"] = "1"
             xr.use_spmd()
@@ -387,6 +394,7 @@ def benchmark_llm_torch_xla(
     # Shard model if shard spec function is provided
     if is_multichip:
         shard_specs = shard_spec_fn(model_loader, model)
+        mesh = get_mesh(model_loader, mesh_config_fn)
         if shard_specs is not None:
             for tensor, shard_spec in shard_specs.items():
                 xs.mark_sharding(tensor, mesh, shard_spec)
