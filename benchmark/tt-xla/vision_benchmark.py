@@ -12,7 +12,7 @@ import torch
 import torch_xla
 import torch_xla.runtime as xr
 
-from benchmark.utils import measure_cpu_fps, get_xla_device_arch
+from benchmark.utils import get_xla_device_arch
 from utils import (
     get_benchmark_metadata,
     print_benchmark_results,
@@ -134,13 +134,11 @@ def benchmark_vision_torch_xla(
     model_info_name,
     optimization_level,
     trace_enabled,
-    training,
     batch_size,
     loop_count,
     input_size,
     channel_size,
     data_format,
-    measure_cpu,
     experimental_compile,
     ttnn_perf_metrics_output_file,
     load_inputs_fn,
@@ -160,13 +158,11 @@ def benchmark_vision_torch_xla(
         model_info_name: Model name for identification and reporting
         optimization_level: tt-mlir optimization level for compilation
         trace_enabled: Whether to enable tracing
-        training: Whether to run in training mode (not supported)
         batch_size: Batch size for inference
         loop_count: Number of inference iterations to benchmark
         input_size: Tuple of (height, width) for model inputs
         channel_size: Number of input channels
         data_format: Data precision format
-        measure_cpu: Whether to measure CPU baseline performance
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         load_inputs_fn: Function to load raw inputs for the model.
@@ -180,21 +176,11 @@ def benchmark_vision_torch_xla(
         Benchmark result containing performance metrics and model information
     """
 
-    if training:
-        pytest.skip("Training is not supported")
-
     framework_model = model
 
     # Load inputs using provided function
     inputs = load_inputs_fn(batch_size, loop_count, channel_size, input_size)
     warmup_inputs = load_inputs_fn(batch_size, loop_count, channel_size, input_size)
-
-    # Measure CPU performance
-    if measure_cpu:
-        cpu_input = inputs[0][0].reshape(1, *inputs[0][0].shape[0:])
-        cpu_fps = measure_cpu_fps(framework_model, cpu_input)
-    else:
-        cpu_fps = -1.0
 
     # Generate golden output for PCC calculation (run on CPU)
     golden_input = preprocess_fn(inputs[0], device="cpu", data_format=data_format)
@@ -263,14 +249,6 @@ def benchmark_vision_torch_xla(
     dataset_name = "Random Data"
     num_layers = -1
 
-    custom_measurements = [
-        {
-            "measurement_name": "cpu_fps",
-            "value": cpu_fps,
-            "target": -1,
-        }
-    ]
-
     evaluation_score = 0.0
     print_benchmark_results(
         model_title=full_model_name,
@@ -282,7 +260,6 @@ def benchmark_vision_torch_xla(
         total_time=total_time,
         total_samples=total_samples,
         samples_per_sec=samples_per_sec,
-        cpu_samples_per_sec=cpu_fps,
         evaluation_score=evaluation_score,
         batch_size=batch_size,
         data_format=data_format,
@@ -303,11 +280,9 @@ def benchmark_vision_torch_xla(
         input_size=input_size,
         loop_count=loop_count,
         data_format=data_format,
-        training=training,
         total_time=total_time,
         total_samples=total_samples,
         evaluation_score=evaluation_score,
-        custom_measurements=custom_measurements,
         optimization_level=optimization_level,
         program_cache_enabled=True,
         trace_enabled=trace_enabled,

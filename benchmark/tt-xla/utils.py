@@ -234,7 +234,6 @@ def create_benchmark_result(
     input_size: tuple,
     loop_count: int,
     data_format: str,
-    training: bool,
     total_time: float,
     total_samples: int,
     evaluation_score: Optional[float] = None,
@@ -326,7 +325,6 @@ def create_benchmark_result(
         "output_sequence_length": -1,
         "image_dimension": image_dimension,
         "perf_analysis": False,
-        "training": training,
         "measurements": measurements,
         "device_info": {
             "device_name": device_name,

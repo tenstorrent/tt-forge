@@ -50,7 +50,6 @@ DEFAULT_BATCH_SIZE = 1
 DEFAULT_LOOP_COUNT = 32
 DEFAULT_INPUT_SEQUENCE_LENGTH = 128
 DEFAULT_DATA_FORMAT = "bfloat16"
-DEFAULT_MEASURE_CPU = False
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = False
@@ -70,7 +69,6 @@ def test_encoder(
     loop_count=DEFAULT_LOOP_COUNT,
     input_sequence_length=DEFAULT_INPUT_SEQUENCE_LENGTH,
     data_format=DEFAULT_DATA_FORMAT,
-    measure_cpu=DEFAULT_MEASURE_CPU,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
@@ -92,7 +90,6 @@ def test_encoder(
         loop_count: Number of benchmark iterations
         input_sequence_length: Length of input sentence
         data_format: Data format
-        measure_cpu: Measure CPU FPS
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
@@ -113,7 +110,6 @@ def test_encoder(
     loop_count={loop_count}
     input_sequence_length={input_sequence_length}
     data_format={data_format}
-    measure_cpu={measure_cpu}
     experimental_compile={experimental_compile}
     required_pcc={required_pcc}
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
@@ -127,12 +123,10 @@ def test_encoder(
         model_info_name=model_info_name,
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
-        training=False,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
         loop_count=loop_count,
         data_format=data_format,
-        measure_cpu=measure_cpu,
         experimental_compile=experimental_compile,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         load_inputs_fn=load_inputs_fn,
