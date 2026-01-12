@@ -167,61 +167,61 @@
       {
         "name": "mistral_nemo_instruct_2407_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_mistral_nemo_instruct_2407_tp",
+        "runs-on": "llmbox"
+      },
+      {
+        "name": "devstral_small_2505_tp",
+        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
         "pytest": "benchmark/tt-xla/llms.py::test_devstral_small_2505_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "magistral_small_2506_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_14b_instruct_tp",
-        "runs-on": "llmbox"
-      },
-      {
-        "name": "magistral_small_2506_tp",
-        "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_0_6b_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_magistral_small_2506_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "qwen_2_5_14b_instruct_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_1_7b_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_14b_instruct_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "qwen_3_0_6b_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_8b_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_0_6b_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "qwen_3_1_7b_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_embedding_8b_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_1_7b_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "qwen_3_8b_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_falcon_7b_instruct_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_8b_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "qwen_3_embedding_8b_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_8b_instruct_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_embedding_8b_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "falcon_7b_instruct_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_1_8b_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_falcon_7b_instruct_tp",
         "runs-on": "llmbox"
       },
       {
         "name": "llama_3_8b_instruct_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_1_8b_tp",
+        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_8b_instruct_tp",
         "runs-on": "llmbox"
       },
       {
@@ -230,6 +230,7 @@
         "pytest": "benchmark/tt-xla/llms.py::test_llama_3_1_8b_tp",
         "runs-on": "llmbox"
       },
+
       {
         "name": "microsoft_phi-1",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
