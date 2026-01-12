@@ -169,7 +169,7 @@ def test_llama_3_2_3b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_llama_3_8b(output_file):
+def test_llama_3_8b_tp(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -195,7 +195,7 @@ def test_llama_3_8b(output_file):
     )
 
 
-def test_qwen_3_14b(output_file):
+def test_qwen_3_14b_tp(output_file):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -246,7 +246,7 @@ def test_falcon3_7b_tp(output_file):
     )
 
 
-def test_falcon3_10b(output_file):
+def test_falcon3_10b_tp(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -271,7 +271,7 @@ def test_falcon3_10b(output_file):
     )
 
 
-def test_gemma1_1_7b(output_file):
+def test_gemma_1_1_7b_tp(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -296,7 +296,7 @@ def test_gemma1_1_7b(output_file):
     )
 
 
-def test_gemma2_9b(output_file):
+def test_gemma_2_9b_tp(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -321,7 +321,7 @@ def test_gemma2_9b(output_file):
     )
 
 
-def test_llama_3_1_8b_instruct(output_file):
+def test_llama_3_1_8b_instruct_tp(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -346,7 +346,7 @@ def test_llama_3_1_8b_instruct(output_file):
     )
 
 
-def test_pixtral(output_file):
+def test_pixtral_tp(output_file):
     from third_party.tt_forge_models.mistral.pixtral.pytorch.loader import ModelLoader
 
     num_devices = xr.global_runtime_device_count()
@@ -421,7 +421,7 @@ def test_ministral_8b_tp(output_file):
     )
 
 
-def test_mistral_small_24b_instruct_2501(output_file):
+def test_mistral_small_24b_instruct_2501_tp(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -446,7 +446,7 @@ def test_mistral_small_24b_instruct_2501(output_file):
     )
 
 
-def test_mistral_nemo_instruct_2407(output_file):
+def test_mistral_nemo_instruct_2407_tp(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -471,7 +471,7 @@ def test_mistral_nemo_instruct_2407(output_file):
     )
 
 
-def test_devstral_small_2505(output_file):
+def test_devstral_small_2505_tp(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -496,7 +496,7 @@ def test_devstral_small_2505(output_file):
     )
 
 
-def test_magistral_small_2506(output_file):
+def test_magistral_small_2506_tp(output_file):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -521,7 +521,7 @@ def test_magistral_small_2506(output_file):
     )
 
 
-def test_qwen_2_5_14b_instruct(output_file):
+def test_qwen_2_5_14b_instruct_tp(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -621,7 +621,7 @@ def test_qwen_3_8b_tp(output_file):
     )
 
 
-def test_qwen_3_embedding_8b(output_file):
+def test_qwen_3_embedding_8b_tp(output_file):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -646,7 +646,7 @@ def test_qwen_3_embedding_8b(output_file):
     )
 
 
-def test_falcon_7b_instruct(output_file):
+def test_falcon_7b_instruct_tp(output_file):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
@@ -671,7 +671,7 @@ def test_falcon_7b_instruct(output_file):
     )
 
 
-def test_llama_3_8b_instruct(output_file):
+def test_llama_3_8b_instruct_tp(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     num_devices = xr.global_runtime_device_count()
