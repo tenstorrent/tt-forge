@@ -18,6 +18,7 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    move_to_cpu,
 )
 
 xr.set_device_type("TT")
@@ -51,6 +52,11 @@ def run_encoder_model(
     model_inputs = preprocess_fn(raw_inputs, device)
     outputs = model(**model_inputs)
 
+    # Move all outputs to CPU before running processor_fn to avoid
+    # creating extra XLA graphs for post-processing operations
+    outputs = move_to_cpu(outputs)
+    model_inputs = move_to_cpu(model_inputs)
+
     return output_processor_fn(outputs, model_inputs)
 
 
@@ -78,7 +84,6 @@ def warmup_encoder_model(model, raw_inputs, preprocess_fn, device, output_proces
     with torch.no_grad():
         for i in range(loop_count):
             output = run_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn)
-            _ = output.to("cpu")
 
     print("Warming up completed.")
 
@@ -118,7 +123,7 @@ def measure_fps_encoder_model(model, raw_inputs, preprocess_fn, device, output_p
         for i in range(loop_count):
             start_time = time.perf_counter_ns()
             output = run_encoder_model(model, raw_inputs, preprocess_fn, device, output_processor_fn)
-            predictions.append(output.to("cpu"))
+            predictions.append(output)
             end_time = time.perf_counter_ns()
 
             iteration_times.append(end_time - start_time)

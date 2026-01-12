@@ -259,9 +259,9 @@ def test_qwen3_embedding_8b(output_file):
     input_sequence_length = 128
 
     # Load model with specified dtype
-    loader = ModelLoader(variant=variant)
     variant = ModelVariant.QWEN_3_EMBEDDING_8B
-    model_info_name = loader.get_model_info(variant=variant)
+    loader = ModelLoader(variant=variant)
+    model_info_name = loader.get_model_info(variant=variant).name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
 
@@ -393,19 +393,29 @@ def test_bge_m3(output_file):
         batch_size = input_ids.shape[0]
         length_sorted_idx = np.argsort([-len(input_ids[i]) for i in range(batch_size)])
 
+        # Move all model outputs to CPU first (single sync point for the model graph)
+        # Then do ALL post-processing on CPU to avoid extra XLA graphs
+        dense_vecs_cpu = outputs["dense_vecs"].cpu().detach().numpy()
+        sparse_vecs_cpu = outputs["sparse_vecs"].cpu().detach().numpy()
+        colbert_vecs_cpu = outputs["colbert_vecs"].cpu().detach().numpy()
+        input_ids_cpu = input_ids.cpu().detach().numpy()
+        attention_mask_cpu = attention_mask.cpu().detach().numpy()
+
+        # Post-processing on CPU (squeeze is now a numpy operation, not XLA)
+        token_weights_cpu = sparse_vecs_cpu.squeeze(-1)
+
         # Process dense embeddings (same as bge_m3_encode.py)
-        all_dense_embeddings.append(outputs["dense_vecs"].cpu().detach())
+        all_dense_embeddings.append(dense_vecs_cpu)
         all_dense_embeddings = np.concatenate(all_dense_embeddings, axis=0)
         all_dense_embeddings = all_dense_embeddings[np.argsort(length_sorted_idx)]
 
         # Process sparse embeddings (lexical weights) (same as bge_m3_encode.py)
-        token_weights = outputs["sparse_vecs"].squeeze(-1)
         all_lexical_weights.extend(
             list(
                 map(
                     _process_token_weights,
-                    token_weights.cpu().detach().numpy(),
-                    input_ids.cpu().detach().numpy().tolist(),
+                    token_weights_cpu,
+                    input_ids_cpu.tolist(),
                 )
             )
         )
@@ -416,8 +426,8 @@ def test_bge_m3(output_file):
             list(
                 map(
                     _process_colbert_vecs,
-                    outputs["colbert_vecs"].cpu().detach().numpy(),
-                    attention_mask.cpu().detach().numpy(),
+                    colbert_vecs_cpu,
+                    attention_mask_cpu,
                 )
             )
         )

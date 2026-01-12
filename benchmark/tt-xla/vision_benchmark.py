@@ -304,6 +304,14 @@ def benchmark_vision_torch_xla(
 
     device = torch_xla.device()
 
+    # Clear num_batches_tracked on BatchNorm layers to avoid creating an extra
+    # XLA graph for these unused buffers. In eval mode, num_batches_tracked is
+    # never used, but if left as a tensor it gets transferred to the XLA device
+    # and creates a separate constant sync graph.
+    for m in framework_model.modules():
+        if isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+            m.num_batches_tracked = None
+
     if data_format == "bfloat16":
         framework_model = framework_model.to(device, dtype=torch.bfloat16)
     else:
