@@ -26,8 +26,7 @@ def test_vision(
     model_info_name,
     output_file,
     load_inputs_fn,
-    preprocess_fn,
-    output_processor_fn,
+    extract_output_tensor_fn,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -44,11 +43,9 @@ def test_vision(
         model: Loaded model instance in eval mode
         model_info_name: Model name for identification and reporting
         output_file: Path to save benchmark results as JSON
-        load_inputs_fn: Function to load raw inputs for the model.
-            Signature: fn(batch_size, loop_count, channel_size, input_size) -> List[Tensor]
-        preprocess_fn: Function to preprocess inputs (dtype conversion + device placement).
-            Signature: fn(input_tensor, device, data_format) -> tensor on device
-        output_processor_fn: Function to process model outputs (e.g. extract logits).
+        load_inputs_fn: Function to load preprocessed inputs for the model.
+            Signature: fn(batch_size, loop_count) -> List[Tensor]
+        extract_output_tensor_fn: Function to extract tensor from model outputs (e.g. get .logits).
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
         batch_size: Batch size
@@ -92,8 +89,7 @@ def test_vision(
         experimental_compile=experimental_compile,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         required_pcc=required_pcc,
     )
 
@@ -115,26 +111,20 @@ def test_efficientnet(output_file):
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.TIMM_EFFICIENTNET_B0
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output
 
     test_vision(
@@ -142,8 +132,7 @@ def test_efficientnet(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -159,25 +148,19 @@ def test_mnist(output_file):
     batch_size = 32
     input_size = (28, 28)
     channel_size = 1
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     loader = ModelLoader()
     model_info_name = loader.get_model_info().name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output
 
     test_vision(
@@ -185,8 +168,7 @@ def test_mnist(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -202,26 +184,20 @@ def test_mobilenetv2(output_file):
     batch_size = 12
     input_size = (224, 224)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.MOBILENET_V2_TORCH_HUB
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output
 
     test_vision(
@@ -229,8 +205,7 @@ def test_mobilenetv2(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -246,26 +221,20 @@ def test_resnet50(output_file):
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.RESNET_50_HF
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output.logits
 
     test_vision(
@@ -273,8 +242,7 @@ def test_resnet50(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -291,26 +259,20 @@ def test_segformer(output_file):
     batch_size = 1
     input_size = (512, 512)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.B0_FINETUNED
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output.logits
 
     test_vision(
@@ -318,8 +280,7 @@ def test_segformer(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -335,26 +296,20 @@ def test_swin(output_file):
     batch_size = 1
     input_size = (512, 512)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.SWIN_S
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output
 
     test_vision(
@@ -362,8 +317,7 @@ def test_swin(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -379,6 +333,7 @@ def test_ufld(output_file):
     data_format = "bfloat16"
     batch_size = 1
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.TUSIMPLE_RESNET34
@@ -386,20 +341,13 @@ def test_ufld(output_file):
     model_info_name = loader.get_model_info(variant=variant).name
     input_size = loader.config.input_size
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output
 
     test_vision(
@@ -407,8 +355,7 @@ def test_ufld(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -423,6 +370,7 @@ def test_ufld_v2(output_file):
     data_format = "bfloat16"
     batch_size = 1
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.TUSIMPLE_RESNET34
@@ -430,20 +378,13 @@ def test_ufld_v2(output_file):
     model_info_name = loader.get_model_info(variant=variant).name
     input_size = (loader.config.input_height, loader.config.input_width)
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output[0]
 
     test_vision(
@@ -451,8 +392,7 @@ def test_ufld_v2(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -468,25 +408,19 @@ def test_unet(output_file):
     batch_size = 1
     input_size = (256, 256)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     loader = ModelLoader()
     model_info_name = loader.get_model_info().name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output
 
     test_vision(
@@ -494,8 +428,7 @@ def test_unet(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -511,26 +444,20 @@ def test_vit(output_file):
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.BASE
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output.logits
 
     test_vision(
@@ -538,8 +465,7 @@ def test_vit(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
@@ -555,26 +481,20 @@ def test_vovnet(output_file):
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
     # Load model
     variant = ModelVariant.TIMM_VOVNET19B_DW_RAIN1K
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     model = loader.load_model()
-    if data_format == "bfloat16":
-        model = model.to(torch.bfloat16)
-    model = model.eval()
+    model = model.to(dtype).eval()
 
-    def load_inputs_fn(batch_size, loop_count, channel_size, input_size):
+    def load_inputs_fn(batch_size, loop_count):
         torch.manual_seed(1)
-        return [torch.randn(batch_size, channel_size, *input_size) for _ in range(loop_count)]
+        return [torch.randn(batch_size, channel_size, *input_size, dtype=dtype) for _ in range(loop_count)]
 
-    def preprocess_fn(input_tensor, device, data_format):
-        if data_format == "bfloat16":
-            input_tensor = input_tensor.to(torch.bfloat16)
-        return input_tensor.to(device)
-
-    def output_processor_fn(output):
+    def extract_output_tensor_fn(output):
         return output
 
     test_vision(
@@ -582,8 +502,7 @@ def test_vovnet(output_file):
         model_info_name=model_info_name,
         output_file=output_file,
         load_inputs_fn=load_inputs_fn,
-        preprocess_fn=preprocess_fn,
-        output_processor_fn=output_processor_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
         channel_size=channel_size,
