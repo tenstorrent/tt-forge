@@ -29,16 +29,8 @@ def run_resnet_demo_case(variant):
     # Run inference on Tenstorrent device
     output = compiled_model(inputs)
 
-    # Post-process and display results
-    if variant == ModelVariant.RESNET_50_HF:
-        # Load tiny dataset
-        dataset = load_dataset("zh-plus/tiny-imagenet")
-        images = random.sample(dataset["valid"]["image"], 10)
-        loader.output_postprocess(
-            framework_model=model, compiled_model=compiled_model, inputs=images, dtype_override=torch.bfloat16
-        )
-    else:
-        loader.output_postprocess(output)
+    # Post-process
+    loader.output_postprocess(output)
 
     print("=" * 60, flush=True)
 
