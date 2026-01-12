@@ -17,7 +17,6 @@ DEFAULT_LOOP_COUNT = 128
 DEFAULT_INPUT_SIZE = (224, 224)
 DEFAULT_CHANNEL_SIZE = 3
 DEFAULT_DATA_FORMAT = "bfloat16"
-DEFAULT_MEASURE_CPU = False
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
 
@@ -36,7 +35,6 @@ def test_vision(
     input_size=DEFAULT_INPUT_SIZE,
     channel_size=DEFAULT_CHANNEL_SIZE,
     data_format=DEFAULT_DATA_FORMAT,
-    measure_cpu=DEFAULT_MEASURE_CPU,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
 ):
@@ -58,7 +56,6 @@ def test_vision(
         input_size: Input size tuple (height, width)
         channel_size: Number of input channels
         data_format: Data format
-        measure_cpu: Measure CPU FPS
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
     """
@@ -76,7 +73,6 @@ def test_vision(
     input_size={input_size}
     channel_size={channel_size}
     data_format={data_format}
-    measure_cpu={measure_cpu}
     experimental_compile={experimental_compile}
     required_pcc={required_pcc}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
@@ -88,13 +84,11 @@ def test_vision(
         model_info_name=model_info_name,
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
-        training=False,
         batch_size=batch_size,
         loop_count=loop_count,
         input_size=input_size,
         channel_size=channel_size,
         data_format=data_format,
-        measure_cpu=measure_cpu,
         experimental_compile=experimental_compile,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         load_inputs_fn=load_inputs_fn,

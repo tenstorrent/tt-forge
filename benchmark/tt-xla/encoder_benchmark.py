@@ -141,12 +141,10 @@ def benchmark_encoder_torch_xla(
     model_info_name,
     optimization_level,
     trace_enabled,
-    training,
     batch_size,
     input_sequence_length,
     loop_count,
     data_format,
-    measure_cpu,
     experimental_compile,
     ttnn_perf_metrics_output_file,
     load_inputs_fn,
@@ -171,12 +169,10 @@ def benchmark_encoder_torch_xla(
         model_info_name: Model name for identification and reporting
         optimization_level: tt-mlir optimization level for compilation
         trace_enabled: Whether to enable tracing
-        training: Whether to run in training mode (not supported)
         batch_size: Batch size for inference
         input_sequence_length: Maximum sequence length for tokenization
         loop_count: Number of inference iterations to benchmark
         data_format: Data precision format
-        measure_cpu: Whether to measure CPU baseline performance
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         load_inputs_fn: Function to load raw inputs for the model.
@@ -193,28 +189,10 @@ def benchmark_encoder_torch_xla(
     Returns:
         Benchmark result containing performance metrics and model information
     """
-    if training:
-        raise ValueError("Training is not supported for encoder benchmarks")
-
     framework_model = model
 
     # Load raw inputs for all iterations
     raw_inputs = load_inputs_fn(batch_size)
-
-    # Measure CPU performance
-    if measure_cpu:
-        print("Measuring CPU performance...")
-
-        start_time = time.time()
-        num_runs = 10
-        for _ in range(num_runs):
-            with torch.no_grad():
-                _ = run_encoder_model(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
-        elapsed = time.time() - start_time
-        cpu_fps = (num_runs * batch_size) / elapsed
-        print(f"CPU samples per second: {cpu_fps:.2f}")
-    else:
-        cpu_fps = -1.0
 
     # Generate golden output for PCC calculation
     print("Generating golden output on CPU...")
@@ -277,14 +255,6 @@ def benchmark_encoder_torch_xla(
     dataset_name = "Benchmark Sentences"
     num_layers = -1
 
-    custom_measurements = [
-        {
-            "measurement_name": "cpu_fps",
-            "value": cpu_fps,
-            "target": -1,
-        }
-    ]
-
     print_benchmark_results(
         model_title=full_model_name,
         full_model_name=full_model_name,
@@ -295,7 +265,6 @@ def benchmark_encoder_torch_xla(
         total_time=total_time,
         total_samples=total_samples,
         samples_per_sec=samples_per_sec,
-        cpu_samples_per_sec=cpu_fps,
         evaluation_score=evaluation_score,
         batch_size=batch_size,
         data_format=data_format,
@@ -311,11 +280,9 @@ def benchmark_encoder_torch_xla(
         input_size=(input_sequence_length,),
         loop_count=loop_count,
         data_format=data_format,
-        training=training,
         total_time=total_time,
         total_samples=total_samples,
         evaluation_score=evaluation_score,
-        custom_measurements=custom_measurements,
         optimization_level=optimization_level,
         program_cache_enabled=True,
         trace_enabled=trace_enabled,
