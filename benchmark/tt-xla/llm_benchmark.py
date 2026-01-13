@@ -384,6 +384,42 @@ def benchmark_llm_torch_xla(
             "Cannot use --generate-block-test and --generate-layer-test together. " "Run them as separate commands."
         )
 
+    # Helper function for compilation modes (single_block and single_layer)
+    def compile_and_export(mode: str, run_model_fn):
+        """
+        Compile model and export MLIR for testing purposes.
+
+        Args:
+            mode: Mode name ("single_block" or "single_layer") for status messages
+            run_model_fn: Closure that runs the compiled model with appropriate inputs
+        """
+        # Transfer model to device
+        model_on_device = model.to(device, dtype=torch.bfloat16)
+
+        # Compile model
+        compiled_model = torch.compile(
+            model_on_device, backend="tt", options={"tt_experimental_compile": experimental_compile}
+        )
+
+        # Run model with provided closure
+        with torch.no_grad():
+            run_model_fn(compiled_model)
+
+        # Find generated TTIR files (IR files are in irs/ subdirectory)
+        import glob
+        generated_files = sorted(glob.glob(f"{MODULE_EXPORT_PATH}/irs/ttir_{export_model_name}_g*.mlir"))
+
+        # Print results
+        mode_label = "single block test" if mode == "single_block" else "single layer test (prefill + decode)"
+        if generated_files:
+            print(f"Generated {mode_label}:")
+            for f in generated_files:
+                print(f"  {f}")
+        else:
+            print(f"Generated {mode_label}: {export_model_name} (files not found in {MODULE_EXPORT_PATH}/irs/)")
+
+        return {"status": "success", "mode": mode, "model": model_variant.name}
+
     # =========================================================================
     # SINGLE BLOCK MODE: Compile and export decoder block only (no benchmarking)
     # =========================================================================
@@ -392,31 +428,13 @@ def benchmark_llm_torch_xla(
         seq_len = 1  # Decode block: single token
 
         # Create hidden_states input (the wrapper handles position_ids internally)
-        hidden_states = torch.randn(batch_size, seq_len, hidden_size, dtype=torch.bfloat16)
+        hidden_states = torch.randn(batch_size, seq_len, hidden_size, dtype=torch.bfloat16).to(device)
 
-        # Transfer to device
-        model = model.to(device, dtype=torch.bfloat16)
-        hidden_states = hidden_states.to(device)
-
-        # Compile and run once to generate MLIR
-        compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": experimental_compile})
-
-        with torch.no_grad():
+        def run_single_block(compiled_model):
             _ = compiled_model(hidden_states)
-        xm.mark_step()
+            xm.mark_step()
 
-        # Find generated TTIR files (IR files are in irs/ subdirectory)
-        import glob
-
-        generated_files = sorted(glob.glob(f"{MODULE_EXPORT_PATH}/irs/ttir_{export_model_name}_g*.mlir"))
-        if generated_files:
-            print(f"Generated single block test:")
-            for f in generated_files:
-                print(f"  {f}")
-        else:
-            print(f"Generated single block test: {export_model_name} (files not found in {MODULE_EXPORT_PATH}/irs/)")
-
-        return {"status": "success", "mode": "single_block", "model": model_variant.name}
+        return compile_and_export("single_block", run_single_block)
 
     # =========================================================================
     # SINGLE LAYER MODE: Compile and export model with num_layers=1 (no benchmarking)
@@ -424,19 +442,13 @@ def benchmark_llm_torch_xla(
     if single_layer:
         seq_len = input_sequence_length
 
-        # Transfer model to device
-        model = model.to(device, dtype=torch.bfloat16)
-
-        # Compile model
-        compiled_model = torch.compile(model, backend="tt", options={"tt_experimental_compile": experimental_compile})
-
         # Use pre-constructed inputs with StaticCache (avoids HybridCache tracing issues)
         # This is required for models like Gemma 2 that create caches internally
         print("Compiling prefill and decode graphs...")
         input_args = construct_inputs(tokenizer, model.config, batch_size, seq_len)
         input_args = transfer_to_device(input_args, device)
 
-        with torch.no_grad():
+        def run_single_layer(compiled_model):
             # Prefill (g0): full sequence
             _ = compiled_model(**input_args)
             xm.mark_step()
@@ -447,18 +459,7 @@ def benchmark_llm_torch_xla(
             _ = compiled_model(**input_args)
             xm.mark_step()
 
-        # Find generated TTIR files (IR files are in irs/ subdirectory)
-        import glob
-
-        generated_files = sorted(glob.glob(f"{MODULE_EXPORT_PATH}/irs/ttir_{export_model_name}_g*.mlir"))
-        if generated_files:
-            print(f"Generated single layer test (prefill + decode):")
-            for f in generated_files:
-                print(f"  {f}")
-        else:
-            print(f"Generated single layer test: {export_model_name} (files not found in {MODULE_EXPORT_PATH}/irs/)")
-
-        return {"status": "success", "mode": "single_layer", "model": model_variant.name}
+        return compile_and_export("single_layer", run_single_layer)
 
     # =========================================================================
     # FULL MODEL MODE: Autoregressive text generation benchmark
