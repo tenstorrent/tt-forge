@@ -102,17 +102,19 @@ def measure_fps_vision_model(
 
     predictions = []
     iteration_times = []
-    inputs = [load_inputs_fn(batch_size, data_format) for _ in range(loop_count)]
     with torch.no_grad():
         outputs = []
         for i in range(loop_count):
+            # Generate input tensor
+            input_tensor = load_inputs_fn(batch_size, data_format)
+
             # Load and preprocess input
             start_time = time.perf_counter_ns()
 
             # Move input to device
-            device_input = inputs[i].to(device)
+            device_input = input_tensor.to(device)
 
-            # Model forward, non blocking.
+            # Model forward, non blocking
             output = model(device_input)
 
             # Extract output tensor
