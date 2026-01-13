@@ -1,8 +1,8 @@
 # CI
-/.github/ @vmilosevic @nsumrakTT @jmcgrathTT @vvukomanTT
+/.github/ @vmilosevic @nsumrakTT @vvukomanTT
 
 # Performance tests
-/benchmark/ @vcanicTT @vkovacevicTT @odjuricicTT @tt-mpantic
+/benchmark/ @vkovacevicTT @odjuricicTT @tt-mpantic @rpavlovicTT
 
 # Third party dependency projects
-/third_party/ @vcanicTT @vkovacevicTT @odjuricicTT @tt-mpantic
+/third_party/ @vkovacevicTT @odjuricicTT @tt-mpantic
