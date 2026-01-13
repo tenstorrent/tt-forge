@@ -49,7 +49,7 @@ def test_llm(
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
     read_logits_fn=default_read_logits_fn,
-    mesh=None,
+    mesh_config_fn=None,
     shard_spec_fn=None,
     arch=None,
     required_pcc=DEFAULT_REQUIRED_PCC,
@@ -114,7 +114,7 @@ def test_llm(
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         read_logits_fn=read_logits_fn,
-        mesh=mesh,
+        mesh_config_fn=mesh_config_fn,
         shard_spec_fn=shard_spec_fn,
         arch=arch,
         required_pcc=required_pcc,
@@ -160,6 +160,24 @@ def test_llm(
             json.dump(results, file, indent=2)
 
 
+def test_llm_tp(ModelLoaderModule, variant, output_file):
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+    mesh_config_fn = ModelLoaderModule.get_mesh_config
+    shard_spec_fn = ModelLoaderModule.load_shard_spec
+
+    test_llm(
+        ModelLoaderModule=ModelLoaderModule,
+        variant=variant,
+        output_file=output_file,
+        mesh_config_fn=mesh_config_fn,
+        shard_spec_fn=shard_spec_fn,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+    )
+
+
 def test_llama_3_2_1b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -172,32 +190,6 @@ def test_llama_3_2_3b(output_file):
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
-
-
-def test_llama_3_8b(output_file):
-    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    num_devices = xr.global_runtime_device_count()
-    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
-    arch = "wormhole_llmbox"
-
-    mesh_shape = (1, num_devices)
-    device_ids = np.array(range(num_devices))
-    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
-
-    shard_spec_fn = ModelLoader.load_shard_spec
-
-    variant = ModelVariant.LLAMA_3_8B
-    test_llm(
-        ModelLoaderModule=ModelLoader,
-        variant=variant,
-        output_file=output_file,
-        shard_spec_fn=shard_spec_fn,
-        mesh=mesh,
-        batch_size=32,
-        input_sequence_length=128,
-        arch=arch,
-    )
 
 
 def test_gemma_1_1_2b(output_file):
@@ -390,3 +382,101 @@ def test_llama_3_1_8b(output_file):
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+def test_falcon3_7b_tp(output_file):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_7B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_falcon3_10b_tp(output_file):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_10B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_1_8b_instruct_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_mistral_7b_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_ministral_8b_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MINISTRAL_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_mistral_nemo_instruct_2407_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_NEMO_INSTRUCT_2407
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_2_5_14b_instruct_tp(output_file):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_14B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_0_6b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_0_6B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_1_7b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_1_7B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_8b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_14b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_14B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_8b_instruct_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_8B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_1_8b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_8b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_8B
+    test_llm_tp(ModelLoader, variant, output_file)
