@@ -58,7 +58,6 @@ MODULE_EXPORT_PATH = "modules"
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-@pytest.mark.parametrize("training", [False], ids=["training=False"])
 def test_resnet(
     variant,
     channel_size,
@@ -66,12 +65,8 @@ def test_resnet(
     batch_size,
     loop_count,
     data_format,
-    training,
     model_name,
 ):
-
-    if training:
-        pytest.skip("Training is not supported")
 
     tt_device = jax.devices("tt")[0]
     with jax.default_device(jax.devices("cpu")[0]):
@@ -140,7 +135,6 @@ def test_resnet(
         input_size=input_size,
         loop_count=loop_count,
         data_format=data_format,
-        training=training,
         total_time=total_time,
         total_samples=total_samples,
         optimization_level=OPTIMIZATION_LEVEL,
@@ -159,7 +153,6 @@ def test_resnet(
 
 def benchmark(config: dict):
 
-    training = config["training"]
     batch_size = config["batch_size"]
     input_size = INPUT_SIZE[0]
     channel_size = CHANNEL_SIZE[0]
@@ -175,6 +168,5 @@ def benchmark(config: dict):
         batch_size=batch_size,
         loop_count=loop_count,
         data_format=data_format,
-        training=training,
         model_name=model_name,
     )

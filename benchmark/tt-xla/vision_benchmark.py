@@ -102,30 +102,39 @@ def measure_fps_vision_model(
 
     predictions = []
     iteration_times = []
+    inputs = [load_inputs_fn(batch_size, data_format) for _ in range(loop_count)]
     with torch.no_grad():
+        outputs = []
         for i in range(loop_count):
             # Load and preprocess input
-            input_tensor = load_inputs_fn(batch_size, data_format)
-
             start_time = time.perf_counter_ns()
 
             # Move input to device
-            device_input = input_tensor.to(device)
+            device_input = inputs[i].to(device)
 
             # Model forward, non blocking.
             output = model(device_input)
 
-            # Extract output tensor and move to CPU
-            output_cpu = move_to_cpu(extract_output_tensor_fn(output))
+            # Extract output tensor
+            output = extract_output_tensor_fn(output)
+            outputs.append(output)
 
             end_time = time.perf_counter_ns()
-
             iteration_times.append(end_time - start_time)
-            predictions.append(output_cpu)
 
             print(f"Iteration\t{i+1}/{loop_count}\ttook {iteration_times[-1] / 1e6:.04} ms")
 
-    total_time = sum(iteration_times)
+        output_start = time.perf_counter_ns()
+        # Move all outputs to CPU
+        for output in outputs:
+            output_cpu = move_to_cpu(output)
+            predictions.append(output_cpu)
+        output_end = time.perf_counter_ns()
+        output_time = output_end - output_start
+        print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
+
+    total_time_iterations = sum(iteration_times)
+    total_time = total_time_iterations + output_time
 
     # Convert to seconds
     total_time /= 1e9
