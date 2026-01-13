@@ -101,7 +101,7 @@
       {
         "name": "llama_3_8b_tp",
         "pyreq": "datasets loguru pytest pytorchcv requests tabulate timm tqdm transformers==4.52.4 torch==2.7.1",
-        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_8b",
+        "pytest": "benchmark/tt-xla/llms.py::test_llama_3_8b_tp",
         "runs-on": "llmbox"
       },
       {
