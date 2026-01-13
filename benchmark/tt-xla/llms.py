@@ -187,173 +187,6 @@ def test_llama_3_2_3b(output_file):
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
 
 
-def test_llama_3_8b_tp(output_file):
-    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.LLAMA_3_8B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_qwen_3_14b_tp(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_14B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_falcon3_7b_tp(output_file):
-    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.FALCON_7B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_falcon3_10b_tp(output_file):
-    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.FALCON_10B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_gemma_1_1_7b_tp(output_file):
-    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.GEMMA_1_1_7B_IT
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_gemma_2_9b_tp(output_file):
-    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.GEMMA_2_9B_IT
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_llama_3_1_8b_instruct_tp(output_file):
-    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_pixtral_tp(output_file):
-    from third_party.tt_forge_models.mistral.pixtral.pytorch.loader import ModelLoader
-
-    variant = None
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_mistral_7b_tp(output_file):
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_ministral_8b_tp(output_file):
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.MINISTRAL_8B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_mistral_small_24b_instruct_2501_tp(output_file):
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.MISTRAL_SMALL_24B_INSTRUCT_2501
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_mistral_nemo_instruct_2407_tp(output_file):
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.MISTRAL_NEMO_INSTRUCT_2407
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_devstral_small_2505_tp(output_file):
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.DEVSTRAL_SMALL_2505
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_magistral_small_2506_tp(output_file):
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.MAGISTRAL_SMALL_2506
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_qwen_2_5_14b_instruct_tp(output_file):
-    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_2_5_14B_INSTRUCT
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_qwen_3_0_6b_tp(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_0_6B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_qwen_3_1_7b_tp(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_1_7B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_qwen_3_8b_tp(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_8B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_qwen_3_embedding_8b_tp(output_file):
-    from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_EMBEDDING_8B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_falcon_7b_instruct_tp(output_file):
-    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.FALCON_7B_INSTRUCT
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_llama_3_8b_instruct_tp(output_file):
-    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.LLAMA_3_8B_INSTRUCT
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_llama_3_1_8b_tp(output_file):
-    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.LLAMA_3_1_8B
-    test_llm_tp(ModelLoader, variant, output_file)
-
-
-def test_gemma_1_1_2b(output_file):
-    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.GEMMA_1_1_2B_IT
-    experimental_compile = False
-    test_llm(
-        ModelLoaderModule=ModelLoader,
-        variant=variant,
-        output_file=output_file,
-        experimental_compile=experimental_compile,
-    )
-
-
 def test_gemma_2_2b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
@@ -531,3 +364,191 @@ def test_llama_3_1_8b(output_file):
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+def test_gemma_1_1_2b(output_file):
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_1_1_2B_IT
+    experimental_compile = False
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        experimental_compile=experimental_compile,
+    )
+
+
+def test_falcon3_7b_tp(output_file):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_7B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_falcon3_10b_tp(output_file):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_10B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_gemma_1_1_7b_tp(output_file):
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_1_1_7B_IT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_gemma_2_9b_tp(output_file):
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_2_9B_IT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_1_8b_instruct_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_pixtral_tp(output_file):
+    from third_party.tt_forge_models.mistral.pixtral.pytorch.loader import ModelLoader
+
+    variant = None
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_mistral_7b_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_ministral_8b_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MINISTRAL_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_mistral_small_24b_instruct_2501_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_SMALL_24B_INSTRUCT_2501
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_mistral_nemo_instruct_2407_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_NEMO_INSTRUCT_2407
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_devstral_small_2505_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.DEVSTRAL_SMALL_2505
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_magistral_small_2506_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MAGISTRAL_SMALL_2506
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_2_5_14b_instruct_tp(output_file):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_14B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_2_5_32b_instruct_tp(output_file):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_32B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_2_5_coder_32b_instruct_tp(output_file):
+    from third_party.tt_forge_models.qwen_2_5_coder.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_CODER_32B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_0_6b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_0_6B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_1_7b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_1_7B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_8b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_14b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_14B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_32b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_32B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_3_embedding_8b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_EMBEDDING_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_falcon_7b_instruct_tp(output_file):
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_7B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_8b_instruct_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_8B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_1_8b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_8b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
