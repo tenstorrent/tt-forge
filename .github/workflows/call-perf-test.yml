@@ -183,6 +183,9 @@ jobs:
           export TT_METAL_HOME="$SITE_PACKAGES_DIR/pjrt_plugin_tt/tt-metal"
         fi
 
+        echo "printing dep versions"
+        pip freeze
+
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
 
         if [ -z "${{ matrix.build.pytest }}" ]; then
