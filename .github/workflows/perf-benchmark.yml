@@ -49,6 +49,11 @@ on:
         required: false
         type: boolean
         default: false
+      skip-device-perf:
+        description: "Skip device performance measurement"
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       docker-image:
@@ -90,6 +95,10 @@ on:
         required: false
         type: string
         default: "n150"
+      skip-device-perf:
+        description: "Skip device performance measurement"
+        required: false
+        type: boolean
 
 permissions:
   id-token: write
@@ -188,6 +197,7 @@ jobs:
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
       perf_regression_check: ${{ inputs.perf_regression_check || false }}
+      skip-device-perf: ${{ inputs.skip-device-perf || false }}
 
   run-p150-perf-benchmarks:
     needs: filter-tests
@@ -206,6 +216,7 @@ jobs:
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
       perf_regression_check: ${{ inputs.perf_regression_check || false }}
+      skip-device-perf: ${{ inputs.skip-device-perf || false }}
 
   run-llmbox-perf-benchmarks:
     needs: filter-tests
@@ -224,6 +235,7 @@ jobs:
       run_id: ${{ inputs.run_id }}
       ref: ${{ inputs.ref }}
       perf_regression_check: ${{ inputs.perf_regression_check || false }}
+      skip-device-perf: ${{ inputs.skip-device-perf || false }}
 
   fail-notify:
     if: always()
