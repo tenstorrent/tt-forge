@@ -246,35 +246,32 @@ jobs:
           project_name="pjrt_plugin_tt"
         fi
 
-        echo "Set version to commit sha if called from other repo"
-        whl=$(ls *.whl | head -n1)
-        mlir_sha=$(unzip -p "$whl" '*/METADATA' | tr -d '\r' | grep -oP 'tt-mlir-commit=\K[0-9a-f]+')
-        # if [[ "${{ inputs.update-wheel }}" == "true" || -n "${{ inputs.run_id }}" ]]; then
-        #   version=$(pip freeze | grep -oP "$project_name-.+dev\.\K([^-]*)")
-        # else
-        #   version=$(pip show $project_name | grep -oP "(?<=Version:\s)[\d\.\w]+")
-        # fi
-        # echo "Wheel version: $version"
+        mlir_sha=""
+        package_name=$(pip freeze | grep -oP "^${project_name}[^=]*")
 
-        # # TODO: Add tt-mlir version to frontend setup.py description
-        # # REF: https://github.com/tenstorrent/tt-forge/issues/170
-        # mlir_sha=""
-        # if [[ -n "${{ inputs.mlir_override }}" ]]; then
-        #   mlir_sha=${{ inputs.mlir_override }}
-        # elif [[ "${{ matrix.build.project }}" == "tt-torch" ]]; then
-        #   wget "https://raw.githubusercontent.com/tenstorrent/tt-torch/${version}/third_party/CMakeLists.txt"
-        #   xla_sha=$(grep -E "set\(TT_XLA_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
-        #   echo "XLA commit sha: $xla_sha"
-        #   rm -f CMakeLists.txt
-        #   wget "https://raw.githubusercontent.com/tenstorrent/tt-xla/${xla_sha}/third_party/CMakeLists.txt"
-        #   mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
-        # elif [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
-        #   wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
-        #   mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
-        # elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
-        #   mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
-        #     grep '"sha"' | head -1 | cut -d'"' -f4)
-        # fi
+        echo "package_name: $package_name"
+
+        if [ -z "$package_name" ]; then
+            echo "$project_name wheel not found in the current environment."
+            exit 1
+        fi
+
+        # Find the METADATA file for the installed package
+        metadata_path=$(python -c "
+        import pkg_resources
+        dist = pkg_resources.get_distribution('$package_name')
+        print(dist.get_metadata_path('METADATA'))
+        ")
+
+        echo "metadata_path: $metadata_path"
+
+        # Extract the tt-mlir-commit from the METADATA file
+        if [ -f "$metadata_path" ]; then
+          mlir_sha=$(grep -oP 'tt-mlir-commit=\K[0-9a-f]+' "$metadata_path")
+        else
+          echo "METADATA file not found for package $package_name"
+          exit 1
+        fi
         echo "Mlir commit sha: $mlir_sha"
 
         RUN_ID=$(curl -s \
