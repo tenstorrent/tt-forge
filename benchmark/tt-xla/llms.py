@@ -364,6 +364,8 @@ def test_llama_3_1_8b(output_file):
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
 def test_gemma_1_1_2b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
@@ -552,3 +554,8 @@ def test_llama_3_8b_tp(output_file):
     test_llm_tp(ModelLoader, variant, output_file)
 
 
+def test_llama_3_70b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_70B
+    test_llm_tp(ModelLoader, variant, output_file)
