@@ -242,6 +242,10 @@ jobs:
       shell: bash
       run: |
         project_name="${{ matrix.build.project }}"
+        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
+          project_name="pjrt-plugin-tt"
+        fi
+
         description_field_key="tt-mlir-commit"
 
         mlir_sha=$(python .github/scripts/get_description_field_from_wheel.py "$project_name" "$description_field_key")
