@@ -241,37 +241,10 @@ jobs:
       id: find-run
       shell: bash
       run: |
-        project_name=$(echo "${{ matrix.build.project }}" | tr "-" "_")
-        if [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
-          project_name="pjrt_plugin_tt"
-        fi
+        project_name="${{ matrix.build.project }}"
+        description_field_key="tt-mlir-commit"
 
-        mlir_sha=""
-        package_name=$(pip freeze | grep -oP "^${project_name}[^=]*")
-
-        echo "package_name: $package_name"
-
-        if [ -z "$package_name" ]; then
-            echo "$project_name wheel not found in the current environment."
-            exit 1
-        fi
-
-        # Find the METADATA file for the installed package
-        metadata_path=$(python -c "
-        import pkg_resources
-        dist = pkg_resources.get_distribution('$package_name')
-        print(dist.get_metadata_path('METADATA'))
-        ")
-
-        echo "metadata_path: $metadata_path"
-
-        # Extract the tt-mlir-commit from the METADATA file
-        if [ -f "$metadata_path" ]; then
-          mlir_sha=$(grep -oP 'tt-mlir-commit=\K[0-9a-f]+' "$metadata_path")
-        else
-          echo "METADATA file not found for package $package_name"
-          exit 1
-        fi
+        mlir_sha=$(./get_metadata_field.py "$project_name" "$description_field_key")
         echo "Mlir commit sha: $mlir_sha"
 
         RUN_ID=$(curl -s \
