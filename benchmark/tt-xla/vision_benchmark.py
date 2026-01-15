@@ -105,10 +105,9 @@ def measure_fps_vision_model(
     with torch.no_grad():
         outputs = []
         for i in range(loop_count):
-            # Generate input tensor
+            # Load and preprocess input
             input_tensor = load_inputs_fn(batch_size, data_format)
 
-            # Load and preprocess input
             start_time = time.perf_counter_ns()
 
             # Move input to device
@@ -120,6 +119,10 @@ def measure_fps_vision_model(
             # Extract output tensor
             output = extract_output_tensor_fn(output)
             outputs.append(output)
+
+            # Wait for operation to finish on device to avoid overlapping
+            # with tensor loading in next iteration.
+            torch_xla.sync()
 
             end_time = time.perf_counter_ns()
             iteration_times.append(end_time - start_time)
