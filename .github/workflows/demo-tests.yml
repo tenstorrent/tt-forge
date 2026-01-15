@@ -40,6 +40,10 @@ on:
         type: string
         required: false
         default: "All"
+      ref:
+        description: "Git ref to checkout"
+        required: false
+        type: string
 
 
 # Used for produce_data.yml workflow dispatch trigger
@@ -56,6 +60,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        repository: 'tenstorrent/tt-forge'
+        fetch-depth: 1
+        ref: ${{ inputs.ref || github.ref }}
+        submodules: 'recursive'
 
     - name: Filter Matrix
       id: set-matrix-json
