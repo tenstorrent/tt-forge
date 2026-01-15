@@ -244,7 +244,7 @@ jobs:
         project_name="${{ matrix.build.project }}"
         description_field_key="tt-mlir-commit"
 
-        mlir_sha=$(.github/scripts/get_description_field_from_wheel.py "$project_name" "$description_field_key")
+        mlir_sha=$(python .github/scripts/get_description_field_from_wheel.py "$project_name" "$description_field_key")
         echo "Mlir commit sha: $mlir_sha"
 
         RUN_ID=$(curl -s \
