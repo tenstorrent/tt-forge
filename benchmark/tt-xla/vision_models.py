@@ -195,7 +195,8 @@ def test_mobilenetv2(output_file):
     model = model.eval()
 
     def load_inputs_fn(batch_size, data_format):
-        return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+        # return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
 
     def extract_output_tensor_fn(output):
         return output
@@ -230,7 +231,8 @@ def test_resnet50(output_file):
     model = model.eval()
 
     def load_inputs_fn(batch_size, data_format):
-        return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+        # return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
 
     def extract_output_tensor_fn(output):
         return output.logits
