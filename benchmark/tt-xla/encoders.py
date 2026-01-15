@@ -220,12 +220,11 @@ def test_qwen3_embedding_4b(output_file):
 
     # Create input preprocessing function
     tokenizer = loader.tokenizer
-    tokenizer.padding_side = "left"
     preprocess_fn = lambda sentences, device: {
         k: v.to(device)
         for k, v in tokenizer(
             sentences,
-            padding="max_length",
+            padding=True,
             truncation=True,
             max_length=input_sequence_length,
             return_tensors="pt",
@@ -496,5 +495,5 @@ def test_unet_for_conditional_generation(output_file):
         batch_size=batch_size,
         input_sequence_length=unet_max_seqlen,  # for UNet it is always set to the max sequence length
         loop_count=128,
-        optimization_level=2,
+        optimization_level=1,
     )
