@@ -305,7 +305,7 @@ xs.mark_sharding(my_input_tensor, mesh, ("model", None))
     runtime errors, incorrect results, or suboptimal performance. It is recommended to refer to
     the documentation and examples provided for guidance on best practices.
 
-- Will forge_fe be deprecated?
+- Will TT-Forge-FE be deprecated?
   - No, TT-Forge-FE will not be deprecated. It will continue to be supported
     for single-chip configurations and for frameworks such as ONNX, PaddlePaddle, and
     TensorFlow. However, for PyTorch and Jax models, it is recommended to use TT-XLA,
