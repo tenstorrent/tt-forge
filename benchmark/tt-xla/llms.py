@@ -426,10 +426,31 @@ def test_mistral_nemo_instruct_2407_tp(output_file):
     test_llm_tp(ModelLoader, variant, output_file)
 
 
+def test_mistral_small_24b_instruct_2501_tp(output_file):
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_SMALL_24B_INSTRUCT_2501
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
 def test_qwen_2_5_14b_instruct_tp(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_14B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_2_5_32b_instruct_tp(output_file):
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_32B_INSTRUCT
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_qwen_2_5_coder_32b_instruct_tp(output_file):
+    from third_party.tt_forge_models.qwen_2_5_coder.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_CODER_32B_INSTRUCT
     test_llm_tp(ModelLoader, variant, output_file)
 
 
@@ -461,6 +482,13 @@ def test_qwen_3_14b_tp(output_file):
     test_llm_tp(ModelLoader, variant, output_file)
 
 
+def test_qwen_3_32b_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_32B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
 def test_llama_3_8b_instruct_tp(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -479,4 +507,11 @@ def test_llama_3_8b_tp(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_8B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_70b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_70B
     test_llm_tp(ModelLoader, variant, output_file)
