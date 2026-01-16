@@ -258,6 +258,59 @@ flowchart TD
     click BLACKHOLE "https://tenstorrent.com/hardware/blackhole" "Blackhole Hardware Product Page" _blank
 ```
 
+# FAQ
+
+- Can the user set dtype? How?
+  - Datatypes are generally inferred by the front end framework. However,
+    certain front ends provide options to override the default datatype
+    selection.  See next bullet for an example.
+  - Enable bfp8 conversion using compile options. The model **MUST** be cast to bfloat16 before compilation.
+```python
+torch_xla.set_custom_compile_options({
+    "enable_bfp8_conversion": "true",  # Enable bfloat8_b for the whole model
+    "experimental_enable_weight_bfp8_conversion": "true",  # Enable bfloat8_b for just model weights
+})
+```
+
+- How to set shard configs?
+  - In tt-xla, sharding can be configured using the `xs.mark_sharding` function
+    from the `torch_xla` module. Here's an example of how to set shard
+    configurations:
+```python
+import torch_xla.distributed.spmd as xs
+import torch_xla.core.xla_model as xm
+import torch_xla.runtime as xr
+from infra.utilities.torch_multichip_utils import enable_spmd, get_mesh
+
+xr.set_device_type("TT")
+enable_spmd()
+device: torch.device = xm.xla_device()
+mesh: Mesh = get_mesh((1, xr.global_runtime_device_count()), ("batch", "model"))
+xs.mark_sharding(my_input_tensor, mesh, ("model", None))
+```
+  - [See example model](https://github.com/tenstorrent/tt-xla/tree/main/tests/torch/models/llama3/test_llama_step_n300.py)
+
+- Is there a way to visualize the graph?
+  - Yes, you can use `tt-explorer` to visualize and analyze the compiled graphs.
+    It provides a user-friendly interface to inspect the model structure,
+    operations, and performance metrics.
+  - See the [TT-MLIR Explorer docs pages](https://docs.tenstorrent.com/tt-mlir/tt-explorer/tt-explorer.html) for more information.
+
+- User’s responsibilities, and what happens if they do the wrong thing (this was asked both for sharding and data types)
+  - Users are responsible for ensuring that their models are compatible with
+    the Tenstorrent hardware and software stack. This includes adhering to
+    supported data types, model architectures, and sharding configurations.
+  - If a user configures their model incorrectly (e.g., using unsupported
+    data types or sharding strategies), they may encounter compilation errors,
+    runtime errors, incorrect results, or suboptimal performance. It is recommended to refer to
+    the documentation and examples provided for guidance on best practices.
+
+- Will TT-Forge-FE be deprecated?
+  - No, TT-Forge-FE will not be deprecated. It will continue to be supported
+    for single-chip configurations and for frameworks such as ONNX, PaddlePaddle, and
+    TensorFlow. However, for PyTorch and Jax models, it is recommended to use TT-XLA,
+    especially for multi-chip configurations.
+
 # Current AI Framework Front End Projects
 - [TT-XLA](https://github.com/tenstorrent/tt-xla)
   - TT-XLA is the primary frontend for running PyTorch and JAX models. It leverages a PJRT interface to integrate JAX (and in the future other frameworks), TT-MLIR, and Tenstorrent hardware. It supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to TT-MLIR compiler. TT-XLA can be used for single and multi-chip projects.
