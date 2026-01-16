@@ -10,3 +10,4 @@ timm
 torchvision==0.24.0
 transformers==4.57.1
 tqdm
+sentencepiece
