@@ -260,7 +260,7 @@ flowchart TD
 
 # FAQ
 
-- Can the user set dtype? How?
+- **Can the user set dtype? How?**
   - Datatypes are generally inferred by the front end framework. However,
     certain front ends provide options to override the default datatype
     selection.  See next bullet for an example.
@@ -272,10 +272,10 @@ torch_xla.set_custom_compile_options({
 })
 ```
 
-- How to set shard configs?
+- **How to set shard configs?**
   - In tt-xla, sharding can be configured using the `xs.mark_sharding` function
     from the `torch_xla` module. Here's an example of how to set shard
-    configurations:
+    configurations ([See example model](https://github.com/tenstorrent/tt-xla/tree/main/tests/torch/models/llama3/test_llama_step_n300.py)):
 ```python
 import torch_xla.distributed.spmd as xs
 import torch_xla.core.xla_model as xm
@@ -288,15 +288,14 @@ device: torch.device = xm.xla_device()
 mesh: Mesh = get_mesh((1, xr.global_runtime_device_count()), ("batch", "model"))
 xs.mark_sharding(my_input_tensor, mesh, ("model", None))
 ```
-  - [See example model](https://github.com/tenstorrent/tt-xla/tree/main/tests/torch/models/llama3/test_llama_step_n300.py)
 
-- Is there a way to visualize the graph?
+- **Is there a way to visualize the graph?**
   - Yes, you can use `tt-explorer` to visualize and analyze the compiled graphs.
     It provides a user-friendly interface to inspect the model structure,
     operations, and performance metrics.
   - See the [TT-MLIR Explorer docs pages](https://docs.tenstorrent.com/tt-mlir/tt-explorer/tt-explorer.html) for more information.
 
-- User’s responsibilities, and what happens if they do the wrong thing (this was asked both for sharding and data types)
+- **User’s responsibilities**
   - Users are responsible for ensuring that their models are compatible with
     the Tenstorrent hardware and software stack. This includes adhering to
     supported data types, model architectures, and sharding configurations.
@@ -305,7 +304,7 @@ xs.mark_sharding(my_input_tensor, mesh, ("model", None))
     runtime errors, incorrect results, or suboptimal performance. It is recommended to refer to
     the documentation and examples provided for guidance on best practices.
 
-- Will TT-Forge-FE be deprecated?
+- **Will TT-Forge-FE be deprecated?**
   - No, TT-Forge-FE will not be deprecated. It will continue to be supported
     for single-chip configurations and for frameworks such as ONNX, PaddlePaddle, and
     TensorFlow. However, for PyTorch and Jax models, it is recommended to use TT-XLA,
