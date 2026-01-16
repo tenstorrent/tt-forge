@@ -592,11 +592,3 @@ def test_llama_3_1_70b_tp(output_file, num_layers, request):
         request=request,
         required_pcc=-1.0,
     )  # https://github.com/tenstorrent/tt-xla/issues/2976
-
-    
-def test_llama_3_70b_tp(output_file, num_layers, request):
-    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.LLAMA_3_70B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
-    
