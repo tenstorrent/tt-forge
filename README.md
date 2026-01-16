@@ -267,12 +267,13 @@ flowchart TD
   - Enable bfp8 conversion using compile options. The model **MUST** be cast to bfloat16 before compilation.
 ```python
 torch_xla.set_custom_compile_options({
-    "enable_bfp8_conversion": "true",  # Enable bfloat8_b
+    "enable_bfp8_conversion": "true",  # Enable bfloat8_b for the whole model
+    "experimental_enable_weight_bfp8_conversion": "true",  # Enable bfloat8_b for just model weights
 })
 ```
 
 - How to set shard configs?
-  - In tt-xla, sharding can be configured using the `set_shard_config` function
+  - In tt-xla, sharding can be configured using the `xs.mark_sharding` function
     from the `torch_xla` module. Here's an example of how to set shard
     configurations:
 ```python
@@ -301,7 +302,7 @@ xs.mark_sharding(my_input_tensor, mesh, ("model", None))
     supported data types, model architectures, and sharding configurations.
   - If a user configures their model incorrectly (e.g., using unsupported
     data types or sharding strategies), they may encounter compilation errors,
-    runtime errors, or suboptimal performance. It is recommended to refer to
+    runtime errors, incorrect results, or suboptimal performance. It is recommended to refer to
     the documentation and examples provided for guidance on best practices.
 
 - Will forge_fe be deprecated?
