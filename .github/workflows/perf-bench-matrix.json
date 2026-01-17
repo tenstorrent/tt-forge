@@ -54,11 +54,6 @@
         "pytest": "benchmark/tt-xla/vision_models.py::test_swin"
       },
       {
-        "name": "ufld",
-        "pyreq": "datasets loguru opencv-python pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
-        "pytest": "benchmark/tt-xla/vision_models.py::test_ufld"
-      },
-      {
         "name": "ufld_v2",
         "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/vision_models.py::test_ufld_v2"
