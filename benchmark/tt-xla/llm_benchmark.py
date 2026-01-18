@@ -343,6 +343,9 @@ def benchmark_llm_torch_xla(
     else:
         is_multichip = False
 
+    # Initialize mesh to None (will be set later if is_multichip)
+    mesh = None
+
     # Set up config variables
     max_cache_len: int = input_sequence_length
 
