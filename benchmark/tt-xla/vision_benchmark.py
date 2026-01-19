@@ -24,52 +24,12 @@ from utils import (
 
 xr.set_device_type("TT")
 
-MIN_STEPS = 16
+WARMUP_STEPS = 32
 
 MODULE_EXPORT_PATH = "modules"
 
 
-def warmup_vision_model(model, load_inputs_fn, batch_size, data_format, device, loop_count, extract_output_tensor_fn):
-    """
-    Warmup the model for a given number of loop_count.
-
-    Parameters:
-    ----------
-    model: Callable
-        The model to warmup.
-    load_inputs_fn: Callable
-        Function to load a single batch of preprocessed inputs.
-        Signature: fn(batch_size, data_format) -> Tensor
-    batch_size: int
-        Batch size for inputs.
-    data_format: str
-        Data format (bfloat16 or float32).
-    device: torch.device
-        The device to run the warmup on.
-    loop_count: int
-        The number of iterations to warmup the model.
-    extract_output_tensor_fn: Callable
-        Function to extract tensor from model output (e.g. get .logits from HF output).
-    """
-    print("Warming up the device...")
-
-    with torch.no_grad():
-        for i in range(loop_count):
-            # Load and preprocess input
-            input_tensor = load_inputs_fn(batch_size, data_format)
-            # Move input to device
-            device_input = input_tensor.to(device)
-            # Model forward, non blocking.
-            output = model(device_input)
-            # Extract output tensor and move to CPU
-            _ = move_to_cpu(extract_output_tensor_fn(output))
-
-    print("Warming up completed.")
-
-
-def measure_fps_vision_model(
-    model, load_inputs_fn, batch_size, data_format, device, loop_count, extract_output_tensor_fn
-):
+def execute_and_measure_fps(model, inputs, device, loop_count, extract_output_tensor_fn):
     """
     Benchmark the model for a given number of loop_count.
 
@@ -77,13 +37,8 @@ def measure_fps_vision_model(
     ----------
     model: Callable
         The model to benchmark.
-    load_inputs_fn: Callable
-        Function to load a single batch of preprocessed inputs.
-        Signature: fn(batch_size, data_format) -> Tensor
-    batch_size: int
-        Batch size for inputs.
-    data_format: str
-        Data format (bfloat16 or float32).
+    inputs: list of torch.Tensor
+        The inputs to the model.
     device: torch.device
         The device to run the benchmark on.
     loop_count: int
@@ -98,20 +53,13 @@ def measure_fps_vision_model(
     total_time: float
         The total time taken to process the inputs in seconds.
     """
-    print("Starting benchmark loop...")
-
     predictions = []
-    iteration_times = []
+    start_time = time.perf_counter_ns()
     with torch.no_grad():
         outputs = []
         for i in range(loop_count):
-            # Load and preprocess input
-            input_tensor = load_inputs_fn(batch_size, data_format)
-
-            start_time = time.perf_counter_ns()
-
             # Move input to device
-            device_input = input_tensor.to(device)
+            device_input = inputs[i].to(device)
 
             # Model forward, non blocking
             output = model(device_input)
@@ -120,27 +68,12 @@ def measure_fps_vision_model(
             output = extract_output_tensor_fn(output)
             outputs.append(output)
 
-            # Wait for operation to finish on device to avoid overlapping
-            # with tensor loading in next iteration.
-            torch_xla.sync()
-
-            end_time = time.perf_counter_ns()
-            iteration_times.append(end_time - start_time)
-
-            print(f"Iteration\t{i+1}/{loop_count}\ttook {iteration_times[-1] / 1e6:.04} ms")
-
-        output_start = time.perf_counter_ns()
         # Move all outputs to CPU
-        for output in outputs:
-            output_cpu = move_to_cpu(output)
-            predictions.append(output_cpu)
-        output_end = time.perf_counter_ns()
-        output_time = output_end - output_start
-        print(f"Moving all outputs to CPU took {output_time / 1e6:.04} ms")
+        predictions = move_to_cpu(outputs)
 
-    total_time_iterations = sum(iteration_times)
-    total_time = total_time_iterations + output_time
-
+    end_time = time.perf_counter_ns()
+    total_time = end_time - start_time
+    print(f"Total time: {total_time / 1e9:.04}s for {loop_count} iterations")
     # Convert to seconds
     total_time /= 1e9
     return predictions, total_time
@@ -192,8 +125,11 @@ def benchmark_vision_torch_xla(
 
     framework_model = model
 
+    # Generate_inputs
+    inputs = [load_inputs_fn(batch_size, data_format) for _ in range(loop_count)]
+
     # Generate golden output for PCC calculation (run on CPU)
-    golden_input = load_inputs_fn(batch_size, data_format)
+    golden_input = inputs[0]
     with torch.no_grad():
         golden_output = framework_model(golden_input)
         golden_output = extract_output_tensor_fn(golden_output)
@@ -228,26 +164,28 @@ def benchmark_vision_torch_xla(
         framework_model = framework_model.to(device)
 
     # Warmup
-    warmup_vision_model(
+    print("Starting warmup...")
+    warmup_loop_count = min(WARMUP_STEPS, loop_count)
+    warmup_inputs = inputs[:warmup_loop_count]
+    execute_and_measure_fps(
         model=framework_model,
-        load_inputs_fn=load_inputs_fn,
-        batch_size=batch_size,
-        data_format=data_format,
+        inputs=warmup_inputs,
         device=device,
-        loop_count=loop_count,
+        loop_count=warmup_loop_count,
         extract_output_tensor_fn=extract_output_tensor_fn,
     )
+    print("Warmup completed.")
 
     # Benchmark
-    predictions, total_time = measure_fps_vision_model(
+    print("Starting benchmark...")
+    predictions, total_time = execute_and_measure_fps(
         model=framework_model,
-        load_inputs_fn=load_inputs_fn,
-        batch_size=batch_size,
-        data_format=data_format,
+        inputs=inputs,
         device=device,
         loop_count=loop_count,
         extract_output_tensor_fn=extract_output_tensor_fn,
     )
+    print("Benchmark completed.")
 
     total_samples = batch_size * loop_count
     samples_per_sec = total_samples / total_time
