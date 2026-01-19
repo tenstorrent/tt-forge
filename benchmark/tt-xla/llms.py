@@ -390,3 +390,105 @@ def test_llama_3_1_8b(output_file):
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
     test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+
+
+def test_qwen_3_14b(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    num_devices = xr.global_runtime_device_count()
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+
+    mesh_shape = (1, num_devices)
+    device_ids = np.array(range(num_devices))
+    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
+
+    shard_spec_fn = ModelLoader.load_shard_spec
+
+    variant = ModelVariant.QWEN_3_14B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        shard_spec_fn=shard_spec_fn,
+        mesh=mesh,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+    )
+
+def test_qwen_3_32b(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    num_devices = xr.global_runtime_device_count()
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+
+    mesh_shape = (1, num_devices)
+    device_ids = np.array(range(num_devices))
+    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
+
+    shard_spec_fn = ModelLoader.load_shard_spec
+
+    variant = ModelVariant.QWEN_3_32B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        shard_spec_fn=shard_spec_fn,
+        mesh=mesh,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+    )
+
+def test_llama_3_1_70b(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    num_devices = xr.global_runtime_device_count()
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+
+    mesh_shape = (2, num_devices//2)
+    device_ids = np.array(range(num_devices))
+    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
+
+    shard_spec_fn = ModelLoader.load_shard_spec
+
+    variant = ModelVariant.LLAMA_3_1_70B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        shard_spec_fn=shard_spec_fn,
+        mesh=mesh,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+    )
+
+def test_gpt_oss_20b(output_file):
+    from third_party.tt_forge_models.gpt_oss.pytorch.loader import ModelLoader, ModelVariant
+
+    num_devices = xr.global_runtime_device_count()
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+
+    mesh_shape = (1, num_devices)
+    device_ids = np.array(range(num_devices))
+    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
+
+    shard_spec_fn = ModelLoader.load_shard_spec
+
+    variant = ModelVariant.GPT_OSS_20B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        shard_spec_fn=shard_spec_fn,
+        mesh=mesh,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+    )
+

@@ -20,6 +20,7 @@ import torch_xla.runtime as xr
 import torch_xla.distributed.spmd as xs
 from torch_xla.distributed.spmd import Mesh
 import tt_torch
+from tt_torch.sharding import sharding_constraint_hook
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
 from transformers.cache_utils import StaticCache
@@ -42,6 +43,9 @@ DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writ
 
 MODULE_EXPORT_PATH = "modules"
 
+LIMIT_TOKENS = False
+NUM_LAYERS = 2
+
 
 def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
     """
@@ -56,10 +60,15 @@ def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Mod
     """
     print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
 
-    model = model_loader.load_model(dtype_override=torch.bfloat16)
+    if NUM_LAYERS is not None:
+        model = model_loader.load_model(dtype_override=torch.bfloat16, num_layers=NUM_LAYERS)
+    else:
+        model = model_loader.load_model(dtype_override=torch.bfloat16)
     if hasattr(model.config, "layer_types"):
         model.config.layer_types = ["full_attention"] * len(model.config.layer_types)
     model = model.eval()
+    param_size = sum(p.numel() for p in model.parameters()) / 1e9
+    print(f"Model param size: {param_size}B, top perf = {256*8/param_size*0.65:.2f} tokens/s")
     tokenizer = model_loader.tokenizer
 
     return model, tokenizer
@@ -210,7 +219,7 @@ def generate_and_benchmark(
             input_args["cache_position"] = host_cache_pos.to(device)
             # Reapply shardings for static cache if SPMD is enabled
             # See https://github.com/tenstorrent/tt-xla/issues/1641
-            if is_multichip:
+            if False and is_multichip:
                 for layer in input_args["past_key_values"].layers:
                     xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
                     xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
@@ -386,6 +395,17 @@ def benchmark_llm_torch_xla(
     else:
         cpu_tokens_per_second = -1.0
 
+    if is_multichip:
+        # # Shard model
+        hook_embed_tokens = sharding_constraint_hook(model.model.embed_tokens, mesh, (None, None, "batch"))
+        model.model.embed_tokens.register_forward_hook(hook_embed_tokens)
+
+        # last_layer_hook = sharding_constraint_hook(model.model.layers[-1].mlp.down_proj, mesh, (None, None, None))
+        # model.model.layers[-1].mlp.down_proj.register_forward_hook(last_layer_hook)
+
+        hook_lm_head = sharding_constraint_hook(model.lm_head, mesh, (None, None, None))
+        model.lm_head.register_forward_hook(hook_lm_head)
+
     # Transfer model and inputs to device
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
     input_args = transfer_to_device(input_args, device)
@@ -398,7 +418,7 @@ def benchmark_llm_torch_xla(
             for tensor, shard_spec in shard_specs.items():
                 xs.mark_sharding(tensor, mesh, shard_spec)
 
-        # Also shard KV cache tensors created in input_args
+        # Also shard KV cache tensors created in input_args        breakpoint()
         for layer in input_args["past_key_values"].layers:
             xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
             xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
@@ -439,7 +459,7 @@ def benchmark_llm_torch_xla(
     input_args = transfer_to_device(input_args, device)
 
     # Re-shard KV cache tensors created in input_args
-    if is_multichip:
+    if False and is_multichip:
         for layer in input_args["past_key_values"].layers:
             xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
             xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
@@ -451,7 +471,7 @@ def benchmark_llm_torch_xla(
         input_args,
         tokenizer,
         device,
-        max_tokens_to_generate,
+        10 if LIMIT_TOKENS else max_tokens_to_generate,
         read_logits_fn=read_logits_fn,
         verbose=True,
         is_multichip=is_multichip,
