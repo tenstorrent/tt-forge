@@ -105,7 +105,9 @@ def test_encoder(
         # Single layer uses hidden_states input instead of tokens
         load_inputs_fn = lambda bs: bs
         preprocess_fn = lambda bs, device: {
-            "hidden_states": torch.randn(bs, input_sequence_length, hidden_size, dtype=DTYPE_MAP[data_format]).to(device),
+            "hidden_states": torch.randn(bs, input_sequence_length, hidden_size, dtype=DTYPE_MAP[data_format]).to(
+                device
+            ),
             "attention_mask": None,
         }
         output_processor_fn = lambda out, inputs: out
@@ -210,7 +212,9 @@ def test_qwen3_embedding_4b(output_file, single_layer):
         model_nickname="qwen3_emb_4b",
         output_file=output_file,
         tokenizer=loader.tokenizer,
-        output_processor_fn=lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"]),
+        output_processor_fn=lambda out, inputs: apply_last_token_pooling(
+            out.last_hidden_state, inputs["attention_mask"]
+        ),
         single_layer=single_layer,
         padding="longest",
         batch_size=32,
@@ -233,7 +237,9 @@ def test_qwen3_embedding_8b(output_file, single_layer):
         model_nickname="qwen3_emb_8b",
         output_file=output_file,
         tokenizer=loader.tokenizer,
-        output_processor_fn=lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"]),
+        output_processor_fn=lambda out, inputs: apply_last_token_pooling(
+            out.last_hidden_state, inputs["attention_mask"]
+        ),
         single_layer=single_layer,
         padding_side="left",
         batch_size=1,
@@ -262,11 +268,17 @@ def test_bge_m3(output_file, single_layer):
     tokenizer = model.tokenizer
 
     def bge_preprocess(sentences, device):
-        tokenized = tokenizer(sentences, padding="max_length", truncation=True,
-                              max_length=input_sequence_length, return_tensors="pt")
+        tokenized = tokenizer(
+            sentences, padding="max_length", truncation=True, max_length=input_sequence_length, return_tensors="pt"
+        )
         text_input = {k: v.to(device) for k, v in tokenized.items()}
-        return {"text_input": text_input, "return_dense": True, "return_sparse": True,
-                "return_colbert_vecs": True, "return_sparse_embedding": False}
+        return {
+            "text_input": text_input,
+            "return_dense": True,
+            "return_sparse": True,
+            "return_colbert_vecs": True,
+            "return_sparse_embedding": False,
+        }
 
     def bge_output_processor(outputs, model_inputs):
         text_input = model_inputs["text_input"]

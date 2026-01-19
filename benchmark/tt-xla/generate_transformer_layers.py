@@ -209,7 +209,7 @@ def copy_ttir_files(model: str, mode: str, model_type: str, dry_run: bool) -> li
         f"{MODULES_DIR}/ttir_{mode}_{model}*_bs*_g*.mlir",
         f"{MODULES_DIR}/ttir_{mode}_{model.replace('_', '')}*_bs*_g*.mlir",  # phi_1 -> phi1
     ]
-    
+
     all_files = []
     for pattern in patterns:
         all_files = glob.glob(pattern)

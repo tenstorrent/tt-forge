@@ -208,6 +208,7 @@ def benchmark_encoder_torch_xla(
 
     # Sanitize model name for export naming
     from benchmark.utils import sanitize_filename
+
     sanitized_model_name = sanitize_filename(model_nickname).lower()
 
     # Determine mode tag for file naming

@@ -330,8 +330,8 @@ def benchmark_vision_torch_xla(
 
         # Calculate sequence length based on model type
         # Default: use a reasonable sequence length for the hidden size
-        config = getattr(framework_model, 'config', None)
-        if config and hasattr(config, 'patch_size'):
+        config = getattr(framework_model, "config", None)
+        if config and hasattr(config, "patch_size"):
             # ViT-like: (H/patch) * (W/patch) + 1 CLS token
             patch_size = config.patch_size
             num_patches = (input_size[0] // patch_size) * (input_size[1] // patch_size)
