@@ -399,6 +399,7 @@ def benchmark_llm_torch_xla(
     model = model.to(device, dtype=torch.bfloat16)
 
     # Shard model if shard spec function is provided
+    mesh = None
     if is_multichip:
         shard_specs = shard_spec_fn(model_loader, model)
         mesh = get_mesh(model_loader, mesh_config_fn)
