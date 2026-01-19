@@ -26,6 +26,8 @@ def test_vision(
     ModelLoaderModule,
     variant,
     output_file,
+    single_layer=False,
+    model_nickname=None,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -44,6 +46,8 @@ def test_vision(
         ModelLoaderModule: Model loader class
         variant: Model variant identifier (can be None for models without variants)
         output_file: Path to save benchmark results as JSON
+        single_layer: If True, compile and export model only (no benchmarking)
+        model_nickname: Short name for export files (e.g., "vit"). Uses full name if None.
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
         batch_size: Batch size
@@ -57,14 +61,14 @@ def test_vision(
         read_logits_fn: Function to extract logits from model output
     """
     model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
-    model_info_name = (
+    full_model_name = (
         model_loader.get_model_info(variant=variant).name if variant else model_loader.get_model_info().name
     )
     # Sanitize model name for safe filesystem usage
-    sanitized_model_name = sanitize_filename(model_info_name)
+    sanitized_model_name = sanitize_filename(full_model_name)
     ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
 
-    print(f"Running vision benchmark for model: {model_info_name}")
+    print(f"Running vision benchmark for model: {full_model_name}")
     print(
         f"""Configuration:
     optimization_level={optimization_level}
@@ -97,11 +101,13 @@ def test_vision(
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         required_pcc=required_pcc,
         read_logits_fn=read_logits_fn,
+        single_layer=single_layer,
+        model_nickname=model_nickname,
     )
 
     if output_file:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = model_info_name
+        results["model_rawname"] = full_model_name
 
         aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results)
 
@@ -151,7 +157,8 @@ def test_resnet50(output_file):
     )
 
 
-def test_segformer(output_file):
+def test_segformer(output_file, single_layer):
+    """Test SegFormer model. Use --generate-layer-test for single layer export."""
     from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.B0_FINETUNED
@@ -160,13 +167,16 @@ def test_segformer(output_file):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        single_layer=single_layer,
+        model_nickname="segformer",
         batch_size=1,
         input_size=(512, 512),
         read_logits_fn=read_logits_fn,
     )
 
 
-def test_swin(output_file):
+def test_swin(output_file, single_layer):
+    """Test Swin Transformer model. Use --generate-layer-test for single layer export."""
     from third_party.tt_forge_models.swin.image_classification.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.SWIN_S
@@ -174,6 +184,8 @@ def test_swin(output_file):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        single_layer=single_layer,
+        model_nickname="swin",
         batch_size=1,
         input_size=(512, 512),
         required_pcc=0.90,
@@ -226,7 +238,8 @@ def test_unet(output_file):
     )
 
 
-def test_vit(output_file):
+def test_vit(output_file, single_layer):
+    """Test ViT model. Use --generate-layer-test for single layer export (no benchmarking)."""
     from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.BASE
@@ -235,6 +248,8 @@ def test_vit(output_file):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        single_layer=single_layer,
+        model_nickname="vit",
         batch_size=8,
         read_logits_fn=read_logits_fn,
     )

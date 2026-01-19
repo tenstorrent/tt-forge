@@ -468,20 +468,24 @@ def supports_num_layers(loader_class) -> bool:
 class SingleLayerWrapper(nn.Module):
     """Wrapper that runs a single transformer layer.
 
-    Handles the different forward() signatures:
-    - Encoder: layer(hidden_states, attention_mask)
-    - Decoder: layer(hidden_states, position_embeddings=..., attention_mask=..., use_cache=False)
-
+    Handles different forward() signatures for various model types.
     Input: hidden_states [batch, seq_len, hidden_size]
     Output: hidden_states [batch, seq_len, hidden_size]
     """
 
-    def __init__(self, layer, config, rotary_emb=None):
+    def __init__(self, layer, config, rotary_emb=None, hidden_size=None, layer_type="encoder"):
         super().__init__()
         self.layer = layer
         self.config = config
         self.rotary_emb = rotary_emb
-        self.hidden_size = config.hidden_size
+        self.layer_type = layer_type
+        # Get hidden_size from config or explicit parameter
+        if hidden_size is not None:
+            self.hidden_size = hidden_size
+        elif config and hasattr(config, 'hidden_size'):
+            self.hidden_size = config.hidden_size
+        else:
+            self.hidden_size = getattr(layer, 'dim', getattr(layer, 'embed_dim', 768))
 
     def forward(self, hidden_states, attention_mask=None, position_ids=None):
         if self.rotary_emb is not None:
@@ -496,9 +500,26 @@ class SingleLayerWrapper(nn.Module):
                 attention_mask=attention_mask,
                 use_cache=False,
             )
+        elif self.layer_type == "swin":
+            # Swin: expects 4D input (B, H, W, C), not 3D (B, seq, hidden)
+            batch_size, seq_len, hidden = hidden_states.shape
+            hw = int(seq_len ** 0.5)
+            # Reshape to (B, H, W, C)
+            x = hidden_states.view(batch_size, hw, hw, hidden)
+            layer_output = self.layer(x)
+            # Reshape back to (B, seq, hidden)
+            layer_output = layer_output.view(batch_size, -1, hidden)
+        elif self.layer_type == "segformer":
+            # SegFormer: needs height and width
+            batch_size, seq_len, _ = hidden_states.shape
+            hw = int(seq_len ** 0.5)
+            layer_output = self.layer(hidden_states, hw, hw)
         else:
-            # Encoder layer: simple forward
-            layer_output = self.layer(hidden_states, attention_mask)
+            # Encoder layer: try with attention_mask, fall back to just hidden_states
+            try:
+                layer_output = self.layer(hidden_states, attention_mask)
+            except TypeError:
+                layer_output = self.layer(hidden_states)
 
         if isinstance(layer_output, tuple):
             return layer_output[0]
@@ -519,13 +540,32 @@ def extract_single_layer(model, layer_idx: int = 0):
         SingleLayerWrapper containing just one layer
     """
     rotary_emb = None
-    config = model.config
+    config = getattr(model, 'config', None)
+    hidden_size = None
+    layer_type = "encoder"
 
     # Try decoder structures first (LLaMA-like)
     if hasattr(model, 'model') and hasattr(model.model, 'layers'):
         layer = model.model.layers[layer_idx]
         if hasattr(model.model, 'rotary_emb'):
             rotary_emb = model.model.rotary_emb
+        layer_type = "decoder"
+    # HuggingFace Vision Transformers
+    elif hasattr(model, 'vit'):
+        layer = model.vit.encoder.layer[layer_idx]
+    elif hasattr(model, 'swin'):
+        layer = model.swin.encoder.layers[0].blocks[layer_idx]
+        hidden_size = config.embed_dim if config else 96
+        layer_type = "swin"
+    elif hasattr(model, 'segformer'):
+        layer = model.segformer.encoder.block[0][layer_idx]
+        hidden_size = config.hidden_sizes[0] if config else 32
+        layer_type = "segformer"
+    # Torchvision Swin (no config attribute)
+    elif hasattr(model, 'features') and hasattr(model, 'head'):
+        layer = model.features[1][layer_idx]
+        hidden_size = 96  # Swin-T/S default stage 0 dim
+        layer_type = "swin"
     # Encoder structures (BERT-like)
     elif hasattr(model, 'encoder') and hasattr(model.encoder, 'layer'):
         layer = model.encoder.layer[layer_idx]
@@ -536,7 +576,7 @@ def extract_single_layer(model, layer_idx: int = 0):
     else:
         raise ValueError(f"Cannot find layers in model: {type(model)}")
 
-    wrapper = SingleLayerWrapper(layer, config, rotary_emb)
+    wrapper = SingleLayerWrapper(layer, config, rotary_emb, hidden_size=hidden_size, layer_type=layer_type)
     wrapper.eval()
     return wrapper
 

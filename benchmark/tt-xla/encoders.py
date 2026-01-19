@@ -58,7 +58,7 @@ DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION = False
 
 def test_encoder(
     model,
-    model_info_name: str,
+    model_nickname: str,
     output_file: str,
     tokenizer,
     output_processor_fn: Callable,
@@ -86,7 +86,7 @@ def test_encoder(
 
     Args:
         model: Loaded model instance in eval mode
-        model_info_name: Short model name for file naming
+        model_nickname: Short model name for file naming
         output_file: Path to save benchmark results as JSON
         tokenizer: Tokenizer for preprocessing (can be None if preprocess_fn provided)
         output_processor_fn: Function to process outputs -> embeddings
@@ -98,7 +98,7 @@ def test_encoder(
     """
     # Handle single_layer mode
     if single_layer:
-        print(f"🔧 Single layer mode: extracting layer 0 from {model_info_name}")
+        print(f"🔧 Single layer mode: extracting layer 0 from {model_nickname}")
         hidden_size = model.config.hidden_size
         model = extract_single_layer(model, layer_idx=0)
 
@@ -128,15 +128,15 @@ def test_encoder(
             }
 
     # Run benchmark
-    sanitized_name = sanitize_filename(model_info_name)
+    sanitized_name = sanitize_filename(model_nickname)
     ttnn_perf_metrics_file = f"tt_xla_{sanitized_name}_perf_metrics"
 
-    print(f"Running encoder benchmark for: {model_info_name}")
+    print(f"Running encoder benchmark for: {model_nickname}")
     print(f"  single_layer={single_layer}, batch_size={batch_size}, seq_len={input_sequence_length}")
 
     results = benchmark_encoder_torch_xla(
         model=model,
-        model_info_name=model_info_name,
+        model_nickname=model_nickname,
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
         training=False,
@@ -158,7 +158,7 @@ def test_encoder(
 
     if output_file:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = model_info_name
+        results["model_rawname"] = model_nickname
         aggregate_ttnn_perf_metrics(ttnn_perf_metrics_file, results)
         with open(output_file, "w") as f:
             json.dump(results, f, indent=2)
@@ -181,7 +181,7 @@ def test_bert(output_file, single_layer, attn_implementation="sdpa"):
 
     test_encoder(
         model=model,
-        model_info_name=model_name,
+        model_nickname=model_name,
         output_file=output_file,
         tokenizer=loader.tokenizer,
         output_processor_fn=lambda out, inputs: apply_mean_pooling(out.last_hidden_state, inputs["attention_mask"]),
@@ -207,7 +207,7 @@ def test_qwen3_embedding_4b(output_file, single_layer):
 
     test_encoder(
         model=model,
-        model_info_name="qwen3_emb_4b",
+        model_nickname="qwen3_emb_4b",
         output_file=output_file,
         tokenizer=loader.tokenizer,
         output_processor_fn=lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"]),
@@ -230,7 +230,7 @@ def test_qwen3_embedding_8b(output_file, single_layer):
 
     test_encoder(
         model=model,
-        model_info_name="qwen3_emb_8b",
+        model_nickname="qwen3_emb_8b",
         output_file=output_file,
         tokenizer=loader.tokenizer,
         output_processor_fn=lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"]),
@@ -279,7 +279,7 @@ def test_bge_m3(output_file, single_layer):
 
     test_encoder(
         model=model,
-        model_info_name="bge_m3",
+        model_nickname="bge_m3",
         output_file=output_file,
         tokenizer=None,  # Using custom preprocess
         output_processor_fn=bge_output_processor,
@@ -318,7 +318,7 @@ def test_unet_for_conditional_generation(output_file, single_layer):
 
     test_encoder(
         model=model,
-        model_info_name="unet_sdxl",
+        model_nickname="unet_sdxl",
         output_file=output_file,
         tokenizer=None,
         output_processor_fn=lambda out, inputs: out.sample,

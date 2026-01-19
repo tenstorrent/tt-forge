@@ -275,6 +275,7 @@ def benchmark_llm_torch_xla(
     required_pcc,
     single_block=False,
     single_layer=False,
+    model_nickname=None,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -357,7 +358,8 @@ def benchmark_llm_torch_xla(
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
     # Determine mode tag for file naming
-    model_nickname = model_variant.name.lower()  # e.g., "phi1", "qwen_2_5_0_5b_instruct"
+    if model_nickname is None:
+        model_nickname = model_variant.name.lower()
     mode_tag = get_mode_tag(single_block, single_layer)
 
     # Get export options using shared utility

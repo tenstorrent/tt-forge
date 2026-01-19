@@ -3,20 +3,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 """
-Generate TTIR tests for LLMs and encoder models.
+Generate single-layer TTIR tests for transformer models (LLMs, encoders, vision transformers).
 
 Usage:
-    python generate_tests.py llm [--models MODEL1,MODEL2,...] [--dry-run]
-    python generate_tests.py encoder [--models MODEL1,MODEL2,...] [--dry-run]
-    python generate_tests.py all [--dry-run]
+    python generate_transformer_layers.py llm [--models MODEL1,MODEL2,...] [--dry-run]
+    python generate_transformer_layers.py encoder [--models MODEL1,MODEL2,...] [--dry-run]
+    python generate_transformer_layers.py vision [--models MODEL1,MODEL2,...] [--dry-run]
+    python generate_transformer_layers.py all [--dry-run]
 
 Examples:
-    python generate_tests.py llm --models phi1,phi2
-    python generate_tests.py llm --models gemma     # Run all gemma models
-    python generate_tests.py encoder --models bert
-    python generate_tests.py all                    # Run all LLMs and encoders
-    python generate_tests.py llm --continue         # Resume: skip complete, redo incomplete
-    python generate_tests.py encoder --status-only  # Just show progress report
+    python generate_transformer_layers.py llm --models phi,gemma
+    python generate_transformer_layers.py encoder --models bert
+    python generate_transformer_layers.py vision --models vit,swin
+    python generate_transformer_layers.py all
+    python generate_transformer_layers.py llm --continue    # Resume incomplete
+    python generate_transformer_layers.py --status-only     # Show progress
 """
 
 import argparse
@@ -29,7 +30,7 @@ import subprocess
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, "llm_blocks_and_layers")
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "transformer_layers")
 MODULES_DIR = os.path.join(SCRIPT_DIR, "modules/irs")
 
 # ============================================================================
@@ -38,7 +39,7 @@ MODULES_DIR = os.path.join(SCRIPT_DIR, "modules/irs")
 
 LLM_CONFIG = {
     "source_file": "llms.py",
-    "required_param": "single_block",
+    "required_param": "single_layer",
     "helper_func_name": "test_llm",
     "skip_patterns": ["# FAILED"],
     "expected_files": ["_decode_block.mlir", "_prefill_layer.mlir", "_decode_layer.mlir"],
@@ -55,13 +56,25 @@ ENCODER_CONFIG = {
     "skip_patterns": ["# FAILED", "# [pytest.skip]"],
     "expected_files": ["_encoder_layer.mlir"],
     "tests": [
-        {"flag": "--generate-layer-test", "mode": "enc", "label": "layer", "skip_arg": None},
+        {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": None},
+    ],
+}
+
+VISION_CONFIG = {
+    "source_file": "vision_models.py",
+    "required_param": "single_layer",
+    "helper_func_name": "test_vision",
+    "skip_patterns": ["# FAILED", "# [pytest.skip]"],
+    "expected_files": ["_vision_layer.mlir"],
+    "tests": [
+        {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": None},
     ],
 }
 
 MODEL_CONFIGS = {
     "llm": LLM_CONFIG,
     "encoder": ENCODER_CONFIG,
+    "vision": VISION_CONFIG,
 }
 
 # ============================================================================
@@ -124,10 +137,7 @@ def parse_models(models_arg: str | None, all_models: list[str]) -> list[str]:
 
 
 def check_status_and_filter(models: list, expected_files: list[str], status_only: bool) -> list | None:
-    """Check model status and optionally filter to incomplete only.
-    
-    Returns filtered models list, or None if status_only or all complete.
-    """
+    """Check model status and optionally filter to incomplete only."""
     complete, incomplete, missing = [], [], {}
 
     for model in models:
@@ -180,7 +190,6 @@ def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool) -> tupl
         return True, ""
     except subprocess.CalledProcessError as e:
         output = (e.stdout or "") + "\n" + (e.stderr or "")
-        # Extract error message
         for pattern in [
             r"((?:AssertionError|RuntimeError|ValueError|TypeError|KeyError)[:\s]+[^\n]+)",
             r"(FAILED[^\n]+)",
@@ -193,14 +202,22 @@ def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool) -> tupl
         return False, "Unknown error"
 
 
-def copy_ttir_files(model: str, mode: str, dry_run: bool) -> list[str]:
+def copy_ttir_files(model: str, mode: str, model_type: str, dry_run: bool) -> list[str]:
     """Find and copy generated TTIR files with clean names."""
-    pattern_prefix = "lyr" if mode == "enc" else mode
-    pattern = f"{MODULES_DIR}/ttir_{pattern_prefix}_{model}*_bs*_g*.mlir"
-    all_files = glob.glob(pattern)
+    # Try multiple patterns: exact match, without underscores, with underscores removed before digits
+    patterns = [
+        f"{MODULES_DIR}/ttir_{mode}_{model}*_bs*_g*.mlir",
+        f"{MODULES_DIR}/ttir_{mode}_{model.replace('_', '')}*_bs*_g*.mlir",  # phi_1 -> phi1
+    ]
+    
+    all_files = []
+    for pattern in patterns:
+        all_files = glob.glob(pattern)
+        if all_files:
+            break
 
     if not all_files:
-        print(f"WARNING: No TTIR files found matching {pattern}")
+        print(f"WARNING: No TTIR files found matching patterns for {model}")
         return []
 
     # Group by graph number, keep most recent
@@ -211,12 +228,14 @@ def copy_ttir_files(model: str, mode: str, dry_run: bool) -> list[str]:
             if g not in graph_files or ts > graph_files[g][0]:
                 graph_files[g] = (ts, f)
 
-    # Determine needed graphs and output names
+    # Determine output names based on model type
     if mode == "blk":
         graph_names = {0: f"{model}_decode_block.mlir"}
-    elif mode == "enc":
+    elif model_type == "encoder":
         graph_names = {0: f"{model}_encoder_layer.mlir"}
-    else:  # lyr
+    elif model_type == "vision":
+        graph_names = {0: f"{model}_vision_layer.mlir"}
+    else:  # llm layer
         graph_names = {0: f"{model}_prefill_layer.mlir", 1: f"{model}_decode_layer.mlir"}
 
     copied = []
@@ -250,7 +269,6 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
         print(f"\n{'='*60}\nProcessing: {model} ({model_type})\n{'='*60}")
 
         for test in config["tests"]:
-            # Check if this test should be skipped
             if test["skip_arg"] and getattr(args, test["skip_arg"], False):
                 continue
 
@@ -260,7 +278,7 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
                 success, error = execute_pytest(config["source_file"], model, test["flag"], args.dry_run)
 
             if success:
-                copied = copy_ttir_files(model, test["mode"], args.dry_run)
+                copied = copy_ttir_files(model, test["mode"], model_type, args.dry_run)
                 if copied:
                     results["success"].extend(copied)
                 else:
@@ -328,24 +346,26 @@ def run(model_types: list[str], args) -> int:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate TTIR tests for LLMs and encoder models",
+        description="Generate single-layer TTIR tests for transformer models",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python generate_tests.py llm                     # All LLMs
-    python generate_tests.py llm --models phi,gemma  # Phi and Gemma models
-    python generate_tests.py encoder                 # All encoders
-    python generate_tests.py all                     # All LLMs and encoders
-    python generate_tests.py llm --continue          # Resume incomplete
+    python generate_transformer_layers.py llm                     # All LLMs
+    python generate_transformer_layers.py llm --models phi,gemma  # Phi and Gemma
+    python generate_transformer_layers.py encoder                 # All encoders
+    python generate_transformer_layers.py vision                  # Vision transformers
+    python generate_transformer_layers.py all                     # All transformers
+    python generate_transformer_layers.py llm --continue          # Resume incomplete
 """,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Model type to process")
 
-    for cmd, help_text, extra_args in [
+    for cmd, help_text, has_block in [
         ("llm", "Generate tests for LLM models", True),
         ("encoder", "Generate tests for encoder models", False),
-        ("all", "Generate tests for all models", True),
+        ("vision", "Generate tests for vision transformers", False),
+        ("all", "Generate tests for all transformer models", True),
     ]:
         p = subparsers.add_parser(cmd, help=help_text)
         p.add_argument("--models", help="Comma-separated models or prefixes")
@@ -354,7 +374,7 @@ Examples:
         p.add_argument("--copy-only", action="store_true", help="Only copy existing TTIR files")
         p.add_argument("--continue", dest="continue_mode", action="store_true", help="Resume incomplete")
         p.add_argument("--status-only", action="store_true", help="Only show progress")
-        if extra_args:
+        if has_block:
             p.add_argument("--skip-block", action="store_true", help="Skip block tests")
             p.add_argument("--skip-layer", action="store_true", help="Skip layer tests")
 
@@ -364,12 +384,16 @@ Examples:
         parser.print_help()
         return 1
 
-    # Encoder doesn't have block tests
-    if args.command == "encoder":
+    # Set defaults for models without block tests
+    if args.command in ("encoder", "vision"):
         args.skip_block = True
         args.skip_layer = False
 
-    model_types = ["llm", "encoder"] if args.command == "all" else [args.command]
+    if args.command == "all":
+        model_types = ["llm", "encoder", "vision"]
+    else:
+        model_types = [args.command]
+
     return run(model_types, args)
 
 

@@ -97,6 +97,7 @@ def test_llm(
     shard_spec_fn=None,
     arch=None,
     required_pcc=DEFAULT_REQUIRED_PCC,
+    model_nickname=None,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -182,6 +183,7 @@ def test_llm(
         required_pcc=required_pcc,
         single_block=single_block,
         single_layer=single_layer,
+        model_nickname=model_nickname,
     )
 
     if output_file:
@@ -343,10 +345,11 @@ def test_phi_1(output_file, single_block, single_layer):
 
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=ModelVariant.PHI_1,
+        variant=ModelVariant.PHI1,
         output_file=output_file,
         single_block=single_block,
         single_layer=single_layer,
+        model_nickname="phi_1",
     )
 
 
@@ -356,10 +359,11 @@ def test_phi_1_5(output_file, single_block, single_layer):
 
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=ModelVariant.PHI_1_5,
+        variant=ModelVariant.PHI1_5,
         output_file=output_file,
         single_block=single_block,
         single_layer=single_layer,
+        model_nickname="phi_1_5",
     )
 
 
@@ -369,10 +373,11 @@ def test_phi_2(output_file, single_block, single_layer):
 
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=ModelVariant.PHI_2,
+        variant=ModelVariant.PHI2,
         output_file=output_file,
         single_block=single_block,
         single_layer=single_layer,
+        model_nickname="phi_2",
     )
 
 
@@ -390,11 +395,12 @@ def test_falcon_3_1b(output_file, single_block, single_layer):
 
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=ModelVariant.FALCON_3_1B,
+        variant=ModelVariant.FALCON_1B,
         output_file=output_file,
         read_logits_fn=_falcon_read_logits_fn,
         single_block=single_block,
         single_layer=single_layer,
+        model_nickname="falcon_3_1b",
     )
 
 
@@ -404,11 +410,12 @@ def test_falcon_3_3b(output_file, single_block, single_layer):
 
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=ModelVariant.FALCON_3_3B,
+        variant=ModelVariant.FALCON_3B,
         output_file=output_file,
         read_logits_fn=_falcon_read_logits_fn,
         single_block=single_block,
         single_layer=single_layer,
+        model_nickname="falcon_3_3b",
     )
 
 
@@ -570,14 +577,15 @@ def test_mamba_2_8b(output_file):
 
 # FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
 def test_falcon_3_7b(output_file):
+    """Test Falcon 3 7B model."""
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.FALCON_3_7B,
-             output_file=output_file, read_logits_fn=_falcon_read_logits_fn)
 
-    variant = ModelVariant.FALCON_7B
-    # Tuple format: (logits, past_key_values, ...)
-    read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.FALCON_7B,
+        output_file=output_file,
+        read_logits_fn=_falcon_read_logits_fn,
+    )
 
 
 def test_mistral_7b(output_file):

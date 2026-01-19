@@ -141,7 +141,7 @@ def measure_fps_encoder_model(model, raw_inputs, preprocess_fn, device, output_p
 
 def benchmark_encoder_torch_xla(
     model,
-    model_info_name,
+    model_nickname,
     optimization_level,
     trace_enabled,
     training,
@@ -172,7 +172,7 @@ def benchmark_encoder_torch_xla(
 
     Args:
         model: Loaded encoder model instance in eval mode
-        model_info_name: Model name for identification and reporting
+        model_nickname: Model name for identification and reporting
         optimization_level: tt-mlir optimization level for compilation
         trace_enabled: Whether to enable tracing
         training: Whether to run in training mode (not supported)
@@ -208,7 +208,7 @@ def benchmark_encoder_torch_xla(
 
     # Sanitize model name for export naming
     from benchmark.utils import sanitize_filename
-    sanitized_model_name = sanitize_filename(model_info_name).lower()
+    sanitized_model_name = sanitize_filename(model_nickname).lower()
 
     # Determine mode tag for file naming
     mode_tag = "lyr" if single_layer else "full"
@@ -231,7 +231,7 @@ def benchmark_encoder_torch_xla(
     # SINGLE LAYER MODE: Compile and export only (no benchmarking)
     # =========================================================================
     if single_layer:
-        print(f"Compiling encoder graph for {model_info_name}...")
+        print(f"Compiling encoder graph for {model_nickname}...")
         print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
 
         device = torch_xla.device()
@@ -251,8 +251,8 @@ def benchmark_encoder_torch_xla(
 
         # Find and print generated TTIR files
         generated_files = find_generated_ttir_files(export_model_name)
-        print_ttir_export_result(generated_files, "single_layer", model_info_name, export_model_name)
-        return {"status": "success", "mode": "single_layer", "model": model_info_name}
+        print_ttir_export_result(generated_files, "single_layer", model_nickname, export_model_name)
+        return {"status": "success", "mode": "single_layer", "model": model_nickname}
 
     # =========================================================================
     # FULL MODEL MODE: Encoder benchmark
@@ -319,7 +319,7 @@ def benchmark_encoder_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = model_info_name
+    full_model_name = model_nickname
     model_type = "Encoder, Text Embedding"
     dataset_name = "Benchmark Sentences"
     num_layers = -1
