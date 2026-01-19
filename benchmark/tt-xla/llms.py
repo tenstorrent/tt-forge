@@ -9,6 +9,7 @@ from loguru import logger
 
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
+from utils import supports_num_layers, extract_single_layer
 
 import torch_xla.runtime as xr
 from torch_xla.distributed.spmd import Mesh
@@ -16,100 +17,37 @@ import numpy as np
 
 
 # =============================================================================
-# Layer-Only Wrapper (handles rotary embeddings properly)
+# Single Block Loader (for testing decoder blocks without embedding/lm_head)
 # =============================================================================
-
-import torch
-import torch.nn as nn
-
-
-class DecoderLayerWrapper(nn.Module):
-    """Wrapper that runs a decoder layer with proper rotary embeddings.
-
-    Handles the complexity of computing position_embeddings (cos/sin) that
-    modern transformer layers require.
-    """
-
-    def __init__(self, decoder_layer, rotary_emb, config):
-        super().__init__()
-        self.layer = decoder_layer
-        self.rotary_emb = rotary_emb
-        self.config = config
-        self.hidden_size = config.hidden_size
-
-    def forward(self, hidden_states, position_ids=None):
-        batch_size, seq_len, _ = hidden_states.shape
-
-        # Create position_ids if not provided
-        if position_ids is None:
-            position_ids = torch.arange(seq_len, device=hidden_states.device).unsqueeze(0).expand(batch_size, -1)
-
-        # Compute rotary embeddings (cos, sin)
-        position_embeddings = self.rotary_emb(hidden_states, position_ids)
-
-        # Run the decoder layer
-        layer_output = self.layer(
-            hidden_states,
-            position_embeddings=position_embeddings,
-            attention_mask=None,
-            use_cache=False,
-        )
-
-        # layer_output is a tuple, first element is hidden_states
-        return layer_output[0]
-
-
-def _supports_num_layers(loader_class: Type) -> bool:
-    """Check if a model loader class supports the num_layers parameter."""
-    import inspect
-
-    try:
-        sig = inspect.signature(loader_class.__init__)
-        return "num_layers" in sig.parameters
-    except (ValueError, TypeError):
-        return False
 
 
 def _create_single_block_loader(BaseLoaderClass: Type, layer_idx: int = 0) -> Type:
     """Create a model loader that returns only the decoder layer (no embedding/lm_head).
 
-    Returns a DecoderLayerWrapper that handles rotary embeddings properly.
+    Uses extract_single_layer from utils which handles rotary embeddings properly.
     Input: hidden_states [batch, seq_len, hidden_size]
     Output: hidden_states [batch, seq_len, hidden_size]
 
     If num_layers is supported, loads with 1 layer for efficiency.
     Otherwise, loads full model and extracts the first layer.
     """
-    use_num_layers = _supports_num_layers(BaseLoaderClass)
+    use_num_layers = supports_num_layers(BaseLoaderClass)
 
     class LayerOnlyModelLoader(BaseLoaderClass):
         def __init__(self, variant=None):
             if use_num_layers:
-                # Load with only 1 layer to avoid loading unnecessary layers
                 super().__init__(variant=variant, num_layers=1)
             else:
-                # Load full model - will extract first layer later
                 print(f"Note: {BaseLoaderClass.__name__} doesn't support num_layers - loading full model")
                 super().__init__(variant=variant)
 
         def load_model(self, dtype_override=None):
-            # Load model
             full_model = super().load_model(dtype_override=dtype_override)
-
-            # Extract decoder layer and rotary_emb
-            decoder_layer = full_model.model.layers[layer_idx]
-            rotary_emb = full_model.model.rotary_emb
-            config = full_model.config
-
-            # Create wrapper
-            wrapper = DecoderLayerWrapper(decoder_layer, rotary_emb, config)
-            wrapper.eval()
-
+            wrapper = extract_single_layer(full_model, layer_idx)
             logger.info(f"🔧 Single block mode: returning wrapped layer {layer_idx}")
             return wrapper
 
         def load_tokenizer(self):
-            # We don't need a tokenizer for layer-only mode
             return None
 
     return LayerOnlyModelLoader
@@ -120,7 +58,6 @@ def _create_single_block_loader(BaseLoaderClass: Type, layer_idx: int = 0) -> Ty
 # =============================================================================
 
 DEFAULT_OPTIMIZATION_LEVEL = 1
-DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_LOOP_COUNT = 1
@@ -190,7 +127,7 @@ def test_llm(
         model_loader = ModelLoaderModule(variant=variant)
     elif single_layer:
         # Single-layer: full model with 1 layer (or full model if num_layers not supported)
-        if _supports_num_layers(ModelLoaderModule):
+        if supports_num_layers(ModelLoaderModule):
             model_loader = ModelLoaderModule(variant=variant, num_layers=1)
         else:
             print(f"Note: {ModelLoaderModule.__name__} doesn't support num_layers - loading full model")
@@ -496,15 +433,27 @@ def test_qwen_2_5_0_5b(output_file, single_block, single_layer):
 def test_qwen_2_5_1_5b(output_file, single_block, single_layer):
     """Test Qwen 2.5 1.5B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.QWEN_2_5_1_5B_INSTRUCT,
-             output_file=output_file, single_block=single_block, single_layer=single_layer)
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_2_5_1_5B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+    )
 
 
 def test_qwen_2_5_3b(output_file, single_block, single_layer):
     """Test Qwen 2.5 3B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.QWEN_2_5_3B_INSTRUCT,
-             output_file=output_file, single_block=single_block, single_layer=single_layer)
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_2_5_3B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+    )
 
 
 def test_qwen_3_0_6b(output_file, single_block, single_layer):
@@ -546,50 +495,77 @@ def test_qwen_3_4b(output_file, single_block, single_layer):
     )
 
 
+# =============================================================================
+# Large Models (no single_block/single_layer support yet)
+# =============================================================================
+
+
 def test_qwen_3_8b(output_file):
+    """Test Qwen 3 8B model."""
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.QWEN_3_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.QWEN_3_8B, output_file=output_file)
 
 
 def test_qwen_2_5_7b(output_file):
+    """Test Qwen 2.5 7B model."""
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.QWEN_2_5_7B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.QWEN_2_5_7B_INSTRUCT, output_file=output_file)
+
+
+def test_mistral_7b(output_file):
+    """Test Mistral 7B model."""
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.MISTRAL_7B_INSTRUCT_V03, output_file=output_file)
+
+
+def test_ministral_8b(output_file):
+    """Test Ministral 8B model."""
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.MINISTRAL_8B, output_file=output_file)
+
+
+def test_llama_3_1_8b(output_file):
+    """Test Llama 3.1 8B model."""
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.LLAMA_3_1_8B_INSTRUCT, output_file=output_file)
+
+
+# =============================================================================
+# Broken Models (kept for reference)
+# =============================================================================
 
 
 # FAILED: KeyError: "L['self'].model.lifted_tensor_0"
 def test_gemma_1_1_7b(output_file):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.GEMMA_1_1_7B_IT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.GEMMA_1_1_7B_IT, output_file=output_file)
 
 
 # FAILED: TypeError: Phi3ForCausalLM.forward() got an unexpected keyword argument 'cache_position'
 def test_phi_3_mini(output_file):
     from third_party.tt_forge_models.phi3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.MINI_4K
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.MINI_4K, output_file=output_file)
 
 
 # FAILED: KeyError: 'lifted_tensor_0'
 def test_phi_3_5_mini(output_file):
     from third_party.tt_forge_models.phi3.phi_3_5.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.MINI_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.MINI_INSTRUCT, output_file=output_file)
 
 
 # FAILED: AttributeError: 'MambaConfig' object has no attribute 'num_attention_heads'
 def test_mamba_2_8b(output_file):
     from third_party.tt_forge_models.mamba.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.MAMBA_2_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.MAMBA_2_8B, output_file=output_file)
 
 
 # FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token

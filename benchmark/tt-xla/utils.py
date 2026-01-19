@@ -17,7 +17,8 @@ MODULE_EXPORT_PATH = "modules"
 def get_export_options(
     model_name: str,
     mode: str = "full",
-    batch_size: int = 1,
+    batch_size: int = None,
+    input_sequence_length: int = None,
     export_path: str = MODULE_EXPORT_PATH,
     optimization_level: int = 0,
     trace_enabled: bool = False,
@@ -31,7 +32,8 @@ def get_export_options(
     Args:
         model_name: Name of the model (e.g., "phi1_5", "resnet50")
         mode: Export mode tag - "blk" (block), "lyr" (layer), or "full" (default)
-        batch_size: Batch size used for the model
+        batch_size: Batch size (optional, included in name if provided)
+        input_sequence_length: Input sequence length (optional, included in name if provided)
         export_path: Directory to export MLIR files to
         optimization_level: XLA optimization level
         trace_enabled: Whether tracing is enabled
@@ -43,7 +45,15 @@ def get_export_options(
         Dict with export options including a unique export_model_name
     """
     run_id = secrets.token_hex(2)  # 4 hex chars, e.g., "a7f3"
-    export_model_name = f"{mode}_{model_name}_bs{batch_size}_{run_id}"
+
+    # Build export model name with optional components
+    name_parts = [mode, model_name]
+    if batch_size is not None:
+        name_parts.append(f"bs{batch_size}")
+    if input_sequence_length is not None:
+        name_parts.append(f"isl{input_sequence_length}")
+    name_parts.append(run_id)
+    export_model_name = "_".join(name_parts)
 
     options = {
         "optimization_level": optimization_level,
@@ -429,3 +439,177 @@ def move_to_cpu(data):
         moved = [move_to_cpu(item) for item in data]
         return type(data)(moved)
     return data
+
+
+# ============================================================================
+# Single layer extraction utilities (shared between LLM and encoder)
+# ============================================================================
+
+import torch.nn as nn
+import inspect
+
+
+def supports_num_layers(loader_class) -> bool:
+    """Check if a model loader class supports the num_layers parameter.
+    
+    Args:
+        loader_class: Model loader class to check
+        
+    Returns:
+        True if the loader's __init__ accepts num_layers parameter
+    """
+    try:
+        sig = inspect.signature(loader_class.__init__)
+        return "num_layers" in sig.parameters
+    except (ValueError, TypeError):
+        return False
+
+
+class SingleLayerWrapper(nn.Module):
+    """Wrapper that runs a single transformer layer.
+
+    Handles the different forward() signatures:
+    - Encoder: layer(hidden_states, attention_mask)
+    - Decoder: layer(hidden_states, position_embeddings=..., attention_mask=..., use_cache=False)
+
+    Input: hidden_states [batch, seq_len, hidden_size]
+    Output: hidden_states [batch, seq_len, hidden_size]
+    """
+
+    def __init__(self, layer, config, rotary_emb=None):
+        super().__init__()
+        self.layer = layer
+        self.config = config
+        self.rotary_emb = rotary_emb
+        self.hidden_size = config.hidden_size
+
+    def forward(self, hidden_states, attention_mask=None, position_ids=None):
+        if self.rotary_emb is not None:
+            # Decoder layer: needs rotary embeddings
+            batch_size, seq_len, _ = hidden_states.shape
+            if position_ids is None:
+                position_ids = torch.arange(seq_len, device=hidden_states.device).unsqueeze(0).expand(batch_size, -1)
+            position_embeddings = self.rotary_emb(hidden_states, position_ids)
+            layer_output = self.layer(
+                hidden_states,
+                position_embeddings=position_embeddings,
+                attention_mask=attention_mask,
+                use_cache=False,
+            )
+        else:
+            # Encoder layer: simple forward
+            layer_output = self.layer(hidden_states, attention_mask)
+
+        if isinstance(layer_output, tuple):
+            return layer_output[0]
+        return layer_output
+
+
+def extract_single_layer(model, layer_idx: int = 0):
+    """Extract a single layer from a transformer model.
+
+    Supports both encoder models (BERT-like) and decoder models (LLaMA-like).
+    Automatically detects model structure and returns appropriate wrapper.
+
+    Args:
+        model: Full transformer model
+        layer_idx: Which layer to extract (default: 0, first layer)
+
+    Returns:
+        SingleLayerWrapper containing just one layer
+    """
+    rotary_emb = None
+    config = model.config
+
+    # Try decoder structures first (LLaMA-like)
+    if hasattr(model, 'model') and hasattr(model.model, 'layers'):
+        layer = model.model.layers[layer_idx]
+        if hasattr(model.model, 'rotary_emb'):
+            rotary_emb = model.model.rotary_emb
+    # Encoder structures (BERT-like)
+    elif hasattr(model, 'encoder') and hasattr(model.encoder, 'layer'):
+        layer = model.encoder.layer[layer_idx]
+    elif hasattr(model, 'model') and hasattr(model.model, 'encoder'):
+        layer = model.model.encoder.layer[layer_idx]
+    elif hasattr(model, 'layers'):
+        layer = model.layers[layer_idx]
+    else:
+        raise ValueError(f"Cannot find layers in model: {type(model)}")
+
+    wrapper = SingleLayerWrapper(layer, config, rotary_emb)
+    wrapper.eval()
+    return wrapper
+
+
+# ============================================================================
+# TTIR export utilities (shared between LLM and encoder benchmarks)
+# ============================================================================
+
+import glob
+import os
+
+
+def get_mode_tag(single_block: bool = False, single_layer: bool = False) -> str:
+    """Get export mode tag for file naming.
+
+    Args:
+        single_block: Whether running single block mode
+        single_layer: Whether running single layer mode
+
+    Returns:
+        Mode tag: "blk", "lyr", or "full"
+    """
+    if single_block:
+        return "blk"
+    elif single_layer:
+        return "lyr"
+    return "full"
+
+
+def find_generated_ttir_files(export_model_name: str, export_path: str = None) -> List[str]:
+    """Find generated TTIR files for a given export model name.
+
+    Args:
+        export_model_name: The export model name used during compilation
+        export_path: Base export path (default: MODULE_EXPORT_PATH)
+
+    Returns:
+        Sorted list of matching TTIR file paths
+    """
+    if export_path is None:
+        export_path = MODULE_EXPORT_PATH
+    pattern = f"{export_path}/irs/ttir_{export_model_name}_g*.mlir"
+    return sorted(glob.glob(pattern))
+
+
+def print_ttir_export_result(
+    generated_files: List[str],
+    mode: str,
+    model_name: str,
+    export_model_name: str,
+    export_path: str = None,
+) -> None:
+    """Print TTIR export results.
+
+    Args:
+        generated_files: List of generated TTIR file paths
+        mode: Mode description (e.g., "single_block", "single_layer")
+        model_name: Human-readable model name
+        export_model_name: Export model name used in filenames
+        export_path: Base export path (default: MODULE_EXPORT_PATH)
+    """
+    if export_path is None:
+        export_path = MODULE_EXPORT_PATH
+
+    mode_labels = {
+        "single_block": "single block test",
+        "single_layer": "single layer test",
+    }
+    mode_label = mode_labels.get(mode, mode)
+
+    if generated_files:
+        print(f"Generated {mode_label}:")
+        for f in generated_files:
+            print(f"  {f}")
+    else:
+        print(f"Generated {mode_label}: {export_model_name} (files not found in {export_path}/irs/)")
