@@ -68,7 +68,7 @@ on:
     workflow_dispatch:
       inputs:
         repo:
-          description: 'Name of repo eg. tt-forge-fe'
+          description: 'Name of repo eg. tt-forge-onnx'
           required: false
           default: ''
 

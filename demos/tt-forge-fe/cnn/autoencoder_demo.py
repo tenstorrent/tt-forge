@@ -10,7 +10,7 @@ from forge._C import DataFormat
 from forge.config import CompilerConfig
 import torch
 
-SAVE_DIR = "demos/tt-forge-fe/cnn/autoencoder"
+SAVE_DIR = "demos/tt-forge-onnx/cnn/autoencoder"
 
 
 def run_autoencoder_demo_case(variant):

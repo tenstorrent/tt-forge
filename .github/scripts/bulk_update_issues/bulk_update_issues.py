@@ -367,7 +367,7 @@ async def main():
     repositories = [
         "tenstorrent/tt-blacksmith",
         "tenstorrent/tt-mlir",
-        "tenstorrent/tt-forge-fe",
+        "tenstorrent/tt-forge-onnx",
         "tenstorrent/tt-forge",
         "tenstorrent/tt-xla",
         "tenstorrent/tt-torch",

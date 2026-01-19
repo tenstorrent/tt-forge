@@ -6,7 +6,7 @@ Thank you for your interest in the [TT-Forge](https://github.com/tenstorrent/tt-
 * [TT-XLA](https://github.com/tenstorrent/tt-xla)
 * [TT-NPE](https://github.com/tenstorrent/tt-npe)
 * [TT-Blacksmith](https://github.com/tenstorrent/tt-blacksmith)
-* [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe)
+* [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx)
 * [TT-Torch](https://github.com/tenstorrent/tt-torch) - (deprecated)
 
 This document covers how to contribute to TT-Forge repositories.
@@ -52,7 +52,7 @@ Coding guidelines differ slightly by repo. Review the guidelines that are approp
 * [TT-XLA Coding Guidelines](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md) - TT-XLA uses the same coding guidelines as TT-MLIR.
 * TT-NPE
 * TT-Blacksmith
-* TT-Forge-FE
+* TT-Forge-ONNX
 * [TT-Torch](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md) - (deprecated) TT-Torch uses the same coding guidelines as TT-MLIR, when using C++.
 
 ## Guidelines for Writing Effective Error Messages

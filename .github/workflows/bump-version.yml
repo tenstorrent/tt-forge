@@ -6,7 +6,7 @@ on:
     inputs:
       repo:
         type: string
-        description: 'Repo to bump version for (e.g tt-forge-fe)'
+        description: 'Repo to bump version for (e.g tt-forge-onnx)'
         required: true
       branch:
         type: string
@@ -31,7 +31,7 @@ on:
     inputs:
       repo:
         type: string
-        description: 'Repo to bump version for (e.g tt-forge-fe)'
+        description: 'Repo to bump version for (e.g tt-forge-onnx)'
         required: true
       branch:
         type: string

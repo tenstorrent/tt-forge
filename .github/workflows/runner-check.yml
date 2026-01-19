@@ -28,11 +28,11 @@ jobs:
         with:
           repo: tt-xla
           token: ${{ secrets.GH_TOKEN }}
-      - name: Find new offline runners in tt-forge-fe
-        id: tt-forge-fe
+      - name: Find new offline runners in tt-forge-onnx
+        id: tt-forge-onnx
         uses: ./.github/actions/offline-runners
         with:
-          repo: tt-forge-fe
+          repo: tt-forge-onnx
           token: ${{ secrets.GH_TOKEN }}
       - name: Find new offline runners in tt-mlir
         id: tt-mlir
@@ -56,8 +56,8 @@ jobs:
           if [ -n "${{ steps.tt-xla.outputs.new_runners }}" ]; then
             echo "New offline runners in tt-xla: ${{ steps.tt-xla.outputs.new_runners }}" | tee -a "$output_file"
           fi
-          if [ -n "${{ steps.tt-forge-fe.outputs.new_runners }}" ]; then
-            echo "New offline runners in tt-forge-fe: ${{ steps.tt-forge-fe.outputs.new_runners }}" | tee -a "$output_file"
+          if [ -n "${{ steps.tt-forge-onnx.outputs.new_runners }}" ]; then
+            echo "New offline runners in tt-forge-onnx: ${{ steps.tt-forge-onnx.outputs.new_runners }}" | tee -a "$output_file"
           fi
           if [ -n "${{ steps.tt-mlir.outputs.new_runners }}" ]; then
             echo "New offline runners in tt-mlir: ${{ steps.tt-mlir.outputs.new_runners }}" | tee -a "$output_file"

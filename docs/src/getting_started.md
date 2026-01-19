@@ -18,7 +18,7 @@ This section provides instructions for how to set up your frontend so you can ru
 Before running one of the demos in TT-Forge, you must:
 1. Determine which frontend you want to use:
    * [TT-XLA](https://github.com/tenstorrent/tt-xla) - For use with JAX, TensorFlow, PyTorch
-   * [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe) - For use with ONNX and PaddlePaddle
+   * [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx) - For use with ONNX and PaddlePaddle
    * [TT-Torch](https://github.com/tenstorrent/tt-torch) - (Deprecated, if you want to use PyTorch use TT-XLA)
 
 2. Decide what setup you want to use for the frontend:
@@ -26,13 +26,13 @@ Before running one of the demos in TT-Forge, you must:
    * Docker
    * Build From Source
 
->**NOTE:** At this time, if you want to use TT-Forge-FE, you must use Docker or the build from source option.
+>**NOTE:** At this time, if you want to use TT-Forge-ONNX, you must use Docker or the build from source option.
 
 3. Follow the installation instructions from the repo for your selected setup method:
    * [TT-XLA Wheel](https://docs.tenstorrent.com/tt-xla/getting_started.html)
    * [TT-XLA Docker](https://docs.tenstorrent.com/tt-xla/getting_started_docker.html)
-   * [TT-Forge-FE Docker](https://docs.tenstorrent.com/tt-forge-fe/getting_started_docker.html)
-   * [TT-Forge-FE Build From Source](https://docs.tenstorrent.com/tt-forge-fe/getting_started_build_from_source.html)
+   * [TT-Forge-ONNX Docker](https://docs.tenstorrent.com/tt-forge-onnx/getting_started_docker.html)
+   * [TT-Forge-ONNX Build From Source](https://docs.tenstorrent.com/tt-forge-onnx/getting_started_build_from_source.html)
    * [TT-Torch Wheel](https://docs.tenstorrent.com/tt-torch/getting_started.html) - (deprecated)
    * [TT-Torch Docker](https://docs.tenstorrent.com/tt-torch/getting_started_docker.html) - (deprecated)
 
@@ -56,7 +56,7 @@ git submodule update --init --recursive
 
 3. Navigate to the folder for the frontend you want:
    * [TT-XLA Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla)
-   * [TT-Forge-FE Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-fe)
+   * [TT-Forge-ONNX Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-onnx)
    * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch) - (deprecated)
 
 In this walkthrough, the [**resnet_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-xla/cnn/resnet_demo.py) from the TT-XLA folder is used.
@@ -65,7 +65,7 @@ In this walkthrough, the [**resnet_demo.py**](https://github.com/tenstorrent/tt-
 
 ```bash
 export PYTHONPATH=.
-python demos/tt-forge-fe/cnn/resnet_demo.py
+python demos/tt-forge-onnx/cnn/resnet_demo.py
 ```
 
 If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
@@ -153,7 +153,7 @@ Once you have completed the prerequisites, you can run the performance benchmark
    **Example:**
 
    ```bash
-   python benchmark/benchmark.py -p tt-forge-fe -m mobilenetv2_basic -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-fe-mobilenetv2_basic.json
+   python benchmark/benchmark.py -p tt-forge-onnx -m mobilenetv2_basic -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-mobilenetv2_basic.json
    ```
 
 3. Alternatively, you can run specific model tests using `pytest`:
@@ -165,5 +165,5 @@ Once you have completed the prerequisites, you can run the performance benchmark
    **Example:**
 
    ```bash
-   python -m pytest -svv tt-forge-fe/resnet_hf.py
+   python -m pytest -svv tt-forge-onnx/resnet_hf.py
    ```

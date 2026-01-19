@@ -1,8 +1,8 @@
-# TT-Forge-FE Model Demos
+# TT-Forge-ONNX Model Demos
 
-This directory contains example implementations of popular deep learning models using TT-Forge-FE. These demos showcase how to use TT-Forge-FE to run inference on various computer vision and natural language processing models.
+This directory contains example implementations of popular deep learning models using TT-Forge-ONNX. These demos showcase how to use TT-Forge-ONNX to run inference on various computer vision and natural language processing models.
 
->**NOTE:** TT-Forge-FE does not support multi-chip configurations; it is for single-chip projects only.
+>**NOTE:** TT-Forge-ONNX does not support multi-chip configurations; it is for single-chip projects only.
 
 ## Available Demos
 
@@ -46,6 +46,6 @@ If you encounter any issues or have questions, please file them at [github.com/t
 
 ## Additional Resources
 
-- [TT-Forge-FE Documentation](https://docs.tenstorrent.com/tt-forge-fe/)
-- [Getting Started Guide](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html)
-- [TT-Forge-FE GitHub Repository](https://github.com/tenstorrent/tt-forge)
+- [TT-Forge-ONNX Documentation](https://docs.tenstorrent.com/tt-forge-onnx/)
+- [Getting Started Guide](https://docs.tenstorrent.com/tt-forge-onnx/getting-started.html)
+- [TT-Forge-ONNX GitHub Repository](https://github.com/tenstorrent/tt-forge)

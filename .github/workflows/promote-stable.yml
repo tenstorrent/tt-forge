@@ -6,7 +6,7 @@ on:
     inputs:
       repo:
         type: string
-        description: 'Repo to release RC branch for (e.g tt-forge-fe)'
+        description: 'Repo to release RC branch for (e.g tt-forge-onnx)'
         required: true
       release_branch:
         type: string
@@ -33,7 +33,7 @@ on:
     inputs:
       repo:
         type: string
-        description: 'Repo to release RC branch for (e.g tt-forge-fe)'
+        description: 'Repo to release RC branch for (e.g tt-forge-onnx)'
         required: true
       release_branch:
         type: string

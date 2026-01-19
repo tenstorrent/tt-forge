@@ -1,1 +1,1 @@
-# No additional dependencies required for tt-forge-fe NLP demos
+# No additional dependencies required for tt-forge-onnx NLP demos

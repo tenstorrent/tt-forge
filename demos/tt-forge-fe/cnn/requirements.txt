@@ -1,1 +1,1 @@
-# No additional dependencies required for tt-forge-fe CNN demos
+# No additional dependencies required for tt-forge-onnx CNN demos

@@ -27,7 +27,7 @@ runs:
       id: set-wheel-name
       shell: bash
       run: |
-        if [ "${{ inputs.project }}" = "tt-forge-fe" ]; then
+        if [ "${{ inputs.project }}" = "tt-forge-onnx" ]; then
           echo "artifact=forge-wheel" >> $GITHUB_OUTPUT
           echo "wheel_name=tt_*" >> $GITHUB_OUTPUT
           echo "artifact_is_regex=false" >> $GITHUB_OUTPUT

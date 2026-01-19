@@ -33,7 +33,7 @@ Currently this release process manages the release for the following repositorie
 
 - TT-Forge
 - TT-XLA
-- TT-Forge-FE
+- TT-Forge-ONNX
 - TT-MLIR
 
 ### Quick Start Release Guide
@@ -166,7 +166,7 @@ This [workflow](.github/workflows/basic-tests.yml) runs simple tests across diff
 
 What this workflow does:
 
-- Tests multiple frontends (TT-Forge-FE, TT-XLA) against the provided Docker image
+- Tests multiple frontends (TT-Forge-ONNX, TT-XLA) against the provided Docker image
 - Runs tests on different hardware configurations (N150 and P150B boards)
 - Activates the appropriate Python virtual environment for each frontend
 - Executes basic test scripts to validate core functionality
@@ -181,7 +181,7 @@ This [workflow](.github/workflows/demo-tests.yml) runs more comprehensive demons
 What this workflow does:
 
 - Configures a test matrix based on frontends and available demo tests
-- Supports filtering by frontend (TT-XLA, TT-Forge-FE) and test name
+- Supports filtering by frontend (TT-XLA, TT-Forge-ONNX) and test name
 - Runs tests on specific hardware configurations based on the test requirements
 - Automatically installs required system dependencies and Python packages
 - Executes demo scripts that demonstrate the full functionality of each frontend
@@ -196,7 +196,7 @@ This [workflow](.github/workflows/perf-benchmark.yml) runs comprehensive perform
 
 What this workflow does:
 
-- Runs performance benchmarks on various models across TT-Forge-FE and TT-XLA frontends
+- Runs performance benchmarks on various models across TT-Forge-ONNX and TT-XLA frontends
 - Tests different batch sizes, precisions, and hardware configurations
 - Measures key performance metrics including samples per second and total execution time
 - Generates detailed performance reports with TTIR and TTNN MLIR dumps
@@ -213,7 +213,7 @@ This [workflow](.github/workflows/test-nightly-releaser.yml) allows testing of a
 What this workflow does:
 
 - Generate builds from a repository's main branch
-- Tag builds with date-based versions (e.g., draft.TT-Forge-fe.0.1.0dev20250708)
+- Tag builds with date-based versions (e.g., draft.TT-Forge-onnx.0.1.0dev20250708)
 - Simulate the publishing process with draft status so the github release page can be view in TT-Forge repository.
 
 What this workflow does not do:

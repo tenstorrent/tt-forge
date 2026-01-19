@@ -59,7 +59,7 @@ class ViltModelWrapper(torch.nn.Module):
         Returns:
             Tuple: Task-specific output (e.g., logits) and intermediate outputs.
 
-        More info: https://github.com/tenstorrent/tt-forge-fe/issues/1119
+        More info: https://github.com/tenstorrent/tt-forge-onnx/issues/1119
         """
 
         head_mask = self.vilt_model.vilt.get_head_mask(head_mask, self.vilt_model.vilt.config.num_hidden_layers)

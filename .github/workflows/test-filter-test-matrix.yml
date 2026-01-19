@@ -23,7 +23,7 @@ jobs:
           cat > test-matrix.json << 'EOF'
           [
             {
-              "project": "tt-forge-fe",
+              "project": "tt-forge-onnx",
               "test-defaults": {
                 "runs-on": ["n150", "p150"]
               },
@@ -73,7 +73,7 @@ jobs:
       - name: Test basic functionality
         run: |
           echo "Testing tt-forge project filter..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe)
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-onnx)
           echo "$result"
 
           # Check that result contains expected tests
@@ -91,7 +91,7 @@ jobs:
       - name: Test specific test filter
         run: |
           echo "Testing with specific test name filter..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --test-filter basic-test)
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-onnx --test-filter basic-test)
           echo "$result"
 
           # Should only contain basic-test
@@ -101,7 +101,7 @@ jobs:
       - name: Test shared runner flag
         run: |
           echo "Testing shared runner mapping..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --sh-runner)
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-onnx --sh-runner)
           echo "$result"
 
           # Check that p150 is mapped to p150b
@@ -139,7 +139,7 @@ jobs:
       - name: Test matrix flattening
         run: |
           echo "Testing matrix flattening with multiple runners..."
-          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-fe --test-filter basic-test)
+          result=$(python .github/workflows/filter-test-matrix.py test-matrix.json tt-forge-onnx --test-filter basic-test)
           echo "$result"
 
           # basic-test should be flattened into 2 entries (n150 and p150)

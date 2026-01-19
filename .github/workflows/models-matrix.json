@@ -1,6 +1,6 @@
 [
   {
-    "project": "tt-forge-fe",
+    "project": "tt-forge-onnx",
     "test-defaults": {
       "runs-on": ["n150", "p150"]
     },

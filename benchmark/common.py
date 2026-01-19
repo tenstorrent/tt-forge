@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Common functions for the forge-fe benchmarks.
+Common functions for the forge-onnx benchmarks.
 Provides pre_test and post_test functions that can modify configurations and results.
 """
 
@@ -19,7 +19,7 @@ from utils import reset_seeds
 
 def pre_test(config: Dict[str, Any], test_name: str) -> Dict[str, Any]:
     """
-    Function run before any benchmark test in the forge-fe project.
+    Function run before any benchmark test in the forge-onnx project.
 
     Parameters:
     -----------
@@ -40,7 +40,7 @@ def pre_test(config: Dict[str, Any], test_name: str) -> Dict[str, Any]:
 
 def post_test(results: Dict[str, Any], config: Dict[str, Any], test_name: str) -> Dict[str, Any]:
     """
-    Function run after any benchmark test in the forge-fe project.
+    Function run after any benchmark test in the forge-onnx project.
 
     Parameters:
     -----------

@@ -149,7 +149,7 @@ def test_resnet_hf(
     # TODO: Remove this line when the issue with reinitialization is resolved.
     os.environ["TT_METAL_FORCE_REINIT"] = "1"
 
-    # Enable Forge FE optimizations
+    # Enable Forge ONNX optimizations
     compiler_cfg.enable_optimization_passes = True
     compiled_model = forge.compile(framework_model, inputs[0], compiler_cfg=compiler_cfg)
     compiled_model.save(f"{model_name}.ttnn")
