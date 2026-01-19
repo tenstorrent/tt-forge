@@ -178,6 +178,24 @@ def test_llm_tp(ModelLoaderModule, variant, output_file):
     )
 
 
+def test_llm_tp_1_layer(ModelLoaderModule, variant, output_file):
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+    mesh_config_fn = ModelLoaderModule.get_mesh_config
+    shard_spec_fn = ModelLoaderModule.load_shard_spec
+
+    test_llm(
+        ModelLoaderModule=ModelLoaderModule,
+        variant=variant,
+        output_file=output_file,
+        mesh_config_fn=mesh_config_fn,
+        shard_spec_fn=shard_spec_fn,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+    )
+
+
 def test_llama_3_2_1b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -489,6 +507,13 @@ def test_qwen_3_32b_tp(output_file):
     test_llm_tp(ModelLoader, variant, output_file)
 
 
+def test_qwen_3_30b_3ab_tp(output_file):
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_30B_A3B
+    test_llm_tp(ModelLoader, variant, output_file)
+
+
 def test_llama_3_8b_instruct_tp(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
@@ -508,3 +533,10 @@ def test_llama_3_8b_tp(output_file):
 
     variant = ModelVariant.LLAMA_3_8B
     test_llm_tp(ModelLoader, variant, output_file)
+
+    
+def test_llama_3_1_70b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_70B
+    test_llm_tp_1_layer(ModelLoader, variant, output_file)
