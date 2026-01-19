@@ -9,7 +9,7 @@ import torch
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
-from utils import apply_mean_pooling, apply_last_token_pooling
+from utils import apply_mean_pooling, apply_last_token_pooling, patch_transformers_for_eager_attn
 
 
 DTYPE_MAP = {
@@ -155,6 +155,11 @@ def test_encoder(
 
 def test_bert(output_file):
     from third_party.tt_forge_models.bert.sentence_embedding_generation.pytorch.loader import ModelLoader
+
+    # TODO(vkovacevic): Issue #804
+    from transformers import BertModel
+
+    patch_transformers_for_eager_attn(BertModel)
 
     # Configuration
     data_format = "bfloat16"
@@ -307,8 +312,14 @@ def test_bge_m3(output_file):
     import torch
     import numpy as np
     from collections import defaultdict
+
     from third_party.tt_forge_models.bge_m3.encode.pytorch.loader import ModelLoader
     from FlagEmbedding import BGEM3FlagModel
+
+    # TODO(vkovacevic): Issue #804
+    from transformers import XLMRobertaModel
+
+    patch_transformers_for_eager_attn(XLMRobertaModel)
 
     # Configuration
     data_format = "float32"

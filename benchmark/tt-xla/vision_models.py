@@ -6,6 +6,7 @@ import json
 import os
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
+from utils import patch_transformers_for_eager_attn
 from vision_benchmark import benchmark_vision_torch_xla
 
 # Defaults for all vision models
@@ -228,6 +229,11 @@ def test_unet(output_file):
 
 def test_vit(output_file):
     from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
+
+    # TODO(vkovacevic): Issue #804
+    from transformers import ViTForImageClassification
+
+    patch_transformers_for_eager_attn(ViTForImageClassification)
 
     variant = ModelVariant.BASE
     read_logits_fn = lambda output: output.logits

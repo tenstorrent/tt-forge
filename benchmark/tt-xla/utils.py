@@ -377,3 +377,27 @@ def move_to_cpu(data):
         moved = [move_to_cpu(item) for item in data]
         return type(data)(moved)
     return data
+
+
+# TODO(vkovacevic): Issue #804
+def patch_transformers_for_eager_attn(cls):
+    """Monkey patch a transformers model class to use eager attention implementation.
+
+    This patches the from_pretrained method to inject attn_implementation="eager",
+    which disables SDPA and other optimized attention implementations that may not
+    be compatible with certain backends.
+
+    Args:
+        cls: A transformers model class (e.g., ViTForImageClassification, BertModel)
+    """
+    from functools import wraps
+
+    original_from_pretrained = cls.from_pretrained.__func__
+
+    @classmethod
+    @wraps(original_from_pretrained)
+    def patched_from_pretrained(cls, *args, **kwargs):
+        kwargs.setdefault("attn_implementation", "eager")
+        return original_from_pretrained(cls, *args, **kwargs)
+
+    cls.from_pretrained = patched_from_pretrained
