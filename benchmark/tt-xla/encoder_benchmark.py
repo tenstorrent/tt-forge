@@ -10,7 +10,6 @@ from typing import List
 # Third-party modules
 import torch
 import torch_xla
-import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 
 from benchmark.utils import get_xla_device_arch
@@ -19,16 +18,14 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
-    get_export_options,
     move_to_cpu,
-    find_generated_ttir_files,
-    print_ttir_export_result,
-    MODULE_EXPORT_PATH,
 )
 
 xr.set_device_type("TT")
 
 WARMUP_STEPS = 3  # Number of warmup iterations before benchmarking
+
+MODULE_EXPORT_PATH = "modules"
 
 
 def run_encoder_model(
@@ -141,7 +138,7 @@ def measure_fps_encoder_model(model, raw_inputs, preprocess_fn, device, output_p
 
 def benchmark_encoder_torch_xla(
     model,
-    model_nickname,
+    model_info_name,
     optimization_level,
     trace_enabled,
     training,
@@ -158,7 +155,6 @@ def benchmark_encoder_torch_xla(
     required_pcc=0.97,
     enable_weight_bfp8_conversion=False,
     experimental_enable_permute_matmul_fusion=False,
-    single_layer=False,
 ):
     """
     Benchmark an encoder model using PyTorch and torch-xla.
@@ -172,7 +168,7 @@ def benchmark_encoder_torch_xla(
 
     Args:
         model: Loaded encoder model instance in eval mode
-        model_nickname: Model name for identification and reporting
+        model_info_name: Model name for identification and reporting
         optimization_level: tt-mlir optimization level for compilation
         trace_enabled: Whether to enable tracing
         training: Whether to run in training mode (not supported)
@@ -193,7 +189,6 @@ def benchmark_encoder_torch_xla(
         required_pcc: Minimum PCC threshold for output validation
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
         experimental_enable_permute_matmul_fusion: Whether to enable permute matmul fusion optimization
-        single_layer: If True, compile and export single layer model only (no benchmarking)
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -205,59 +200,6 @@ def benchmark_encoder_torch_xla(
 
     # Load raw inputs for all iterations
     raw_inputs = load_inputs_fn(batch_size)
-
-    # Sanitize model name for export naming
-    from benchmark.utils import sanitize_filename
-
-    sanitized_model_name = sanitize_filename(model_nickname).lower()
-
-    # Determine mode tag for file naming
-    mode_tag = "lyr" if single_layer else "full"
-
-    # Get export options using shared utility
-    options = get_export_options(
-        model_name=sanitized_model_name,
-        mode=mode_tag,
-        batch_size=batch_size,
-        input_sequence_length=input_sequence_length,
-        optimization_level=optimization_level,
-        trace_enabled=trace_enabled,
-        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
-        enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
-        experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
-    )
-    export_model_name = options["export_model_name"]
-
-    # =========================================================================
-    # SINGLE LAYER MODE: Compile and export only (no benchmarking)
-    # =========================================================================
-    if single_layer:
-        print(f"Compiling encoder graph for {model_nickname}...")
-        print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
-
-        device = torch_xla.device()
-        torch_xla.set_custom_compile_options(options)
-
-        # Compile model
-        model_on_device = framework_model.to(device)
-        compiled_model = torch.compile(
-            model_on_device, backend="tt", options={"tt_experimental_compile": experimental_compile}
-        )
-
-        # Run model to trigger compilation
-        with torch.no_grad():
-            model_inputs = preprocess_fn(raw_inputs, device)
-            compiled_model(**model_inputs)
-            xm.mark_step()
-
-        # Find and print generated TTIR files
-        generated_files = find_generated_ttir_files(export_model_name)
-        print_ttir_export_result(generated_files, "single_layer", model_nickname, export_model_name)
-        return {"status": "success", "mode": "single_layer", "model": model_nickname}
-
-    # =========================================================================
-    # FULL MODEL MODE: Encoder benchmark
-    # =========================================================================
 
     # Measure CPU performance
     if measure_cpu:
@@ -279,7 +221,17 @@ def benchmark_encoder_torch_xla(
     with torch.no_grad():
         golden_output = run_encoder_model(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
 
-    # Set XLA compilation options (reuse options from earlier setup)
+    # Set XLA compilation options
+    options = {
+        "optimization_level": optimization_level,
+        "export_path": MODULE_EXPORT_PATH,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
+        "enable_trace": trace_enabled,
+        "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
+        "experimental_enable_permute_matmul_fusion": experimental_enable_permute_matmul_fusion,
+    }
+
     torch_xla.set_custom_compile_options(options)
 
     # Compile model
@@ -320,7 +272,7 @@ def benchmark_encoder_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = model_nickname
+    full_model_name = model_info_name
     model_type = "Encoder, Text Embedding"
     dataset_name = "Benchmark Sentences"
     num_layers = -1
