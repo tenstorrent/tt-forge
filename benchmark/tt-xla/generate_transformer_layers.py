@@ -165,7 +165,7 @@ def check_status_and_filter(models: list, config: dict, status_only: bool) -> li
             model_expected = [f for f in expected_files if "block" not in f]
         else:
             model_expected = expected_files
-        
+
         model_missing = [s for s in model_expected if not os.path.exists(os.path.join(OUTPUT_DIR, f"{model}{s}"))]
         if model_missing:
             incomplete.append(model)
@@ -229,8 +229,8 @@ def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_so
                 print(f"ERROR: {error}")
                 return False, error
         # If no pattern matched, show last 20 lines
-        lines = output.strip().split('\n')
-        last_lines = '\n'.join(lines[-20:]) if len(lines) > 20 else output
+        lines = output.strip().split("\n")
+        last_lines = "\n".join(lines[-20:]) if len(lines) > 20 else output
         print(f"ERROR (last 20 lines):\n{last_lines}")
         return False, "Unknown error - see output above"
 
@@ -313,8 +313,11 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
                 success, error = True, ""
             else:
                 success, error = execute_pytest(
-                    config["source_file"], model, test["flag"], args.dry_run,
-                    dump_source=getattr(args, "dump_source", False)
+                    config["source_file"],
+                    model,
+                    test["flag"],
+                    args.dry_run,
+                    dump_source=getattr(args, "dump_source", False),
                 )
 
             if success:

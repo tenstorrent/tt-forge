@@ -480,9 +480,10 @@ def test_bge_m3(output_file):
     load_inputs_fn = get_default_inputs
 
     # Create bge-m3 preprocessing function
-    tokenizer = getattr(model, 'tokenizer', None)
+    tokenizer = getattr(model, "tokenizer", None)
 
     if tokenizer is not None:
+
         def bge_m3_preprocess(sentences, device):
             """Tokenize sentences for BGE-M3 and prepare model inputs."""
             tokenized = tokenizer(
@@ -501,6 +502,7 @@ def test_bge_m3(output_file):
                 "return_colbert_vecs": True,
                 "return_sparse_embedding": False,
             }
+
     else:
         bge_m3_preprocess = None
 
@@ -615,7 +617,7 @@ def test_bge_m3(output_file):
 
 def test_unet_for_conditional_generation(output_file):
     """Test UNet for Conditional Generation model. This is a core component of the Stable Diffusion XL pipeline.
-    
+
     Note: Single block/layer tests not supported - UNet is not a transformer encoder architecture.
     https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0
     """

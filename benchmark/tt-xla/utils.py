@@ -573,9 +573,20 @@ def _get_module_sources(model: torch.nn.Module) -> str:
     sources = []
 
     # Skip basic PyTorch modules
-    skip_modules = {'Linear', 'Conv2d', 'LayerNorm', 'Dropout', 'Embedding',
-                    'BatchNorm2d', 'ReLU', 'GELU', 'Softmax', 'Sequential',
-                    'ModuleList', 'Identity'}
+    skip_modules = {
+        "Linear",
+        "Conv2d",
+        "LayerNorm",
+        "Dropout",
+        "Embedding",
+        "BatchNorm2d",
+        "ReLU",
+        "GELU",
+        "Softmax",
+        "Sequential",
+        "ModuleList",
+        "Identity",
+    }
 
     for name, module in model.named_modules():
         cls = type(module)
@@ -639,7 +650,9 @@ def export_source_model(
     if example_input is None:
         print(f"Dumping model {model_name} structure (no example input)...")
         with open(output_path, "w") as f:
-            _write_model_structure(f, f"# Model: {model_name}\n# (No example input - structure only)", model_repr, module_sources)
+            _write_model_structure(
+                f, f"# Model: {model_name}\n# (No example input - structure only)", model_repr, module_sources
+            )
         print(f"Dumped model to: {output_path}")
         return output_path
 
@@ -651,16 +664,18 @@ def export_source_model(
 
         # Clean up: move # File: annotations to end, remove blank lines
         clean_lines, file_annotations = [], []
-        for line in export_code.split('\n'):
+        for line in export_code.split("\n"):
             stripped = line.strip()
-            if stripped.startswith('# File:'):
+            if stripped.startswith("# File:"):
                 file_annotations.append(stripped)
             elif stripped:
                 clean_lines.append(line)
-        export_code = '\n'.join(clean_lines)
+        export_code = "\n".join(clean_lines)
 
         with open(output_path, "w") as f:
-            _write_model_structure(f, f"# Exported model: {model_name}\n# Generated using torch.export", model_repr, module_sources)
+            _write_model_structure(
+                f, f"# Exported model: {model_name}\n# Generated using torch.export", model_repr, module_sources
+            )
             f.write("# " + "=" * 70 + "\n")
             f.write("# Exported graph:\n")
             f.write("# " + "=" * 70 + "\n\n")
@@ -669,7 +684,7 @@ def export_source_model(
                 f.write("\n\n# " + "=" * 70 + "\n")
                 f.write("# Source file annotations:\n")
                 f.write("# " + "=" * 70 + "\n")
-                f.write('\n'.join(file_annotations))
+                f.write("\n".join(file_annotations))
 
         print(f"Dumped model to: {output_path}")
 

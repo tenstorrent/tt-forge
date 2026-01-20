@@ -207,11 +207,11 @@ def extract_encoder_block(model, block_idx: int = 0):
         block = model.model.layers[block_idx]
         rotary_emb = getattr(model.model, "rotary_emb", None)
         hidden_size = config.hidden_size if config else 768
-        
+
         # Verify rotary_emb is usable - some models need special handling
         if rotary_emb is None:
             raise ValueError(f"Cannot find rotary_emb in model.model for block extraction: {type(model)}")
-        
+
         wrapper = DecoderBlockWrapper(block, rotary_emb, hidden_size)
     elif hasattr(model, "layers"):
         # Direct layers attribute
@@ -340,8 +340,7 @@ class SingleLayerVisionWrapper(nn.Module):
         elif self.model_type == "swin_torchvision":
             # Prune to patch_embed + 1 block, skip other stages/norm/head
             model.features = nn.Sequential(
-                model.features[0],  # patch_embed
-                nn.Sequential(model.features[1][layer_idx])  # 1 block from stage 0
+                model.features[0], nn.Sequential(model.features[1][layer_idx])  # patch_embed  # 1 block from stage 0
             )
             self.features = model.features
 

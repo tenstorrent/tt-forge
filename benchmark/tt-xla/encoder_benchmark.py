@@ -213,8 +213,7 @@ def benchmark_encoder_torch_xla(
     # Check for conflicting flags
     if single_block and single_layer:
         raise ValueError(
-            "Cannot use --generate-block-test and --generate-layer-test together. "
-            "Run them as separate commands."
+            "Cannot use --generate-block-test and --generate-layer-test together. " "Run them as separate commands."
         )
 
     # Determine mode tag for file naming
@@ -279,7 +278,9 @@ def benchmark_encoder_torch_xla(
         with torch.no_grad():
             if single_block:
                 # For single block: use hidden_states input
-                hidden_states = torch.randn(batch_size, input_sequence_length, hidden_size, dtype=torch.bfloat16).to(device)
+                hidden_states = torch.randn(batch_size, input_sequence_length, hidden_size, dtype=torch.bfloat16).to(
+                    device
+                )
                 compiled_model(hidden_states)
                 xm.mark_step()
             else:
