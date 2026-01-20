@@ -35,6 +35,7 @@ from utils import (
     get_mode_tag,
     find_generated_ttir_files,
     print_ttir_export_result,
+    export_source_model,
     MODULE_EXPORT_PATH,
 )
 
@@ -60,7 +61,7 @@ def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Mod
     print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
 
     model = model_loader.load_model(dtype_override=torch.bfloat16)
-    if hasattr(model.config, "layer_types"):
+    if hasattr(model, "config") and hasattr(model.config, "layer_types"):
         model.config.layer_types = ["full_attention"] * len(model.config.layer_types)
     model = model.eval()
     tokenizer = model_loader.tokenizer
@@ -276,6 +277,7 @@ def benchmark_llm_torch_xla(
     single_block=False,
     single_layer=False,
     model_nickname=None,
+    dump_source=False,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -389,6 +391,15 @@ def benchmark_llm_torch_xla(
     # =========================================================================
     if single_block or single_layer:
         mode = "single_block" if single_block else "single_layer"
+
+        # Dump model to Python code if requested (before compilation)
+        if dump_source:
+            if single_block:
+                example_input = torch.randn(batch_size, 1, model.hidden_size, dtype=torch.bfloat16)
+                export_source_model(export_model_name, model, example_input)
+            else:
+                # single_layer: no example input, just dump structure
+                export_source_model(export_model_name, model)
 
         # Compile model
         model_on_device = model.to(device, dtype=torch.bfloat16)

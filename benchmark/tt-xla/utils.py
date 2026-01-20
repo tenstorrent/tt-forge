@@ -565,10 +565,54 @@ def print_ttir_export_result(
 # ============================================================================
 
 
-def dump_model_to_python(
+def _get_module_sources(model: torch.nn.Module) -> str:
+    """Extract source code of unique module classes in the model."""
+    import inspect
+
+    seen_classes = set()
+    sources = []
+
+    # Skip basic PyTorch modules
+    skip_modules = {'Linear', 'Conv2d', 'LayerNorm', 'Dropout', 'Embedding',
+                    'BatchNorm2d', 'ReLU', 'GELU', 'Softmax', 'Sequential',
+                    'ModuleList', 'Identity'}
+
+    for name, module in model.named_modules():
+        cls = type(module)
+        cls_name = cls.__name__
+
+        if cls_name in seen_classes or cls_name in skip_modules:
+            continue
+        seen_classes.add(cls_name)
+
+        try:
+            source = inspect.getsource(cls)
+            sources.append(f"# --- {cls_name} ---\n{source}")
+        except (TypeError, OSError):
+            # Can't get source (built-in or C extension)
+            pass
+
+    return "\n\n".join(sources)
+
+
+def _write_model_structure(f, header: str, model_repr: str, module_sources: str):
+    """Write model structure and implementations to file."""
+    f.write(f"{header}\n\n")
+    f.write("# " + "=" * 70 + "\n")
+    f.write("# Model structure:\n")
+    f.write("# " + "=" * 70 + "\n")
+    f.write(f"'''\n{model_repr}\n'''\n\n")
+    if module_sources:
+        f.write("# " + "=" * 70 + "\n")
+        f.write("# Module implementations:\n")
+        f.write("# " + "=" * 70 + "\n\n")
+        f.write(f"'''\n{module_sources}\n'''\n\n")
+
+
+def export_source_model(
     model_name: str,
     model: torch.nn.Module,
-    example_input: torch.Tensor,
+    example_input: torch.Tensor = None,
     output_dir: str = "dumped_models",
 ) -> str:
     """Dump a PyTorch model to Python code using torch.export.
@@ -579,67 +623,60 @@ def dump_model_to_python(
     Args:
         model_name: Name for the exported model (used for filename and code)
         model: The PyTorch model to dump
-        example_input: Example input tensor for tracing
+        example_input: Example input tensor for tracing (None = skip torch.export)
         output_dir: Directory to save the Python file
 
     Returns:
         Path to the generated Python file
     """
-    print(f"Exporting model {model_name} with torch.export...")
-
     output_path = f"{output_dir}/{model_name}.py"
     os.makedirs(output_dir, exist_ok=True)
-    example_inputs = (example_input,)
 
     model_repr = repr(model)
+    module_sources = _get_module_sources(model)
+
+    # If no example input, just dump repr and implementations
+    if example_input is None:
+        print(f"Dumping model {model_name} structure (no example input)...")
+        with open(output_path, "w") as f:
+            _write_model_structure(f, f"# Model: {model_name}\n# (No example input - structure only)", model_repr, module_sources)
+        print(f"Dumped model to: {output_path}")
+        return output_path
+
+    print(f"Exporting model {model_name} with torch.export...")
 
     try:
-        exported = torch.export.export(model, example_inputs)
+        exported = torch.export.export(model, (example_input,))
         export_code = str(exported)
 
-        # Clean up export output:
-        # - Move source file annotations (# File: ...) to the end
-        # - Remove all blank lines for compact output
-        clean_lines = []
-        file_annotations = []
+        # Clean up: move # File: annotations to end, remove blank lines
+        clean_lines, file_annotations = [], []
         for line in export_code.split('\n'):
             stripped = line.strip()
             if stripped.startswith('# File:'):
                 file_annotations.append(stripped)
-                continue
-            # Skip all blank lines
-            if stripped == '':
-                continue
-            clean_lines.append(line)
+            elif stripped:
+                clean_lines.append(line)
         export_code = '\n'.join(clean_lines)
 
         with open(output_path, "w") as f:
-            f.write(f"# Exported model: {model_name}\n")
-            f.write(f"# Generated using torch.export\n\n")
-            f.write("# " + "=" * 70 + "\n")
-            f.write("# Model structure:\n")
-            f.write("# " + "=" * 70 + "\n")
-            f.write(f"'''\n{model_repr}\n'''\n\n")
+            _write_model_structure(f, f"# Exported model: {model_name}\n# Generated using torch.export", model_repr, module_sources)
             f.write("# " + "=" * 70 + "\n")
             f.write("# Exported graph:\n")
             f.write("# " + "=" * 70 + "\n\n")
             f.write(export_code)
-            # Add source annotations at the end
             if file_annotations:
                 f.write("\n\n# " + "=" * 70 + "\n")
                 f.write("# Source file annotations:\n")
                 f.write("# " + "=" * 70 + "\n")
-                for annotation in file_annotations:
-                    f.write(f"{annotation}\n")
+                f.write('\n'.join(file_annotations))
 
         print(f"Dumped model to: {output_path}")
 
     except Exception as e:
         print(f"Warning: torch.export failed ({e}), dumping model structure only...")
         with open(output_path, "w") as f:
-            f.write(f"# Model structure: {model_name}\n")
-            f.write(f"# torch.export failed: {e}\n\n")
-            f.write(f"'''\n{model_repr}\n'''\n")
+            _write_model_structure(f, f"# Model: {model_name}\n# torch.export failed: {e}", model_repr, module_sources)
         print(f"Dumped model structure to: {output_path}")
 
     return output_path

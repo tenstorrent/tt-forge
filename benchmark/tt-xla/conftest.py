@@ -177,11 +177,11 @@ def pytest_addoption(parser):
         help="Compile and export a single layer model (full model with 1 layer). Skips benchmarking.",
     )
     parser.addoption(
-        "--dump-python",
+        "--dump-source",
         action="store_true",
         default=False,
-        dest="dump_python",
-        help="Dump standalone Python code for the test. Useful for reproducing tests without pytest.",
+        dest="dump_source",
+        help="Export source model (structure + implementations) before TT compilation.",
     )
 
 
@@ -251,5 +251,5 @@ def single_layer(request):
 
 
 @pytest.fixture
-def dump_python(request):
-    return request.config.getoption("--dump-python")
+def dump_source(request):
+    return request.config.getoption("--dump-source")

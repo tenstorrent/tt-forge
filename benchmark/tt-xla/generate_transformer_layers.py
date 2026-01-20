@@ -176,11 +176,11 @@ def check_status_and_filter(models: list, expected_files: list[str], status_only
     return incomplete
 
 
-def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_python: bool = False) -> tuple[bool, str]:
+def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_source: bool = False) -> tuple[bool, str]:
     """Execute pytest for a specific test."""
     cmd = [sys.executable, "-m", "pytest", "-svv", f"{test_file}::test_{model}", flag]
-    if dump_python:
-        cmd.append("--dump-python")
+    if dump_source:
+        cmd.append("--dump-source")
     print(f"\n{'[DRY-RUN] ' if dry_run else ''}Running: {' '.join(cmd)}")
 
     if dry_run:
@@ -193,16 +193,22 @@ def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_py
         return True, ""
     except subprocess.CalledProcessError as e:
         output = (e.stdout or "") + "\n" + (e.stderr or "")
+        # Try to find specific error patterns with more context
         for pattern in [
-            r"((?:AssertionError|RuntimeError|ValueError|TypeError|KeyError)[:\s]+[^\n]+)",
+            r"(TT_FATAL[^\n]+(?:\n[^\n]*){0,5})",
+            r"((?:AssertionError|RuntimeError|ValueError|TypeError|KeyError|AttributeError|ModuleNotFoundError)[:\s]+[^\n]+(?:\n[^\n]*){0,5})",
             r"(FAILED[^\n]+)",
-            r"(E\s+[A-Z]\w+Error[:\s]+[^\n]+)",
+            r"(E\s+[A-Z]\w+Error[:\s]+[^\n]+(?:\n[^\n]*){0,3})",
         ]:
-            if match := re.search(pattern, output, re.IGNORECASE):
-                error = match.group(1).strip()[:200]
+            if match := re.search(pattern, output, re.IGNORECASE | re.MULTILINE):
+                error = match.group(1).strip()[:500]
                 print(f"ERROR: {error}")
                 return False, error
-        return False, "Unknown error"
+        # If no pattern matched, show last 20 lines
+        lines = output.strip().split('\n')
+        last_lines = '\n'.join(lines[-20:]) if len(lines) > 20 else output
+        print(f"ERROR (last 20 lines):\n{last_lines}")
+        return False, "Unknown error - see output above"
 
 
 def copy_ttir_files(model: str, mode: str, model_type: str, dry_run: bool) -> list[str]:
@@ -283,7 +289,7 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
             else:
                 success, error = execute_pytest(
                     config["source_file"], model, test["flag"], args.dry_run,
-                    dump_python=getattr(args, "dump_python", False)
+                    dump_source=getattr(args, "dump_source", False)
                 )
 
             if success:
@@ -383,7 +389,7 @@ Examples:
         p.add_argument("--copy-only", action="store_true", help="Only copy existing TTIR files")
         p.add_argument("--continue", dest="continue_mode", action="store_true", help="Resume incomplete")
         p.add_argument("--status-only", action="store_true", help="Only show progress")
-        p.add_argument("--dump-python", action="store_true", help="Dump model to Python code before compilation")
+        p.add_argument("--dump-source", action="store_true", help="Export source model before TT compilation")
         if has_block:
             p.add_argument("--skip-block", action="store_true", help="Skip block tests")
             p.add_argument("--skip-layer", action="store_true", help="Skip layer tests")
