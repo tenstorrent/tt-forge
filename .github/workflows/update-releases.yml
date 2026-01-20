@@ -9,7 +9,7 @@ on:
         description: Put PR in draft mode for testing
       repo:
         type: string
-        description: 'Repo to release e.g tt-forge-fe'
+        description: 'Repo to release e.g tt-forge-onnx'
         required: true
         default: ''
       overwrite_releases:

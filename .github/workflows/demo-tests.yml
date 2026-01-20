@@ -19,7 +19,7 @@ on:
         required: false
         type: choice
         options:
-          - tt-forge-fe
+          - tt-forge-onnx
           - tt-torch
           - tt-xla
           - tt-forge

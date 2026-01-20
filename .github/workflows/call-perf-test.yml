@@ -126,7 +126,7 @@ jobs:
     - name: Install system and python dependencies
       shell: bash
       run: |
-        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+        if [ "${{ matrix.build.project }}" == "tt-forge-onnx" ]; then
           apt-get update -y -qq
           apt-get install -y -qq --no-install-recommends sqlite3
         fi
@@ -181,7 +181,7 @@ jobs:
         fi
 
         SITE_PACKAGES_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
-        if [ "${{ matrix.build.project }}" == "tt-forge-fe" ]; then
+        if [ "${{ matrix.build.project }}" == "tt-forge-onnx" ]; then
           export TT_METAL_HOME="$SITE_PACKAGES_DIR/forge/tt-metal"
         elif [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           export TT_METAL_HOME="$SITE_PACKAGES_DIR/pjrt_plugin_tt/tt-metal"
@@ -269,8 +269,8 @@ jobs:
         elif [[ "${{ matrix.build.project }}" == "tt-xla" ]]; then
           wget "https://raw.githubusercontent.com/tenstorrent/${{ matrix.build.project }}/${version}/third_party/CMakeLists.txt"
           mlir_sha=$(grep -E "set\(TT_MLIR_VERSION" CMakeLists.txt | grep -oP '"\K[^"]+' | head -n 1)
-        elif [[ "${{ matrix.build.project }}" == "tt-forge-fe" ]]; then
-          mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-fe/contents/third_party/tt-mlir?ref=${version}" | \
+        elif [[ "${{ matrix.build.project }}" == "tt-forge-onnx" ]]; then
+          mlir_sha=$(curl -s "https://api.github.com/repos/tenstorrent/tt-forge-onnx/contents/third_party/tt-mlir?ref=${version}" | \
             grep '"sha"' | head -1 | cut -d'"' -f4)
         fi
         echo "Mlir commit sha: $mlir_sha"

@@ -5,7 +5,7 @@
 
 # TEST:
 # export NEW_VERSION_TAG="0.5.0.dev20251007"
-# export PIP_WHEEL_NAMES="tt_forge_fe tt_tvm pjrt-plugin-tt"
+# export PIP_WHEEL_NAMES="tt_forge_onnx tt_tvm pjrt-plugin-tt"
 
 set -eu
 # 60 seconds per attempt * 120 attempts = 2 hours

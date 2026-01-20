@@ -5,7 +5,7 @@ on:
     inputs:
       repo:
         type: string
-        description: 'Repo to release RC branch for (e.g tt-forge-fe)'
+        description: 'Repo to release RC branch for (e.g tt-forge-onnx)'
         required: true
       workflow_allow_failed:
         description: 'Run even if workflow has failed'
@@ -32,7 +32,7 @@ on:
         required: false
       repo:
         type: string
-        description: 'Repo to release RC branch for e.g tt-forge-fe'
+        description: 'Repo to release RC branch for e.g tt-forge-onnx'
         required: true
       commit:
         description: "Commit sha if you want to override auto select latest passing workflow"

@@ -154,9 +154,9 @@ runs:
         # Full repository name with "tenstorrent/" prefix
         repo_full="tenstorrent/${repo_short}"
         # List of all repos that will release nightly on a schedule
-        schedule_nightly_repos='tenstorrent/tt-forge-fe tenstorrent/tt-mlir tenstorrent/tt-forge tenstorrent/tt-xla'
+        schedule_nightly_repos='tenstorrent/tt-forge-onnx tenstorrent/tt-mlir tenstorrent/tt-forge tenstorrent/tt-xla'
         # List of repos that are allowed to update RC and Stable releases on a schedule
-        schedule_rc_stable_update_repos='tenstorrent/tt-forge-fe tenstorrent/tt-xla tenstorrent/tt-forge'
+        schedule_rc_stable_update_repos='tenstorrent/tt-forge-onnx tenstorrent/tt-xla tenstorrent/tt-forge'
         # Allow workflow failures when finding build workflows
         workflow_allow_failed="false"
         # Branch to search for build workflows
@@ -222,12 +222,12 @@ runs:
 
         # Repo Specific Defaults
 
-        if [[ "${{ inputs.repo }}" =~ "tt-forge-fe" ]]; then
+        if [[ "${{ inputs.repo }}" =~ "tt-forge-onnx" ]]; then
             workflow="On nightly"
             artifact_download_glob='*{wheel,test-reports}*'
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
             workflow_result_in_job="fail-notify"
-            pip_wheel_names="tt_forge_fe tt_tvm"
+            pip_wheel_names="tt_forge_onnx tt_tvm"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
             workflow="schedule-nightly.yml"
             artifact_download_glob='*ttmlir-wheel*'

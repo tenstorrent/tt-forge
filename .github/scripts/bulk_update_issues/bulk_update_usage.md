@@ -80,7 +80,7 @@ The script includes `get_all_repository_issues()` - an async generator method th
 The script processes issues from multiple Tenstorrent repositories:
 - `tenstorrent/tt-blacksmith`
 - `tenstorrent/tt-mlir`
-- `tenstorrent/tt-forge-fe`
+- `tenstorrent/tt-forge-onnx`
 - `tenstorrent/tt-forge`
 - `tenstorrent/tt-xla`
 - `tenstorrent/tt-torch`
@@ -102,7 +102,7 @@ Optional environment variables:
 🚀 Starting GitHub Project Issue Bulk Update
 ============================================================
 🔧 Configuration:
-   Repositories: ['tenstorrent/tt-blacksmith', 'tenstorrent/tt-mlir', 'tenstorrent/tt-forge-fe', 'tenstorrent/tt-forge', 'tenstorrent/tt-xla', 'tenstorrent/tt-torch']
+   Repositories: ['tenstorrent/tt-blacksmith', 'tenstorrent/tt-mlir', 'tenstorrent/tt-forge-onnx', 'tenstorrent/tt-forge', 'tenstorrent/tt-xla', 'tenstorrent/tt-torch']
    Project ID: PVT_kwDOA9MHEM4AjeTl
    Work Started Field ID: PVTF_lADOA9MHEM4AjeTlzgzZQtk
    Max Concurrent: 5

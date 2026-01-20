@@ -9,7 +9,7 @@ TT-Forge is Tenstorrent's MLIR-based compiler that integrates into various compi
 **Key Sub-Projects:**
 - [TT-MLIR](https://github.com/tenstorrent/tt-mlir) - MLIR-based compiler framework
 - [TT-XLA](https://github.com/tenstorrent/tt-xla) - Primary frontend for PyTorch and JAX via PJRT (single and multi-chip)
-- [TT-Forge-FE](https://github.com/tenstorrent/tt-forge-fe) - TVM-based graph compiler for ONNX, TensorFlow, PaddlePaddle (single-chip only)
+- [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx) - TVM-based graph compiler for ONNX, TensorFlow, PaddlePaddle (single-chip only)
 - [TT-Torch](https://github.com/tenstorrent/tt-torch) - **(Deprecated)** Use TT-XLA for PyTorch
 
 ## Common Development Commands
@@ -19,7 +19,7 @@ TT-Forge is Tenstorrent's MLIR-based compiler that integrates into various compi
 **Basic Tests** - Quick validation tests for frontends:
 ```bash
 python basic_tests/tt-xla/demo_test.py
-python basic_tests/tt-forge-fe/demo_test.py
+python basic_tests/tt-forge-onnx/demo_test.py
 ```
 
 ### TT-XLA Benchmarks (pytest - recommended)
@@ -69,7 +69,7 @@ tt-smi --reset 0
 
 1. **Frontend Layer**: Ingests models from ML frameworks
    - TT-XLA: JAX/PyTorch models via StableHLO
-   - TT-Forge-FE: PyTorch/ONNX/TensorFlow via TVM → TTIR
+   - TT-Forge-ONNX: PyTorch/ONNX/TensorFlow via TVM → TTIR
 
 2. **TT-MLIR Compiler**: Multi-dialect MLIR compiler
    - **TTIR Dialect**: Common IR for all frontends
@@ -115,5 +115,5 @@ pre-commit run --all-files
 
 - Main docs: https://docs.tenstorrent.com/tt-forge/
 - [TT-XLA docs](https://docs.tenstorrent.com/tt-xla)
-- [TT-Forge-FE docs](https://docs.tenstorrent.com/tt-forge-fe/getting-started.html)
+- [TT-Forge-ONNX docs](https://docs.tenstorrent.com/tt-forge-onnx/getting-started.html)
 - [TT-MLIR coding guidelines](https://github.com/tenstorrent/tt-mlir/blob/main/docs/src/coding-guidelines.md)

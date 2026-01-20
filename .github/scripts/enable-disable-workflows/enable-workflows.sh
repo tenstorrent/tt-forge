@@ -24,7 +24,7 @@ enable_workflows() {
 if [ $# -ne 1 ]; then
     echo "Enabling all repos"
     enable_workflows "tt-torch"
-    enable_workflows "tt-forge-fe"
+    enable_workflows "tt-forge-onnx"
     enable_workflows "tt-xla"
 else
     enable_workflows "$1"

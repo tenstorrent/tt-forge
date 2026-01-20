@@ -15,7 +15,7 @@ on:
         description: Delete drafts
       repo:
         type: string
-        description: 'Repo to release e.g tt-forge-fe. Default to all repos'
+        description: 'Repo to release e.g tt-forge-onnx. Default to all repos'
         required: false
         default: ''
       overwrite_releases:
@@ -35,7 +35,7 @@ on:
         description: Delete drafts
       repo:
         type: string
-        description: 'Repo to release e.g tt-forge-fe'
+        description: 'Repo to release e.g tt-forge-onnx'
         required: false
         default: ''
       overwrite_releases:
