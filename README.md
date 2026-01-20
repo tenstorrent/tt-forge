@@ -82,7 +82,7 @@ flowchart TD
             subgraph FrontEnds["<span style='font-size:16px;font-weight:bold'>Front Ends</span>"]
                 direction LR
                 %% Add extra spacing between frontend components
-                TT_FORGE_FE("<span style='font-size:14px;font-weight:bold'>tt-forge-ONNX</span>")
+                TT_FORGE_ONNX("<span style='font-size:14px;font-weight:bold'>tt-forge-ONNX</span>")
                 TT_XLA("<span style='font-size:14px;font-weight:bold'>tt-xla</span>")
             end
         end
@@ -188,14 +188,14 @@ flowchart TD
     SystemLayer --> Hardware
 
     %% Connect frameworks to front-ends with longer arrows
-    ONX -.-> TT_FORGE_FE
+    ONX -.-> TT_FORGE_ONNX
     JAX -.-> TT_XLA
     PYTORCH -.-> TT_XLA
-    TF -.-> TT_FORGE_FE
+    TF -.-> TT_FORGE_ONNX
 
     %% Connect front-ends to tt-MLIR Compiler
     TT_XLA --> STABLEHLO
-    TT_FORGE_FE --> TTIR
+    TT_FORGE_ONNX --> TTIR
 
     %% Connect tt-MLIR Compiler components
     STABLEHLO --> TTIR
@@ -208,7 +208,7 @@ flowchart TD
 
     %% Apply styles
     class ONX,JAX,PYTORCH,TF frameworks
-    class TT_XLA,TT_FORGE_FE frontends
+    class TT_XLA,TT_FORGE_ONNX frontends
     class TTIR,TTKERNEL,TTNN,TTMETAL_IR,GRAPH_PASSES,PYKERNEL,TTMLIROPT,TTNNSTANDALONE,TTEXPLORER compiler
     class TTMETAL,TTNN_HW,LLK,TRACY,TTNPE,TTNNVISUALIZER runtime
     class TTSMI,LUWEN,TTTOPOLOGY system
@@ -219,7 +219,7 @@ flowchart TD
 
     %% Add clickable URLs to frontend components
     click TT_XLA "https://github.com/tenstorrent/tt-xla" "tt-xla GitHub Repository" _blank
-    click TT_FORGE_FE "https://github.com/tenstorrent/tt-forge-onnx" "tt-forge-onnx GitHub Repository" _blank
+    click TT_FORGE_ONNX "https://github.com/tenstorrent/tt-forge-onnx" "tt-forge-onnx GitHub Repository" _blank
 
     %% Add clickable URLs to IR components
     click TTKERNEL "https://github.com/tenstorrent/tt-mlir/tree/main/lib/Dialect/TTKernel/IR" "TTKernel-IR GitHub Repository" _blank

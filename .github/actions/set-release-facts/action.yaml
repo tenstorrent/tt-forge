@@ -227,7 +227,7 @@ runs:
             artifact_download_glob='*{wheel,test-reports}*'
             artifact_cleanup_file_glob='*{.json,benchmark_}*'
             workflow_result_in_job="fail-notify"
-            pip_wheel_names="tt_forge_fe tt_tvm"
+            pip_wheel_names="tt_forge_onnx tt_tvm"
         elif [[ "${{ inputs.repo }}" =~ "tt-mlir" ]]; then
             workflow="schedule-nightly.yml"
             artifact_download_glob='*ttmlir-wheel*'
