@@ -40,7 +40,7 @@ def test_vision(
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
     read_logits_fn=DEFAULT_READ_LOGITS_FN,
-    dump_python=False,
+    dump_source=False,
 ):
     """Test vision model with the given variant and optional configuration overrides.
 
@@ -62,7 +62,7 @@ def test_vision(
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
         read_logits_fn: Function to extract logits from model output
-        dump_python: If True, dump model to Python code before compilation
+        dump_source: If True, dump model to Python code before compilation
     """
     model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
     full_model_name = (
@@ -108,7 +108,7 @@ def test_vision(
         single_block=single_block,
         single_layer=single_layer,
         model_nickname=model_nickname,
-        dump_python=dump_python,
+        dump_source=dump_source,
     )
 
     if output_file:
@@ -163,7 +163,7 @@ def test_resnet50(output_file):
     )
 
 
-def test_segformer(output_file, single_block, single_layer, dump_python):
+def test_segformer(output_file, single_block, single_layer, dump_source):
     """Test SegFormer model. Use --generate-block-test for single block, or --generate-layer-test for single layer."""
     from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import ModelLoader, ModelVariant
 
@@ -179,11 +179,11 @@ def test_segformer(output_file, single_block, single_layer, dump_python):
         batch_size=1,
         input_size=(512, 512),
         read_logits_fn=read_logits_fn,
-        dump_python=dump_python,
+        dump_source=dump_source,
     )
 
 
-def test_swin(output_file, single_block, single_layer, dump_python):
+def test_swin(output_file, single_block, single_layer, dump_source):
     """Test Swin Transformer model. Use --generate-block-test for single block, or --generate-layer-test for single layer."""
     from third_party.tt_forge_models.swin.image_classification.pytorch.loader import ModelLoader, ModelVariant
 
@@ -198,7 +198,7 @@ def test_swin(output_file, single_block, single_layer, dump_python):
         batch_size=1,
         input_size=(512, 512),
         required_pcc=0.90,
-        dump_python=dump_python,
+        dump_source=dump_source,
     )
 
 
@@ -248,7 +248,7 @@ def test_unet(output_file):
     )
 
 
-def test_vit(output_file, single_block, single_layer, dump_python):
+def test_vit(output_file, single_block, single_layer, dump_source):
     """Test ViT model. Use --generate-block-test for single block, or --generate-layer-test for single layer."""
     from third_party.tt_forge_models.vit.image_classification.pytorch.loader import ModelLoader, ModelVariant
 
@@ -263,7 +263,7 @@ def test_vit(output_file, single_block, single_layer, dump_python):
         model_nickname="vit",
         batch_size=8,
         read_logits_fn=read_logits_fn,
-        dump_python=dump_python,
+        dump_source=dump_source,
     )
 
 

@@ -3,13 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from typing import List
+from typing import List, Type
 
 import torch
+from loguru import logger
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
-from utils import apply_mean_pooling, apply_last_token_pooling
+from utils import apply_mean_pooling, apply_last_token_pooling, supports_num_layers
+from model_wrappers import extract_encoder_block, make_encoder_single_layer
 
 
 DTYPE_MAP = {
@@ -57,6 +59,112 @@ DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = False
 DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION = False
 
 
+# =============================================================================
+# Single Block Loader (for testing encoder blocks without embeddings/pooler)
+# =============================================================================
+
+
+def _create_single_block_loader(BaseLoaderClass: Type, block_idx: int = 0) -> Type:
+    """Create a model loader that returns only the encoder block (no embeddings/pooler).
+
+    Uses extract_encoder_block from model_wrappers which handles the block extraction properly.
+    Input: hidden_states [batch, seq_len, hidden_size]
+    Output: hidden_states [batch, seq_len, hidden_size]
+
+    If num_layers is supported, loads with 1 layer for efficiency.
+    Otherwise, loads full model and extracts the first block.
+    """
+    use_num_layers = supports_num_layers(BaseLoaderClass)
+
+    class BlockOnlyModelLoader(BaseLoaderClass):
+        def __init__(self, variant=None):
+            if variant is not None:
+                if use_num_layers:
+                    super().__init__(variant=variant, num_layers=1)
+                else:
+                    print(f"Note: {BaseLoaderClass.__name__} doesn't support num_layers - loading full model")
+                    super().__init__(variant=variant)
+            else:
+                if use_num_layers:
+                    super().__init__(num_layers=1)
+                else:
+                    print(f"Note: {BaseLoaderClass.__name__} doesn't support num_layers - loading full model")
+                    super().__init__()
+
+        def load_model(self, dtype_override=None):
+            full_model = super().load_model(dtype_override=dtype_override)
+            wrapper = extract_encoder_block(full_model, block_idx)
+            logger.info(f"🔧 Single block mode: returning wrapped block {block_idx}")
+            return wrapper
+
+        def load_tokenizer(self):
+            return None
+
+    return BlockOnlyModelLoader
+
+
+def _create_single_layer_loader(BaseLoaderClass: Type, layer_idx: int = 0) -> Type:
+    """Create a model loader that returns an encoder model with only one layer.
+
+    Loads the full model then modifies it in-place to keep only one layer.
+    Simulates num_layers=1 for loaders that don't support it.
+
+    Input: tokenized input (input_ids, attention_mask, etc.)
+    Output: model outputs (last_hidden_state, etc.)
+    """
+
+    class SingleLayerModelLoader(BaseLoaderClass):
+        def __init__(self, variant=None):
+            if variant is not None:
+                super().__init__(variant=variant)
+            else:
+                super().__init__()
+
+        def load_model(self, dtype_override=None):
+            model = super().load_model(dtype_override=dtype_override)
+            model = make_encoder_single_layer(model, layer_idx)
+            logger.info(f"🔧 Single layer mode: modified model to use only layer {layer_idx}")
+            return model
+
+    return SingleLayerModelLoader
+
+
+def create_encoder_loader(
+    LoaderClass: Type,
+    variant=None,
+    single_block: bool = False,
+    single_layer: bool = False,
+):
+    """Create the appropriate loader based on single_block/single_layer flags.
+
+    Args:
+        LoaderClass: The model loader class
+        variant: Model variant (optional)
+        single_block: If True, create block-only loader
+        single_layer: If True, create single-layer loader (tries num_layers=1 first)
+
+    Returns:
+        Instantiated loader
+    """
+    if single_block:
+        ModifiedLoaderClass = _create_single_block_loader(LoaderClass)
+        return ModifiedLoaderClass(variant=variant) if variant else ModifiedLoaderClass()
+
+    if single_layer:
+        # Try num_layers=1 first if supported
+        if supports_num_layers(LoaderClass):
+            if variant:
+                return LoaderClass(variant=variant, num_layers=1)
+            return LoaderClass(num_layers=1)
+        # Fallback: load full model and wrap to use only 1 layer
+        print(f"Note: {LoaderClass.__name__} doesn't support num_layers - will wrap to 1 layer")
+        ModifiedLoaderClass = _create_single_layer_loader(LoaderClass)
+        return ModifiedLoaderClass(variant=variant) if variant else ModifiedLoaderClass()
+
+    # Normal loader
+    return LoaderClass(variant=variant) if variant else LoaderClass()
+
+
 def test_encoder(
     model,
     model_info_name,
@@ -75,6 +183,10 @@ def test_encoder(
     required_pcc=DEFAULT_REQUIRED_PCC,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
+    single_block=False,
+    single_layer=False,
+    model_nickname=None,
+    dump_source=False,
 ):
     """Test encoder model with the given variant and optional configuration overrides.
 
@@ -97,6 +209,10 @@ def test_encoder(
         required_pcc: Required PCC threshold
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion
+        single_block: If True, compile and export encoder block only (no embeddings)
+        single_layer: If True, compile and export single layer model (full model with 1 layer)
+        model_nickname: Optional nickname for the model (used in export filenames)
+        dump_source: If True, dump model source code to Python file
         load_inputs_fn: Optional function to load raw inputs.
             Signature: fn(batch_size) -> List[str]. Defaults to get_default_inputs.
     """
@@ -107,6 +223,8 @@ def test_encoder(
     print(f"Running encoder benchmark for model: {model_info_name}")
     print(
         f"""Configuration:
+    single_block={single_block}
+    single_layer={single_layer}
     optimization_level={optimization_level}
     trace_enabled={trace_enabled}
     batch_size={batch_size}
@@ -141,6 +259,10 @@ def test_encoder(
         required_pcc=required_pcc,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
+        single_block=single_block,
+        single_layer=single_layer,
+        model_nickname=model_nickname,
+        dump_source=dump_source,
     )
 
     if output_file:
@@ -153,15 +275,16 @@ def test_encoder(
             json.dump(results, file, indent=2)
 
 
-def test_bert(output_file):
+def test_bert(output_file, single_block, single_layer, dump_source):
+    """Test BERT encoder model. Use --generate-block-test for single encoder block, or --generate-layer-test for single layer."""
     from third_party.tt_forge_models.bert.sentence_embedding_generation.pytorch.loader import ModelLoader
 
     # Configuration
     data_format = "bfloat16"
     input_sequence_length = 384
 
-    # Load model with specified dtype
-    loader = ModelLoader()
+    loader = create_encoder_loader(ModelLoader, single_block=single_block, single_layer=single_layer)
+
     model_info_name = loader.get_model_info().name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
@@ -171,17 +294,21 @@ def test_bert(output_file):
 
     # Create input preprocessing function
     tokenizer = loader.tokenizer
-    tokenizer.padding_side = "right"
-    preprocess_fn = lambda sentences, device: {
-        k: v.to(device)
-        for k, v in tokenizer(
-            sentences,
-            padding="max_length",
-            truncation=True,
-            max_length=input_sequence_length,
-            return_tensors="pt",
-        ).items()
-    }
+    if tokenizer is not None:
+        tokenizer.padding_side = "right"
+        preprocess_fn = lambda sentences, device: {
+            k: v.to(device)
+            for k, v in tokenizer(
+                sentences,
+                padding="max_length",
+                truncation=True,
+                max_length=input_sequence_length,
+                return_tensors="pt",
+            ).items()
+        }
+    else:
+        # For single_block mode, tokenizer is None
+        preprocess_fn = None
 
     # Create output processing function
     output_processor_fn = lambda out, inputs: apply_mean_pooling(out.last_hidden_state, inputs["attention_mask"])
@@ -198,19 +325,28 @@ def test_bert(output_file):
         input_sequence_length=input_sequence_length,
         loop_count=32,
         optimization_level=2,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="bert",
     )
 
 
-def test_qwen3_embedding_4b(output_file):
+def test_qwen_3_embedding_4b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen3 Embedding 4B model. Use --generate-layer-test for single layer."""
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
+
+    # Block extraction doesn't work for Qwen3 embedding (rotary_emb returns None when extracted)
+    if single_block:
+        pytest.skip("Qwen3 embedding block extraction not supported - use --generate-layer-test instead")
 
     # Configuration
     data_format = "bfloat16"
     input_sequence_length = 128
-
-    # Load model with specified dtype
     variant = ModelVariant.QWEN_3_EMBEDDING_4B
-    loader = ModelLoader(variant=variant)
+
+    loader = create_encoder_loader(ModelLoader, variant=variant, single_block=single_block, single_layer=single_layer)
+
     model_info_name = loader.get_model_info(variant=variant).name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
@@ -220,16 +356,19 @@ def test_qwen3_embedding_4b(output_file):
 
     # Create input preprocessing function
     tokenizer = loader.tokenizer
-    preprocess_fn = lambda sentences, device: {
-        k: v.to(device)
-        for k, v in tokenizer(
-            sentences,
-            padding=True,
-            truncation=True,
-            max_length=input_sequence_length,
-            return_tensors="pt",
-        ).items()
-    }
+    if tokenizer is not None:
+        preprocess_fn = lambda sentences, device: {
+            k: v.to(device)
+            for k, v in tokenizer(
+                sentences,
+                padding=True,
+                truncation=True,
+                max_length=input_sequence_length,
+                return_tensors="pt",
+            ).items()
+        }
+    else:
+        preprocess_fn = None
 
     # Create output processing function
     output_processor_fn = lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"])
@@ -246,20 +385,25 @@ def test_qwen3_embedding_4b(output_file):
         input_sequence_length=input_sequence_length,
         loop_count=32,
         optimization_level=0,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="qwen_3_embedding_4b",
     )
 
 
 # [pytest.skip] Too large for single chip
-def test_qwen3_embedding_8b(output_file):
+def test_qwen_3_embedding_8b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen3 Embedding 8B model. Use --generate-block-test for single encoder block, or --generate-layer-test for single layer."""
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
     data_format = "bfloat16"
     input_sequence_length = 128
-
-    # Load model with specified dtype
     variant = ModelVariant.QWEN_3_EMBEDDING_8B
-    loader = ModelLoader(variant=variant)
+
+    loader = create_encoder_loader(ModelLoader, variant=variant, single_block=single_block, single_layer=single_layer)
+
     model_info_name = loader.get_model_info(variant=variant).name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
@@ -269,17 +413,20 @@ def test_qwen3_embedding_8b(output_file):
 
     # Create input preprocessing function
     tokenizer = loader.tokenizer
-    tokenizer.padding_side = "left"
-    preprocess_fn = lambda sentences, device: {
-        k: v.to(device)
-        for k, v in tokenizer(
-            sentences,
-            padding="max_length",
-            truncation=True,
-            max_length=input_sequence_length,
-            return_tensors="pt",
-        ).items()
-    }
+    if tokenizer is not None:
+        tokenizer.padding_side = "left"
+        preprocess_fn = lambda sentences, device: {
+            k: v.to(device)
+            for k, v in tokenizer(
+                sentences,
+                padding="max_length",
+                truncation=True,
+                max_length=input_sequence_length,
+                return_tensors="pt",
+            ).items()
+        }
+    else:
+        preprocess_fn = None
 
     # Create output processing function
     output_processor_fn = lambda out, inputs: apply_last_token_pooling(out.last_hidden_state, inputs["attention_mask"])
@@ -295,6 +442,10 @@ def test_qwen3_embedding_8b(output_file):
         batch_size=1,
         input_sequence_length=input_sequence_length,
         loop_count=32,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="qwen_3_embedding_8b",
     )
 
 
@@ -303,6 +454,7 @@ def test_bge_m3(output_file):
 
     BGE-M3 has a unique architecture that produces dense, sparse, and colbert embeddings.
     This test includes all the necessary postprocessing but returns only dense_vecs for PCC calculation.
+    Note: Single block/layer tests not supported - BGE-M3 loader uses FlagEmbedding which doesn't expose the model directly.
     """
     import torch
     import numpy as np
@@ -314,10 +466,11 @@ def test_bge_m3(output_file):
     data_format = "float32"
     input_sequence_length = 512
 
-    # Load bge-m3 model
     loader = ModelLoader()
     model_info_name = loader.get_model_info().name
     print(f"\nLoading model {model_info_name}...")
+
+    # BGE-M3 uses a special model loading path
     model = BGEM3FlagModel("BAAI/bge-m3").model
     if data_format == "bfloat16":
         model = model.to(torch.bfloat16)
@@ -327,26 +480,29 @@ def test_bge_m3(output_file):
     load_inputs_fn = get_default_inputs
 
     # Create bge-m3 preprocessing function
-    tokenizer = model.tokenizer
+    tokenizer = getattr(model, 'tokenizer', None)
 
-    def bge_m3_preprocess(sentences, device):
-        """Tokenize sentences for BGE-M3 and prepare model inputs."""
-        tokenized = tokenizer(
-            sentences,
-            padding="max_length",
-            truncation=True,
-            max_length=input_sequence_length,
-            return_tensors="pt",
-        )
-        # Move to device, convert to dtype, and wrap in text_input dict as expected by BGE-M3
-        text_input = {k: v.to(device) for k, v in tokenized.items()}
-        return {
-            "text_input": text_input,
-            "return_dense": True,
-            "return_sparse": True,
-            "return_colbert_vecs": True,
-            "return_sparse_embedding": False,
-        }
+    if tokenizer is not None:
+        def bge_m3_preprocess(sentences, device):
+            """Tokenize sentences for BGE-M3 and prepare model inputs."""
+            tokenized = tokenizer(
+                sentences,
+                padding="max_length",
+                truncation=True,
+                max_length=input_sequence_length,
+                return_tensors="pt",
+            )
+            # Move to device, convert to dtype, and wrap in text_input dict as expected by BGE-M3
+            text_input = {k: v.to(device) for k, v in tokenized.items()}
+            return {
+                "text_input": text_input,
+                "return_dense": True,
+                "return_sparse": True,
+                "return_colbert_vecs": True,
+                "return_sparse_embedding": False,
+            }
+    else:
+        bge_m3_preprocess = None
 
     # Create bge-m3 output processing function
     def bge_m3_output_processor(outputs, model_inputs):
@@ -450,11 +606,19 @@ def test_bge_m3(output_file):
         loop_count=32,
         optimization_level=0,
         required_pcc=0.97,
+        single_block=False,
+        single_layer=False,
+        dump_source=False,
+        model_nickname="bge_m3",
     )
 
 
 def test_unet_for_conditional_generation(output_file):
-    """Test UNet for Conditional Generation model. This is a core component of the Stable Diffusion XL pipeline (https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0)"""
+    """Test UNet for Conditional Generation model. This is a core component of the Stable Diffusion XL pipeline.
+    
+    Note: Single block/layer tests not supported - UNet is not a transformer encoder architecture.
+    https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0
+    """
     from third_party.tt_forge_models.unet_for_conditional_generation.pytorch.loader import ModelLoader
 
     def inputs_to_device(inputs, device):
@@ -474,7 +638,6 @@ def test_unet_for_conditional_generation(output_file):
     batch_size = 1
     unet_max_seqlen = 77
 
-    # Load model
     loader = ModelLoader()
     model_info_name = loader.get_model_info().name
     print(f"\nLoading model {model_info_name}...")
@@ -496,4 +659,8 @@ def test_unet_for_conditional_generation(output_file):
         input_sequence_length=unet_max_seqlen,  # for UNet it is always set to the max sequence length
         loop_count=128,
         optimization_level=1,
+        single_block=False,
+        single_layer=False,
+        dump_source=False,
+        model_nickname="unet_sdxl",
     )

@@ -131,22 +131,37 @@ def make_encoder_single_layer(model, layer_idx: int = 0):
     """Modify an encoder model in-place to use only one transformer layer.
 
     Simulates a single-layer encoder by replacing the layers list with a single layer.
-    Reuses the entire model structure (embeddings, pooler, etc.).
+    Reuses the entire model structure (embeddings, pooler, lm_head, etc.).
+
+    Supports multiple architectures:
+    - BERT-style: model.encoder.layer
+    - Wrapped BERT: model.model.encoder.layer
+    - Decoder-based encoders (Qwen embedding, etc.): model.model.layers
 
     Args:
-        model: Full encoder model (BERT, etc.)
+        model: Full encoder model (BERT, Qwen embedding, etc.)
         layer_idx: Which layer to keep
 
     Returns:
         The same model, modified to have only one layer
     """
-    # Find and modify encoder layers
+    # Find and modify encoder/decoder layers
     if hasattr(model, "encoder") and hasattr(model.encoder, "layer"):
+        # BERT-style: model.encoder.layer
         original_layers = model.encoder.layer
         model.encoder.layer = nn.ModuleList([original_layers[layer_idx]])
-    elif hasattr(model, "model") and hasattr(model.model, "encoder"):
+    elif hasattr(model, "model") and hasattr(model.model, "encoder") and hasattr(model.model.encoder, "layer"):
+        # Wrapped BERT-style: model.model.encoder.layer
         original_layers = model.model.encoder.layer
         model.model.encoder.layer = nn.ModuleList([original_layers[layer_idx]])
+    elif hasattr(model, "model") and hasattr(model.model, "layers"):
+        # Decoder-based encoders (Qwen embedding, etc.): model.model.layers
+        original_layers = model.model.layers
+        model.model.layers = nn.ModuleList([original_layers[layer_idx]])
+    elif hasattr(model, "layers"):
+        # Direct layers attribute
+        original_layers = model.layers
+        model.layers = nn.ModuleList([original_layers[layer_idx]])
     else:
         raise ValueError(f"Cannot find encoder layers in model: {type(model)}")
 
@@ -160,26 +175,52 @@ def make_encoder_single_layer(model, layer_idx: int = 0):
 def extract_encoder_block(model, block_idx: int = 0):
     """Extract a single block from an encoder model.
 
+    Supports multiple architectures:
+    - BERT-style: model.encoder.layer
+    - Wrapped BERT: model.model.encoder.layer
+    - Decoder-based encoders (Qwen embedding, etc.): model.model.layers
+    - Direct layers: model.layers
+
+    For decoder-based encoders, uses DecoderBlockWrapper with rotary embeddings.
+
     Args:
-        model: Full encoder model (BERT, etc.)
+        model: Full encoder model (BERT, Qwen embedding, etc.)
         block_idx: Which block to extract
 
     Returns:
-        EncoderBlockWrapper
+        EncoderBlockWrapper or DecoderBlockWrapper depending on model architecture
     """
     config = getattr(model, "config", None)
 
     if hasattr(model, "encoder") and hasattr(model.encoder, "layer"):
+        # BERT-style
         block = model.encoder.layer[block_idx]
-    elif hasattr(model, "model") and hasattr(model.model, "encoder"):
+        hidden_size = config.hidden_size if config else 768
+        wrapper = EncoderBlockWrapper(block, hidden_size)
+    elif hasattr(model, "model") and hasattr(model.model, "encoder") and hasattr(model.model.encoder, "layer"):
+        # Wrapped BERT-style
         block = model.model.encoder.layer[block_idx]
+        hidden_size = config.hidden_size if config else 768
+        wrapper = EncoderBlockWrapper(block, hidden_size)
+    elif hasattr(model, "model") and hasattr(model.model, "layers"):
+        # Decoder-based encoders (Qwen embedding, etc.) - use DecoderBlockWrapper
+        block = model.model.layers[block_idx]
+        rotary_emb = getattr(model.model, "rotary_emb", None)
+        hidden_size = config.hidden_size if config else 768
+        
+        # Verify rotary_emb is usable - some models need special handling
+        if rotary_emb is None:
+            raise ValueError(f"Cannot find rotary_emb in model.model for block extraction: {type(model)}")
+        
+        wrapper = DecoderBlockWrapper(block, rotary_emb, hidden_size)
     elif hasattr(model, "layers"):
+        # Direct layers attribute
         block = model.layers[block_idx]
+        hidden_size = config.hidden_size if config else 768
+        wrapper = EncoderBlockWrapper(block, hidden_size)
     else:
         raise ValueError(f"Cannot find encoder blocks in model: {type(model)}")
 
-    hidden_size = config.hidden_size if config else 768
-    wrapper = EncoderBlockWrapper(block, hidden_size)
     wrapper.eval()
     return wrapper
 

@@ -30,7 +30,7 @@ import subprocess
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, "transformer_layers")
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "transformer_test_irs")
 MODULES_DIR = os.path.join(SCRIPT_DIR, "modules/irs")
 
 # ============================================================================
@@ -41,12 +41,17 @@ LLM_CONFIG = {
     "source_file": "llms.py",
     "required_param": "single_layer",
     "helper_func_name": "test_llm",
-    "skip_patterns": ["# FAILED"],
+    "skip_patterns": ["# FAILED", "# [pytest.skip]"],
     "expected_files": ["_decode_block.mlir", "_prefill_layer.mlir", "_decode_layer.mlir"],
     "tests": [
         {"flag": "--generate-block-test", "mode": "blk", "label": "block", "skip_arg": "skip_block"},
         {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": "skip_layer"},
     ],
+    # Output naming: {mode: {graph_idx: suffix}}
+    "output_names": {
+        "blk": {0: "_decode_block.mlir"},
+        "lyr": {0: "_prefill_layer.mlir", 1: "_decode_layer.mlir"},
+    },
 }
 
 ENCODER_CONFIG = {
@@ -54,10 +59,17 @@ ENCODER_CONFIG = {
     "required_param": "single_layer",
     "helper_func_name": "test_encoder",
     "skip_patterns": ["# FAILED", "# [pytest.skip]"],
-    "expected_files": ["_encoder_layer.mlir"],
+    "expected_files": ["_encoder_block.mlir", "_encoder_layer.mlir"],
     "tests": [
-        {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": None},
+        {"flag": "--generate-block-test", "mode": "blk", "label": "block", "skip_arg": "skip_block"},
+        {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": "skip_layer"},
     ],
+    "output_names": {
+        "blk": {0: "_encoder_block.mlir"},
+        "lyr": {"largest": "_encoder_layer.mlir"},  # Use largest graph (g0 for Qwen, g1 for BERT)
+    },
+    # Models that don't support block extraction (only expect layer files)
+    "no_block_models": ["qwen_3_embedding_4b"],
 }
 
 VISION_CONFIG = {
@@ -70,6 +82,10 @@ VISION_CONFIG = {
         {"flag": "--generate-block-test", "mode": "blk", "label": "block", "skip_arg": "skip_block"},
         {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": "skip_layer"},
     ],
+    "output_names": {
+        "blk": {0: "_vision_block.mlir"},
+        "lyr": {0: "_vision_layer.mlir"},
+    },
 }
 
 MODEL_CONFIGS = {
@@ -137,12 +153,20 @@ def parse_models(models_arg: str | None, all_models: list[str]) -> list[str]:
     return list(dict.fromkeys(models))  # Remove duplicates, preserve order
 
 
-def check_status_and_filter(models: list, expected_files: list[str], status_only: bool) -> list | None:
+def check_status_and_filter(models: list, config: dict, status_only: bool) -> list | None:
     """Check model status and optionally filter to incomplete only."""
     complete, incomplete, missing = [], [], {}
+    expected_files = config["expected_files"]
+    no_block_models = config.get("no_block_models", [])
 
     for model in models:
-        model_missing = [s for s in expected_files if not os.path.exists(os.path.join(OUTPUT_DIR, f"{model}{s}"))]
+        # Adjust expected files for models that don't support block extraction
+        if model in no_block_models:
+            model_expected = [f for f in expected_files if "block" not in f]
+        else:
+            model_expected = expected_files
+        
+        model_missing = [s for s in model_expected if not os.path.exists(os.path.join(OUTPUT_DIR, f"{model}{s}"))]
         if model_missing:
             incomplete.append(model)
             missing[model] = model_missing
@@ -211,7 +235,7 @@ def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_so
         return False, "Unknown error - see output above"
 
 
-def copy_ttir_files(model: str, mode: str, model_type: str, dry_run: bool) -> list[str]:
+def copy_ttir_files(model: str, mode: str, config: dict, dry_run: bool) -> list[str]:
     """Find and copy generated TTIR files with clean names."""
     # Try multiple patterns: exact match, without underscores, with underscores removed before digits
     patterns = [
@@ -237,24 +261,25 @@ def copy_ttir_files(model: str, mode: str, model_type: str, dry_run: bool) -> li
             if g not in graph_files or ts > graph_files[g][0]:
                 graph_files[g] = (ts, f)
 
-    # Determine output names based on model type
-    if mode == "blk":
-        if model_type == "vision":
-            graph_names = {0: f"{model}_vision_block.mlir"}
-        else:
-            graph_names = {0: f"{model}_decode_block.mlir"}
-    elif model_type == "encoder":
-        graph_names = {0: f"{model}_encoder_layer.mlir"}
-    elif model_type == "vision":
-        graph_names = {0: f"{model}_vision_layer.mlir"}
-    else:  # llm layer
-        graph_names = {0: f"{model}_prefill_layer.mlir", 1: f"{model}_decode_layer.mlir"}
+    # Get output names from config
+    output_names = config.get("output_names", {}).get(mode, {})
 
     copied = []
-    for g, dst_name in graph_names.items():
-        if g not in graph_files:
-            print(f"WARNING: Missing g{g} for {model} {mode}")
-            continue
+    for graph_key, suffix in output_names.items():
+        dst_name = f"{model}{suffix}"
+
+        # Resolve graph key: "largest" picks the file with most content
+        if graph_key == "largest":
+            if not graph_files:
+                print(f"WARNING: No graphs found for {model} {mode}")
+                continue
+            # Pick graph with largest file size
+            g = max(graph_files.keys(), key=lambda x: os.path.getsize(graph_files[x][1]))
+        else:
+            g = graph_key
+            if g not in graph_files:
+                print(f"WARNING: Missing g{g} for {model} {mode}")
+                continue
 
         src, dst = graph_files[g][1], os.path.join(OUTPUT_DIR, dst_name)
         if dry_run:
@@ -293,7 +318,7 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
                 )
 
             if success:
-                copied = copy_ttir_files(model, test["mode"], model_type, args.dry_run)
+                copied = copy_ttir_files(model, test["mode"], config, args.dry_run)
                 if copied:
                     results["success"].extend(copied)
                 else:
@@ -345,7 +370,7 @@ def run(model_types: list[str], args) -> int:
         models = parse_models(args.models, discover_models(config))
 
         if args.continue_mode or args.status_only:
-            models = check_status_and_filter(models, config["expected_files"], args.status_only)
+            models = check_status_and_filter(models, config, args.status_only)
             if models is None:
                 continue
 
@@ -376,11 +401,11 @@ Examples:
 
     subparsers = parser.add_subparsers(dest="command", help="Model type to process")
 
-    for cmd, help_text, has_block in [
-        ("llm", "Generate tests for LLM models", True),
-        ("encoder", "Generate tests for encoder models", False),
-        ("vision", "Generate tests for vision transformers", True),
-        ("all", "Generate tests for all transformer models", True),
+    for cmd, help_text in [
+        ("llm", "Generate tests for LLM models"),
+        ("encoder", "Generate tests for encoder models"),
+        ("vision", "Generate tests for vision transformers"),
+        ("all", "Generate tests for all transformer models"),
     ]:
         p = subparsers.add_parser(cmd, help=help_text)
         p.add_argument("--models", help="Comma-separated models or prefixes")
@@ -390,20 +415,14 @@ Examples:
         p.add_argument("--continue", dest="continue_mode", action="store_true", help="Resume incomplete")
         p.add_argument("--status-only", action="store_true", help="Only show progress")
         p.add_argument("--dump-source", action="store_true", help="Export source model before TT compilation")
-        if has_block:
-            p.add_argument("--skip-block", action="store_true", help="Skip block tests")
-            p.add_argument("--skip-layer", action="store_true", help="Skip layer tests")
+        p.add_argument("--skip-block", action="store_true", help="Skip block tests")
+        p.add_argument("--skip-layer", action="store_true", help="Skip layer tests")
 
     args = parser.parse_args()
 
     if not args.command:
         parser.print_help()
         return 1
-
-    # Set defaults for models without block tests
-    if args.command == "encoder":
-        args.skip_block = True
-        args.skip_layer = False
 
     if args.command == "all":
         model_types = ["llm", "encoder", "vision"]

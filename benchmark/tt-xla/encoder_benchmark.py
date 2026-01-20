@@ -9,7 +9,9 @@ from typing import List
 
 # Third-party modules
 import torch
+import torch.nn as nn
 import torch_xla
+import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 
 from benchmark.utils import get_xla_device_arch
@@ -19,13 +21,17 @@ from utils import (
     create_benchmark_result,
     compute_pcc,
     move_to_cpu,
+    get_export_options,
+    get_mode_tag,
+    find_generated_ttir_files,
+    print_ttir_export_result,
+    export_source_model,
+    MODULE_EXPORT_PATH,
 )
 
 xr.set_device_type("TT")
 
 WARMUP_STEPS = 3  # Number of warmup iterations before benchmarking
-
-MODULE_EXPORT_PATH = "modules"
 
 
 def run_encoder_model(
@@ -155,6 +161,10 @@ def benchmark_encoder_torch_xla(
     required_pcc=0.97,
     enable_weight_bfp8_conversion=False,
     experimental_enable_permute_matmul_fusion=False,
+    single_block=False,
+    single_layer=False,
+    model_nickname=None,
+    dump_source=False,
 ):
     """
     Benchmark an encoder model using PyTorch and torch-xla.
@@ -189,6 +199,10 @@ def benchmark_encoder_torch_xla(
         required_pcc: Minimum PCC threshold for output validation
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
         experimental_enable_permute_matmul_fusion: Whether to enable permute matmul fusion optimization
+        single_block: If True, compile and export encoder block only (no embeddings)
+        single_layer: If True, compile and export single layer model (full model with 1 layer)
+        model_nickname: Optional nickname for the model (used in export filenames)
+        dump_source: If True, dump model source code to Python file
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -196,6 +210,93 @@ def benchmark_encoder_torch_xla(
     if training:
         raise ValueError("Training is not supported for encoder benchmarks")
 
+    # Check for conflicting flags
+    if single_block and single_layer:
+        raise ValueError(
+            "Cannot use --generate-block-test and --generate-layer-test together. "
+            "Run them as separate commands."
+        )
+
+    # Determine mode tag for file naming
+    if model_nickname is None:
+        # Sanitize model name for safe filesystem usage
+        model_nickname = model_info_name.lower().replace(" ", "_").replace("/", "_").replace("-", "_")
+    mode_tag = get_mode_tag(single_block, single_layer)
+
+    # Get export options using shared utility
+    options = get_export_options(
+        model_name=model_nickname,
+        mode=mode_tag,
+        batch_size=batch_size,
+        input_sequence_length=input_sequence_length,
+        optimization_level=optimization_level,
+        trace_enabled=trace_enabled,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+        enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
+    )
+    export_model_name = options["export_model_name"]
+    print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
+    torch_xla.set_custom_compile_options(options)
+
+    # =========================================================================
+    # SINGLE BLOCK/LAYER MODE: Compile and export only (no benchmarking)
+    # =========================================================================
+    if single_block or single_layer:
+        mode = "single_block" if single_block else "single_layer"
+
+        # Get hidden_size from model (handles both wrapped blocks and full models)
+        hidden_size = getattr(model, "hidden_size", None)
+        if hidden_size is None and hasattr(model, "config"):
+            hidden_size = getattr(model.config, "hidden_size", 768)
+        if hidden_size is None:
+            hidden_size = 768  # Default fallback
+
+        # Dump model to Python code if requested (before compilation)
+        if dump_source:
+            if single_block:
+                example_input = torch.randn(batch_size, input_sequence_length, hidden_size, dtype=torch.bfloat16)
+                export_source_model(export_model_name, model, example_input)
+            else:
+                # single_layer: create example inputs using preprocess_fn if available
+                if preprocess_fn is not None and load_inputs_fn is not None:
+                    raw_inputs = load_inputs_fn(batch_size)
+                    example_inputs = preprocess_fn(raw_inputs, "cpu")
+                    # Export with dict inputs (not directly supported, dump structure only)
+                    export_source_model(export_model_name, model)
+                else:
+                    export_source_model(export_model_name, model)
+
+        # Connect the device
+        device = torch_xla.device()
+
+        # Compile model
+        model_on_device = model.to(device, dtype=torch.bfloat16)
+        compiled_model = torch.compile(
+            model_on_device, backend="tt", options={"tt_experimental_compile": experimental_compile}
+        )
+
+        with torch.no_grad():
+            if single_block:
+                # For single block: use hidden_states input
+                hidden_states = torch.randn(batch_size, input_sequence_length, hidden_size, dtype=torch.bfloat16).to(device)
+                compiled_model(hidden_states)
+                xm.mark_step()
+            else:
+                # For single layer: use full model input format
+                raw_inputs = load_inputs_fn(batch_size)
+                model_inputs = preprocess_fn(raw_inputs, device)
+                compiled_model(**model_inputs)
+                xm.mark_step()
+
+        # Find and print generated TTIR files
+        generated_files = find_generated_ttir_files(export_model_name)
+        print_ttir_export_result(generated_files, mode, model_info_name, export_model_name)
+        return {"status": "success", "mode": mode, "model": model_info_name}
+
+    # =========================================================================
+    # FULL MODEL MODE: Standard encoder benchmark
+    # =========================================================================
     framework_model = model
 
     # Load raw inputs for all iterations
@@ -221,20 +322,7 @@ def benchmark_encoder_torch_xla(
     with torch.no_grad():
         golden_output = run_encoder_model(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
 
-    # Set XLA compilation options
-    options = {
-        "optimization_level": optimization_level,
-        "export_path": MODULE_EXPORT_PATH,
-        "ttnn_perf_metrics_enabled": True,
-        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
-        "enable_trace": trace_enabled,
-        "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
-        "experimental_enable_permute_matmul_fusion": experimental_enable_permute_matmul_fusion,
-    }
-
-    torch_xla.set_custom_compile_options(options)
-
-    # Compile model
+    # Compile model (XLA options already set at the top)
     framework_model.compile(backend="tt", options={"tt_experimental_compile": experimental_compile})
 
     device = torch_xla.device()

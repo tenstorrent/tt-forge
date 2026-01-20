@@ -25,7 +25,7 @@ from utils import (
     get_mode_tag,
     find_generated_ttir_files,
     print_ttir_export_result,
-    dump_model_to_python,
+    export_source_model,
     MODULE_EXPORT_PATH,
 )
 
@@ -231,7 +231,7 @@ def benchmark_vision_torch_xla(
     single_block=False,
     single_layer=False,
     model_nickname=None,
-    dump_python=False,
+    dump_source=False,
 ):
     """
     Benchmark a vision model using PyTorch and torch-xla.
@@ -258,7 +258,7 @@ def benchmark_vision_torch_xla(
         single_block: If True, compile and export single transformer block only (no benchmarking)
         single_layer: If True, compile and export full model with one block (no benchmarking)
         model_nickname: Short name for export files (e.g., "vit"). Uses full model name if None.
-        dump_python: If True, dump standalone Python code for the test.
+        dump_source: If True, dump standalone Python code for the test.
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -353,8 +353,8 @@ def benchmark_vision_torch_xla(
         dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
         hidden_states = torch.randn(batch_size, seq_len, hidden_size, dtype=dtype)
 
-        if dump_python:
-            dump_model_to_python(export_model_name, block_model, hidden_states)
+        if dump_source:
+            export_source_model(export_model_name, block_model, hidden_states)
 
         device = torch_xla.device()
 
@@ -394,8 +394,8 @@ def benchmark_vision_torch_xla(
         dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
         image_input = torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
 
-        if dump_python:
-            dump_model_to_python(export_model_name, layer_model, image_input)
+        if dump_source:
+            export_source_model(export_model_name, layer_model, image_input)
 
         device = torch_xla.device()
 
@@ -424,8 +424,8 @@ def benchmark_vision_torch_xla(
     # Dump model to Python code if requested (before compilation)
     dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
     sample_input = torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
-    if dump_python:
-        dump_model_to_python(export_model_name, framework_model, sample_input)
+    if dump_source:
+        export_source_model(export_model_name, framework_model, sample_input)
 
     # Compile model
     framework_model.compile(backend="tt", options={"tt_experimental_compile": experimental_compile})
