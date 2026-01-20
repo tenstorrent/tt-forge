@@ -65,9 +65,10 @@ VISION_CONFIG = {
     "required_param": "single_layer",
     "helper_func_name": "test_vision",
     "skip_patterns": ["# FAILED", "# [pytest.skip]"],
-    "expected_files": ["_vision_layer.mlir"],
+    "expected_files": ["_vision_block.mlir", "_vision_layer.mlir"],
     "tests": [
-        {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": None},
+        {"flag": "--generate-block-test", "mode": "blk", "label": "block", "skip_arg": "skip_block"},
+        {"flag": "--generate-layer-test", "mode": "lyr", "label": "layer", "skip_arg": "skip_layer"},
     ],
 }
 
@@ -175,9 +176,11 @@ def check_status_and_filter(models: list, expected_files: list[str], status_only
     return incomplete
 
 
-def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool) -> tuple[bool, str]:
+def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_python: bool = False) -> tuple[bool, str]:
     """Execute pytest for a specific test."""
     cmd = [sys.executable, "-m", "pytest", "-svv", f"{test_file}::test_{model}", flag]
+    if dump_python:
+        cmd.append("--dump-python")
     print(f"\n{'[DRY-RUN] ' if dry_run else ''}Running: {' '.join(cmd)}")
 
     if dry_run:
@@ -230,7 +233,10 @@ def copy_ttir_files(model: str, mode: str, model_type: str, dry_run: bool) -> li
 
     # Determine output names based on model type
     if mode == "blk":
-        graph_names = {0: f"{model}_decode_block.mlir"}
+        if model_type == "vision":
+            graph_names = {0: f"{model}_vision_block.mlir"}
+        else:
+            graph_names = {0: f"{model}_decode_block.mlir"}
     elif model_type == "encoder":
         graph_names = {0: f"{model}_encoder_layer.mlir"}
     elif model_type == "vision":
@@ -275,7 +281,10 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
             if args.copy_only:
                 success, error = True, ""
             else:
-                success, error = execute_pytest(config["source_file"], model, test["flag"], args.dry_run)
+                success, error = execute_pytest(
+                    config["source_file"], model, test["flag"], args.dry_run,
+                    dump_python=getattr(args, "dump_python", False)
+                )
 
             if success:
                 copied = copy_ttir_files(model, test["mode"], model_type, args.dry_run)
@@ -364,7 +373,7 @@ Examples:
     for cmd, help_text, has_block in [
         ("llm", "Generate tests for LLM models", True),
         ("encoder", "Generate tests for encoder models", False),
-        ("vision", "Generate tests for vision transformers", False),
+        ("vision", "Generate tests for vision transformers", True),
         ("all", "Generate tests for all transformer models", True),
     ]:
         p = subparsers.add_parser(cmd, help=help_text)
@@ -374,6 +383,7 @@ Examples:
         p.add_argument("--copy-only", action="store_true", help="Only copy existing TTIR files")
         p.add_argument("--continue", dest="continue_mode", action="store_true", help="Resume incomplete")
         p.add_argument("--status-only", action="store_true", help="Only show progress")
+        p.add_argument("--dump-python", action="store_true", help="Dump model to Python code before compilation")
         if has_block:
             p.add_argument("--skip-block", action="store_true", help="Skip block tests")
             p.add_argument("--skip-layer", action="store_true", help="Skip layer tests")
@@ -385,7 +395,7 @@ Examples:
         return 1
 
     # Set defaults for models without block tests
-    if args.command in ("encoder", "vision"):
+    if args.command == "encoder":
         args.skip_block = True
         args.skip_layer = False
 

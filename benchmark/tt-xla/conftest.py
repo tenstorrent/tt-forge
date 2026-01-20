@@ -176,6 +176,13 @@ def pytest_addoption(parser):
         dest="generate_layer_test",
         help="Compile and export a single layer model (full model with 1 layer). Skips benchmarking.",
     )
+    parser.addoption(
+        "--dump-python",
+        action="store_true",
+        default=False,
+        dest="dump_python",
+        help="Dump standalone Python code for the test. Useful for reproducing tests without pytest.",
+    )
 
 
 @pytest.fixture
@@ -241,3 +248,8 @@ def single_block(request):
 @pytest.fixture
 def single_layer(request):
     return request.config.getoption("--generate-layer-test")
+
+
+@pytest.fixture
+def dump_python(request):
+    return request.config.getoption("--dump-python")

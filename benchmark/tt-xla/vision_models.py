@@ -26,6 +26,7 @@ def test_vision(
     ModelLoaderModule,
     variant,
     output_file,
+    single_block=False,
     single_layer=False,
     model_nickname=None,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
@@ -39,6 +40,7 @@ def test_vision(
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
     read_logits_fn=DEFAULT_READ_LOGITS_FN,
+    dump_python=False,
 ):
     """Test vision model with the given variant and optional configuration overrides.
 
@@ -46,7 +48,8 @@ def test_vision(
         ModelLoaderModule: Model loader class
         variant: Model variant identifier (can be None for models without variants)
         output_file: Path to save benchmark results as JSON
-        single_layer: If True, compile and export model only (no benchmarking)
+        single_block: If True, compile and export single transformer block only (no benchmarking)
+        single_layer: If True, compile and export full model with one block (no benchmarking)
         model_nickname: Short name for export files (e.g., "vit"). Uses full name if None.
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
@@ -59,6 +62,7 @@ def test_vision(
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
         read_logits_fn: Function to extract logits from model output
+        dump_python: If True, dump model to Python code before compilation
     """
     model_loader = ModelLoaderModule(variant=variant) if variant else ModelLoaderModule()
     full_model_name = (
@@ -101,8 +105,10 @@ def test_vision(
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
         required_pcc=required_pcc,
         read_logits_fn=read_logits_fn,
+        single_block=single_block,
         single_layer=single_layer,
         model_nickname=model_nickname,
+        dump_python=dump_python,
     )
 
     if output_file:
@@ -157,8 +163,8 @@ def test_resnet50(output_file):
     )
 
 
-def test_segformer(output_file, single_layer):
-    """Test SegFormer model. Use --generate-layer-test for single layer export."""
+def test_segformer(output_file, single_block, single_layer, dump_python):
+    """Test SegFormer model. Use --generate-block-test for single block, or --generate-layer-test for single layer."""
     from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.B0_FINETUNED
@@ -167,16 +173,18 @@ def test_segformer(output_file, single_layer):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        single_block=single_block,
         single_layer=single_layer,
         model_nickname="segformer",
         batch_size=1,
         input_size=(512, 512),
         read_logits_fn=read_logits_fn,
+        dump_python=dump_python,
     )
 
 
-def test_swin(output_file, single_layer):
-    """Test Swin Transformer model. Use --generate-layer-test for single layer export."""
+def test_swin(output_file, single_block, single_layer, dump_python):
+    """Test Swin Transformer model. Use --generate-block-test for single block, or --generate-layer-test for single layer."""
     from third_party.tt_forge_models.swin.image_classification.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.SWIN_S
@@ -184,11 +192,13 @@ def test_swin(output_file, single_layer):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        single_block=single_block,
         single_layer=single_layer,
         model_nickname="swin",
         batch_size=1,
         input_size=(512, 512),
         required_pcc=0.90,
+        dump_python=dump_python,
     )
 
 
@@ -238,9 +248,9 @@ def test_unet(output_file):
     )
 
 
-def test_vit(output_file, single_layer):
-    """Test ViT model. Use --generate-layer-test for single layer export (no benchmarking)."""
-    from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
+def test_vit(output_file, single_block, single_layer, dump_python):
+    """Test ViT model. Use --generate-block-test for single block, or --generate-layer-test for single layer."""
+    from third_party.tt_forge_models.vit.image_classification.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.BASE
     read_logits_fn = lambda output: output.logits
@@ -248,10 +258,12 @@ def test_vit(output_file, single_layer):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        single_block=single_block,
         single_layer=single_layer,
         model_nickname="vit",
         batch_size=8,
         read_logits_fn=read_logits_fn,
+        dump_python=dump_python,
     )
 
 

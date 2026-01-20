@@ -25,6 +25,7 @@ from utils import (
     get_mode_tag,
     find_generated_ttir_files,
     print_ttir_export_result,
+    dump_model_to_python,
     MODULE_EXPORT_PATH,
 )
 
@@ -227,8 +228,10 @@ def benchmark_vision_torch_xla(
     ttnn_perf_metrics_output_file,
     read_logits_fn,
     required_pcc=0.97,
+    single_block=False,
     single_layer=False,
     model_nickname=None,
+    dump_python=False,
 ):
     """
     Benchmark a vision model using PyTorch and torch-xla.
@@ -252,8 +255,10 @@ def benchmark_vision_torch_xla(
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         required_pcc: Minimum PCC threshold for output validation
         read_logits_fn: Callback function to extract logits from model output
-        single_layer: If True, compile and export single layer model only (no benchmarking)
+        single_block: If True, compile and export single transformer block only (no benchmarking)
+        single_layer: If True, compile and export full model with one block (no benchmarking)
         model_nickname: Short name for export files (e.g., "vit"). Uses full model name if None.
+        dump_python: If True, dump standalone Python code for the test.
 
     Returns:
         Benchmark result containing performance metrics and model information
@@ -299,7 +304,7 @@ def benchmark_vision_torch_xla(
     # Use provided nickname or derive from model_info
     if model_nickname is None:
         model_nickname = model_info.replace("/", "_").replace("-", "_").lower()
-    mode_tag = get_mode_tag(single_block=False, single_layer=single_layer)
+    mode_tag = get_mode_tag(single_block=single_block, single_layer=single_layer)
     options = get_export_options(
         model_name=model_nickname,
         mode=mode_tag,
@@ -313,20 +318,20 @@ def benchmark_vision_torch_xla(
     torch_xla.set_custom_compile_options(options)
 
     # =========================================================================
-    # SINGLE LAYER MODE: Extract and compile ONE encoder layer only
+    # SINGLE BLOCK MODE: Extract and compile ONE transformer block only
     # =========================================================================
-    if single_layer:
-        from utils import extract_single_layer
+    if single_block:
+        from model_wrappers import extract_single_block
 
-        print(f"Extracting single encoder layer from {model_info}...")
+        print(f"Extracting single transformer block from {model_info}...")
 
-        # Extract just one transformer layer
+        # Extract just one transformer block
         # Input: hidden_states [batch, seq_len, hidden_size]
         # Output: hidden_states [batch, seq_len, hidden_size]
-        layer_model = extract_single_layer(framework_model, layer_idx=0)
+        block_model = extract_single_block(framework_model, block_idx=0)
 
-        # Get hidden_size from extracted layer (handles different model types)
-        hidden_size = layer_model.hidden_size
+        # Get hidden_size from extracted block (handles different model types)
+        hidden_size = block_model.hidden_size
 
         # Calculate sequence length based on model type
         # Default: use a reasonable sequence length for the hidden size
@@ -348,11 +353,55 @@ def benchmark_vision_torch_xla(
         dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
         hidden_states = torch.randn(batch_size, seq_len, hidden_size, dtype=dtype)
 
+        if dump_python:
+            dump_model_to_python(export_model_name, block_model, hidden_states)
+
+        device = torch_xla.device()
+
+        # Transfer block to device
+        block_model = block_model.to(device, dtype=dtype)
+        hidden_states = hidden_states.to(device)
+
+        # Compile and run single block
+        compiled_model = torch.compile(
+            block_model, backend="tt", options={"tt_experimental_compile": experimental_compile}
+        )
+
+        with torch.no_grad():
+            compiled_model(hidden_states)
+            xm.mark_step()
+
+        # Find and print generated TTIR files
+        generated_files = find_generated_ttir_files(export_model_name)
+        print_ttir_export_result(generated_files, "single_block", model_info, export_model_name)
+        return {"status": "success", "mode": "single_block", "model": model_info}
+
+    # =========================================================================
+    # SINGLE LAYER MODE: Full model with ONE transformer layer (patch_embed + 1 layer + head)
+    # =========================================================================
+    if single_layer:
+        from model_wrappers import extract_vision_single_layer_model
+
+        print(f"Extracting minimal vision model (full model with 1 layer) from {model_info}...")
+
+        # Extract full model structure with just one transformer layer
+        # Supports ViT, Swin, SegFormer
+        # Input: image [batch, channels, height, width]
+        # Output: logits or features
+        layer_model = extract_vision_single_layer_model(framework_model, layer_idx=0)
+
+        # Create image input (same as full model)
+        dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
+        image_input = torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+
+        if dump_python:
+            dump_model_to_python(export_model_name, layer_model, image_input)
+
         device = torch_xla.device()
 
         # Transfer layer to device
         layer_model = layer_model.to(device, dtype=dtype)
-        hidden_states = hidden_states.to(device)
+        image_input = image_input.to(device)
 
         # Compile and run single layer
         compiled_model = torch.compile(
@@ -360,7 +409,7 @@ def benchmark_vision_torch_xla(
         )
 
         with torch.no_grad():
-            compiled_model(hidden_states)
+            compiled_model(image_input)
             xm.mark_step()
 
         # Find and print generated TTIR files
@@ -371,6 +420,12 @@ def benchmark_vision_torch_xla(
     # =========================================================================
     # FULL MODEL MODE: Vision benchmark
     # =========================================================================
+
+    # Dump model to Python code if requested (before compilation)
+    dtype = torch.bfloat16 if data_format == "bfloat16" else torch.float32
+    sample_input = torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+    if dump_python:
+        dump_model_to_python(export_model_name, framework_model, sample_input)
 
     # Compile model
     framework_model.compile(backend="tt", options={"tt_experimental_compile": experimental_compile})
