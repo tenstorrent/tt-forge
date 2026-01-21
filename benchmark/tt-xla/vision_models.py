@@ -16,14 +16,9 @@ DEFAULT_BATCH_SIZE = 1
 DEFAULT_LOOP_COUNT = 128
 DEFAULT_INPUT_SIZE = (224, 224)
 DEFAULT_CHANNEL_SIZE = 3
-DEFAULT_DATA_FORMAT = "bfloat16"
+DEFAULT_DATA_FORMAT = torch.bfloat16
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
-
-
-def get_dtype(data_format):
-    """Convert data_format string to torch dtype."""
-    return torch.bfloat16 if data_format == "bfloat16" else torch.float32
 
 
 def test_vision(
@@ -112,7 +107,7 @@ def test_efficientnet(output_file):
     from third_party.tt_forge_models.efficientnet.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
@@ -121,11 +116,11 @@ def test_efficientnet(output_file):
     variant = ModelVariant.TIMM_EFFICIENTNET_B0
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+    def load_inputs_fn(batch_size, dtype):
+        return loader.load_inputs(dtype_override=dtype, batch_size=batch_size)
 
     def extract_output_tensor_fn(output):
         return output
@@ -147,7 +142,7 @@ def test_mnist(output_file):
     from third_party.tt_forge_models.mnist.image_classification.pytorch.loader import ModelLoader
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 32
     input_size = (28, 28)
     channel_size = 1
@@ -155,12 +150,12 @@ def test_mnist(output_file):
     # Load model
     loader = ModelLoader()
     model_info_name = loader.get_model_info().name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
     # MNIST doesn't have load_inputs in tt_forge_models, use random tensor
-    def load_inputs_fn(batch_size, data_format):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -182,7 +177,7 @@ def test_mobilenetv2(output_file):
     from third_party.tt_forge_models.mobilenetv2.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 12
     input_size = (224, 224)
     channel_size = 3
@@ -191,11 +186,11 @@ def test_mobilenetv2(output_file):
     variant = ModelVariant.MOBILENET_V2_TORCH_HUB
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+    def load_inputs_fn(batch_size, dtype):
+        return loader.load_inputs(dtype_override=dtype, batch_size=batch_size)
 
     def extract_output_tensor_fn(output):
         return output
@@ -217,7 +212,7 @@ def test_resnet50(output_file):
     from third_party.tt_forge_models.resnet.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
@@ -226,11 +221,11 @@ def test_resnet50(output_file):
     variant = ModelVariant.RESNET_50_HF
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+    def load_inputs_fn(batch_size, dtype):
+        return loader.load_inputs(dtype_override=dtype, batch_size=batch_size)
 
     def extract_output_tensor_fn(output):
         return output.logits
@@ -253,7 +248,7 @@ def test_segformer(output_file):
     from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 1
     input_size = (512, 512)
     channel_size = 3
@@ -262,12 +257,12 @@ def test_segformer(output_file):
     variant = ModelVariant.B0_FINETUNED
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
     # Segformer doesn't have separate input_preprocess in tt_forge_models
-    def load_inputs_fn(batch_size, data_format):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output.logits
@@ -289,7 +284,7 @@ def test_swin(output_file):
     from third_party.tt_forge_models.swin.image_classification.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 1
     input_size = (512, 512)
     channel_size = 3
@@ -298,11 +293,11 @@ def test_swin(output_file):
     variant = ModelVariant.SWIN_S
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -325,7 +320,7 @@ def test_ufld(output_file):
     from third_party.tt_forge_models.ultra_fast_lane_detection.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 1
     channel_size = 3
 
@@ -334,11 +329,11 @@ def test_ufld(output_file):
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     input_size = loader.config.input_size
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -360,7 +355,7 @@ def test_ufld_v2(output_file):
     from third_party.tt_forge_models.ultra_fast_lane_detection_v2.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 1
     channel_size = 3
 
@@ -369,11 +364,11 @@ def test_ufld_v2(output_file):
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
     input_size = (loader.config.input_height, loader.config.input_width)
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output[0]
@@ -395,7 +390,7 @@ def test_unet(output_file):
     from third_party.tt_forge_models.vgg19_unet.pytorch.loader import ModelLoader
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 1
     input_size = (256, 256)
     channel_size = 3
@@ -403,11 +398,11 @@ def test_unet(output_file):
     # Load model
     loader = ModelLoader()
     model_info_name = loader.get_model_info().name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=get_dtype(data_format))
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -429,7 +424,7 @@ def test_vit(output_file):
     from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
@@ -438,11 +433,11 @@ def test_vit(output_file):
     variant = ModelVariant.BASE
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+    def load_inputs_fn(batch_size, dtype):
+        return loader.load_inputs(dtype_override=dtype, batch_size=batch_size)
 
     def extract_output_tensor_fn(output):
         return output.logits
@@ -464,7 +459,7 @@ def test_vovnet(output_file):
     from third_party.tt_forge_models.vovnet.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
-    data_format = "bfloat16"
+    data_format = torch.bfloat16
     batch_size = 8
     input_size = (224, 224)
     channel_size = 3
@@ -473,11 +468,11 @@ def test_vovnet(output_file):
     variant = ModelVariant.TIMM_VOVNET19B_DW_RAIN1K
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=get_dtype(data_format))
+    model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
-    def load_inputs_fn(batch_size, data_format):
-        return loader.load_inputs(dtype_override=get_dtype(data_format), batch_size=batch_size)
+    def load_inputs_fn(batch_size, dtype):
+        return loader.load_inputs(dtype_override=dtype, batch_size=batch_size)
 
     def extract_output_tensor_fn(output):
         return output

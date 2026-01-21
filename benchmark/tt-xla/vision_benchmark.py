@@ -111,11 +111,11 @@ def benchmark_vision_torch_xla(
         loop_count: Number of inference iterations to benchmark
         input_size: Tuple of (height, width) for model inputs
         channel_size: Number of input channels
-        data_format: Data precision format
+        data_format: torch.dtype for model precision (e.g., torch.bfloat16, torch.float32)
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         load_inputs_fn: Function to load a single batch of preprocessed inputs.
-            Signature: fn(batch_size, data_format) -> Tensor
+            Signature: fn(batch_size, dtype: torch.dtype) -> Tensor
         extract_output_tensor_fn: Function to extract tensor from model outputs (e.g. get .logits).
         required_pcc: Minimum PCC threshold for output validation
 
@@ -158,10 +158,7 @@ def benchmark_vision_torch_xla(
         if isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
             m.num_batches_tracked = None
 
-    if data_format == "bfloat16":
-        framework_model = framework_model.to(device, dtype=torch.bfloat16)
-    else:
-        framework_model = framework_model.to(device)
+    framework_model = framework_model.to(device, dtype=data_format)
 
     # Warmup
     print("Starting warmup...")
@@ -197,6 +194,14 @@ def benchmark_vision_torch_xla(
     dataset_name = "Random Data"
     num_layers = -1
 
+    # Convert dtype to string for reporting
+    if data_format == torch.bfloat16:
+        data_format_str = "bfloat16"
+    elif data_format == torch.float32:
+        data_format_str = "float32"
+    else:
+        raise ValueError(f"Unsupported data format: {data_format}")
+
     evaluation_score = 0.0
     print_benchmark_results(
         model_title=full_model_name,
@@ -210,7 +215,7 @@ def benchmark_vision_torch_xla(
         samples_per_sec=samples_per_sec,
         evaluation_score=evaluation_score,
         batch_size=batch_size,
-        data_format=data_format,
+        data_format=data_format_str,
         input_size=input_size,
         channel_size=channel_size,
     )
@@ -227,7 +232,7 @@ def benchmark_vision_torch_xla(
         batch_size=batch_size,
         input_size=input_size,
         loop_count=loop_count,
-        data_format=data_format,
+        data_format=data_format_str,
         total_time=total_time,
         total_samples=total_samples,
         evaluation_score=evaluation_score,
