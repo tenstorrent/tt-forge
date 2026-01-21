@@ -14,8 +14,7 @@ DEFAULT_OPTIMIZATION_LEVEL = 2
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 1
 DEFAULT_LOOP_COUNT = 128
-DEFAULT_INPUT_SIZE = (224, 224)
-DEFAULT_CHANNEL_SIZE = 3
+DEFAULT_INPUT_SIZE = (3, 224, 224)  # (channels, height, width)
 DEFAULT_DATA_FORMAT = torch.bfloat16
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_REQUIRED_PCC = 0.97
@@ -32,7 +31,6 @@ def test_vision(
     batch_size=DEFAULT_BATCH_SIZE,
     loop_count=DEFAULT_LOOP_COUNT,
     input_size=DEFAULT_INPUT_SIZE,
-    channel_size=DEFAULT_CHANNEL_SIZE,
     data_format=DEFAULT_DATA_FORMAT,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
@@ -50,8 +48,7 @@ def test_vision(
         trace_enabled: Enable trace
         batch_size: Batch size
         loop_count: Number of benchmark iterations
-        input_size: Input size tuple (height, width)
-        channel_size: Number of input channels
+        input_size: Input size tuple (channels, height, width) - channel-first format
         data_format: Data format
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
@@ -68,7 +65,6 @@ def test_vision(
     batch_size={batch_size}
     loop_count={loop_count}
     input_size={input_size}
-    channel_size={channel_size}
     data_format={data_format}
     experimental_compile={experimental_compile}
     required_pcc={required_pcc}
@@ -84,7 +80,6 @@ def test_vision(
         batch_size=batch_size,
         loop_count=loop_count,
         input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
         experimental_compile=experimental_compile,
         ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
@@ -109,8 +104,6 @@ def test_efficientnet(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 8
-    input_size = (224, 224)
-    channel_size = 3
 
     # Load model
     variant = ModelVariant.TIMM_EFFICIENTNET_B0
@@ -132,8 +125,6 @@ def test_efficientnet(output_file):
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
-        input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -144,8 +135,7 @@ def test_mnist(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 32
-    input_size = (28, 28)
-    channel_size = 1
+    input_size = (1, 28, 28)
 
     # Load model
     loader = ModelLoader()
@@ -155,7 +145,7 @@ def test_mnist(output_file):
 
     # MNIST doesn't have load_inputs in tt_forge_models, use random tensor
     def load_inputs_fn(batch_size, dtype):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+        return torch.randn(batch_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -168,7 +158,6 @@ def test_mnist(output_file):
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -179,8 +168,6 @@ def test_mobilenetv2(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 12
-    input_size = (224, 224)
-    channel_size = 3
 
     # Load model
     variant = ModelVariant.MOBILENET_V2_TORCH_HUB
@@ -202,8 +189,6 @@ def test_mobilenetv2(output_file):
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
-        input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -214,8 +199,6 @@ def test_resnet50(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 8
-    input_size = (224, 224)
-    channel_size = 3
 
     # Load model
     variant = ModelVariant.RESNET_50_HF
@@ -237,8 +220,6 @@ def test_resnet50(output_file):
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
-        input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
         required_pcc=0.90,
     )
@@ -250,8 +231,7 @@ def test_segformer(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 1
-    input_size = (512, 512)
-    channel_size = 3
+    input_size = (3, 512, 512)
 
     # Load model
     variant = ModelVariant.B0_FINETUNED
@@ -262,7 +242,7 @@ def test_segformer(output_file):
 
     # Segformer doesn't have separate input_preprocess in tt_forge_models
     def load_inputs_fn(batch_size, dtype):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+        return torch.randn(batch_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output.logits
@@ -275,7 +255,6 @@ def test_segformer(output_file):
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -286,8 +265,7 @@ def test_swin(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 1
-    input_size = (512, 512)
-    channel_size = 3
+    input_size = (3, 512, 512)
 
     # Load model
     variant = ModelVariant.SWIN_S
@@ -297,7 +275,7 @@ def test_swin(output_file):
     model = model.eval()
 
     def load_inputs_fn(batch_size, dtype):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+        return torch.randn(batch_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -310,7 +288,6 @@ def test_swin(output_file):
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
         required_pcc=0.90,
     )
@@ -322,18 +299,17 @@ def test_ufld(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 1
-    channel_size = 3
 
     # Load model
     variant = ModelVariant.TUSIMPLE_RESNET34
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    input_size = loader.config.input_size
+    input_size = (3, *loader.config.input_size)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
     def load_inputs_fn(batch_size, dtype):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+        return torch.randn(batch_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -346,7 +322,6 @@ def test_ufld(output_file):
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -357,18 +332,17 @@ def test_ufld_v2(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 1
-    channel_size = 3
 
     # Load model
     variant = ModelVariant.TUSIMPLE_RESNET34
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    input_size = (loader.config.input_height, loader.config.input_width)
+    input_size = (3, loader.config.input_height, loader.config.input_width)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
     def load_inputs_fn(batch_size, dtype):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+        return torch.randn(batch_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output[0]
@@ -381,7 +355,6 @@ def test_ufld_v2(output_file):
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -392,8 +365,7 @@ def test_unet(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 1
-    input_size = (256, 256)
-    channel_size = 3
+    input_size = (3, 256, 256)
 
     # Load model
     loader = ModelLoader()
@@ -402,7 +374,7 @@ def test_unet(output_file):
     model = model.eval()
 
     def load_inputs_fn(batch_size, dtype):
-        return torch.randn(batch_size, channel_size, *input_size, dtype=dtype)
+        return torch.randn(batch_size, *input_size, dtype=dtype)
 
     def extract_output_tensor_fn(output):
         return output
@@ -415,7 +387,6 @@ def test_unet(output_file):
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -426,8 +397,6 @@ def test_vit(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 8
-    input_size = (224, 224)
-    channel_size = 3
 
     # Load model
     variant = ModelVariant.BASE
@@ -449,8 +418,6 @@ def test_vit(output_file):
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
-        input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )
 
@@ -461,8 +428,6 @@ def test_vovnet(output_file):
     # Configuration
     data_format = torch.bfloat16
     batch_size = 8
-    input_size = (224, 224)
-    channel_size = 3
 
     # Load model
     variant = ModelVariant.TIMM_VOVNET19B_DW_RAIN1K
@@ -484,7 +449,5 @@ def test_vovnet(output_file):
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
-        input_size=input_size,
-        channel_size=channel_size,
         data_format=data_format,
     )

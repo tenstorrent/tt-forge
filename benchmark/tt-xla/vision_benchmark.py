@@ -87,7 +87,6 @@ def benchmark_vision_torch_xla(
     batch_size,
     loop_count,
     input_size,
-    channel_size,
     data_format,
     experimental_compile,
     ttnn_perf_metrics_output_file,
@@ -109,8 +108,7 @@ def benchmark_vision_torch_xla(
         trace_enabled: Whether to enable tracing
         batch_size: Batch size for inference
         loop_count: Number of inference iterations to benchmark
-        input_size: Tuple of (height, width) for model inputs
-        channel_size: Number of input channels
+        input_size: Tuple of (channels, height, width) for model inputs (channel-first format)
         data_format: torch.dtype for model precision (e.g., torch.bfloat16, torch.float32)
         experimental_compile: Whether to use experimental compilation features
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
@@ -124,6 +122,9 @@ def benchmark_vision_torch_xla(
     """
 
     framework_model = model
+
+    # Extract channel_size from input_size
+    channel_size = input_size[0]
 
     # Generate_inputs
     inputs = [load_inputs_fn(batch_size, data_format) for _ in range(loop_count)]
