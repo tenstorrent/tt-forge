@@ -58,6 +58,7 @@ def execute_and_measure_fps(model, inputs, device, loop_count, extract_output_te
     with torch.no_grad():
         outputs = []
         for i in range(loop_count):
+            start_iteration_time = time.perf_counter_ns()
             # Move input to device
             device_input = inputs[i].to(device)
 
@@ -67,9 +68,14 @@ def execute_and_measure_fps(model, inputs, device, loop_count, extract_output_te
             # Extract output tensor
             output = extract_output_tensor_fn(output)
             outputs.append(output)
+            end_iteration_time = time.perf_counter_ns()
+            print(f"Iteration {i} took {(end_iteration_time - start_iteration_time) / 1e6:.04} ms")
 
+        start_to_cpu_time = time.perf_counter_ns()
         # Move all outputs to CPU
-        predictions = move_to_cpu(outputs)
+        predictions = [out.to("cpu") for out in outputs]
+        end_to_cpu_time = time.perf_counter_ns()
+        print(f"Moving all outputs to CPU took {(end_to_cpu_time - start_to_cpu_time) / 1e6:.04} ms")
 
     end_time = time.perf_counter_ns()
     total_time = end_time - start_time
