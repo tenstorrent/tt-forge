@@ -28,21 +28,21 @@ All TT-XLA models use pytest. The `benchmark.py` interface is deprecated for TT-
 
 **LLM benchmarks:**
 ```bash
-pytest -svv benchmark/tt-xla/llms.py::test_llama_3_2_1b
-pytest -svv benchmark/tt-xla/llms.py::test_phi1
-pytest -svv benchmark/tt-xla/llms.py::test_qwen_2_5_0_5b
-pytest -svv benchmark/tt-xla/llms.py::test_falcon3_1b
+pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b
+pytest -svv benchmark/tt-xla/test_llms.py::test_phi1
+pytest -svv benchmark/tt-xla/test_llms.py::test_qwen_2_5_0_5b
+pytest -svv benchmark/tt-xla/test_llms.py::test_falcon3_1b
 
 # Save results to JSON
-pytest -svv benchmark/tt-xla/llms.py::test_llama_3_2_1b --output results.json
+pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b --output results.json
 ```
 
 **Vision model benchmarks:**
 ```bash
-pytest -svv benchmark/tt-xla/vision_models.py::test_resnet50
-pytest -svv benchmark/tt-xla/vision_models.py::test_vit
-pytest -svv benchmark/tt-xla/vision_models.py::test_mobilenetv2
-pytest -svv benchmark/tt-xla/vision_models.py::test_efficientnet
+pytest -svv benchmark/tt-xla/test_vision.py::test_resnet50
+pytest -svv benchmark/tt-xla/test_vision.py::test_vit
+pytest -svv benchmark/tt-xla/test_vision.py::test_mobilenetv2
+pytest -svv benchmark/tt-xla/test_vision.py::test_efficientnet
 ```
 
 After running benchmarks, look for the `Sample per second:` line in the output for performance results.

@@ -14,11 +14,11 @@ Each model has its own test function:
 
 ```bash
 # LLMs
-pytest -svv benchmark/tt-xla/llms.py::test_llama_3_2_1b
-pytest -svv benchmark/tt-xla/llms.py::test_phi1
+pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b
+pytest -svv benchmark/tt-xla/test_llms.py::test_phi1
 
 # Save results to JSON
-pytest -svv benchmark/tt-xla/llms.py::test_llama_3_2_1b --output results.json
+pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b --output results.json
 ```
 
 ### Legacy Runner (benchmark.py)
