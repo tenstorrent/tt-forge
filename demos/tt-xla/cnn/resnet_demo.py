@@ -48,9 +48,9 @@ def run_resnet_demo_case(variant):
     with torch.no_grad():
         output = compiled_model(inputs)
 
-    if not isinstance(output, (list, tuple)):
-        output = [output]
-    loader.output_postprocess(co_out=output)
+    if isinstance(output, (list, tuple)):
+        output = output[0]
+    loader.output_postprocess(output=output)
 
     print("=" * 60, flush=True)
 
