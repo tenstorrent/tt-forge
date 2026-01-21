@@ -356,12 +356,12 @@ class SingleLayerVisionWrapper(nn.Module):
     def forward(self, x):
         if self.model_type == "vit_hf":
             return self.model(x).logits
-
         elif self.model_type == "swin_torchvision":
             return self.features(x)
-
         elif self.model_type == "segformer":
             return self.encoder(x).last_hidden_state
+        else:
+            raise ValueError(f"Unsupported model_type in SingleLayerVisionWrapper.forward: {self.model_type}")
 
 
 def extract_vision_single_layer_model(model, layer_idx: int = 0):

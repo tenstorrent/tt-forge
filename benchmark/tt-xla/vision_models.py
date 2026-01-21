@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import os
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from vision_benchmark import benchmark_vision_torch_xla
@@ -250,7 +249,7 @@ def test_unet(output_file):
 
 def test_vit(output_file, single_block, single_layer, dump_source):
     """Test ViT model. Use --generate-block-test for single block, or --generate-layer-test for single layer."""
-    from third_party.tt_forge_models.vit.image_classification.pytorch.loader import ModelLoader, ModelVariant
+    from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.BASE
     read_logits_fn = lambda output: output.logits

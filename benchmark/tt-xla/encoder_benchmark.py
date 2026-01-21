@@ -9,7 +9,6 @@ from typing import List
 
 # Third-party modules
 import torch
-import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
@@ -257,14 +256,8 @@ def benchmark_encoder_torch_xla(
                 example_input = torch.randn(batch_size, input_sequence_length, hidden_size, dtype=torch.bfloat16)
                 export_source_model(export_model_name, model, example_input)
             else:
-                # single_layer: create example inputs using preprocess_fn if available
-                if preprocess_fn is not None and load_inputs_fn is not None:
-                    raw_inputs = load_inputs_fn(batch_size)
-                    example_inputs = preprocess_fn(raw_inputs, "cpu")
-                    # Export with dict inputs (not directly supported, dump structure only)
-                    export_source_model(export_model_name, model)
-                else:
-                    export_source_model(export_model_name, model)
+                # single_layer: dict inputs not directly supported, dump structure only
+                export_source_model(export_model_name, model)
 
         # Connect the device
         device = torch_xla.device()

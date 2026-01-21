@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Built-in modules
-import os
 import socket
 import pytest
 import time

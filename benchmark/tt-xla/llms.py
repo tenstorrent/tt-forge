@@ -12,10 +12,6 @@ from llm_benchmark import benchmark_llm_torch_xla
 from utils import supports_num_layers
 from model_wrappers import extract_single_block, make_decoder_single_layer
 
-import torch_xla.runtime as xr
-from torch_xla.distributed.spmd import Mesh
-import numpy as np
-
 
 # =============================================================================
 # Single Block Loader (for testing decoder blocks without embedding/lm_head)
@@ -308,14 +304,10 @@ def test_llama_3_2_3b(output_file, single_block, single_layer, dump_source):
 def test_llama_3_8b(output_file):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    num_devices = xr.global_runtime_device_count()
     # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
     arch = "wormhole_llmbox"
 
-    mesh_shape = (1, num_devices)
-    device_ids = np.array(range(num_devices))
-    mesh = Mesh(device_ids, mesh_shape, ("batch", "model"))
-
+    mesh_config_fn = ModelLoader.get_mesh_config
     shard_spec_fn = ModelLoader.load_shard_spec
 
     variant = ModelVariant.LLAMA_3_8B
@@ -323,8 +315,8 @@ def test_llama_3_8b(output_file):
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
+        mesh_config_fn=mesh_config_fn,
         shard_spec_fn=shard_spec_fn,
-        mesh=mesh,
         batch_size=32,
         input_sequence_length=128,
         arch=arch,
@@ -545,11 +537,6 @@ def test_qwen_3_4b(output_file, single_block, single_layer, dump_source):
     )
 
 
-# =============================================================================
-# Large Models (no single_block/single_layer support yet)
-# =============================================================================
-
-
 def test_qwen_3_8b(output_file):
     """Test Qwen 3 8B model."""
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
@@ -562,32 +549,6 @@ def test_qwen_2_5_7b(output_file):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.QWEN_2_5_7B_INSTRUCT, output_file=output_file)
-
-
-def test_mistral_7b(output_file):
-    """Test Mistral 7B model."""
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.MISTRAL_7B_INSTRUCT_V03, output_file=output_file)
-
-
-def test_ministral_8b(output_file):
-    """Test Ministral 8B model."""
-    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
-
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.MINISTRAL_8B, output_file=output_file)
-
-
-def test_llama_3_1_8b(output_file):
-    """Test Llama 3.1 8B model."""
-    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    test_llm(ModelLoaderModule=ModelLoader, variant=ModelVariant.LLAMA_3_1_8B_INSTRUCT, output_file=output_file)
-
-
-# =============================================================================
-# Broken Models (kept for reference)
-# =============================================================================
 
 
 # FAILED: KeyError: "L['self'].model.lifted_tensor_0"

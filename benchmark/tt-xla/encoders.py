@@ -5,6 +5,7 @@
 import json
 from typing import List, Type
 
+import pytest
 import torch
 from loguru import logger
 

@@ -162,22 +162,6 @@ def get_benchmark_metadata() -> Dict[str, str]:
     }
 
 
-def determine_model_type_and_dataset(task: str, full_model_name: str) -> tuple[str, str]:
-    """Determine model type and dataset name based on task."""
-    model_type = "Classification"
-
-    if task == "classification":
-        model_type += ", ImageNet-1K"
-        dataset_name = "ImageNet-1K"
-    elif task == "na":
-        model_type += ", Random Input Data"
-        dataset_name = full_model_name + ", Random Data"
-    else:
-        raise ValueError(f"Unsupported task: {task}.")
-
-    return model_type, dataset_name
-
-
 def print_benchmark_results(
     model_title: str,
     full_model_name: str,
@@ -462,28 +446,6 @@ def supports_num_layers(loader_class) -> bool:
         return "num_layers" in sig.parameters
     except (ValueError, TypeError):
         return False
-
-
-# ============================================================================
-# Model wrappers (re-exported from model_wrappers module)
-# ============================================================================
-
-from model_wrappers import (
-    # Generic
-    extract_single_block,
-    # Decoder (LLaMA, Qwen, Falcon, etc.)
-    DecoderBlockWrapper,
-    extract_decoder_block,
-    make_decoder_single_layer,
-    # Encoder
-    EncoderBlockWrapper,
-    extract_encoder_block,
-    make_encoder_single_layer,
-    # Vision (ViT, Swin, SegFormer) - unified wrappers
-    VisionBlockWrapper,
-    extract_vision_block,
-    extract_vision_single_layer_model,
-)
 
 
 # ============================================================================

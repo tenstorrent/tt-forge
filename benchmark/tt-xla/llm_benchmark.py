@@ -13,17 +13,14 @@ import socket
 # Third-party modules
 import numpy as np
 import torch
-import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 import torch_xla.distributed.spmd as xs
 from torch_xla.distributed.spmd import Mesh
-import tt_torch
 import transformers
-from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
+from transformers import PreTrainedTokenizer
 from transformers.cache_utils import StaticCache
-from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from benchmark.utils import get_xla_device_arch
 from utils import (
