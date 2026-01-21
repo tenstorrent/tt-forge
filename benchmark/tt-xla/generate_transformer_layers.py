@@ -30,8 +30,11 @@ import subprocess
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, "transformer_test_irs")
+OUTPUT_DIR_TTIR = os.path.join(SCRIPT_DIR, "minimal_test_ttir")
+OUTPUT_DIR_TTNN = os.path.join(SCRIPT_DIR, "minimal_test_ttnn")
+OUTPUT_DIR_SOURCES = os.path.join(SCRIPT_DIR, "minimal_test_sources")
 MODULES_DIR = os.path.join(SCRIPT_DIR, "modules/irs")
+DUMPED_MODELS_DIR = os.path.join(SCRIPT_DIR, "dumped_models")
 
 # ============================================================================
 # Model type configurations
@@ -166,7 +169,7 @@ def check_status_and_filter(models: list, config: dict, status_only: bool) -> li
         else:
             model_expected = expected_files
 
-        model_missing = [s for s in model_expected if not os.path.exists(os.path.join(OUTPUT_DIR, f"{model}{s}"))]
+        model_missing = [s for s in model_expected if not os.path.exists(os.path.join(OUTPUT_DIR_TTIR, f"{model}{s}"))]
         if model_missing:
             incomplete.append(model)
             missing[model] = model_missing
@@ -235,58 +238,121 @@ def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_so
         return False, "Unknown error - see output above"
 
 
-def copy_ttir_files(model: str, mode: str, config: dict, dry_run: bool) -> list[str]:
-    """Find and copy generated TTIR files with clean names."""
-    # Try multiple patterns: exact match, without underscores, with underscores removed before digits
+def find_files(model: str, mode: str, directory: str, prefix: str = "", ext: str = "mlir") -> list[str]:
+    """Find files matching pattern, trying with and without underscores in model name."""
+    prefix_part = f"{prefix}_" if prefix else ""
     patterns = [
-        f"{MODULES_DIR}/ttir_{mode}_{model}*_bs*_g*.mlir",
-        f"{MODULES_DIR}/ttir_{mode}_{model.replace('_', '')}*_bs*_g*.mlir",  # phi_1 -> phi1
+        f"{directory}/{prefix_part}{mode}_{model}*.{ext}",
+        f"{directory}/{prefix_part}{mode}_{model.replace('_', '')}*.{ext}",
     ]
 
-    all_files = []
     for pattern in patterns:
-        all_files = glob.glob(pattern)
-        if all_files:
-            break
+        if files := glob.glob(pattern):
+            return files
+    return []
 
-    if not all_files:
-        print(f"WARNING: No TTIR files found matching patterns for {model}")
-        return []
 
-    # Group by graph number, keep most recent
+def group_by_graph(files: list[str]) -> dict[int, tuple[int, str]]:
+    """Group IR files by graph number, keeping most recent timestamp for each."""
     graph_files = {}
-    for f in all_files:
+    for f in files:
         if match := re.search(r"_g(\d+)_(\d+)\.mlir$", f):
             g, ts = int(match.group(1)), int(match.group(2))
             if g not in graph_files or ts > graph_files[g][0]:
                 graph_files[g] = (ts, f)
+    return graph_files
 
-    # Get output names from config
+
+def resolve_graph_key(graph_key, graph_files: dict) -> int | None:
+    """Resolve graph key to actual graph number."""
+    if graph_key == "largest":
+        if not graph_files:
+            return None
+        return max(graph_files.keys(), key=lambda x: os.path.getsize(graph_files[x][1]))
+    else:
+        return graph_key if graph_key in graph_files else None
+
+
+def copy_ir_files(
+    model: str,
+    mode: str,
+    config: dict,
+    dry_run: bool,
+    prefix: str,
+    output_dir: str,
+    suffix_transform=None,
+    label: str = "",
+) -> list[str]:
+    """Generic function to copy IR files (TTIR or TTNN) with clean names."""
+    files = find_files(model, mode, MODULES_DIR, prefix=prefix, ext="mlir")
+    graph_files = group_by_graph(files)
+
+    if not graph_files and prefix == "ttir":
+        print(f"WARNING: No {prefix.upper()} files found for {model}")
+        return []
+
     output_names = config.get("output_names", {}).get(mode, {})
-
     copied = []
+
     for graph_key, suffix in output_names.items():
-        dst_name = f"{model}{suffix}"
+        g = resolve_graph_key(graph_key, graph_files)
+        if g is None:
+            if prefix == "ttir":
+                print(f"WARNING: Missing g{graph_key} for {model} {mode}")
+            continue
 
-        # Resolve graph key: "largest" picks the file with most content
-        if graph_key == "largest":
-            if not graph_files:
-                print(f"WARNING: No graphs found for {model} {mode}")
-                continue
-            # Pick graph with largest file size
-            g = max(graph_files.keys(), key=lambda x: os.path.getsize(graph_files[x][1]))
-        else:
-            g = graph_key
-            if g not in graph_files:
-                print(f"WARNING: Missing g{g} for {model} {mode}")
-                continue
+        dst_suffix = suffix_transform(suffix) if suffix_transform else suffix
+        dst_name = f"{model}{dst_suffix}"
+        src, dst = graph_files[g][1], os.path.join(output_dir, dst_name)
 
-        src, dst = graph_files[g][1], os.path.join(OUTPUT_DIR, dst_name)
         if dry_run:
-            print(f"[DRY-RUN] Would copy: {src} -> {dst}")
+            print(f"[DRY-RUN] Would copy {label}: {src} -> {dst}")
         else:
             shutil.copy2(src, dst)
-            print(f"Copied: {src} -> {dst}")
+            print(f"Copied {label}: {os.path.basename(src)} -> {dst_name}")
+        copied.append(dst)
+
+    return copied
+
+
+def copy_ttir_files(model: str, mode: str, config: dict, dry_run: bool) -> list[str]:
+    """Find and copy generated TTIR files with clean names."""
+    return copy_ir_files(model, mode, config, dry_run, "ttir", OUTPUT_DIR_TTIR, label="TTIR")
+
+
+def copy_ttnn_files(model: str, mode: str, config: dict, dry_run: bool) -> list[str]:
+    """Find and copy generated TTNN IR files with clean names."""
+    return copy_ir_files(
+        model,
+        mode,
+        config,
+        dry_run,
+        "ttnn",
+        OUTPUT_DIR_TTNN,
+        suffix_transform=lambda s: s.replace(".mlir", "_ttnn.mlir"),
+        label="TTNN",
+    )
+
+
+def copy_source_files(model: str, mode: str, config: dict, dry_run: bool) -> list[str]:
+    """Find and copy dumped source model files with clean names."""
+    files = find_files(model, mode, DUMPED_MODELS_DIR, prefix="pt", ext="py")
+    if not files:
+        return []
+
+    src = sorted(files)[-1]  # Most recent by hash
+    output_names = config.get("output_names", {}).get(mode, {})
+    copied = []
+
+    for _, suffix in output_names.items():
+        dst_name = f"{model}{suffix.replace('.mlir', '.py')}"
+        dst = os.path.join(OUTPUT_DIR_SOURCES, dst_name)
+
+        if dry_run:
+            print(f"[DRY-RUN] Would copy PT: {src} -> {dst}")
+        else:
+            shutil.copy2(src, dst)
+            print(f"Copied PT: {os.path.basename(src)} -> {dst_name}")
         copied.append(dst)
 
     return copied
@@ -317,7 +383,7 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
                     model,
                     test["flag"],
                     args.dry_run,
-                    dump_source=getattr(args, "dump_source", False),
+                    dump_source=True,
                 )
 
             if success:
@@ -326,6 +392,10 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
                     results["success"].extend(copied)
                 else:
                     results["skipped"].append(f"{model}_{test['label']}")
+
+                # Also copy TTNN and source files (sources only if dump_source enabled)
+                copy_ttnn_files(model, test["mode"], config, args.dry_run)
+                copy_source_files(model, test["mode"], config, args.dry_run)
             else:
                 results["failed"].append((f"{model}_{test['label']}", error))
 
@@ -349,17 +419,24 @@ def print_summary(results: dict):
         for name, err in results["failed"]:
             print(f"  ✗ {name}: {err}")
     else:
-        print(f"\nAll files saved to: {OUTPUT_DIR}/")
+        print(f"\nAll files saved to:")
+        print(f"  TTIR:    {OUTPUT_DIR_TTIR}/")
+        print(f"  TTNN:    {OUTPUT_DIR_TTNN}/")
+        print(f"  Sources: {OUTPUT_DIR_SOURCES}/")
 
 
 def run(model_types: list[str], args) -> int:
     """Main entry point."""
-    if args.clean_dir and os.path.exists(OUTPUT_DIR):
-        shutil.rmtree(OUTPUT_DIR)
-        print(f"Cleared: {OUTPUT_DIR}")
+    output_dirs = [OUTPUT_DIR_TTIR, OUTPUT_DIR_TTNN, OUTPUT_DIR_SOURCES]
+    if args.clean_dir:
+        for d in output_dirs:
+            if os.path.exists(d):
+                shutil.rmtree(d)
+                print(f"Cleared: {d}")
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    print(f"Output: {OUTPUT_DIR}")
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+    print(f"Output directories: {', '.join(os.path.basename(d) for d in output_dirs)}")
 
     all_results = {"success": [], "failed": [], "skipped": []}
     show_headers = len(model_types) > 1
@@ -417,7 +494,6 @@ Examples:
         p.add_argument("--copy-only", action="store_true", help="Only copy existing TTIR files")
         p.add_argument("--continue", dest="continue_mode", action="store_true", help="Resume incomplete")
         p.add_argument("--status-only", action="store_true", help="Only show progress")
-        p.add_argument("--dump-source", action="store_true", help="Export source model before TT compilation")
         p.add_argument("--skip-block", action="store_true", help="Skip block tests")
         p.add_argument("--skip-layer", action="store_true", help="Skip layer tests")
 
