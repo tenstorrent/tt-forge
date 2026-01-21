@@ -203,6 +203,38 @@ def check_status_and_filter(models: list, config: dict, status_only: bool) -> li
     return incomplete
 
 
+class DeviceResetRequired(Exception):
+    """Raised when TT device needs a reset."""
+
+    PATTERNS = [
+        "Read unexpected run_mailbox value from core",
+        "Timeout waiting for Ethernet core service remote IO request",
+    ]
+
+    def __init__(self, error_snippet: str = ""):
+        self.error_snippet = error_snippet
+        super().__init__(self._format_message())
+
+    def _format_message(self) -> str:
+        return (
+            f"\n{'='*60}\n"
+            f"DEVICE ERROR: TT device needs reset\n"
+            f"{'='*60}\n"
+            f"\n"
+            f"  >>> Run: tt-smi -r\n"
+            f"  >>> Then re-run with --continue to resume.\n"
+            f"\n"
+            f"{'='*60}\n"
+        )
+
+    @classmethod
+    def check_and_raise(cls, output: str):
+        """Check if output contains device reset errors and raise if so."""
+        for pattern in cls.PATTERNS:
+            if pattern in output:
+                raise cls(output)
+
+
 def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_source: bool = False) -> tuple[bool, str]:
     """Execute pytest for a specific test."""
     cmd = [sys.executable, "-m", "pytest", "-svv", f"{test_file}::test_{model}", flag]
@@ -220,6 +252,10 @@ def execute_pytest(test_file: str, model: str, flag: str, dry_run: bool, dump_so
         return True, ""
     except subprocess.CalledProcessError as e:
         output = (e.stdout or "") + "\n" + (e.stderr or "")
+
+        # Check for device errors that require reset
+        DeviceResetRequired.check_and_raise(output)
+
         # Try to find specific error patterns with more context
         for pattern in [
             r"(TT_FATAL[^\n]+(?:\n[^\n]*){0,5})",
@@ -378,13 +414,17 @@ def run_model_tests(model_type: str, models: list[str], args) -> dict:
             if args.copy_only:
                 success, error = True, ""
             else:
-                success, error = execute_pytest(
-                    config["source_file"],
-                    model,
-                    test["flag"],
-                    args.dry_run,
-                    dump_source=True,
-                )
+                try:
+                    success, error = execute_pytest(
+                        config["source_file"],
+                        model,
+                        test["flag"],
+                        args.dry_run,
+                        dump_source=True,
+                    )
+                except DeviceResetRequired as e:
+                    print(e)
+                    raise
 
             if success:
                 copied = copy_ttir_files(model, test["mode"], config, args.dry_run)
