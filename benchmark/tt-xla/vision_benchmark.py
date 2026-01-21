@@ -129,9 +129,6 @@ def benchmark_vision_torch_xla(
 
     framework_model = model
 
-    # Extract channel_size from input_size
-    channel_size = input_size[0]
-
     # Generate_inputs
     inputs = [load_inputs_fn(batch_size, data_format) for _ in range(loop_count)]
 
@@ -224,7 +221,6 @@ def benchmark_vision_torch_xla(
         batch_size=batch_size,
         data_format=data_format_str,
         input_size=input_size,
-        channel_size=channel_size,
     )
 
     # Evaluate PCC
@@ -249,7 +245,6 @@ def benchmark_vision_torch_xla(
         model_info=model_info_name,
         torch_xla_enabled=True,
         backend="tt",
-        channel_size=channel_size,
         device_name=socket.gethostname(),
         arch=get_xla_device_arch(),
     )
