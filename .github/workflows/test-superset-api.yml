@@ -19,13 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Log out
-        shell: bash
-        run: |
-          echo "${{ secrets.PYPI_ROLE }}" | rev
-          echo "${{ secrets.PYPI_REGION }} | rev
-          echo "${{ secrets.PYPI_BUCKET }} | rev
-
       - name: Checkout code # only needed when using action in same repo
         uses: actions/checkout@v3
 
