@@ -215,12 +215,6 @@ def generate_and_benchmark(
             host_cache_pos = input_args["cache_position"].to("cpu")
             host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
             input_args["cache_position"] = host_cache_pos.to(device)
-            # Reapply shardings for static cache if SPMD is enabled
-            # See https://github.com/tenstorrent/tt-xla/issues/1641
-            if is_multichip:
-                for layer in input_args["past_key_values"].layers:
-                    xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
-                    xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
             end = time.perf_counter_ns()
             iteration_times.append(end - start)
@@ -417,12 +411,6 @@ def benchmark_llm_torch_xla(
     # Reconstruct inputs for the actual benchmark run
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
     input_args = transfer_to_device(input_args, device)
-
-    # Re-shard KV cache tensors created in input_args
-    if is_multichip:
-        for layer in input_args["past_key_values"].layers:
-            xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
-            xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
     # Run benchmark once
     print(f"\nStarting benchmark...")
