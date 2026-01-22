@@ -372,7 +372,7 @@ def copy_ttnn_files(model: str, mode: str, config: dict, dry_run: bool) -> list[
 
 def copy_source_files(model: str, mode: str, config: dict, dry_run: bool) -> list[str]:
     """Find and copy dumped source model files with clean names."""
-    files = find_files(model, mode, DUMPED_MODELS_DIR, prefix="pt", ext="py")
+    files = find_files(model, mode, DUMPED_MODELS_DIR, prefix="", ext="py")
     if not files:
         return []
 
