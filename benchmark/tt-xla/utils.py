@@ -3,10 +3,72 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import socket
+import secrets
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from collections.abc import Sequence
 import torch
+
+
+# Default export path for generated MLIR files
+MODULE_EXPORT_PATH = "modules"
+
+
+def get_export_options(
+    model_name: str,
+    mode: str = "full",
+    batch_size: int = None,
+    input_sequence_length: int = None,
+    export_path: str = MODULE_EXPORT_PATH,
+    optimization_level: int = 0,
+    trace_enabled: bool = False,
+    ttnn_perf_metrics_output_file: str = "",
+    enable_weight_bfp8_conversion: bool = False,
+    **extra_options,
+) -> Dict[str, Any]:
+    """
+    Generate standardized export options for any benchmark.
+
+    Args:
+        model_name: Name of the model (e.g., "phi1_5", "resnet50")
+        mode: Export mode tag - "blk" (block), "lyr" (layer), or "full" (default)
+        batch_size: Batch size (optional, included in name if provided)
+        input_sequence_length: Input sequence length (optional, included in name if provided)
+        export_path: Directory to export MLIR files to
+        optimization_level: XLA optimization level
+        trace_enabled: Whether tracing is enabled
+        ttnn_perf_metrics_output_file: Path for performance metrics output
+        enable_weight_bfp8_conversion: Whether to enable BFP8 weight conversion
+        **extra_options: Additional options to include
+
+    Returns:
+        Dict with export options including a unique export_model_name
+    """
+    run_id = secrets.token_hex(2)  # 4 hex chars, e.g., "a7f3"
+
+    # Build export model name with optional components
+    name_parts = [mode, model_name]
+    if batch_size is not None:
+        name_parts.append(f"bs{batch_size}")
+    if input_sequence_length is not None:
+        name_parts.append(f"isl{input_sequence_length}")
+    name_parts.append(run_id)
+    export_model_name = "_".join(name_parts)
+
+    options = {
+        "optimization_level": optimization_level,
+        "export_path": export_path,
+        "export_model_name": export_model_name,
+        "ttnn_perf_metrics_enabled": True,
+        "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
+        "enable_trace": trace_enabled,
+        "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
+    }
+
+    # Add any extra options
+    options.update(extra_options)
+
+    return options
 
 
 def _compute_pcc_single(golden_flat: torch.Tensor, device_flat: torch.Tensor) -> float:
@@ -98,22 +160,6 @@ def get_benchmark_metadata() -> Dict[str, str]:
         "date": datetime.now().strftime("%d-%m-%Y"),
         "machine_name": socket.gethostname(),
     }
-
-
-def determine_model_type_and_dataset(task: str, full_model_name: str) -> tuple[str, str]:
-    """Determine model type and dataset name based on task."""
-    model_type = "Classification"
-
-    if task == "classification":
-        model_type += ", ImageNet-1K"
-        dataset_name = "ImageNet-1K"
-    elif task == "na":
-        model_type += ", Random Input Data"
-        dataset_name = full_model_name + ", Random Data"
-    else:
-        raise ValueError(f"Unsupported task: {task}.")
-
-    return model_type, dataset_name
 
 
 def print_benchmark_results(
@@ -377,3 +423,237 @@ def move_to_cpu(data):
         moved = [move_to_cpu(item) for item in data]
         return type(data)(moved)
     return data
+
+
+# ============================================================================
+# Model loader utilities
+# ============================================================================
+
+import inspect
+
+
+def supports_num_layers(loader_class) -> bool:
+    """Check if a model loader class supports the num_layers parameter.
+
+    Args:
+        loader_class: Model loader class to check
+
+    Returns:
+        True if the loader's __init__ accepts num_layers parameter
+    """
+    try:
+        sig = inspect.signature(loader_class.__init__)
+        return "num_layers" in sig.parameters
+    except (ValueError, TypeError):
+        return False
+
+
+# ============================================================================
+# TTIR export utilities (shared between LLM and encoder benchmarks)
+# ============================================================================
+
+import glob
+import os
+
+
+def get_mode_tag(single_block: bool = False, single_layer: bool = False) -> str:
+    """Get export mode tag for file naming.
+
+    Args:
+        single_block: Whether running single block mode
+        single_layer: Whether running single layer mode
+
+    Returns:
+        Mode tag: "blk", "lyr", or "full"
+    """
+    if single_block:
+        return "blk"
+    elif single_layer:
+        return "lyr"
+    return "full"
+
+
+def find_generated_ttir_files(export_model_name: str, export_path: str = None) -> List[str]:
+    """Find generated TTIR files for a given export model name.
+
+    Args:
+        export_model_name: The export model name used during compilation
+        export_path: Base export path (default: MODULE_EXPORT_PATH)
+
+    Returns:
+        Sorted list of matching TTIR file paths
+    """
+    if export_path is None:
+        export_path = MODULE_EXPORT_PATH
+    pattern = f"{export_path}/irs/ttir_{export_model_name}_g*.mlir"
+    return sorted(glob.glob(pattern))
+
+
+def print_ttir_export_result(
+    generated_files: List[str],
+    mode: str,
+    model_name: str,
+    export_model_name: str,
+    export_path: str = None,
+) -> None:
+    """Print TTIR export results.
+
+    Args:
+        generated_files: List of generated TTIR file paths
+        mode: Mode description (e.g., "single_block", "single_layer")
+        model_name: Human-readable model name
+        export_model_name: Export model name used in filenames
+        export_path: Base export path (default: MODULE_EXPORT_PATH)
+    """
+    if export_path is None:
+        export_path = MODULE_EXPORT_PATH
+
+    mode_labels = {
+        "single_block": "single block test",
+        "single_layer": "single layer test",
+    }
+    mode_label = mode_labels.get(mode, mode)
+
+    if generated_files:
+        print(f"Generated {mode_label}:")
+        for f in generated_files:
+            print(f"  {f}")
+    else:
+        print(f"Generated {mode_label}: {export_model_name} (files not found in {export_path}/irs/)")
+
+
+# ============================================================================
+# Python code dumping utilities
+# ============================================================================
+
+
+def _get_module_sources(model: torch.nn.Module) -> str:
+    """Extract source code of unique module classes in the model."""
+    import inspect
+
+    seen_classes = set()
+    sources = []
+
+    # Skip basic PyTorch modules
+    skip_modules = {
+        "Linear",
+        "Conv2d",
+        "LayerNorm",
+        "Dropout",
+        "Embedding",
+        "BatchNorm2d",
+        "ReLU",
+        "GELU",
+        "Softmax",
+        "Sequential",
+        "ModuleList",
+        "Identity",
+    }
+
+    for name, module in model.named_modules():
+        cls = type(module)
+        cls_name = cls.__name__
+
+        if cls_name in seen_classes or cls_name in skip_modules:
+            continue
+        seen_classes.add(cls_name)
+
+        try:
+            source = inspect.getsource(cls)
+            sources.append(f"# --- {cls_name} ---\n{source}")
+        except (TypeError, OSError):
+            # Can't get source (built-in or C extension)
+            pass
+
+    return "\n\n".join(sources)
+
+
+def _write_model_structure(f, header: str, model_repr: str, module_sources: str):
+    """Write model structure and implementations to file."""
+    f.write(f"{header}\n\n")
+    f.write("# " + "=" * 70 + "\n")
+    f.write("# Model structure:\n")
+    f.write("# " + "=" * 70 + "\n")
+    f.write(f"'''\n{model_repr}\n'''\n\n")
+    if module_sources:
+        f.write("# " + "=" * 70 + "\n")
+        f.write("# Module implementations:\n")
+        f.write("# " + "=" * 70 + "\n\n")
+        f.write(f"'''\n{module_sources}\n'''\n\n")
+
+
+def export_source_model(
+    model_name: str,
+    model: torch.nn.Module,
+    example_input: torch.Tensor = None,
+    output_dir: str = "dumped_models",
+) -> str:
+    """Dump a PyTorch model to Python code using torch.export.
+
+    Uses torch.export which handles dynamic shapes and control flow better.
+    Always includes model repr first for reference.
+
+    Args:
+        model_name: Name for the exported model (used for filename and code)
+        model: The PyTorch model to dump
+        example_input: Example input tensor for tracing (None = skip torch.export)
+        output_dir: Directory to save the Python file
+
+    Returns:
+        Path to the generated Python file
+    """
+    output_path = f"{output_dir}/{model_name}.py"
+    os.makedirs(output_dir, exist_ok=True)
+
+    model_repr = repr(model)
+    module_sources = _get_module_sources(model)
+
+    # If no example input, just dump repr and implementations
+    if example_input is None:
+        print(f"Dumping model {model_name} structure (no example input)...")
+        with open(output_path, "w") as f:
+            _write_model_structure(
+                f, f"# Model: {model_name}\n# (No example input - structure only)", model_repr, module_sources
+            )
+        print(f"Dumped model to: {output_path}")
+        return output_path
+
+    print(f"Exporting model {model_name} with torch.export...")
+
+    try:
+        exported = torch.export.export(model, (example_input,))
+        export_code = str(exported)
+
+        # Clean up: move # File: annotations to end, remove blank lines
+        clean_lines, file_annotations = [], []
+        for line in export_code.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("# File:"):
+                file_annotations.append(stripped)
+            elif stripped:
+                clean_lines.append(line)
+        export_code = "\n".join(clean_lines)
+
+        with open(output_path, "w") as f:
+            _write_model_structure(
+                f, f"# Exported model: {model_name}\n# Generated using torch.export", model_repr, module_sources
+            )
+            f.write("# " + "=" * 70 + "\n")
+            f.write("# Exported graph:\n")
+            f.write("# " + "=" * 70 + "\n\n")
+            f.write(export_code)
+            if file_annotations:
+                f.write("\n\n# " + "=" * 70 + "\n")
+                f.write("# Source file annotations:\n")
+                f.write("# " + "=" * 70 + "\n")
+                f.write("\n".join(file_annotations))
+
+        print(f"Dumped model to: {output_path}")
+
+    except Exception as e:
+        print(f"Warning: torch.export failed ({e}), dumping model structure only...")
+        with open(output_path, "w") as f:
+            _write_model_structure(f, f"# Model: {model_name}\n# torch.export failed: {e}", model_repr, module_sources)
+        print(f"Dumped model structure to: {output_path}")
+
+    return output_path

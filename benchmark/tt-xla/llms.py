@@ -4,18 +4,80 @@
 
 import json
 import os
+from typing import Type
 from loguru import logger
 
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
+from utils import supports_num_layers
+from model_wrappers import extract_single_block, make_decoder_single_layer
 
-import torch_xla.runtime as xr
-from torch_xla.distributed.spmd import Mesh
-import numpy as np
 
-# Defaults for all llms
+# =============================================================================
+# Single Block Loader (for testing decoder blocks without embedding/lm_head)
+# =============================================================================
+
+
+def _create_single_block_loader(BaseLoaderClass: Type, block_idx: int = 0) -> Type:
+    """Create a model loader that returns only the decoder block (no embedding/lm_head).
+
+    Uses extract_single_block from utils which handles rotary embeddings properly.
+    Input: hidden_states [batch, seq_len, hidden_size]
+    Output: hidden_states [batch, seq_len, hidden_size]
+
+    If num_layers is supported, loads with 1 layer for efficiency.
+    Otherwise, loads full model and extracts the first block.
+    """
+    use_num_layers = supports_num_layers(BaseLoaderClass)
+
+    class BlockOnlyModelLoader(BaseLoaderClass):
+        def __init__(self, variant=None):
+            if use_num_layers:
+                super().__init__(variant=variant, num_layers=1)
+            else:
+                print(f"Note: {BaseLoaderClass.__name__} doesn't support num_layers - loading full model")
+                super().__init__(variant=variant)
+
+        def load_model(self, dtype_override=None):
+            full_model = super().load_model(dtype_override=dtype_override)
+            wrapper = extract_single_block(full_model, block_idx)
+            logger.info(f"🔧 Single block mode: returning wrapped block {block_idx}")
+            return wrapper
+
+        def load_tokenizer(self):
+            return None
+
+    return BlockOnlyModelLoader
+
+
+def _create_single_layer_loader(BaseLoaderClass: Type, layer_idx: int = 0) -> Type:
+    """Create a model loader that returns a decoder model with only one layer.
+
+    Loads the full model then modifies it in-place to keep only one layer.
+    Simulates num_layers=1 for loaders that don't support it.
+
+    Input: input_ids [batch, seq_len]
+    Output: logits [batch, seq_len, vocab_size]
+    """
+
+    class SingleLayerModelLoader(BaseLoaderClass):
+        def __init__(self, variant=None):
+            super().__init__(variant=variant)
+
+        def load_model(self, dtype_override=None):
+            model = super().load_model(dtype_override=dtype_override)
+            model = make_decoder_single_layer(model, layer_idx)
+            logger.info(f"🔧 Single layer mode: modified model to use only layer {layer_idx}")
+            return model
+
+    return SingleLayerModelLoader
+
+
+# =============================================================================
+# Defaults for all LLMs
+# =============================================================================
+
 DEFAULT_OPTIMIZATION_LEVEL = 1
-DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 32
 DEFAULT_LOOP_COUNT = 1
@@ -37,6 +99,9 @@ def test_llm(
     ModelLoaderModule,
     variant,
     output_file,
+    single_block=False,
+    single_layer=False,
+    dump_source=False,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -53,12 +118,15 @@ def test_llm(
     shard_spec_fn=None,
     arch=None,
     required_pcc=DEFAULT_REQUIRED_PCC,
+    model_nickname=None,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
     Args:
         variant: Model variant identifier
         output_file: Path to save benchmark results as JSON
+        single_block: If True, compile and export decoder block only (no embedding, no lm_head)
+        single_layer: If True, compile and export single layer model (full model with 1 layer)
         optimization_level: Optimization level (0, 1, or 2)
         trace_enabled: Enable trace
         batch_size: Batch size
@@ -73,7 +141,23 @@ def test_llm(
         read_logits_fn: Function to extract logits from model output
         required_pcc: Required PCC threshold
     """
-    model_loader = ModelLoaderModule(variant=variant)
+    # Apply layer modifications if requested
+    if single_block:
+        # Block-only: just the decoder layer, no embedding/lm_head
+        # If num_layers not supported, loads full model then extracts first layer
+        ModelLoaderModule = _create_single_block_loader(ModelLoaderModule)
+        model_loader = ModelLoaderModule(variant=variant)
+    elif single_layer:
+        # Single-layer: full model with 1 layer
+        if supports_num_layers(ModelLoaderModule):
+            model_loader = ModelLoaderModule(variant=variant, num_layers=1)
+        else:
+            # Fallback: load full model and wrap to use only 1 layer
+            print(f"Note: {ModelLoaderModule.__name__} doesn't support num_layers - will wrap to 1 layer")
+            ModelLoaderModule = _create_single_layer_loader(ModelLoaderModule)
+            model_loader = ModelLoaderModule(variant=variant)
+    else:
+        model_loader = ModelLoaderModule(variant=variant)
     # Sanitize variant name for safe filesystem usage
     sanitized_variant = sanitize_filename(str(variant))
     ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_variant}_perf_metrics"
@@ -81,6 +165,8 @@ def test_llm(
     print(f"Running LLM benchmark for variant: {variant}")
     print(
         f"""Configuration:
+    single_block={single_block}
+    single_layer={single_layer}
     optimization_level={optimization_level}
     trace_enabled={trace_enabled}
     batch_size={batch_size}
@@ -118,6 +204,10 @@ def test_llm(
         shard_spec_fn=shard_spec_fn,
         arch=arch,
         required_pcc=required_pcc,
+        single_block=single_block,
+        single_layer=single_layer,
+        model_nickname=model_nickname,
+        dump_source=dump_source,
     )
 
     if output_file:
@@ -178,210 +268,426 @@ def test_llm_tp(ModelLoaderModule, variant, output_file):
     )
 
 
-def test_llama_3_2_1b(output_file):
+# =============================================================================
+# LLAMA Tests
+# =============================================================================
+
+
+def test_llama_3_2_1b(output_file, single_block, single_layer, dump_source):
+    """Test Llama 3.2 1B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.LLAMA_3_2_1B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_llama_3_2_3b(output_file):
+def test_llama_3_2_3b(output_file, single_block, single_layer, dump_source):
+    """Test Llama 3.2 3B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.LLAMA_3_2_3B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_gemma_1_1_2b(output_file):
-    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+def test_llama_3_8b(output_file, single_block, single_layer, dump_source):
+    """Test Llama 3 8B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.GEMMA_1_1_2B_IT
-    experimental_compile = False
+    # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
+    arch = "wormhole_llmbox"
+
+    mesh_config_fn = ModelLoader.get_mesh_config
+    shard_spec_fn = ModelLoader.load_shard_spec
+
+    variant = ModelVariant.LLAMA_3_8B
     test_llm(
         ModelLoaderModule=ModelLoader,
         variant=variant,
         output_file=output_file,
-        experimental_compile=experimental_compile,
+        mesh_config_fn=mesh_config_fn,
+        shard_spec_fn=shard_spec_fn,
+        batch_size=32,
+        input_sequence_length=128,
+        arch=arch,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
     )
 
 
-def test_gemma_2_2b(output_file):
+# =============================================================================
+# GEMMA Tests
+# =============================================================================
+
+
+def test_gemma_1_1_2b(output_file, single_block, single_layer, dump_source):
+    """Test Gemma 1.1 2B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.GEMMA_2_2B_IT
-    experimental_compile = False
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=variant,
-        experimental_compile=experimental_compile,
+        variant=ModelVariant.GEMMA_1_1_2B_IT,
         output_file=output_file,
+        experimental_compile=False,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
     )
 
 
-def test_phi1(output_file):
+def test_gemma_2_2b(output_file, single_block, single_layer, dump_source):
+    """Test Gemma 2 2B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.GEMMA_2_2B_IT,
+        output_file=output_file,
+        experimental_compile=False,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
+
+
+# =============================================================================
+# PHI Tests
+# =============================================================================
+
+
+def test_phi_1(output_file, single_block, single_layer, dump_source):
+    """Test Phi 1 model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.PHI1
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.PHI1,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="phi_1",
+    )
 
 
-def test_phi1_5(output_file):
+def test_phi_1_5(output_file, single_block, single_layer, dump_source):
+    """Test Phi 1.5 model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.PHI1_5
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.PHI1_5,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="phi_1_5",
+    )
 
 
-def test_phi2(output_file):
+def test_phi_2(output_file, single_block, single_layer, dump_source):
+    """Test Phi 2 model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.PHI2
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=variant,
+        variant=ModelVariant.PHI2,
         output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="phi_2",
     )
 
 
-def test_falcon3_1b(output_file):
+# =============================================================================
+# FALCON Tests
+# =============================================================================
+
+# Falcon returns tuple format: (logits, past_key_values, ...)
+_falcon_read_logits_fn = lambda output: output[0]
+
+
+def test_falcon_3_1b(output_file, single_block, single_layer, dump_source):
+    """Test Falcon 3 1B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.FALCON_1B
-    # Tuple format: (logits, past_key_values, ...)
-    read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
-
-
-def test_falcon3_3b(output_file):
-    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.FALCON_3B
-    # Tuple format: (logits, past_key_values, ...)
-    read_logits_fn = lambda output: output[0]
     test_llm(
         ModelLoaderModule=ModelLoader,
-        variant=variant,
+        variant=ModelVariant.FALCON_1B,
         output_file=output_file,
-        read_logits_fn=read_logits_fn,
+        read_logits_fn=_falcon_read_logits_fn,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="falcon_3_1b",
     )
 
 
-def test_qwen_2_5_0_5b(output_file):
+def test_falcon_3_3b(output_file, single_block, single_layer, dump_source):
+    """Test Falcon 3 3B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.FALCON_3B,
+        output_file=output_file,
+        read_logits_fn=_falcon_read_logits_fn,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+        model_nickname="falcon_3_3b",
+    )
+
+
+# =============================================================================
+# QWEN Tests
+# =============================================================================
+
+
+def test_qwen_2_5_0_5b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 2.5 0.5B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.QWEN_2_5_0_5B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, required_pcc=0.94)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_2_5_0_5B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_qwen_3_0_6b(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_0_6B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
-
-
-def test_qwen_3_1_7b(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_1_7B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
-
-
-def test_qwen_3_4b(output_file):
-    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
-
-    variant = ModelVariant.QWEN_3_4B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
-
-
-def test_qwen_2_5_1_5b(output_file):
+def test_qwen_2_5_1_5b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 2.5 1.5B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.QWEN_2_5_1_5B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_2_5_1_5B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_qwen_2_5_3b(output_file):
+def test_qwen_2_5_3b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 2.5 3B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.QWEN_2_5_3B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_2_5_3B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_qwen_3_8b(output_file):
+def test_qwen_3_0_6b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 3 0.6B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.QWEN_3_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_3_0_6B,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_qwen_2_5_7b(output_file):
+def test_qwen_3_1_7b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 3 1.7B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_3_1_7B,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
+
+
+def test_qwen_3_4b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 3 4B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_3_4B,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
+
+
+def test_qwen_3_8b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 3 8B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_3_8B,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
+
+
+def test_qwen_2_5_7b(output_file, single_block, single_layer, dump_source):
+    """Test Qwen 2.5 7B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.QWEN_2_5_7B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.QWEN_2_5_7B_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
 # FAILED: KeyError: "L['self'].model.lifted_tensor_0"
-def test_gemma_1_1_7b(output_file):
+def test_gemma_1_1_7b(output_file, single_block, single_layer, dump_source):
+    """Test Gemma 1.1 7B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.GEMMA_1_1_7B_IT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.GEMMA_1_1_7B_IT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
 # FAILED: TypeError: Phi3ForCausalLM.forward() got an unexpected keyword argument 'cache_position'
-def test_phi3_mini(output_file):
+def test_phi_3_mini(output_file, single_block, single_layer, dump_source):
+    """Test Phi 3 Mini model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.phi3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.MINI_4K
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.MINI_4K,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
 # FAILED: KeyError: 'lifted_tensor_0'
-def test_phi3_5_mini(output_file):
+def test_phi_3_5_mini(output_file, single_block, single_layer, dump_source):
+    """Test Phi 3.5 Mini model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.phi3.phi_3_5.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.MINI_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.MINI_INSTRUCT,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
 # FAILED: AttributeError: 'MambaConfig' object has no attribute 'num_attention_heads'
-def test_mamba_2_8b(output_file):
+# Note: Mamba loader does not support num_layers, so single_layer is not available
+def test_mamba_2_8b(output_file, single_block, dump_source):
+    """Test Mamba 2.8B model. Use --generate-block-test for single decode block."""
     from third_party.tt_forge_models.mamba.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.MAMBA_2_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.MAMBA_2_8B,
+        output_file=output_file,
+        single_block=single_block,
+        dump_source=dump_source,
+    )
 
 
-def test_falcon3_7b(output_file):
+# FAILED: ValueError: Asking to pad but the tokenizer does not have a padding token
+def test_falcon_3_7b(output_file, single_block, single_layer, dump_source):
+    """Test Falcon 3 7B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.FALCON_7B
-    # Tuple format: (logits, past_key_values, ...)
-    read_logits_fn = lambda output: output[0]
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, read_logits_fn=read_logits_fn)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=ModelVariant.FALCON_7B,
+        output_file=output_file,
+        read_logits_fn=_falcon_read_logits_fn,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_mistral_7b(output_file):
+def test_mistral_7b(output_file, single_block, single_layer, dump_source):
+    """Test Mistral 7B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_ministral_8b(output_file):
+def test_ministral_8b(output_file, single_block, single_layer, dump_source):
+    """Test Ministral 8B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINISTRAL_8B
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
-def test_llama_3_1_8b(output_file):
+def test_llama_3_1_8b(output_file, single_block, single_layer, dump_source):
+    """Test Llama 3.1 8B model. Use --generate-block-test for single decode block, or --generate-layer-test for single layer (prefill, decode)."""
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
-    test_llm(ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file)
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        single_block=single_block,
+        single_layer=single_layer,
+        dump_source=dump_source,
+    )
 
 
 def test_falcon3_7b_tp(output_file):

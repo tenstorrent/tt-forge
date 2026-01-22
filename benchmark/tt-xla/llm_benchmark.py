@@ -13,17 +13,14 @@ import socket
 # Third-party modules
 import numpy as np
 import torch
-import torch.nn as nn
 import torch_xla
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 import torch_xla.distributed.spmd as xs
 from torch_xla.distributed.spmd import Mesh
-import tt_torch
 import transformers
-from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
+from transformers import PreTrainedTokenizer
 from transformers.cache_utils import StaticCache
-from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from benchmark.utils import get_xla_device_arch
 from utils import (
@@ -31,6 +28,12 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    get_export_options,
+    get_mode_tag,
+    find_generated_ttir_files,
+    print_ttir_export_result,
+    export_source_model,
+    MODULE_EXPORT_PATH,
 )
 
 xr.set_device_type("TT")
@@ -39,8 +42,6 @@ MIN_STEPS = 16
 
 # Default input prompt
 DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
-
-MODULE_EXPORT_PATH = "modules"
 
 
 def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Module, PreTrainedTokenizer]:
@@ -57,7 +58,7 @@ def setup_model_and_tokenizer(model_loader, model_variant) -> tuple[torch.nn.Mod
     print(f"Loading model {model_loader.get_model_info(variant=model_variant).name}...")
 
     model = model_loader.load_model(dtype_override=torch.bfloat16)
-    if hasattr(model.config, "layer_types"):
+    if hasattr(model, "config") and hasattr(model.config, "layer_types"):
         model.config.layer_types = ["full_attention"] * len(model.config.layer_types)
     model = model.eval()
     tokenizer = model_loader.tokenizer
@@ -270,6 +271,10 @@ def benchmark_llm_torch_xla(
     shard_spec_fn,
     arch,
     required_pcc,
+    single_block=False,
+    single_layer=False,
+    model_nickname=None,
+    dump_source=False,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -304,7 +309,6 @@ def benchmark_llm_torch_xla(
     if training:
         pytest.skip("Training is not supported")
 
-        # Enforce bfloat16 only
     if data_format != "bfloat16":
         raise ValueError(
             f"Only bfloat16 data format is supported for llm benchmark. Got: {data_format}. " "Please use -df bfloat16"
@@ -352,7 +356,78 @@ def benchmark_llm_torch_xla(
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
-    # Construct inputs, including static cache
+    # Determine mode tag for file naming
+    if model_nickname is None:
+        model_nickname = model_variant.name.lower()
+    mode_tag = get_mode_tag(single_block, single_layer)
+
+    # Get export options using shared utility
+    options = get_export_options(
+        model_name=model_nickname,
+        mode=mode_tag,
+        batch_size=batch_size,
+        input_sequence_length=input_sequence_length,
+        optimization_level=optimization_level,
+        trace_enabled=trace_enabled,
+        ttnn_perf_metrics_output_file=ttnn_perf_metrics_output_file,
+        enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
+    )
+    export_model_name = options["export_model_name"]
+    print(f"Exporting to: {MODULE_EXPORT_PATH} (e.g., ttir_{export_model_name}_g0_timestamp.mlir)")
+    torch_xla.set_custom_compile_options(options)
+
+    # Check for conflicting flags
+    if single_block and single_layer:
+        raise ValueError(
+            "Cannot use --generate-block-test and --generate-layer-test together. " "Run them as separate commands."
+        )
+
+    # =========================================================================
+    # SINGLE BLOCK/LAYER MODE: Compile and export only (no benchmarking)
+    # =========================================================================
+    if single_block or single_layer:
+        mode = "single_block" if single_block else "single_layer"
+
+        # Dump model to Python code if requested (before compilation)
+        if dump_source:
+            if single_block:
+                example_input = torch.randn(batch_size, 1, model.hidden_size, dtype=torch.bfloat16)
+                export_source_model(export_model_name, model, example_input)
+            else:
+                # single_layer: no example input, just dump structure
+                export_source_model(export_model_name, model)
+
+        # Compile model
+        model_on_device = model.to(device, dtype=torch.bfloat16)
+        compiled_model = torch.compile(
+            model_on_device, backend="tt", options={"tt_experimental_compile": experimental_compile}
+        )
+
+        with torch.no_grad():
+            if single_block:
+                hidden_states = torch.randn(batch_size, 1, model.hidden_size, dtype=torch.bfloat16).to(device)
+                compiled_model(hidden_states)
+                xm.mark_step()
+            else:
+                print("Compiling prefill and decode graphs...")
+                input_args = construct_inputs(tokenizer, model.config, batch_size, input_sequence_length)
+                input_args = transfer_to_device(input_args, device)
+                compiled_model(**input_args)
+                xm.mark_step()
+                input_args["input_ids"] = torch.randint(0, model.config.vocab_size, (batch_size, 1)).to(device)
+                input_args["cache_position"] = torch.tensor([input_sequence_length]).to(device)
+                compiled_model(**input_args)
+                xm.mark_step()
+
+        # Find and print generated TTIR files
+        generated_files = find_generated_ttir_files(export_model_name)
+        print_ttir_export_result(generated_files, mode, model_variant.name, export_model_name)
+        return {"status": "success", "mode": mode, "model": model_variant.name}
+
+    # =========================================================================
+    # FULL MODEL MODE: Autoregressive text generation benchmark
+    # =========================================================================
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
 
     # Limit maximum generation count to fit within preallocated static cache
@@ -412,11 +487,12 @@ def benchmark_llm_torch_xla(
             xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
             xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
-    # Set XLA compilation options
+    # Set XLA compilation options (reuse export_model_name from earlier setup)
     options = {
         "optimization_level": optimization_level,
         "enable_trace": trace_enabled,
         "export_path": MODULE_EXPORT_PATH,
+        "export_model_name": export_model_name,
         "ttnn_perf_metrics_enabled": True,
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,

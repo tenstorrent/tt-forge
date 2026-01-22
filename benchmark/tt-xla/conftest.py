@@ -162,6 +162,27 @@ def pytest_addoption(parser):
         type=make_validator_boolean("--experimental-compile"),
         help="Enable experimental compile flag (true/false). Overrides config value.",
     )
+    parser.addoption(
+        "--generate-block-test",
+        action="store_true",
+        default=False,
+        dest="generate_block_test",
+        help="Compile and export a single decoder block (no embedding, no lm_head). Skips benchmarking.",
+    )
+    parser.addoption(
+        "--generate-layer-test",
+        action="store_true",
+        default=False,
+        dest="generate_layer_test",
+        help="Compile and export a single layer model (full model with 1 layer). Skips benchmarking.",
+    )
+    parser.addoption(
+        "--dump-source",
+        action="store_true",
+        default=False,
+        dest="dump_source",
+        help="Export source model (structure + implementations) before TT compilation.",
+    )
 
 
 @pytest.fixture
@@ -217,3 +238,18 @@ def task(request):
 @pytest.fixture
 def experimental_compile(request):
     return request.config.getoption("--experimental-compile")
+
+
+@pytest.fixture
+def single_block(request):
+    return request.config.getoption("--generate-block-test")
+
+
+@pytest.fixture
+def single_layer(request):
+    return request.config.getoption("--generate-layer-test")
+
+
+@pytest.fixture
+def dump_source(request):
+    return request.config.getoption("--dump-source")
