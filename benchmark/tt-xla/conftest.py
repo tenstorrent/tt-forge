@@ -142,13 +142,6 @@ def pytest_addoption(parser):
         help=f"Data format. Valid values: {', '.join(sorted(VALID_DATA_FORMATS))}. Overrides config value.",
     )
     parser.addoption(
-        "--measure-cpu",
-        action="store",
-        default=None,
-        type=make_validator_boolean("--measure-cpu"),
-        help="Measure CPU FPS (true/false). Overrides config value.",
-    )
-    parser.addoption(
         "--task",
         action="store",
         default=None,
@@ -202,11 +195,6 @@ def input_sequence_length(request):
 @pytest.fixture
 def data_format(request):
     return request.config.getoption("--data-format")
-
-
-@pytest.fixture
-def measure_cpu(request):
-    return request.config.getoption("--measure-cpu")
 
 
 @pytest.fixture

@@ -21,7 +21,6 @@ DEFAULT_BATCH_SIZE = 32
 DEFAULT_LOOP_COUNT = 1
 DEFAULT_INPUT_SEQUENCE_LENGTH = 128
 DEFAULT_DATA_FORMAT = "bfloat16"
-DEFAULT_MEASURE_CPU = False
 DEFAULT_TASK = "text-generation"
 DEFAULT_EXPERIMENTAL_COMPILE = True
 DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION = True
@@ -43,7 +42,6 @@ def test_llm(
     loop_count=DEFAULT_LOOP_COUNT,
     input_sequence_length=DEFAULT_INPUT_SEQUENCE_LENGTH,
     data_format=DEFAULT_DATA_FORMAT,
-    measure_cpu=DEFAULT_MEASURE_CPU,
     task=DEFAULT_TASK,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
@@ -65,7 +63,6 @@ def test_llm(
         loop_count: Number of benchmark iterations
         input_sequence_length: Input sequence length
         data_format: Data format
-        measure_cpu: Measure CPU FPS
         task: Task type
         experimental_compile: Enable experimental compile
         enable_weight_bfp8_conversion: Enable BFP8 weight conversion
@@ -87,7 +84,6 @@ def test_llm(
     loop_count={loop_count}
     input_sequence_length={input_sequence_length}
     data_format={data_format}
-    measure_cpu={measure_cpu}
     task={task}
     experimental_compile={experimental_compile}
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
@@ -106,9 +102,7 @@ def test_llm(
         loop_count=loop_count,
         task=task,
         data_format=data_format,
-        measure_cpu=measure_cpu,
         input_sequence_length=input_sequence_length,
-        training=False,
         experimental_compile=experimental_compile,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,

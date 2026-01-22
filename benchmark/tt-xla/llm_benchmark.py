@@ -254,12 +254,10 @@ def benchmark_llm_torch_xla(
     model_variant,
     optimization_level,
     trace_enabled,
-    training,
     batch_size,
     loop_count,
     task,
     data_format,
-    measure_cpu,
     input_sequence_length,
     experimental_compile,
     enable_weight_bfp8_conversion,
@@ -277,18 +275,16 @@ def benchmark_llm_torch_xla(
     This function loads an LLM, compiles it with torch-xla for the Tenstorrent backend,
     and measures its text generation performance. It performs warmup runs, collects token
     generation metrics, and validates output correctness via PCC (Pearson Correlation Coefficient).
-    The benchmark measures tokens per second on both CPU and device backends.
+    The benchmark measures tokens per second on the device backend.
 
     Args:
         model_loader: Model loader instance for loading the LLM
         model_variant: Specific variant/version of the model to benchmark
         optimization_level: tt-mlir optimization level for compilation
-        training: Whether to run in training mode (not supported)
         batch_size: Batch size for text generation
         loop_count: Number of inference iterations
         task: Task type
         data_format: Data precision format
-        measure_cpu: Whether to measure CPU baseline performance
         input_sequence_length: Length of input sequence for generation context
         experimental_compile: Whether to use experimental compilation features
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
@@ -301,10 +297,7 @@ def benchmark_llm_torch_xla(
         Benchmark result containing token generation performance metrics and model information
     """
 
-    if training:
-        pytest.skip("Training is not supported")
-
-        # Enforce bfloat16 only
+    # Enforce bfloat16 only
     if data_format != "bfloat16":
         raise ValueError(
             f"Only bfloat16 data format is supported for llm benchmark. Got: {data_format}. " "Please use -df bfloat16"
@@ -370,28 +363,6 @@ def benchmark_llm_torch_xla(
     )
     # Only one output makes sense to compare.
     cpu_logits = cpu_logits[0]
-
-    if measure_cpu:
-        print("Measuring CPU performance...")
-        # Measure CPU performance by taking the best of each token over 256 iterations
-        min_time_ns = sys.maxsize
-        for i in range(MIN_STEPS):
-            input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
-            _, iteration_times = generate_and_benchmark(
-                model,
-                input_args,
-                tokenizer,
-                torch.device("cpu"),
-                max_tokens_to_generate,
-                read_logits_fn=read_logits_fn,
-                verbose=False,
-            )
-            min_time_ns = min(min_time_ns, *iteration_times)
-
-        cpu_tokens_per_second = 1e9 / min_time_ns
-        print(f"CPU tokens per second: {cpu_tokens_per_second:.2f}")
-    else:
-        cpu_tokens_per_second = -1.0
 
     # Transfer model and inputs to device
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
@@ -493,11 +464,6 @@ def benchmark_llm_torch_xla(
     evaluation_score = 0.0
     custom_measurements = [
         {
-            "measurement_name": "cpu_fps",
-            "value": cpu_tokens_per_second,
-            "target": -1,
-        },
-        {
             "measurement_name": "ttft",
             "value": ttft_ms,
             "target": -1,
@@ -514,7 +480,6 @@ def benchmark_llm_torch_xla(
         total_time=decode_total_time,
         total_samples=decode_total_tokens,
         samples_per_sec=tokens_per_second,
-        cpu_samples_per_sec=cpu_tokens_per_second,
         evaluation_score=evaluation_score,
         batch_size=batch_size,
         data_format=data_format,
@@ -535,7 +500,6 @@ def benchmark_llm_torch_xla(
         input_size=(input_sequence_length,),
         loop_count=loop_count,
         data_format=data_format,
-        training=training,
         total_time=decode_total_time,
         total_samples=decode_total_tokens,
         evaluation_score=evaluation_score,

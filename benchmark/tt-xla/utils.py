@@ -132,7 +132,6 @@ def print_benchmark_results(
     batch_size: int = None,
     data_format: str = None,
     input_size: tuple = None,
-    channel_size: int = None,
     input_sequence_length: Optional[int] = None,
 ) -> None:
     """Print formatted benchmark results."""
@@ -165,9 +164,6 @@ def print_benchmark_results(
 
     if input_size is not None:
         print(f"| Input size: {input_size}")
-
-    if channel_size is not None:
-        print(f"| Channel size: {channel_size}")
 
     if input_sequence_length is not None:
         print(f"| Input sequence length: {input_sequence_length}")
@@ -207,7 +203,6 @@ def create_benchmark_result(
     input_size: tuple,
     loop_count: int,
     data_format: str,
-    training: bool,
     total_time: float,
     total_samples: int,
     evaluation_score: Optional[float] = None,
@@ -219,7 +214,6 @@ def create_benchmark_result(
     model_info: str = "",
     torch_xla_enabled: bool = True,
     backend: str = "tt",
-    channel_size: int = 3,
     device_name: str = "",
     galaxy: bool = False,
     arch: str = "",
@@ -283,7 +277,8 @@ def create_benchmark_result(
 
     image_dimension = ""
     if input_is_image:
-        image_dimension = f"{channel_size}x{input_size[0]}x{input_size[1]}"
+        # input_size is (channels, height, width)
+        image_dimension = f"{input_size[0]}x{input_size[1]}x{input_size[2]}"
 
     return {
         "model": full_model_name,
@@ -299,7 +294,6 @@ def create_benchmark_result(
         "output_sequence_length": -1,
         "image_dimension": image_dimension,
         "perf_analysis": False,
-        "training": training,
         "measurements": measurements,
         "device_info": {
             "device_name": device_name,

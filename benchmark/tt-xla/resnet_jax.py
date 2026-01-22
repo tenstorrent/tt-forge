@@ -34,11 +34,7 @@ BATCH_SIZE = [
 ]
 
 INPUT_SIZE = [
-    (224, 224),
-]
-
-CHANNEL_SIZE = [
-    3,
+    (3, 224, 224),
 ]
 
 LOOP_COUNT = [1, 2, 4, 8, 16, 32]
@@ -53,25 +49,18 @@ MODULE_EXPORT_PATH = "modules"
 
 
 @pytest.mark.parametrize("variant", VARIANTS, ids=VARIANTS)
-@pytest.mark.parametrize("channel_size", CHANNEL_SIZE, ids=[f"channel_size={item}" for item in CHANNEL_SIZE])
 @pytest.mark.parametrize("input_size", INPUT_SIZE, ids=[f"input_size={item}" for item in INPUT_SIZE])
 @pytest.mark.parametrize("batch_size", BATCH_SIZE, ids=[f"batch_size={item}" for item in BATCH_SIZE])
 @pytest.mark.parametrize("loop_count", LOOP_COUNT, ids=[f"loop_count={item}" for item in LOOP_COUNT])
 @pytest.mark.parametrize("data_format", DATA_FORMAT, ids=[f"data_format={item}" for item in DATA_FORMAT])
-@pytest.mark.parametrize("training", [False], ids=["training=False"])
 def test_resnet(
     variant,
-    channel_size,
     input_size,
     batch_size,
     loop_count,
     data_format,
-    training,
     model_name,
 ):
-
-    if training:
-        pytest.skip("Training is not supported")
 
     tt_device = jax.devices("tt")[0]
     with jax.default_device(jax.devices("cpu")[0]):
@@ -83,7 +72,7 @@ def test_resnet(
         model_info = variant
         # Make sure to generate on the CPU, RNG requires an unsupported SHLO op
         input_sample = jax.random.normal(
-            jax.random.PRNGKey(0), (batch_size, channel_size, input_size[0], input_size[1])
+            jax.random.PRNGKey(0), (batch_size, input_size[0], input_size[1], input_size[2])
         )
 
     framework_model.params = jax.tree_util.tree_map(lambda x: device_put(x, tt_device), framework_model.params)
@@ -128,7 +117,6 @@ def test_resnet(
         batch_size=batch_size,
         data_format=data_format,
         input_size=input_size,
-        channel_size=channel_size,
     )
 
     result = create_benchmark_result(
@@ -140,7 +128,6 @@ def test_resnet(
         input_size=input_size,
         loop_count=loop_count,
         data_format=data_format,
-        training=training,
         total_time=total_time,
         total_samples=total_samples,
         optimization_level=OPTIMIZATION_LEVEL,
@@ -149,7 +136,6 @@ def test_resnet(
         enable_weight_bfp8_conversion=ENABLE_WEIGHT_BFP8_CONVERSION,
         model_info=model_info,
         torch_xla_enabled=False,
-        channel_size=channel_size,
         device_name=socket.gethostname(),
         arch=get_jax_device_arch(),
     )
@@ -159,10 +145,8 @@ def test_resnet(
 
 def benchmark(config: dict):
 
-    training = config["training"]
     batch_size = config["batch_size"]
     input_size = INPUT_SIZE[0]
-    channel_size = CHANNEL_SIZE[0]
     loop_count = config["loop_count"]
     data_format = config["data_format"]
     variant = VARIANTS[0]
@@ -170,11 +154,9 @@ def benchmark(config: dict):
 
     return test_resnet(
         variant=variant,
-        channel_size=channel_size,
         input_size=input_size,
         batch_size=batch_size,
         loop_count=loop_count,
         data_format=data_format,
-        training=training,
         model_name=model_name,
     )
