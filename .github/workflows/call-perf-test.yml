@@ -317,6 +317,7 @@ jobs:
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
         pip install ttrt-whl-tracy/ttrt*.whl --upgrade
         pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+        pip install pandas==2.3.3
 
     - name: Run Device Perf
       if: ${{ !matrix.build.skip-device-perf && !inputs.skip-device-perf && matrix.build.runs-on != 'p150' && matrix.build.runs-on != 'llmbox' }}
