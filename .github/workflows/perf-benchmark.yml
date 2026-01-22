@@ -29,6 +29,7 @@ on:
         description: "Run on shared runner"
         required: false
         type: boolean
+        default: true
       parent_run_id:
         description: "Parent run id is used to track child workflows in automated dispatch workflow calls"
         required: false
@@ -86,6 +87,7 @@ on:
         description: "Run on shared runner"
         required: false
         type: boolean
+        default: true
       perf_regression_check:
         description: "Enable perf metrics regression testing"
         required: false
