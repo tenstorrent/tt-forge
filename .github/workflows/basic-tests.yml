@@ -40,6 +40,11 @@ on:
         description: "Docker image used in tests"
         required: true
         type: string
+      project-filter:
+        description: "Project filter"
+        required: false
+        type: string
+        default: tt-forge
 
 jobs:
   build_matrix:
