@@ -5,7 +5,7 @@
 # Built-in modules
 import os
 import sys
-from typing import List
+from typing import List, Optional
 import time
 import pytest
 import socket
@@ -70,6 +70,7 @@ def construct_inputs(
     model_config,
     batch_size: int,
     max_cache_len: int,
+    past_key_values: Optional[StaticCache] = None,
 ) -> dict:
     """
     Construct inputs including static cache.
@@ -98,27 +99,31 @@ def construct_inputs(
         truncation=True,
     )
 
-    # Static cache should be initialized on CPU and separately transferred to device
-    # due to a trace/fusion issue. See https://github.com/tenstorrent/tt-xla/issues/1645
-    static_cache: StaticCache = StaticCache(
-        config=model_config,
-        max_batch_size=batch_size,
-        max_cache_len=max_cache_len,
-        device="cpu",
-        dtype=torch.bfloat16,
-    )
-    if hasattr(model_config, "head_dim") and model_config.head_dim:
-        head_dim = model_config.head_dim
+    if past_key_values is None:
+        if hasattr(model_config, "head_dim") and model_config.head_dim:
+            head_dim = model_config.head_dim
+        else:
+            head_dim = model_config.hidden_size // model_config.num_attention_heads
+        num_key_value_heads = getattr(model_config, "num_key_value_heads", model_config.num_attention_heads)
+
+        # Static cache should be initialized on CPU and separately transferred to device
+        # due to a trace/fusion issue. See https://github.com/tenstorrent/tt-xla/issues/1645
+        static_cache: StaticCache = StaticCache(
+            config=model_config,
+            max_batch_size=batch_size,
+            max_cache_len=max_cache_len,
+            device="cpu",
+            dtype=torch.bfloat16,
+        )
+        static_cache.early_initialization(
+            batch_size=batch_size,
+            num_heads=num_key_value_heads,
+            head_dim=head_dim,
+            dtype=torch.bfloat16,
+            device="cpu",
+        )
     else:
-        head_dim = model_config.hidden_size // model_config.num_attention_heads
-    num_key_value_heads = getattr(model_config, "num_key_value_heads", model_config.num_attention_heads)
-    static_cache.early_initialization(
-        batch_size=batch_size,
-        num_heads=num_key_value_heads,
-        head_dim=head_dim,
-        dtype=torch.bfloat16,
-        device="cpu",
-    )
+        static_cache = past_key_values
     cache_position: torch.Tensor = torch.arange(0, inputs.input_ids.shape[1])
 
     input_args = {
@@ -154,7 +159,6 @@ def transfer_to_device(input_args: dict, device: torch.device) -> tuple[torch.nn
         layer.values = layer.values.to(device)
     input_args["input_ids"] = input_args["input_ids"].to(device)
     input_args["cache_position"] = input_args["cache_position"].to(device)
-
     return input_args
 
 
@@ -215,12 +219,6 @@ def generate_and_benchmark(
             host_cache_pos = input_args["cache_position"].to("cpu")
             host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
             input_args["cache_position"] = host_cache_pos.to(device)
-            # Reapply shardings for static cache if SPMD is enabled
-            # See https://github.com/tenstorrent/tt-xla/issues/1641
-            if is_multichip:
-                for layer in input_args["past_key_values"].layers:
-                    xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
-                    xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
             end = time.perf_counter_ns()
             iteration_times.append(end - start)
@@ -415,14 +413,10 @@ def benchmark_llm_torch_xla(
     )
 
     # Reconstruct inputs for the actual benchmark run
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(
+        tokenizer, model.config, batch_size, max_cache_len, past_key_values=input_args["past_key_values"]
+    )
     input_args = transfer_to_device(input_args, device)
-
-    # Re-shard KV cache tensors created in input_args
-    if is_multichip:
-        for layer in input_args["past_key_values"].layers:
-            xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
-            xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
     # Run benchmark once
     print(f"\nStarting benchmark...")
