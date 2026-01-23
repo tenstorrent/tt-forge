@@ -45,6 +45,10 @@ on:
         required: false
         type: string
         default: tt-forge
+      ref:
+        description: "Git ref to checkout"
+        required: false
+        type: string
 
 jobs:
   build_matrix:
@@ -109,8 +113,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        if: ${{ inputs.only_frontend == matrix.frontend || !inputs.only_frontend }}
         uses: actions/checkout@v4
+        with:
+          repository: 'tenstorrent/tt-forge'
+          fetch-depth: 1
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: 'recursive'
 
       - name: Fix HOME Directory
         shell: bash
