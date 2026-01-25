@@ -49,6 +49,11 @@ on:
         description: "Git ref to checkout"
         required: false
         type: string
+      runner-filter:
+        description: "Runner types for test execution"
+        required: false
+        type: string
+        default: All
 
 jobs:
   build_matrix:
