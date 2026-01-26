@@ -32,7 +32,7 @@ def run_gpt2_demo_case(variant):
 
     def generate_logits(input_ids, params):
         model_ = nnx.merge(graphdef, params)
-        outputs = model_(input_ids)
+        outputs = model_(**input_ids)
         return outputs.logits
 
     # Compile the model using JAX JIT
