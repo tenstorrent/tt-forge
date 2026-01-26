@@ -154,7 +154,7 @@ def test_llm(
             json.dump(results, file, indent=2)
 
 
-def test_llm_tp(ModelLoaderModule, variant, output_file):
+def test_llm_tp(ModelLoaderModule, variant, output_file, **kwargs):
     # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
     arch = "wormhole_llmbox"
     mesh_config_fn = ModelLoaderModule.get_mesh_config
@@ -169,6 +169,7 @@ def test_llm_tp(ModelLoaderModule, variant, output_file):
         batch_size=32,
         input_sequence_length=128,
         arch=arch,
+        **kwargs,
     )
 
 
@@ -474,3 +475,12 @@ def test_llama_3_8b_tp(output_file):
 
     variant = ModelVariant.LLAMA_3_8B
     test_llm_tp(ModelLoader, variant, output_file)
+
+
+def test_llama_3_1_70b_tp(output_file):
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_70B_INSTRUCT
+    test_llm_tp(
+        ModelLoader, variant, output_file, required_pcc=-1.0
+    )  # https://github.com/tenstorrent/tt-xla/issues/2976
