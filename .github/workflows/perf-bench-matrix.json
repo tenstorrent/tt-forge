@@ -74,6 +74,16 @@
         "pytest": "benchmark/tt-xla/test_vision.py::test_vovnet"
       },
       {
+        "name": "yolov4",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
+        "pytest": "benchmark/tt-xla/test_vision.py::test_yolov4"
+      },
+      {
+        "name": "yolov9",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
+        "pytest": "benchmark/tt-xla/test_vision.py::test_yolov9"
+      },
+      {
         "name": "bge_m3_encode",
         "pyreq": "datasets FlagEmbedding loguru pytest requests timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_encoders.py::test_bge_m3"

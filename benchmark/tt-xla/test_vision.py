@@ -451,3 +451,69 @@ def test_vovnet(output_file):
         batch_size=batch_size,
         data_format=data_format,
     )
+
+
+def test_yolov4(output_file):
+    from third_party.tt_forge_models.yolov4.pytorch.loader import ModelLoader, ModelVariant
+
+    # Configuration
+    data_format = torch.bfloat16
+    batch_size = 1
+    input_size = (3, 640, 640)
+
+    # Load model
+    variant = ModelVariant.BASE
+    loader = ModelLoader(variant=variant)
+    model_info_name = loader.get_model_info(variant=variant).name
+    model = loader.load_model(dtype_override=data_format)
+    model = model.eval()
+
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, *input_size, dtype=dtype)
+
+    def extract_output_tensor_fn(output):
+        return output[0]
+
+    test_vision(
+        model=model,
+        model_info_name=model_info_name,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
+        batch_size=batch_size,
+        input_size=input_size,
+        data_format=data_format,
+    )
+
+
+def test_yolov9(output_file):
+    from third_party.tt_forge_models.yolov9.pytorch.loader import ModelLoader, ModelVariant
+
+    # Configuration
+    data_format = torch.bfloat16
+    batch_size = 1
+    input_size = (3, 640, 640)
+
+    # Load model
+    variant = ModelVariant.C
+    loader = ModelLoader(variant=variant)
+    model_info_name = loader.get_model_info(variant=variant).name
+    model = loader.load_model(dtype_override=data_format)
+    model = model.eval()
+
+    def load_inputs_fn(batch_size, dtype):
+        return torch.randn(batch_size, *input_size, dtype=dtype)
+
+    def extract_output_tensor_fn(output):
+        return output[0]
+
+    test_vision(
+        model=model,
+        model_info_name=model_info_name,
+        output_file=output_file,
+        load_inputs_fn=load_inputs_fn,
+        extract_output_tensor_fn=extract_output_tensor_fn,
+        batch_size=batch_size,
+        input_size=input_size,
+        data_format=data_format,
+    )
