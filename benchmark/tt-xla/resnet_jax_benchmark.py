@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import socket
 import time
 
@@ -12,7 +13,7 @@ import torch
 from jax import device_put
 from transformers import FlaxResNetForImageClassification
 
-from benchmark.utils import get_jax_device_arch
+from benchmark.utils import aggregate_ttnn_perf_metrics, get_jax_device_arch, sanitize_filename
 from tt_jax import serialize_compiled_artifacts_to_disk
 from utils import compute_pcc, create_benchmark_result, get_benchmark_metadata, print_benchmark_results
 
@@ -222,3 +223,47 @@ def benchmark_resnet_jax(
     )
 
     return result
+
+
+def test_resnet_jax(output_file):
+    # Configuration
+    variant = "microsoft/resnet-50"
+    batch_size = 8
+    loop_count = 32
+    input_size = (3, 224, 224)
+    data_format = "float32"
+    model_name = "resnet_jax"
+
+    # Sanitize model name for safe filesystem usage
+    sanitized_model_name = sanitize_filename(model_name)
+    ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
+
+    print(f"Running JAX benchmark for model: {model_name}")
+    print(
+        f"""Configuration:
+    variant={variant}
+    batch_size={batch_size}
+    loop_count={loop_count}
+    input_size={input_size}
+    data_format={data_format}
+    ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
+    """
+    )
+
+    results = benchmark_resnet_jax(
+        variant=variant,
+        input_size=input_size,
+        batch_size=batch_size,
+        loop_count=loop_count,
+        data_format=data_format,
+        model_name=model_name,
+    )
+
+    if output_file:
+        results["project"] = "tt-forge/tt-xla"
+        results["model_rawname"] = model_name
+
+        aggregate_ttnn_perf_metrics(ttnn_perf_metrics_output_file, results)
+
+        with open(output_file, "w") as file:
+            json.dump(results, file, indent=2)
