@@ -18,6 +18,8 @@ jobs:
     with:
       docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
       project: tt-xla
+      sh-runner: false
+      skip-device-perf: false
 
   check-all-green:
     if: always()
