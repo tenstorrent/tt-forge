@@ -4,7 +4,6 @@
 
 # Built-in modules
 import socket
-import pytest
 import time
 
 # Third-party modules
@@ -19,7 +18,6 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
-    move_to_cpu,
 )
 
 xr.set_device_type("TT")
