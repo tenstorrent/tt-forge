@@ -20,7 +20,7 @@
       {
         "name": "resnet_jax",
         "pyreq": "pytest tqdm loguru requests transformers==4.57.1 datasets flax==0.10.4 torch==2.9.0",
-        "pytest": "benchmark/tt-xla/test_vision.py::test_resnet_jax"
+        "pytest": "benchmark/tt-xla/resnet_jax_benchmark.py::test_resnet_jax"
       },
       {
         "name": "mnist",
