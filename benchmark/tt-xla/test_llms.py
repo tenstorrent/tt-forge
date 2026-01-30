@@ -14,12 +14,13 @@ from torch_xla.distributed.spmd import Mesh
 import numpy as np
 
 # Defaults for all llms
-DEFAULT_OPTIMIZATION_LEVEL = 1
+DEFAULT_OPTIMIZATION_LEVEL = 0
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
-DEFAULT_BATCH_SIZE = 32
+DEFAULT_BATCH_SIZE = 1
 DEFAULT_LOOP_COUNT = 1
 DEFAULT_INPUT_SEQUENCE_LENGTH = 128
+DEFAULT_MAX_TOKENS_TO_GENERATE = 128
 DEFAULT_DATA_FORMAT = "bfloat16"
 DEFAULT_TASK = "text-generation"
 DEFAULT_EXPERIMENTAL_COMPILE = True
@@ -41,6 +42,7 @@ def test_llm(
     batch_size=DEFAULT_BATCH_SIZE,
     loop_count=DEFAULT_LOOP_COUNT,
     input_sequence_length=DEFAULT_INPUT_SEQUENCE_LENGTH,
+    max_tokens_to_generate=DEFAULT_MAX_TOKENS_TO_GENERATE,
     data_format=DEFAULT_DATA_FORMAT,
     task=DEFAULT_TASK,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
@@ -62,6 +64,7 @@ def test_llm(
         batch_size: Batch size
         loop_count: Number of benchmark iterations
         input_sequence_length: Input sequence length
+        max_tokens_to_generate: Maximum number of tokens to generate
         data_format: Data format
         task: Task type
         experimental_compile: Enable experimental compile
@@ -83,6 +86,7 @@ def test_llm(
     batch_size={batch_size}
     loop_count={loop_count}
     input_sequence_length={input_sequence_length}
+    max_tokens_to_generate={max_tokens_to_generate}
     data_format={data_format}
     task={task}
     experimental_compile={experimental_compile}
@@ -103,6 +107,7 @@ def test_llm(
         task=task,
         data_format=data_format,
         input_sequence_length=input_sequence_length,
+        max_tokens_to_generate=max_tokens_to_generate,
         experimental_compile=experimental_compile,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
@@ -166,8 +171,9 @@ def test_llm_tp(ModelLoaderModule, variant, output_file, **kwargs):
         output_file=output_file,
         mesh_config_fn=mesh_config_fn,
         shard_spec_fn=shard_spec_fn,
-        batch_size=32,
-        input_sequence_length=128,
+        batch_size=DEFAULT_BATCH_SIZE,
+        input_sequence_length=DEFAULT_INPUT_SEQUENCE_LENGTH,
+        max_tokens_to_generate=DEFAULT_MAX_TOKENS_TO_GENERATE,
         arch=arch,
         **kwargs,
     )
@@ -484,3 +490,9 @@ def test_llama_3_1_70b_tp(output_file):
     test_llm_tp(
         ModelLoader, variant, output_file, required_pcc=-1.0
     )  # https://github.com/tenstorrent/tt-xla/issues/2976
+
+def test_gpt_oss_20b_tp(output_file):
+    from third_party.tt_forge_models.gpt_oss.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GPT_OSS_20B
+    test_llm_tp(ModelLoader, variant, output_file)

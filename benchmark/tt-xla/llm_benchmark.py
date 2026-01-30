@@ -70,6 +70,7 @@ def construct_inputs(
     model_config,
     batch_size: int,
     max_cache_len: int,
+    input_sequence_length: Optional[int] = None,
     past_key_values: Optional[StaticCache] = None,
 ) -> dict:
     """
@@ -81,7 +82,9 @@ def construct_inputs(
         model_config: Model configuration
         batch_size: Batch size
         max_cache_len: Maximum cache length
-
+        input_sequence_length: Input sequence length
+        past_key_values: Past key values
+        
     Returns:
         Dictionary containing input_ids, past_key_values, cache_position, and use_cache
     """
@@ -92,10 +95,14 @@ def construct_inputs(
     prompt_len = len(input_prompt[0])
     assert all(len(prompt) == prompt_len for prompt in input_prompt), "All input prompts must have the same length"
 
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     inputs = tokenizer(
         input_prompt,
         return_tensors="pt",
-        max_length=max_cache_len,
+        padding="max_length",
+        max_length=input_sequence_length,
         truncation=True,
     )
 
@@ -257,6 +264,7 @@ def benchmark_llm_torch_xla(
     task,
     data_format,
     input_sequence_length,
+    max_tokens_to_generate,
     experimental_compile,
     enable_weight_bfp8_conversion,
     experimental_enable_permute_matmul_fusion,
@@ -284,6 +292,7 @@ def benchmark_llm_torch_xla(
         task: Task type
         data_format: Data precision format
         input_sequence_length: Length of input sequence for generation context
+        max_tokens_to_generate: Maximum number of tokens to generate
         experimental_compile: Whether to use experimental compilation features
         enable_weight_bfp8_conversion: Whether to enable bfp8 weight conversion
         experimental_enable_permute_matmul_fusion: Whether to enable permute matmul fusion optimization
@@ -334,8 +343,6 @@ def benchmark_llm_torch_xla(
     else:
         is_multichip = False
 
-    # Set up config variables
-    max_cache_len: int = input_sequence_length
 
     # Connect the device
     device: torch.device = torch_xla.device()
@@ -343,10 +350,26 @@ def benchmark_llm_torch_xla(
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
 
+    # Set up config variables
+    max_cache_len = input_sequence_length + max_tokens_to_generate
+
+    model_position_embeddings = getattr(model.config, "max_position_embeddings", 2048)
+    if max_cache_len > model_position_embeddings:
+        #todo(@ddilbazTT):notify user that max cache length is reduced
+        max_cache_len = model_position_embeddings
+        if max_cache_len - input_sequence_length <= 0:
+            raise RuntimeError(
+                f"Requested input sequence length {input_sequence_length} + max tokens to generate {max_tokens_to_generate} exceeds model maximum position embeddings {model_position_embeddings}. "
+                f"Please reduce input sequence length or max tokens to generate."
+            )
+        max_tokens_to_generate = max_cache_len - input_sequence_length
+        #todo(@ddilbazTT):notify user that max tokens to generate is reduced
+
     # Construct inputs, including static cache
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len, input_sequence_length)
 
     # Limit maximum generation count to fit within preallocated static cache
+    #todo(@ddilbazTT): make this an assertion? 
     max_tokens_to_generate: int = max_cache_len - input_args["input_ids"].shape[1]
 
     # Get CPU result
@@ -363,7 +386,7 @@ def benchmark_llm_torch_xla(
     cpu_logits = cpu_logits[0]
 
     # Transfer model and inputs to device
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len, input_sequence_length)
     input_args = transfer_to_device(input_args, device)
     model = model.to(device, dtype=torch.bfloat16)
 
@@ -414,7 +437,7 @@ def benchmark_llm_torch_xla(
 
     # Reconstruct inputs for the actual benchmark run
     input_args = construct_inputs(
-        tokenizer, model.config, batch_size, max_cache_len, past_key_values=input_args["past_key_values"]
+        tokenizer, model.config, batch_size, max_cache_len, input_sequence_length, past_key_values=input_args["past_key_values"]
     )
     input_args = transfer_to_device(input_args, device)
 
