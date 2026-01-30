@@ -109,9 +109,6 @@ python tt-forge/demos/tt-xla/nlp/jax/gpt_demo.py
 # What Is This Repo?
 This repository is the central hub for the TT-Forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Please file any issues with questions or feedback you may have [here](https://github.com/tenstorrent/tt-forge/issues).
 
-# Getting Started Guide
-See the documentation available for individual front ends in the [Front End](#current-ai-framework-front-end-projects) section to get started running some tests. You can also try running a demo using the [TT-Forge Getting Started](https://docs.tenstorrent.com/tt-forge/) page.
-
 # Project Goals
 - Provide abstraction of many different frontend frameworks
 - Generically compile many kinds of model architectures without modification and with good performance
