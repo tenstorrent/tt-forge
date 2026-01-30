@@ -15,6 +15,86 @@
 TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation.
 
 -----
+# TT-Forge Quick Start Guide
+
+## Overview
+TT-Forge is Tenstorrent's ML software stack for running PyTorch, JAX, and other framework models on Tenstorrent hardware. This guide will get you up and running in minutes.
+
+## Prerequisites
+- [Hardware Setup](https://docs.tenstorrent.com/getting-started/README.html)
+- Python 3.11 or higher
+- pip 21.0 or higher (for pip installation)
+- Docker 20.10 or higher (for Docker installation)
+
+## Installation
+
+### Option 1: Install via pip (Assumes you've ran tt-installer)
+```bash
+export VLLM_TARGET_DEVICE="empty"
+
+pip install tt-forge --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+```
+
+### Option 2: Install via Docker
+Pull & Run the container:
+```bash
+docker run -it --rm \
+  --device /dev/tenstorrent \
+  -v /dev/hugepages-1G:/dev/hugepages-1G \
+  ghcr.io/tenstorrent/tt-forge:latest
+```
+
+## Verify Installation
+
+```python
+import torch
+import torch_xla.core.xla_model as xm
+import torch_xla.runtime as xr
+
+def test_add():
+    # 1. Explicitly set the device type to Tenstorrent
+    # This ensures the TT PJRT plugin is loaded correctly.
+    xr.set_device_type("TT")
+
+    print("Initializing Tenstorrent XLA device...")
+
+    # 2. Acquire the device
+    device = xm.xla_device()
+    print(f"Targeting device: {device}")
+
+    # 3. Create tensors directly on the device
+    t1 = torch.tensor([10.0, 20.0], device=device)
+    t2 = torch.tensor([30.0, 40.0], device=device)
+
+    # 4. Perform operation (Lazy execution)
+    res = t1 + t2
+
+    # 5. Sync and print (Forces execution)
+    # The .cpu() call triggers the graph execution on the hardware
+    print(f"Result: {res.cpu()}")
+
+if __name__ == "__main__":
+    test_add()
+```
+
+## Running Your First Model
+
+### PyTorch Example
+```bash
+python tt-forge/demos/tt-xla/cnn/resnet_demo.py
+```
+
+### JAX Example
+```bash
+python tt-forge/demos/tt-xla/nlp/jax/gpt_demo.py
+```
+
+## Troubleshooting
+- **Import errors**: Ensure you've installed the correct extras ([torch] or [jax])
+- **Device not found**: Verify hardware connection with `tt_forge.list_devices()`
+- **Performance issues**: Enable logging with `tt_forge.set_log_level("DEBUG")`
+
+-----
 # Quick Links
 - [Getting Started / How to Run a Model](https://docs.tenstorrent.com/tt-forge/getting_started.html)
 - [Interactive Tenstorrent Software Diagram](#interactive-tenstorrent-sofware-architecture-diagram)
