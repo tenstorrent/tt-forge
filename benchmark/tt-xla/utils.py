@@ -5,6 +5,7 @@
 import socket
 import secrets
 import re
+import inspect
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Union
 from collections.abc import Sequence
@@ -111,6 +112,22 @@ def sanitize_model_name(value: Any) -> str:
     return text or "na"
 
 
+def create_model_loader(ModelLoader, num_layers: Optional[int] = None, *args, **kwargs):
+    """Create a model loader with optional num_layers override.
+
+    Returns None if num_layers is requested but the loader does not support it.
+    """
+    if num_layers is None:
+        return ModelLoader(*args, **kwargs)
+    params = inspect.signature(ModelLoader.__init__).parameters
+    supports_num_layers = "num_layers" in params or any(
+        param.kind == inspect.Parameter.VAR_KEYWORD for param in params.values()
+    )
+    if not supports_num_layers:
+        return None
+    return ModelLoader(*args, num_layers=num_layers, **kwargs)
+
+
 def build_xla_export_name(
     model_name: str,
     num_layers: Optional[Union[int, str]],
@@ -127,14 +144,12 @@ def build_xla_export_name(
 
     if not isinstance(model_name, str) and hasattr(model_name, "name"):
         model_name = model_name.name
-    parts = [
-        sanitize_model_name(model_name),
-        f"bs{batch_size}",
-    ]
-    if input_sequence_length is not None and input_sequence_length > 0:
-        parts.append(f"isl{input_sequence_length}")
+    parts = [sanitize_model_name(model_name)]
     if layers_part:
         parts.append(layers_part)
+    parts.append(f"bs{batch_size}")
+    if input_sequence_length is not None and input_sequence_length > 0:
+        parts.append(f"isl{input_sequence_length}")
     parts.append(f"run{run_id}")
     return "_".join(parts)
 

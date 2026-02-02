@@ -4,10 +4,12 @@
 
 import json
 import os
+import pytest
 from loguru import logger
 
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
+from utils import create_model_loader
 
 import torch_xla.runtime as xr
 from torch_xla.distributed.spmd import Mesh
@@ -51,6 +53,7 @@ def test_llm(
     shard_spec_fn=None,
     arch=None,
     required_pcc=DEFAULT_REQUIRED_PCC,
+    num_layers=None,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -70,7 +73,9 @@ def test_llm(
         read_logits_fn: Function to extract logits from model output
         required_pcc: Required PCC threshold
     """
-    model_loader = ModelLoaderModule(variant=variant)
+    model_loader = create_model_loader(ModelLoaderModule, num_layers=num_layers, variant=variant)
+    if num_layers is not None and model_loader is None:
+        pytest.fail("num_layers override requested but ModelLoader does not support it.")
     model_nickname = variant.name if hasattr(variant, "name") else str(variant)
     # Sanitize variant name for safe filesystem usage
     sanitized_variant = sanitize_filename(str(variant))
@@ -114,6 +119,7 @@ def test_llm(
         shard_spec_fn=shard_spec_fn,
         arch=arch,
         required_pcc=required_pcc,
+        num_layers_override=num_layers,
     )
 
     if output_file:

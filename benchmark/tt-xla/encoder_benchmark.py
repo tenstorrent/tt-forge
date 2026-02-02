@@ -152,6 +152,7 @@ def benchmark_encoder_torch_xla(
     preprocess_fn,
     output_processor_fn,
     model_nickname=None,
+    num_layers_override=None,
     required_pcc=0.97,
     enable_weight_bfp8_conversion=False,
     experimental_enable_permute_matmul_fusion=False,
@@ -201,11 +202,9 @@ def benchmark_encoder_torch_xla(
     with torch.no_grad():
         golden_output = run_encoder_model(framework_model, raw_inputs, preprocess_fn, "cpu", output_processor_fn)
 
-    model_config = getattr(model, "config", None)
-    num_layers = getattr(model_config, "num_hidden_layers", None)
     export_model_name = build_xla_export_name(
         model_name=model_nickname or model_info_name,
-        num_layers=None,
+        num_layers=num_layers_override,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
     )

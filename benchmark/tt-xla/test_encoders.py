@@ -5,11 +5,13 @@
 import json
 from typing import List
 
+import pytest
+
 import torch
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
-from utils import apply_mean_pooling, apply_last_token_pooling
+from utils import apply_mean_pooling, apply_last_token_pooling, create_model_loader
 
 
 DTYPE_MAP = {
@@ -74,6 +76,7 @@ def test_encoder(
     required_pcc=DEFAULT_REQUIRED_PCC,
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
+    num_layers=None,
 ):
     """Test encoder model with the given variant and optional configuration overrides.
 
@@ -123,6 +126,7 @@ def test_encoder(
         model=model,
         model_info_name=model_info_name,
         model_nickname=model_nickname,
+        num_layers_override=num_layers,
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
         batch_size=batch_size,
@@ -149,7 +153,7 @@ def test_encoder(
             json.dump(results, file, indent=2)
 
 
-def test_bert(output_file):
+def test_bert(output_file, num_layers):
     from third_party.tt_forge_models.bert.sentence_embedding_generation.pytorch.loader import ModelLoader
 
     # Configuration
@@ -157,7 +161,9 @@ def test_bert(output_file):
     input_sequence_length = 384
 
     # Load model with specified dtype
-    loader = ModelLoader()
+    loader = create_model_loader(ModelLoader, num_layers=num_layers)
+    if num_layers is not None and loader is None:
+        pytest.fail("num_layers override requested but ModelLoader does not support it.")
     model_info_name = loader.get_model_info().name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
@@ -191,6 +197,7 @@ def test_bert(output_file):
         preprocess_fn=preprocess_fn,
         output_processor_fn=output_processor_fn,
         data_format=data_format,
+        num_layers=num_layers,
         batch_size=8,
         input_sequence_length=input_sequence_length,
         loop_count=32,
@@ -198,7 +205,7 @@ def test_bert(output_file):
     )
 
 
-def test_qwen3_embedding_4b(output_file):
+def test_qwen3_embedding_4b(output_file, num_layers):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -207,7 +214,9 @@ def test_qwen3_embedding_4b(output_file):
 
     # Load model with specified dtype
     variant = ModelVariant.QWEN_3_EMBEDDING_4B
-    loader = ModelLoader(variant=variant)
+    loader = create_model_loader(ModelLoader, num_layers=num_layers, variant=variant)
+    if num_layers is not None and loader is None:
+        pytest.fail("num_layers override requested but ModelLoader does not support it.")
     model_info_name = loader.get_model_info(variant=variant).name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
@@ -235,11 +244,12 @@ def test_qwen3_embedding_4b(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
-        model_nickname="bert",
+        model_nickname="qwen3_embedding_4b",
         load_inputs_fn=load_inputs_fn,
         preprocess_fn=preprocess_fn,
         output_processor_fn=output_processor_fn,
         data_format=data_format,
+        num_layers=num_layers,
         batch_size=32,
         input_sequence_length=input_sequence_length,
         loop_count=32,
@@ -248,7 +258,7 @@ def test_qwen3_embedding_4b(output_file):
 
 
 # [pytest.skip] Too large for single chip
-def test_qwen3_embedding_8b(output_file):
+def test_qwen3_embedding_8b(output_file, num_layers):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -257,7 +267,9 @@ def test_qwen3_embedding_8b(output_file):
 
     # Load model with specified dtype
     variant = ModelVariant.QWEN_3_EMBEDDING_8B
-    loader = ModelLoader(variant=variant)
+    loader = create_model_loader(ModelLoader, num_layers=num_layers, variant=variant)
+    if num_layers is not None and loader is None:
+        pytest.fail("num_layers override requested but ModelLoader does not support it.")
     model_info_name = loader.get_model_info(variant=variant).name
     print(f"\nLoading model {model_info_name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
@@ -286,11 +298,12 @@ def test_qwen3_embedding_8b(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
-        model_nickname=variant.name,
+        model_nickname="qwen3_embedding_8b",
         load_inputs_fn=load_inputs_fn,
         output_processor_fn=output_processor_fn,
         preprocess_fn=preprocess_fn,
         data_format=data_format,
+        num_layers=num_layers,
         batch_size=1,
         input_sequence_length=input_sequence_length,
         loop_count=32,

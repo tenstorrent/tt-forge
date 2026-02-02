@@ -268,6 +268,7 @@ def benchmark_llm_torch_xla(
     shard_spec_fn,
     arch,
     required_pcc,
+    num_layers_override=None,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -388,7 +389,7 @@ def benchmark_llm_torch_xla(
     # Set XLA compilation options
     export_model_name = build_xla_export_name(
         model_name=model_nickname,
-        num_layers=None,
+        num_layers=num_layers_override,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
     )
