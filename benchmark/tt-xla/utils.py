@@ -140,7 +140,7 @@ def build_xla_export_name(
     if num_layers is None or (isinstance(num_layers, int) and num_layers <= 0):
         layers_part = None
     else:
-        layers_part = f"lyr{num_layers}"
+        layers_part = f"{num_layers}lyr"
 
     if not isinstance(model_name, str) and hasattr(model_name, "name"):
         model_name = model_name.name
