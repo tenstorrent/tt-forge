@@ -71,6 +71,7 @@ def test_llm(
         required_pcc: Required PCC threshold
     """
     model_loader = ModelLoaderModule(variant=variant)
+    model_nickname = variant.name if hasattr(variant, "name") else str(variant)
     # Sanitize variant name for safe filesystem usage
     sanitized_variant = sanitize_filename(str(variant))
     ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_variant}_perf_metrics"
@@ -98,6 +99,7 @@ def test_llm(
         trace_enabled=trace_enabled,
         model_loader=model_loader,
         model_variant=variant,
+        model_nickname=model_nickname,
         batch_size=batch_size,
         loop_count=loop_count,
         task=task,

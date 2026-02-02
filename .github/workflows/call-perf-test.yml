@@ -211,6 +211,14 @@ jobs:
         else
           cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
         fi
+        # Group TTIR MLIR files under a folder named like the files but without the gN segment
+        ttir_first_file="$(ls -1 ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir_*.mlir 2>/dev/null | head -n 1 || true)"
+        if [ -n "$ttir_first_file" ]; then
+          ttir_base_name="$(basename "$ttir_first_file")"
+          ttir_folder_name="$(echo "$ttir_base_name" | sed -E 's/_g[0-9]+_/_/' | sed -E 's/_run[0-9a-fA-F]+_/_/' | sed -E 's/\.mlir$//')"
+          mkdir -p "${{ steps.strings.outputs.perf_report_path }}/ttir/${ttir_folder_name}"
+          mv ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir_*.mlir "${{ steps.strings.outputs.perf_report_path }}/ttir/${ttir_folder_name}/"
+        fi
 
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
@@ -230,6 +238,14 @@ jobs:
           cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
         else
           cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
+        fi
+        # Group TTNN MLIR files under a folder named like the files but without the gN segment
+        ttnn_first_file="$(ls -1 ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn_*.mlir 2>/dev/null | head -n 1 || true)"
+        if [ -n "$ttnn_first_file" ]; then
+          ttnn_base_name="$(basename "$ttnn_first_file")"
+          ttnn_folder_name="$(echo "$ttnn_base_name" | sed -E 's/_g[0-9]+_/_/' | sed -E 's/_run[0-9a-fA-F]+_/_/' | sed -E 's/\.mlir$//')"
+          mkdir -p "${{ steps.strings.outputs.perf_report_path }}/ttnn/${ttnn_folder_name}"
+          mv ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn_*.mlir "${{ steps.strings.outputs.perf_report_path }}/ttnn/${ttnn_folder_name}/"
         fi
 
     - name: Upload TTNN MLIR separately

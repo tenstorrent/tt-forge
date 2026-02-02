@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import socket
+import secrets
+import re
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from collections.abc import Sequence
 import torch
 
@@ -98,6 +100,43 @@ def get_benchmark_metadata() -> Dict[str, str]:
         "date": datetime.now().strftime("%d-%m-%Y"),
         "machine_name": socket.gethostname(),
     }
+
+
+def sanitize_model_name(value: Any) -> str:
+    text = str(value).strip()
+    text = re.sub(r"\s+", "_", text)
+    text = re.sub(r"[^a-zA-Z0-9_]+", "_", text)
+    text = re.sub(r"_+", "_", text)
+    text = text.strip("_").lower()
+    return text or "na"
+
+
+def build_xla_export_name(
+    model_name: str,
+    num_layers: Optional[Union[int, str]],
+    batch_size: int,
+    input_sequence_length: Optional[int],
+) -> str:
+    """Build a standardized export name for XLA benchmark runs."""
+    run_id = secrets.token_hex(2)
+
+    if num_layers is None or (isinstance(num_layers, int) and num_layers <= 0):
+        layers_part = None
+    else:
+        layers_part = f"lyr{num_layers}"
+
+    if not isinstance(model_name, str) and hasattr(model_name, "name"):
+        model_name = model_name.name
+    parts = [
+        sanitize_model_name(model_name),
+        f"bs{batch_size}",
+    ]
+    if input_sequence_length is not None and input_sequence_length > 0:
+        parts.append(f"isl{input_sequence_length}")
+    if layers_part:
+        parts.append(layers_part)
+    parts.append(f"run{run_id}")
+    return "_".join(parts)
 
 
 def determine_model_type_and_dataset(task: str, full_model_name: str) -> tuple[str, str]:
