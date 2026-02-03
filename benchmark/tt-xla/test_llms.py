@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import inspect
 import json
 import os
 import pytest
@@ -12,7 +11,6 @@ from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
 from utils import create_model_loader
 
-import torch
 import torch_xla.runtime as xr
 from torch_xla.distributed.spmd import Mesh
 import numpy as np

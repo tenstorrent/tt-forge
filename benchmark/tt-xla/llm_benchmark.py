@@ -345,7 +345,6 @@ def benchmark_llm_torch_xla(
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
     full_model_name = model_loader.get_model_info(variant=model_variant).name
-    num_layers = model.config.num_hidden_layers if hasattr(model.config, "num_hidden_layers") else None
 
     # Construct inputs, including static cache
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
