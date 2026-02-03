@@ -29,7 +29,7 @@ def _handle_critical_error() -> None:
         f"{'='*60}\n"
         f"\n"
         f"  >>> Run: tt-smi -r\n"
-        f"  >>> Then re-run with --continue to resume.\n"
+        f"  >>> Re-run with --continue to resume.\n"
         f"\n"
         f"{'='*60}\n"
     )
@@ -52,16 +52,11 @@ def _ensure_import_paths(repo_root: Path, tt_xla_dir: Path) -> None:
         sys.path.insert(0, tt_xla_str)
 
 
-def _model_name_base(model_name: str) -> str:
-    return model_name[:-3] if model_name.endswith("_tp") else model_name
-
-
 def _find_ttirs_by_model(export_path: Path, model_name: str, min_mtime: Optional[float] = None) -> list[Path]:
     if not export_path.exists():
         return []
 
-    model_name_base = _model_name_base(model_name)
-    name_pattern = re.compile(rf"^ttir_{re.escape(model_name_base)}_1lyr_bs\d+_isl\d+")
+    name_pattern = re.compile(rf"^ttir_{re.escape(model_name)}_1lyr_bs\d+_isl\d+")
     matches = []
     for path in export_path.rglob("*.mlir"):
         if not name_pattern.search(path.stem):
@@ -73,8 +68,7 @@ def _find_ttirs_by_model(export_path: Path, model_name: str, min_mtime: Optional
 
 
 def _parse_ttir_stem(ttir_stem: str, model_name: str) -> tuple[Optional[str], Optional[str]]:
-    model_name_base = _model_name_base(model_name)
-    match = re.search(rf"^ttir_{re.escape(model_name_base)}_1lyr_bs(\d+)_isl(\d+)", ttir_stem)
+    match = re.search(rf"^ttir_{re.escape(model_name)}_1lyr_bs(\d+)_isl(\d+)", ttir_stem)
     if not match:
         return None, None
     return match.group(1), match.group(2)
@@ -94,8 +88,7 @@ def _normalize_ttir_name(
 ) -> str:
     bs, isl = _parse_ttir_stem(ttir_path.stem, model_name)
     assert bs is not None and isl is not None, f"Expected bs/isl in {ttir_path.stem}"
-    model_name_base = _model_name_base(model_name)
-    base = f"{model_name_base}_1lyr_bs{bs}"
+    base = f"{model_name}_1lyr_bs{bs}"
     graph_label = graph_label_override or _graph_label_from_stem(ttir_path.stem)
     if group == "encoder":
         suffix = f"encoder_isl{isl}"
@@ -193,7 +186,9 @@ def _run_pytest(test_file: str, test_name: str, num_layers: int = 1) -> tuple[bo
             _handle_critical_error()
         return False, f"{type(exc).__name__}: {error_msg}", None
 
-    output = result.stderr or result.stdout or ""
+    stdout_text = result.stdout or ""
+    stderr_text = result.stderr or ""
+    output = "\n".join(text for text in (stdout_text, stderr_text) if text)
     if result.returncode == 0:
         return True, None, None
     skipped_code = getattr(pytest.ExitCode, "SKIPPED", 5)
@@ -223,28 +218,24 @@ def _is_test_completed(test_name: str, output_dir: Path, group: str) -> bool:
     if not output_dir.exists():
         return False
 
-    model_name = test_name[5:] if test_name.startswith("test_") else test_name
-    model_name_base = model_name[:-3] if model_name.endswith("_tp") else model_name
-    model_name_norm = model_name_base.lower().replace("_", "").replace("-", "")
+    model_name = _model_name_from_test(test_name)
 
     has_prefill = False
     has_decode = False
     for ttir_file in output_dir.glob("*.ttir"):
         stem = ttir_file.stem.lower()
-        stem_norm = stem.replace("_", "").replace("-", "")
-        has_model_name = model_name_norm in stem_norm
-        has_1lyr = "1lyr" in stem_norm or "_1lyr" in stem.lower()
-        if has_model_name and has_1lyr:
-            if group == "encoder":
-                if "encoder_isl" in stem:
-                    return True
-                continue
-            if "prefill_isl" in stem:
-                has_prefill = True
-            if "_decode" in stem:
-                has_decode = True
-            if has_prefill and has_decode:
-                return True
+        has_model_name = f"_{model_name.lower()}_" in stem
+        has_1lyr = "1lyr" in stem
+        if not (has_model_name and has_1lyr):
+            continue
+        if group == "encoder":
+            return "encoder" in stem
+        if "prefill" in stem:
+            has_prefill = True
+        if "decode" in stem:
+            has_decode = True
+        if has_prefill and has_decode:
+            return True
 
     return False
 
@@ -254,25 +245,22 @@ def _get_output_status(test_name: str, output_dir: Path, group: str) -> tuple[bo
         expected = ["encoder"] if group == "encoder" else ["prefill", "decode"]
         return False, expected
 
-    model_name = test_name[5:] if test_name.startswith("test_") else test_name
-    model_name_base = model_name[:-3] if model_name.endswith("_tp") else model_name
-    model_name_norm = model_name_base.lower().replace("_", "").replace("-", "")
+    model_name = _model_name_from_test(test_name)
 
     found_prefill = False
     found_decode = False
     found_encoder = False
     for ttir_file in output_dir.glob("*.ttir"):
         stem = ttir_file.stem.lower()
-        stem_norm = stem.replace("_", "").replace("-", "")
-        has_model_name = model_name_norm in stem_norm
-        has_1lyr = "1lyr" in stem_norm or "_1lyr" in stem.lower()
+        has_model_name = f"_{model_name.lower()}_" in stem
+        has_1lyr = "1lyr" in stem
         if not (has_model_name and has_1lyr):
             continue
-        if "encoder_isl" in stem:
+        if "encoder" in stem:
             found_encoder = True
-        if "prefill_isl" in stem:
+        if "prefill" in stem:
             found_prefill = True
-        if "_decode" in stem:
+        if "decode" in stem:
             found_decode = True
 
     if group == "encoder":
@@ -286,18 +274,22 @@ def _get_output_status(test_name: str, output_dir: Path, group: str) -> tuple[bo
     return len(missing) == 0, missing
 
 
-def _parse_skip_patterns(skip_args: list[str]) -> set[str]:
-    skip_tests: set[str] = set()
-    for skip_arg in skip_args:
-        skip_tests.update(s.strip() for s in skip_arg.split(",") if s.strip())
-    return skip_tests
-
-
 def _parse_prefix_patterns(prefix_args: list[str]) -> set[str]:
     prefixes: set[str] = set()
     for prefix_arg in prefix_args:
         prefixes.update(s.strip() for s in prefix_arg.split(",") if s.strip())
     return prefixes
+
+
+def _model_name_from_test(test_name: str) -> str:
+    return test_name[5:] if test_name.startswith("test_") else test_name
+
+
+def _matches_prefixes(test_name: str, include_prefixes: set[str]) -> bool:
+    if not include_prefixes:
+        return True
+    model_name = _model_name_from_test(test_name)
+    return any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes)
 
 
 def _test_names_llm(include_tp: bool) -> list[str]:
@@ -337,7 +329,6 @@ def _run_tests(
     test_names: list[str],
     export_path: Path,
     output_dir: Path,
-    skip_tests: set[str],
     include_prefixes: set[str],
     resume: bool,
     max_ttirs: int,
@@ -347,41 +338,17 @@ def _run_tests(
 
     for name in test_names:
         if _is_test_failed(test_file_path, name):
-            results.append(
-                {
-                    "group": group,
-                    "test": name,
-                    "status": "skipped",
-                    "error": "Test marked as FAILED",
-                    "ttir": [],
-                }
-            )
             continue
 
-        if any(skip_pattern.lower() in name.lower() for skip_pattern in skip_tests):
-            results.append(
-                {
-                    "group": group,
-                    "test": name,
-                    "status": "skipped",
-                    "error": "Skipped via --skip option",
-                    "ttir": [],
-                }
-            )
+        if not _matches_prefixes(name, include_prefixes):
             continue
-
-        if include_prefixes:
-            model_name = name[5:] if name.startswith("test_") else name
-            if not any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes):
-                continue
 
         if resume and _is_test_completed(name, output_dir, group):
             continue
 
         print(f"🚀 Starting {group}::{name}")
 
-        model_name = name[5:] if name.startswith("test_") else name
-        model_name_base = _model_name_base(model_name)
+        model_name = _model_name_from_test(name)
         status = "ok"
         error = None
         test_start_time = time.time()
@@ -397,13 +364,13 @@ def _run_tests(
                 status = "failed"
                 error = error_msg
 
-        ttir_paths = _find_ttirs_by_model(export_path, model_name_base, min_mtime=test_start_time)
+        ttir_paths = _find_ttirs_by_model(export_path, model_name, min_mtime=test_start_time)
         graph_labels = None
         if model_name.endswith("_tp"):
             ttir_paths, graph_labels = _select_tp_ttirs(ttir_paths)
         else:
             ttir_paths = ttir_paths[:max_ttirs]
-        copied_paths = _copy_ttirs(ttir_paths, output_dir, group, model_name_base, graph_labels)
+        copied_paths = _copy_ttirs(ttir_paths, output_dir, group, model_name, graph_labels)
         status_note = f"{status}"
         if error:
             status_note = f"{status} ({error})"
@@ -428,6 +395,30 @@ def _run_tests(
             }
         )
 
+    return results
+
+
+def _collect_status_results(
+    group: str,
+    test_file_path: Path,
+    test_names: list[str],
+    output_dir: Path,
+    include_prefixes: set[str],
+) -> list[dict]:
+    results = []
+    for name in test_names:
+        if _is_test_failed(test_file_path, name) or not _matches_prefixes(name, include_prefixes):
+            continue
+        completed, missing = _get_output_status(name, output_dir, group)
+        results.append(
+            {
+                "group": group,
+                "test": name,
+                "status": "complete" if completed else "missing",
+                "error": None,
+                "missing": missing,
+            }
+        )
     return results
 
 
@@ -475,12 +466,6 @@ def main() -> int:
         help="Resume from where left off (skip tests with output files).",
     )
     parser.add_argument(
-        "--skip",
-        action="append",
-        default=[],
-        help="Skip tests whose names contain the pattern (case-insensitive).",
-    )
-    parser.add_argument(
         "--prefix",
         action="append",
         default=[],
@@ -494,7 +479,6 @@ def main() -> int:
 
     export_path = (tt_xla_dir / "modules").resolve()
     output_dir = (tt_xla_dir / "single_layer_tests").resolve()
-    skip_tests = _parse_skip_patterns(args.skip)
     include_prefixes = _parse_prefix_patterns(args.prefix)
 
     print(f"\n{'='*60}")
@@ -503,8 +487,6 @@ def main() -> int:
     print(f"Export path:     {export_path}")
     print(f"Output directory: {output_dir}")
     print(f"Test types:      LLM{' + TP' if args.include_tp else ''}, Encoder")
-    if skip_tests:
-        print(f"Skipping tests matching: {', '.join(sorted(skip_tests))}")
     if include_prefixes:
         print(f"Only running model prefixes: {', '.join(sorted(include_prefixes))}")
     if args.status:
@@ -515,65 +497,24 @@ def main() -> int:
 
     if args.status:
         results = []
-        llm_tests = _test_names_llm(args.include_tp)
-        for name in llm_tests:
-            if _is_test_failed(tt_xla_dir / "test_llms.py", name):
-                results.append(
-                    {
-                        "group": "llm",
-                        "test": name,
-                        "status": "skipped",
-                        "error": "Test marked as FAILED",
-                        "missing": [],
-                    }
-                )
-                continue
-            if any(skip_pattern.lower() in name.lower() for skip_pattern in skip_tests):
-                continue
-            if include_prefixes:
-                model_name = name[5:] if name.startswith("test_") else name
-                if not any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes):
-                    continue
-            completed, missing = _get_output_status(name, output_dir, "llm")
-            results.append(
-                {
-                    "group": "llm",
-                    "test": name,
-                    "status": "complete" if completed else "missing",
-                    "error": None,
-                    "missing": missing,
-                }
+        results.extend(
+            _collect_status_results(
+                "llm",
+                tt_xla_dir / "test_llms.py",
+                _test_names_llm(args.include_tp),
+                output_dir,
+                include_prefixes,
             )
-
-        encoder_tests = _test_names_encoder()
-        for name in encoder_tests:
-            if _is_test_failed(tt_xla_dir / "test_encoders.py", name):
-                results.append(
-                    {
-                        "group": "encoder",
-                        "test": name,
-                        "status": "skipped",
-                        "error": "Test marked as FAILED",
-                        "missing": [],
-                    }
-                )
-                continue
-            if any(skip_pattern.lower() in name.lower() for skip_pattern in skip_tests):
-                continue
-            if include_prefixes:
-                model_name = name[5:] if name.startswith("test_") else name
-                if not any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes):
-                    continue
-            completed, missing = _get_output_status(name, output_dir, "encoder")
-            results.append(
-                {
-                    "group": "encoder",
-                    "test": name,
-                    "status": "complete" if completed else "missing",
-                    "error": None,
-                    "missing": missing,
-                }
+        )
+        results.extend(
+            _collect_status_results(
+                "encoder",
+                tt_xla_dir / "test_encoders.py",
+                _test_names_encoder(),
+                output_dir,
+                include_prefixes,
             )
+        )
 
         _print_status_summary(results)
         return 0
@@ -586,7 +527,6 @@ def main() -> int:
             _test_names_llm(args.include_tp),
             export_path,
             output_dir,
-            skip_tests,
             include_prefixes,
             args.resume,
             max_ttirs=2,
@@ -599,7 +539,6 @@ def main() -> int:
             _test_names_encoder(),
             export_path,
             output_dir,
-            skip_tests,
             include_prefixes,
             args.resume,
             max_ttirs=1,
