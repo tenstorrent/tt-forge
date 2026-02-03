@@ -17,5 +17,8 @@ RUN --mount=type=bind,source=$WHEEL_FILES_PATH,target=/wheels \
     eval "$(pyenv init -)" && \
     for wheel in /wheels/*.whl; do \
       pip install "$wheel"; \
+      if [[ "$wheel" == *"pjrt_"* ]]; then \
+        tt-forge-install; \
+      fi; \
     done && \
     pip cache purge
