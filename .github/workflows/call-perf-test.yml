@@ -136,8 +136,8 @@ jobs:
         fi
 
         if [ -n "${{ matrix.build.pyreq }}" ]; then
-          pip install ${{ matrix.build.pyreq }}
           pip install torch==2.9.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install ${{ matrix.build.pyreq }}
         fi
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
           pip install torchvision==0.24.0+cpu --index-url https://download.pytorch.org/whl/cpu
