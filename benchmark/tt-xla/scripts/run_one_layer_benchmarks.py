@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-import ast
 import inspect
 import os
 import re
@@ -17,7 +16,6 @@ from typing import Optional, Tuple
 
 import pytest
 
-# Critical error messages that should stop execution
 CRITICAL_ERRORS = [
     "Read unexpected run_mailbox value from core",
     "Timeout waiting for Ethernet core service remote IO request",
@@ -25,7 +23,6 @@ CRITICAL_ERRORS = [
 
 
 def _handle_critical_error() -> None:
-    """Print device error message and exit."""
     print(
         f"\n{'='*60}\n"
         f"DEVICE ERROR: TT device needs reset\n"
@@ -55,61 +52,32 @@ def _ensure_import_paths(repo_root: Path, tt_xla_dir: Path) -> None:
         sys.path.insert(0, tt_xla_str)
 
 
-def _find_ttirs_by_model(export_path: Path, model_name: str) -> list[Path]:
-    """Find TTIR files for a specific model by searching for files matching the model name pattern.
-    
-    This searches for files after the test completes, similar to generate_transformer_layers.py.
-    Files are typically in modules/irs/ with names like: ttir_falcon3_1b_lyr1_bs32_isl128_run2048_g0_*.mlir
-    """
+def _model_name_base(model_name: str) -> str:
+    return model_name[:-3] if model_name.endswith("_tp") else model_name
+
+
+def _find_ttirs_by_model(export_path: Path, model_name: str, min_mtime: Optional[float] = None) -> list[Path]:
     if not export_path.exists():
         return []
 
-    # Normalize model name for matching (remove underscores/hyphens, lowercase)
-    model_name_norm = model_name.lower().replace("_", "").replace("-", "")
-    
-    paths = []
-    # Search for .mlir files (the actual format, not .ttir)
+    model_name_base = _model_name_base(model_name)
+    name_pattern = re.compile(rf"^ttir_{re.escape(model_name_base)}_1lyr_bs\d+_isl\d+")
+    matches = []
     for path in export_path.rglob("*.mlir"):
-        # Parse the filename stem (without extension)
-        # Files are named like: ttir_falcon3_1b_lyr1_bs32_isl128_run2048_g0_*.mlir
-        filename_stem = path.stem  # e.g., "ttir_falcon3_1b_lyr1_bs32_isl128_run2048_g0_1770047972511"
-        
-        # Check if filename contains model name and lyr pattern (lyr1, lyr2, etc.)
-        stem_norm = filename_stem.lower().replace("_", "").replace("-", "")
-        has_model_name = model_name_norm in stem_norm
-        has_lyr = re.search(r"lyr1", stem_norm) is not None
-        
-        if has_model_name and has_lyr:
-            paths.append(path)
-
-    # Return sorted by modification time (most recent first)
-    return sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)
+        if not name_pattern.search(path.stem):
+            continue
+        if min_mtime is not None and path.stat().st_mtime < min_mtime:
+            continue
+        matches.append(path)
+    return sorted(matches, key=lambda p: p.stat().st_mtime, reverse=True)
 
 
-def _parse_export_name(export_name: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
-    """Parse export name from directory or filename.
-    
-    Handles both formats:
-    - Directory: model_name_1lyr_bs32_isl128
-    - Filename: ttir_exactname_lyr1_bs32_isl128_run2048_g0_*
-    """
-    bs_match = re.search(r"(?:^|_)bs(\d+)(?:_|$)", export_name)
-    isl_match = re.search(r"(?:^|_)isl(\d+)(?:_|$)", export_name)
-    bs = bs_match.group(1) if bs_match else None
-    isl = isl_match.group(1) if isl_match else None
-
-    # Extract model name and lyr pattern directly
-    # Match: ttir_<name>_lyr1 or <name>_1lyr
-    lyr_match = re.search(r"(?:^ttir_)?(.+?)_(?:lyr(\d+)|(\d+)lyr)(?:_|$)", export_name, re.IGNORECASE)
-    if lyr_match:
-        base_name = lyr_match.group(1)
-        lyr_num = lyr_match.group(2) or lyr_match.group(3) or "1"
-        # Normalize to _1lyr format for consistency
-        export_name = f"{base_name}_{lyr_num}lyr"
-        return export_name, bs, isl
-    else:
-        # If no lyr pattern found, this is not a valid one-layer export
-        return None, bs, isl
+def _parse_ttir_stem(ttir_stem: str, model_name: str) -> tuple[Optional[str], Optional[str]]:
+    model_name_base = _model_name_base(model_name)
+    match = re.search(rf"^ttir_{re.escape(model_name_base)}_1lyr_bs(\d+)_isl(\d+)", ttir_stem)
+    if not match:
+        return None, None
+    return match.group(1), match.group(2)
 
 
 def _graph_label_from_stem(stem: str) -> str:
@@ -121,36 +89,35 @@ def _graph_label_from_stem(stem: str) -> str:
     return "graph"
 
 
-def _normalize_ttir_name(ttir_path: Path, group: str) -> str:
-    # Parse from filename stem (files are in modules/irs/ with names like ttir_model_lyr1_bs32_isl128_*.mlir)
-    export_name, bs, isl = _parse_export_name(ttir_path.stem)
-    # export_name should never be None here since files are filtered during collection
-    assert export_name is not None, f"Expected lyr pattern in {ttir_path.stem}"
-    
-    graph_label = _graph_label_from_stem(ttir_path.stem)
-    if group == "llm":
-        parts = [export_name]  # export_name already includes the lyr pattern
-        parts.append(graph_label)
-        include_isl = graph_label == "prefill"
-    elif group == "encoder":
-        parts = [f"{export_name}_encoder"]  # export_name already includes the lyr pattern
-        include_isl = True
+def _normalize_ttir_name(
+    ttir_path: Path, group: str, model_name: str, graph_label_override: Optional[str] = None
+) -> str:
+    bs, isl = _parse_ttir_stem(ttir_path.stem, model_name)
+    assert bs is not None and isl is not None, f"Expected bs/isl in {ttir_path.stem}"
+    model_name_base = _model_name_base(model_name)
+    base = f"{model_name_base}_1lyr_bs{bs}"
+    graph_label = graph_label_override or _graph_label_from_stem(ttir_path.stem)
+    if group == "encoder":
+        suffix = f"encoder_isl{isl}"
+    elif graph_label == "decode":
+        suffix = "decode"
     else:
-        parts = [export_name]  # export_name already includes the lyr pattern
-        include_isl = True
-
-    if bs:
-        parts.append(f"bs{bs}")
-    if include_isl and isl:
-        parts.append(f"isl{isl}")
-    return "_".join(parts) + ".ttir"
+        suffix = f"prefill_isl{isl}"
+    return f"{base}_{suffix}.ttir"
 
 
-def _copy_ttirs(ttir_paths: list[Path], output_dir: Path, group: str) -> list[Path]:
+def _copy_ttirs(
+    ttir_paths: list[Path],
+    output_dir: Path,
+    group: str,
+    model_name: str,
+    graph_labels: Optional[dict[Path, str]] = None,
+) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     copied = []
     for ttir_path in ttir_paths:
-        target_name = _normalize_ttir_name(ttir_path, group)
+        graph_label_override = graph_labels.get(ttir_path) if graph_labels else None
+        target_name = _normalize_ttir_name(ttir_path, group, model_name, graph_label_override)
         target_path = output_dir / target_name
 
         if target_path.exists():
@@ -170,241 +137,219 @@ def _copy_ttirs(ttir_paths: list[Path], output_dir: Path, group: str) -> list[Pa
     return copied
 
 
-def _run_pytest(test_file: str, test_name: str, num_layers: int = 1) -> tuple[bool, Optional[str]]:
-    """Run a pytest test with num_layers parameter.
-    
-    Returns:
-        (success, error_message) tuple
-    """
+def _extract_run_id(ttir_stem: str) -> Optional[str]:
+    match = re.search(r"_run([0-9a-zA-Z]+)", ttir_stem)
+    return match.group(1) if match else None
+
+
+def _select_tp_ttirs(ttir_paths: list[Path]) -> tuple[list[Path], dict[Path, str]]:
+    if not ttir_paths:
+        return [], {}
+
+    run_groups: dict[Optional[str], list[Path]] = {}
+    for path in ttir_paths:
+        run_id = _extract_run_id(path.stem)
+        run_groups.setdefault(run_id, []).append(path)
+
+    def _group_mtime(paths: list[Path]) -> float:
+        return max(p.stat().st_mtime for p in paths)
+
+    selected_run_id = max(run_groups.items(), key=lambda item: _group_mtime(item[1]))[0]
+    candidates = run_groups[selected_run_id]
+    candidates_sorted = sorted(candidates, key=lambda p: p.stat().st_size, reverse=True)
+    selected = candidates_sorted[:2]
+
+    labels: dict[Path, str] = {}
+    if len(selected) == 2:
+        selected_by_time = sorted(selected, key=lambda p: p.stat().st_mtime)
+        labels[selected_by_time[0]] = "prefill"
+        labels[selected_by_time[1]] = "decode"
+
+    return selected, labels
+
+
+def _run_pytest(test_file: str, test_name: str, num_layers: int = 1) -> tuple[bool, Optional[str], Optional[str]]:
     test_path = f"{test_file}::{test_name}"
     cmd = [
-        sys.executable, "-m", "pytest",
-        "-x",  # Exit on first failure
-        "-v",  # Verbose
+        sys.executable,
+        "-m",
+        "pytest",
+        "-x",
+        "-v",
         test_path,
-        "--num-layers", str(num_layers),
-        "--output-file", "",  # Empty output file
+        "--num-layers",
+        str(num_layers),
+        "--output-file",
+        "",
     ]
-    
+
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600,  # 10 minute timeout
-        )
-        
-        if result.returncode == 0:
-            return True, None
-        elif result.returncode == pytest.ExitCode.SKIPPED:
-            return False, "Test was skipped"
-        else:
-            # Extract error message from stderr or stdout
-            error_output = result.stderr or result.stdout
-            # Check for critical errors
-            if any(critical in error_output for critical in CRITICAL_ERRORS):
-                _handle_critical_error()
-            return False, error_output.split("\n")[-1] if error_output else "Test failed"
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     except subprocess.TimeoutExpired:
-        return False, "Test timed out"
-    except Exception as e:
-        return False, str(e)
+        return False, "Test timed out", None
+    except Exception as exc:
+        error_msg = str(exc)
+        if any(critical in error_msg for critical in CRITICAL_ERRORS):
+            _handle_critical_error()
+        return False, f"{type(exc).__name__}: {error_msg}", None
+
+    output = result.stderr or result.stdout or ""
+    if result.returncode == 0:
+        return True, None, None
+    skipped_code = getattr(pytest.ExitCode, "SKIPPED", 5)
+    if result.returncode == skipped_code:
+        return False, "Test was skipped", None
+    if any(critical in output for critical in CRITICAL_ERRORS):
+        _handle_critical_error()
+    output_lines = [line for line in output.split("\n") if line.strip()]
+    tail = "\n".join(output_lines[-20:]) if output_lines else None
+    last_line = output_lines[-1] if output_lines else "Test failed"
+    return False, last_line, tail
 
 
 def _is_test_failed(test_file: Path, test_name: str) -> bool:
-    """Check if a test has # FAILED comment above it."""
     if not test_file.exists():
         return False
-    
-    with open(test_file, "r") as f:
-        source = f.read()
-        lines = source.splitlines()
-    
-    # Parse the source to find the test function
-    try:
-        tree = ast.parse(source)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) and node.name == test_name:
-                # Check the line before the function definition
-                func_line = node.lineno - 1  # Convert to 0-based index
-                if func_line > 0:
-                    prev_line = lines[func_line - 1].strip()
-                    if prev_line.startswith("# FAILED"):
-                        return True
-    except SyntaxError:
-        # If we can't parse, fall back to simple line search
-        pass
-    
+
+    lines = test_file.read_text().splitlines()
+    for idx, line in enumerate(lines):
+        if line.strip().startswith(f"def {test_name}("):
+            prev_line = lines[idx - 1].strip() if idx > 0 else ""
+            return prev_line.startswith("# FAILED")
     return False
 
 
 def _is_test_completed(test_name: str, output_dir: Path, group: str) -> bool:
-    """Check if a test has already been completed by looking for output files."""
     if not output_dir.exists():
         return False
-    
-    # Extract model name: everything after "test_" is the model name
-    # e.g., "test_falcon3_1b" -> "falcon3_1b", "test_llama_3_2_1b_tp" -> "llama_3_2_1b_tp"
-    if test_name.startswith("test_"):
-        model_name = test_name[5:]  # Remove "test_" prefix
-    else:
-        model_name = test_name
-    
-    # Remove "_tp" suffix if present for matching (TP tests may share same base files)
-    if model_name.endswith("_tp"):
-        model_name_base = model_name[:-3]
-    else:
-        model_name_base = model_name
-    
-    # Normalize for comparison: remove underscores and hyphens, convert to lowercase
+
+    model_name = test_name[5:] if test_name.startswith("test_") else test_name
+    model_name_base = model_name[:-3] if model_name.endswith("_tp") else model_name
     model_name_norm = model_name_base.lower().replace("_", "").replace("-", "")
-    
-    # Look for any .ttir files that might correspond to this test
-    # File must contain both the model name and "_1lyr" (or "1lyr") pattern
+
+    has_prefill = False
+    has_decode = False
     for ttir_file in output_dir.glob("*.ttir"):
         stem = ttir_file.stem.lower()
         stem_norm = stem.replace("_", "").replace("-", "")
-        # Check if filename contains both model name and 1lyr pattern
         has_model_name = model_name_norm in stem_norm
         has_1lyr = "1lyr" in stem_norm or "_1lyr" in stem.lower()
         if has_model_name and has_1lyr:
-            return True
-    
+            if group == "encoder":
+                if "encoder_isl" in stem:
+                    return True
+                continue
+            if "prefill_isl" in stem:
+                has_prefill = True
+            if "_decode" in stem:
+                has_decode = True
+            if has_prefill and has_decode:
+                return True
+
     return False
 
 
-def _run_llm_tests(include_tp: bool, export_path: Path, output_dir: Path, skip_tests: set[str], resume: bool) -> list[dict]:
+def _get_output_status(test_name: str, output_dir: Path, group: str) -> tuple[bool, list[str]]:
+    if not output_dir.exists():
+        expected = ["encoder"] if group == "encoder" else ["prefill", "decode"]
+        return False, expected
+
+    model_name = test_name[5:] if test_name.startswith("test_") else test_name
+    model_name_base = model_name[:-3] if model_name.endswith("_tp") else model_name
+    model_name_norm = model_name_base.lower().replace("_", "").replace("-", "")
+
+    found_prefill = False
+    found_decode = False
+    found_encoder = False
+    for ttir_file in output_dir.glob("*.ttir"):
+        stem = ttir_file.stem.lower()
+        stem_norm = stem.replace("_", "").replace("-", "")
+        has_model_name = model_name_norm in stem_norm
+        has_1lyr = "1lyr" in stem_norm or "_1lyr" in stem.lower()
+        if not (has_model_name and has_1lyr):
+            continue
+        if "encoder_isl" in stem:
+            found_encoder = True
+        if "prefill_isl" in stem:
+            found_prefill = True
+        if "_decode" in stem:
+            found_decode = True
+
+    if group == "encoder":
+        return found_encoder, ([] if found_encoder else ["encoder"])
+
+    missing = []
+    if not found_prefill:
+        missing.append("prefill")
+    if not found_decode:
+        missing.append("decode")
+    return len(missing) == 0, missing
+
+
+def _parse_skip_patterns(skip_args: list[str]) -> set[str]:
+    skip_tests: set[str] = set()
+    for skip_arg in skip_args:
+        skip_tests.update(s.strip() for s in skip_arg.split(",") if s.strip())
+    return skip_tests
+
+
+def _parse_prefix_patterns(prefix_args: list[str]) -> set[str]:
+    prefixes: set[str] = set()
+    for prefix_arg in prefix_args:
+        prefixes.update(s.strip() for s in prefix_arg.split(",") if s.strip())
+    return prefixes
+
+
+def _test_names_llm(include_tp: bool) -> list[str]:
     import test_llms
 
-    results = []
-    tt_xla_dir, _ = _resolve_paths()
-    test_file_path = tt_xla_dir / "test_llms.py"
-    test_file = str(test_file_path)
-
-    for name, func in inspect.getmembers(test_llms, inspect.isfunction):
+    names = []
+    for name, _func in inspect.getmembers(test_llms, inspect.isfunction):
         if not name.startswith("test_"):
             continue
         if name in {"test_llm", "test_llm_tp"}:
             continue
         if not include_tp and name.endswith("_tp"):
             continue
-        
-        # Skip if test has # FAILED comment above it
-        if _is_test_failed(test_file_path, name):
-            print(f"Skipping {name} (has # FAILED comment)")
-            results.append(
-                {
-                    "group": "llm",
-                    "test": name,
-                    "status": "skipped",
-                    "error": "Test marked as FAILED",
-                    "ttir": [],
-                }
-            )
-            continue
-        
-        # Skip if test name matches any skip pattern
-        if any(skip_pattern.lower() in name.lower() for skip_pattern in skip_tests):
-            print(f"Skipping {name} (matches skip pattern)")
-            results.append(
-                {
-                    "group": "llm",
-                    "test": name,
-                    "status": "skipped",
-                    "error": "Skipped via --skip option",
-                    "ttir": [],
-                }
-            )
-            continue
-        
-        # Skip if already completed (resume mode)
-        if resume and _is_test_completed(name, output_dir, "llm"):
-            print(f"Skipping {name} (already completed - output file exists)")
-            results.append(
-                {
-                    "group": "llm",
-                    "test": name,
-                    "status": "skipped",
-                    "error": "Already completed (resume mode)",
-                    "ttir": [],
-                }
-            )
-            continue
-
-        # Extract model name (everything after "test_")
-        model_name = name[5:] if name.startswith("test_") else name
-        
-        status = "ok"
-        error = None
-        try:
-            success, error_msg = _run_pytest(test_file, name, num_layers=1)
-            if not success:
-                if error_msg and "num_layers override requested but ModelLoader does not support it" in error_msg:
-                    status = "unsupported"
-                    error = error_msg
-                elif error_msg and "Test was skipped" in error_msg:
-                    status = "skipped"
-                    error = error_msg
-                else:
-                    status = "failed"
-                    error = error_msg
-        except Exception as exc:
-            # Check for critical errors - stop execution
-            error_msg = str(exc)
-            if any(critical in error_msg for critical in CRITICAL_ERRORS):
-                _handle_critical_error()
-            # Otherwise continue with next test
-            status = "failed"
-            error = f"{type(exc).__name__}: {error_msg}"
-        
-        # After test completes, search for files by model name pattern
-        ttir_paths = _find_ttirs_by_model(export_path, model_name)
-        if len(ttir_paths) > 2:
-            ttir_paths = ttir_paths[:2]  # Take most recent 2
-        if ttir_paths:
-            print(f"Found {len(ttir_paths)} TTIR file(s) for {model_name}: {[p.name for p in ttir_paths]}")
-        else:
-            print(f"WARNING: No TTIR files found for {model_name} in {export_path}")
-        copied_paths = _copy_ttirs(ttir_paths, output_dir, "llm")
-        if copied_paths:
-            print(f"Copied {len(copied_paths)} file(s) to {output_dir}: {[p.name for p in copied_paths]}")
-        results.append(
-            {
-                "group": "llm",
-                "test": name,
-                "status": status,
-                "error": error,
-                "ttir": [str(path) for path in copied_paths],
-            }
-        )
-
-    return results
+        names.append(name)
+    return names
 
 
-def _run_encoder_tests(export_path: Path, output_dir: Path, skip_tests: set[str], resume: bool) -> list[dict]:
+def _test_names_encoder() -> list[str]:
     import test_encoders
 
-    results = []
-    tt_xla_dir, _ = _resolve_paths()
-    test_file_path = tt_xla_dir / "test_encoders.py"
-    test_file = str(test_file_path)
-    
+    names = []
     for name, func in inspect.getmembers(test_encoders, inspect.isfunction):
         if not name.startswith("test_"):
             continue
         if name == "test_encoder":
             continue
-
         sig = inspect.signature(func)
         if "num_layers" not in sig.parameters:
             continue
+        names.append(name)
+    return names
 
-        # Skip if test has # FAILED comment above it
+
+def _run_tests(
+    group: str,
+    test_file_path: Path,
+    test_names: list[str],
+    export_path: Path,
+    output_dir: Path,
+    skip_tests: set[str],
+    include_prefixes: set[str],
+    resume: bool,
+    max_ttirs: int,
+) -> list[dict]:
+    test_file = str(test_file_path)
+    results = []
+
+    for name in test_names:
         if _is_test_failed(test_file_path, name):
-            print(f"Skipping {name} (has # FAILED comment)")
             results.append(
                 {
-                    "group": "encoder",
+                    "group": group,
                     "test": name,
                     "status": "skipped",
                     "error": "Test marked as FAILED",
@@ -413,12 +358,10 @@ def _run_encoder_tests(export_path: Path, output_dir: Path, skip_tests: set[str]
             )
             continue
 
-        # Skip if test name matches any skip pattern
         if any(skip_pattern.lower() in name.lower() for skip_pattern in skip_tests):
-            print(f"Skipping {name} (matches skip pattern)")
             results.append(
                 {
-                    "group": "encoder",
+                    "group": group,
                     "test": name,
                     "status": "skipped",
                     "error": "Skipped via --skip option",
@@ -427,62 +370,57 @@ def _run_encoder_tests(export_path: Path, output_dir: Path, skip_tests: set[str]
             )
             continue
 
-        # Skip if already completed (resume mode)
-        if resume and _is_test_completed(name, output_dir, "encoder"):
-            print(f"Skipping {name} (already completed - output file exists)")
-            results.append(
-                {
-                    "group": "encoder",
-                    "test": name,
-                    "status": "skipped",
-                    "error": "Already completed (resume mode)",
-                    "ttir": [],
-                }
-            )
+        if include_prefixes:
+            model_name = name[5:] if name.startswith("test_") else name
+            if not any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes):
+                continue
+
+        if resume and _is_test_completed(name, output_dir, group):
             continue
 
-        # Extract model name (everything after "test_")
+        print(f"🚀 Starting {group}::{name}")
+
         model_name = name[5:] if name.startswith("test_") else name
-        
+        model_name_base = _model_name_base(model_name)
         status = "ok"
         error = None
-        try:
-            # Run test via pytest - this automatically handles fixtures like request
-            # subprocess.run is blocking, so it waits for the test to complete
-            success, error_msg = _run_pytest(test_file, name, num_layers=1)
-            if not success:
-                if error_msg and "num_layers override requested but ModelLoader does not support it" in error_msg:
-                    status = "unsupported"
-                    error = error_msg
-                elif error_msg and "Test was skipped" in error_msg:
-                    status = "skipped"
-                    error = error_msg
-                else:
-                    status = "failed"
-                    error = error_msg
-        except Exception as exc:
-            # Check for critical errors - stop execution
-            error_msg = str(exc)
-            if any(critical in error_msg for critical in CRITICAL_ERRORS):
-                _handle_critical_error()
-            # Otherwise continue with next test
-            status = "failed"
-            error = f"{type(exc).__name__}: {error_msg}"
-        
-        # After test completes, search for files by model name pattern
-        ttir_paths = _find_ttirs_by_model(export_path, model_name)
-        if len(ttir_paths) > 1:
-            ttir_paths = ttir_paths[:1]  # Take most recent 1
-        if ttir_paths:
-            print(f"Found {len(ttir_paths)} TTIR file(s) for {model_name}: {[p.name for p in ttir_paths]}")
+        test_start_time = time.time()
+        success, error_msg, error_detail = _run_pytest(test_file, name, num_layers=1)
+        if not success:
+            if error_msg and "num_layers override requested but ModelLoader does not support it" in error_msg:
+                status = "unsupported"
+                error = error_msg
+            elif error_msg and "Test was skipped" in error_msg:
+                status = "skipped"
+                error = error_msg
+            else:
+                status = "failed"
+                error = error_msg
+
+        ttir_paths = _find_ttirs_by_model(export_path, model_name_base, min_mtime=test_start_time)
+        graph_labels = None
+        if model_name.endswith("_tp"):
+            ttir_paths, graph_labels = _select_tp_ttirs(ttir_paths)
         else:
-            print(f"WARNING: No TTIR files found for {model_name} in {export_path}")
-        copied_paths = _copy_ttirs(ttir_paths, output_dir, "encoder")
-        if copied_paths:
-            print(f"Copied {len(copied_paths)} file(s) to {output_dir}: {[p.name for p in copied_paths]}")
+            ttir_paths = ttir_paths[:max_ttirs]
+        copied_paths = _copy_ttirs(ttir_paths, output_dir, group, model_name_base, graph_labels)
+        status_note = f"{status}"
+        if error:
+            status_note = f"{status} ({error})"
+        if status == "ok":
+            status_icon = "✅"
+        elif status in {"skipped", "unsupported"}:
+            status_icon = "⚠️"
+        else:
+            status_icon = "❌"
+        print(f"{status_icon} Finished {group}::{name} -> {status_note}")
+        if status == "failed" and error_detail:
+            print("    Last output:")
+            for line in error_detail.splitlines():
+                print(f"    {line}")
         results.append(
             {
-                "group": "encoder",
+                "group": group,
                 "test": name,
                 "status": status,
                 "error": error,
@@ -493,34 +431,60 @@ def _run_encoder_tests(export_path: Path, output_dir: Path, skip_tests: set[str]
     return results
 
 
+def _print_summary(results: list[dict]) -> None:
+    print("\n📋 One-layer benchmark results:")
+    for result in results:
+        ttir_summary = result["ttir"] if result["ttir"] else ["none"]
+        status = result["status"]
+        status_icon = "✅" if status == "ok" else "⚠️" if status in {"skipped", "unsupported"} else "❌"
+        print(f"{status_icon} {result['group']}::{result['test']} status={status} ttir={ttir_summary}")
+        if result["error"]:
+            print(f"   🧾 error={result['error']}")
+
+    failures = [r for r in results if r["status"] == "failed"]
+    if failures:
+        print("\n❌ Failures:")
+        for result in failures:
+            print(f"   ❌ {result['group']}::{result['test']} error={result['error']}")
+
+
+def _print_status_summary(results: list[dict]) -> None:
+    print("\n🧭 One-layer benchmark status:")
+    for result in results:
+        status = result["status"]
+        status_icon = "✅" if status == "complete" else "❌" if status == "failed" else "⚠️"
+        missing = result.get("missing", [])
+        missing_note = f" missing={missing}" if missing else ""
+        print(f"{status_icon} {result['group']}::{result['test']} status={status}{missing_note}")
+        if result["error"]:
+            print(f"   🧾 error={result['error']}")
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run one-layer benchmarks for models that support num_layers.")
+    parser = argparse.ArgumentParser(description="Run one-layer pytest tests to export TTIRs.")
+    parser.add_argument("--include-tp", action="store_true", help="Include TP LLM tests.")
     parser.add_argument(
-        "--export-path",
-        default=None,
-        help="Export path for XLA modules (defaults to benchmark/tt-xla/modules).",
-    )
-    parser.add_argument(
-        "--include-tp",
+        "--status",
         action="store_true",
-        help="Include TP LLM tests (multi-chip) in the run.",
-    )
-    parser.add_argument(
-        "--output-dir",
-        default=None,
-        help="Directory to save renamed single-layer TTIRs (defaults to benchmark/tt-xla/single_layer_tests).",
+        help="Report missing TTIR outputs without running tests.",
     )
     parser.add_argument(
         "--continue",
         dest="resume",
         action="store_true",
-        help="Resume from where left off - skip tests that already have output files in the output directory.",
+        help="Resume from where left off (skip tests with output files).",
     )
     parser.add_argument(
         "--skip",
         action="append",
         default=[],
-        help="Skip tests whose names contain the given pattern (case-insensitive). Can be specified multiple times. Example: --skip bert --skip llama",
+        help="Skip tests whose names contain the pattern (case-insensitive).",
+    )
+    parser.add_argument(
+        "--prefix",
+        action="append",
+        default=[],
+        help="Only run tests whose model name starts with this prefix (case-insensitive).",
     )
     args = parser.parse_args()
 
@@ -528,40 +492,121 @@ def main() -> int:
     _ensure_import_paths(repo_root, tt_xla_dir)
     os.chdir(tt_xla_dir)
 
-    export_path = Path(args.export_path) if args.export_path else tt_xla_dir / "modules"
-    export_path = export_path.resolve()
-
-    output_dir = Path(args.output_dir) if args.output_dir else tt_xla_dir / "single_layer_tests"
-    output_dir = output_dir.resolve()
-
-    # Parse skip patterns (handle comma-separated values)
-    skip_tests = set()
-    for skip_arg in args.skip:
-        skip_tests.update(s.strip() for s in skip_arg.split(",") if s.strip())
+    export_path = (tt_xla_dir / "modules").resolve()
+    output_dir = (tt_xla_dir / "single_layer_tests").resolve()
+    skip_tests = _parse_skip_patterns(args.skip)
+    include_prefixes = _parse_prefix_patterns(args.prefix)
 
     print(f"\n{'='*60}")
-    print(f"One-Layer Benchmark Runner")
+    print("One-Layer Benchmark Runner")
     print(f"{'='*60}")
-    print(f"Export path:    {export_path}")
+    print(f"Export path:     {export_path}")
     print(f"Output directory: {output_dir}")
-    print(f"Test types:     LLM{' + TP' if args.include_tp else ''}, Encoder")
+    print(f"Test types:      LLM{' + TP' if args.include_tp else ''}, Encoder")
     if skip_tests:
-        print(f"Skipping tests matching: {', '.join(skip_tests)}")
+        print(f"Skipping tests matching: {', '.join(sorted(skip_tests))}")
+    if include_prefixes:
+        print(f"Only running model prefixes: {', '.join(sorted(include_prefixes))}")
+    if args.status:
+        print("Status mode:     Enabled (no tests will be run)")
     if args.resume:
-        print(f"Resume mode:    Enabled (checking {output_dir} for existing files)")
+        print(f"Resume mode:     Enabled (checking {output_dir} for existing files)")
     print(f"{'='*60}\n")
 
+    if args.status:
+        results = []
+        llm_tests = _test_names_llm(args.include_tp)
+        for name in llm_tests:
+            if _is_test_failed(tt_xla_dir / "test_llms.py", name):
+                results.append(
+                    {
+                        "group": "llm",
+                        "test": name,
+                        "status": "skipped",
+                        "error": "Test marked as FAILED",
+                        "missing": [],
+                    }
+                )
+                continue
+            if any(skip_pattern.lower() in name.lower() for skip_pattern in skip_tests):
+                continue
+            if include_prefixes:
+                model_name = name[5:] if name.startswith("test_") else name
+                if not any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes):
+                    continue
+            completed, missing = _get_output_status(name, output_dir, "llm")
+            results.append(
+                {
+                    "group": "llm",
+                    "test": name,
+                    "status": "complete" if completed else "missing",
+                    "error": None,
+                    "missing": missing,
+                }
+            )
+
+        encoder_tests = _test_names_encoder()
+        for name in encoder_tests:
+            if _is_test_failed(tt_xla_dir / "test_encoders.py", name):
+                results.append(
+                    {
+                        "group": "encoder",
+                        "test": name,
+                        "status": "skipped",
+                        "error": "Test marked as FAILED",
+                        "missing": [],
+                    }
+                )
+                continue
+            if any(skip_pattern.lower() in name.lower() for skip_pattern in skip_tests):
+                continue
+            if include_prefixes:
+                model_name = name[5:] if name.startswith("test_") else name
+                if not any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes):
+                    continue
+            completed, missing = _get_output_status(name, output_dir, "encoder")
+            results.append(
+                {
+                    "group": "encoder",
+                    "test": name,
+                    "status": "complete" if completed else "missing",
+                    "error": None,
+                    "missing": missing,
+                }
+            )
+
+        _print_status_summary(results)
+        return 0
+
     results = []
-    results.extend(_run_llm_tests(args.include_tp, export_path, output_dir, skip_tests, args.resume))
-    results.extend(_run_encoder_tests(export_path, output_dir, skip_tests, args.resume))
+    results.extend(
+        _run_tests(
+            "llm",
+            tt_xla_dir / "test_llms.py",
+            _test_names_llm(args.include_tp),
+            export_path,
+            output_dir,
+            skip_tests,
+            include_prefixes,
+            args.resume,
+            max_ttirs=2,
+        )
+    )
+    results.extend(
+        _run_tests(
+            "encoder",
+            tt_xla_dir / "test_encoders.py",
+            _test_names_encoder(),
+            export_path,
+            output_dir,
+            skip_tests,
+            include_prefixes,
+            args.resume,
+            max_ttirs=1,
+        )
+    )
 
-    print("\nOne-layer benchmark results:")
-    for result in results:
-        ttir_summary = result["ttir"] if result["ttir"] else ["none"]
-        print(f"- {result['group']}::{result['test']} status={result['status']} ttir={ttir_summary}")
-        if result["error"]:
-            print(f"  error={result['error']}")
-
+    _print_summary(results)
     return 0
 
 

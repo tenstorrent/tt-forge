@@ -386,7 +386,7 @@ def benchmark_llm_torch_xla(
             xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
     # Set XLA compilation options
-    num_layers_override = getattr(model_loader, 'num_layers', None)
+    num_layers_override = getattr(model_loader, "num_layers", None)
     export_model_name = build_xla_export_name(
         model_name=model_nickname,
         num_layers=num_layers_override,
