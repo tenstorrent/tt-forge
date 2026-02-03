@@ -162,6 +162,12 @@ def pytest_addoption(parser):
         type=make_validator_boolean("--experimental-compile"),
         help="Enable experimental compile flag (true/false). Overrides config value.",
     )
+    parser.addoption(
+        "--profile",
+        action="store_true",
+        default=False,
+        help="Enable profiling mode: uses single layer, minimal iterations, and tracy signposts.",
+    )
 
 
 @pytest.fixture
@@ -217,3 +223,8 @@ def task(request):
 @pytest.fixture
 def experimental_compile(request):
     return request.config.getoption("--experimental-compile")
+
+
+@pytest.fixture
+def profile(request):
+    return request.config.getoption("--profile")
