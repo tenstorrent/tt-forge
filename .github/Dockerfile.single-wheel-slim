@@ -18,4 +18,5 @@ RUN --mount=type=bind,source=$WHEEL_FILES_PATH,target=/wheels \
     for wheel in /wheels/*.whl; do \
       pip install "$wheel"; \
     done && \
+    tt-forge-install && \
     pip cache purge
