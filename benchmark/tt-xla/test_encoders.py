@@ -158,7 +158,7 @@ def test_bert(output_file):
     loader = ModelLoader()
     model_info_name = loader.get_model_info().name
     print(f"\nLoading model {model_info_name}...")
-    model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
+    model = loader.load_model(dtype_override=DTYPE_MAP[data_format], attn_implementation="eager")
 
     # Create function for loading raw inputs
     load_inputs_fn = get_default_inputs
