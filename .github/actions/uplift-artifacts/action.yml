@@ -50,7 +50,7 @@ runs:
       run: |
         # TODO: convert the commit sha to short sha for artifact name download
         short_sha=$(git rev-parse --short ${{ inputs.run-commit-sha }})
-        artifact_name="${{ inputs.artifact_name_prefix }}-${short_sha}"
+        artifact_name="${{ inputs.artifact_name_prefix }}"
         # Use GitHub API to check for existing artifacts
         response=$(curl -s -H "Authorization: token ${{ github.token }}" \
           "https://api.github.com/repos/${{ inputs.repo }}/actions/artifacts?name=${artifact_name}")
