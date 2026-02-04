@@ -138,6 +138,9 @@ jobs:
         if [ -n "${{ matrix.build.pyreq }}" ]; then
           pip install ${{ matrix.build.pyreq }}
         fi
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          pip install torchvision==0.24.0+cpu --index-url https://download.pytorch.org/whl/cpu
+        fi
 
     - name: Install upgraded wheel
       if: (inputs.project && inputs.run_id) || inputs.update-wheel
