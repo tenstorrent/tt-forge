@@ -272,7 +272,7 @@ def _matches_prefixes(test_name: str, include_prefixes: set[str]) -> bool:
     return any(model_name.lower().startswith(prefix.lower()) for prefix in include_prefixes)
 
 
-def _test_names_llm(include_tp: bool) -> list[str]:
+def _test_names_llm(include_tp: bool, tp_only: bool) -> list[str]:
     import test_llms
 
     names = []
@@ -280,6 +280,8 @@ def _test_names_llm(include_tp: bool) -> list[str]:
         if not name.startswith("test_"):
             continue
         if name in {"test_llm", "test_llm_tp"}:
+            continue
+        if tp_only and not name.endswith("_tp"):
             continue
         if not include_tp and name.endswith("_tp"):
             continue
@@ -435,6 +437,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run one-layer pytest tests to export TTIRs.")
     parser.add_argument("--include-tp", action="store_true", help="Include TP LLM tests.")
     parser.add_argument(
+        "--tp-only",
+        action="store_true",
+        help="Only run TP LLM tests (implies --include-tp).",
+    )
+    parser.add_argument(
         "--status",
         action="store_true",
         help="Report missing TTIR outputs without running tests.",
@@ -466,7 +473,12 @@ def main() -> int:
     print(f"{'='*60}")
     print(f"Export path:     {export_path}")
     print(f"Output directory: {output_dir}")
-    print(f"Test types:      LLM{' + TP' if args.include_tp else ''}, Encoder")
+    include_tp = args.include_tp or args.tp_only
+    test_types = "LLM" + (" + TP" if include_tp else "")
+    if args.tp_only:
+        test_types = "LLM (TP only)"
+    encoder_note = "" if args.tp_only else ", Encoder"
+    print(f"Test types:      {test_types}{encoder_note}")
     if include_prefixes:
         print(f"Only running model prefixes: {', '.join(sorted(include_prefixes))}")
     if args.status:
@@ -481,20 +493,21 @@ def main() -> int:
             _collect_status_results(
                 "llm",
                 tt_xla_dir / "test_llms.py",
-                _test_names_llm(args.include_tp),
+                _test_names_llm(include_tp, args.tp_only),
                 output_dir,
                 include_prefixes,
             )
         )
-        results.extend(
-            _collect_status_results(
-                "encoder",
-                tt_xla_dir / "test_encoders.py",
-                _test_names_encoder(),
-                output_dir,
-                include_prefixes,
+        if not args.tp_only:
+            results.extend(
+                _collect_status_results(
+                    "encoder",
+                    tt_xla_dir / "test_encoders.py",
+                    _test_names_encoder(),
+                    output_dir,
+                    include_prefixes,
+                )
             )
-        )
 
         _print_status_summary(results)
         return 0
@@ -504,7 +517,7 @@ def main() -> int:
         _run_tests(
             "llm",
             tt_xla_dir / "test_llms.py",
-            _test_names_llm(args.include_tp),
+            _test_names_llm(include_tp, args.tp_only),
             export_path,
             output_dir,
             include_prefixes,
@@ -512,18 +525,19 @@ def main() -> int:
             max_ttirs=2,
         )
     )
-    results.extend(
-        _run_tests(
-            "encoder",
-            tt_xla_dir / "test_encoders.py",
-            _test_names_encoder(),
-            export_path,
-            output_dir,
-            include_prefixes,
-            args.resume,
-            max_ttirs=1,
+    if not args.tp_only:
+        results.extend(
+            _run_tests(
+                "encoder",
+                tt_xla_dir / "test_encoders.py",
+                _test_names_encoder(),
+                export_path,
+                output_dir,
+                include_prefixes,
+                args.resume,
+                max_ttirs=1,
+            )
         )
-    )
 
     _print_summary(results)
     return 0
