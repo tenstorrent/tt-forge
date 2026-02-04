@@ -237,7 +237,7 @@ runs:
         elif [[ "${{ inputs.repo }}" =~ "tt-xla" ]]; then
             workflow="On nightly"
             if [[ "${{ inputs.release_type }}" == "nightly" ]]; then
-                workflow="pr-main.yml"
+                workflow="On PR"
             fi
             artifact_name_prefix="xla-whl-release"
             artifact_download_glob='*{xla-whl-release,vllm-tt-whl-release,test-reports}*'
