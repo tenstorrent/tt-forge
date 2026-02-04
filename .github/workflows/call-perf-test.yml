@@ -188,6 +188,7 @@ jobs:
         fi
 
         echo "Run benchmark for ${{ matrix.build.project }} - ${{ matrix.build.name }}"
+        pip install torchvision@https://download.pytorch.org/whl/cpu/torchvision-0.24.0%2Bcpu-cp311-cp311-manylinux_2_28_x86_64.whl#sha256=51fe8d72ddcc88a50ff27c50dd4987d82fba8b0dfd591898ee1f60e2902d18d1
         pip freeze
 
         if [ -z "${{ matrix.build.pytest }}" ]; then

@@ -44,7 +44,7 @@
       },
       {
         "name": "segformer",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch@https://download.pytorch.org/whl/cpu/torch-2.9.0%2Bcpu-cp311-cp311-manylinux_2_28_x86_64.whl tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_vision.py::test_segformer"
       },
       {
