@@ -22,6 +22,8 @@ on:
         type: boolean
         default: false
         description: Overwrite releases
+      branch:
+        type: string
 
   workflow_call:
     inputs:
@@ -97,7 +99,7 @@ jobs:
       overwrite_releases: ${{ inputs.overwrite_releases || false }}
       release_type: nightly
       repo_short: ${{ matrix.repo_short }}
-
+      branch: ${{ inputs.branch }}
 
   fail-notify:
     if: always()

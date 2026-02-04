@@ -254,150 +254,150 @@ jobs:
         with:
           parent_run_id: ${{ steps.trigger-basic-test.outputs.parent_run_id }}
 
-  publish-release:
-    name: "${{ inputs.draft && 'Draft' || '' }} Publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
-    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
-    needs:
-      - build-release
-      - test-release
-      - generate-seed
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/set-release-facts
-        id: set-release-facts
-        with:
-          repo: ${{ inputs.repo }}
-          release_type: ${{ inputs.release_type }}
-          draft: ${{ inputs.draft }}
-          new_version_tag: ${{ inputs.new_version_tag }}
+  # publish-release:
+  #   name: "${{ inputs.draft && 'Draft' || '' }} Publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
+  #   if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
+  #   needs:
+  #     - build-release
+  #     - test-release
+  #     - generate-seed
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #     - uses: ./.github/actions/set-release-facts
+  #       id: set-release-facts
+  #       with:
+  #         repo: ${{ inputs.repo }}
+  #         release_type: ${{ inputs.release_type }}
+  #         draft: ${{ inputs.draft }}
+  #         new_version_tag: ${{ inputs.new_version_tag }}
 
-      - name: Download Release Artifacts
-        id: download-release-artifacts
-        uses: actions/download-artifact@v4
-        with:
-          artifact-ids: ${{ needs.build-release.outputs.release-artifacts-id }}
-          path: ${{ github.workspace }}/release
+  #     - name: Download Release Artifacts
+  #       id: download-release-artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         artifact-ids: ${{ needs.build-release.outputs.release-artifacts-id }}
+  #         path: ${{ github.workspace }}/release
 
-      - name: Generate docs
-        uses: ./.github/actions/docs-generator
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
-          repo_full: ${{ steps.set-release-facts.outputs.repo_full }}
-          release_type: ${{ inputs.release_type }}
-          latest_commit: ${{ needs.build-release.outputs.target_commit }}
-          new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
-          pip_wheel_names: ${{ steps.set-release-facts.outputs.pip_wheel_names }}
-          skip_docker_build: ${{ steps.set-release-facts.outputs.skip_docker_build }}
-          make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
-          workflow_run_status_symbol: ${{ needs.build-release.outputs.workflow_run_status_symbol }}
-          workflow_run_url: ${{ needs.build-release.outputs.workflow_run_url }}
-          git_log_fail_on_error: ${{ steps.set-release-facts.outputs.git_log_fail_on_error }}
-          docker_basic_test_run_url: ${{ needs.test-release.outputs.docker_basic_test_run_url }}
-          docker_demo_test_run_url: ${{ needs.test-release.outputs.docker_demo_test_run_url }}
+  #     - name: Generate docs
+  #       uses: ./.github/actions/docs-generator
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #       with:
+  #         repo_short: ${{ steps.set-release-facts.outputs.repo_short }}
+  #         repo_full: ${{ steps.set-release-facts.outputs.repo_full }}
+  #         release_type: ${{ inputs.release_type }}
+  #         latest_commit: ${{ needs.build-release.outputs.target_commit }}
+  #         new_version_tag: ${{ steps.set-release-facts.outputs.build_release_tag }}
+  #         pip_wheel_names: ${{ steps.set-release-facts.outputs.pip_wheel_names }}
+  #         skip_docker_build: ${{ steps.set-release-facts.outputs.skip_docker_build }}
+  #         make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
+  #         workflow_run_status_symbol: ${{ needs.build-release.outputs.workflow_run_status_symbol }}
+  #         workflow_run_url: ${{ needs.build-release.outputs.workflow_run_url }}
+  #         git_log_fail_on_error: ${{ steps.set-release-facts.outputs.git_log_fail_on_error }}
+  #         docker_basic_test_run_url: ${{ needs.test-release.outputs.docker_basic_test_run_url }}
+  #         docker_demo_test_run_url: ${{ needs.test-release.outputs.docker_demo_test_run_url }}
 
-      - uses: ./.github/actions/publish-tenstorrent-pypi
-        # Skip Wheel PyPI upload in workflow test
-        if: ${{ !inputs.draft }}
-        #if: ${{ !inputs.draft && '${{ github.head_ref || github.ref_name }}' == 'main' }}
-        with:
-          release-artifacts-name: build-release-${{ inputs.repo_short }}
-          release-artifacts-wheel-path: artifacts
-          role-to-assume: ${{ secrets.PYPI_ROLE }}
-          region: ${{ secrets.PYPI_REGION }}
-          bucket: ${{ secrets.PYPI_BUCKET }}
-          new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
-          repo: ${{ inputs.repo }}
-          overwrite_releases: ${{ inputs.overwrite_releases }}
-
-
-      - name: "${{ inputs.draft && 'Draft' || '' }} Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
-        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
-        id: docker-build-push
-        uses: ./.github/actions/docker-build-push
-        with:
-          image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
-          docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
-          make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
-          draft: ${{ inputs.draft }}
-          dockerfile: ".github/Dockerfile.single-wheel-slim"
-
-      - uses: ./.github/actions/push-annotated-git-tag
-        if: ${{ !(inputs.release_type == 'nightly' && inputs.draft == true) }}
-        with:
-          repo: ${{ steps.set-release-facts.outputs.repo_full }}
-          draft: ${{ inputs.draft }}
-          GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
-          new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
-          commit: ${{ inputs.latest_branch_commit }}
-          gpg_private_key: ${{ secrets.FORGE_GPG_PRIVATE_KEY }}
-          gpg_passphrase: ${{ secrets.FORGE_GPG_PASSPHRASE }}
-
-      - uses: ./.github/actions/publish-github-release
-        with:
-          draft: ${{ inputs.draft }}
-          repo: ${{ steps.set-release-facts.outputs.repo_full }}
-          release_type: ${{ inputs.release_type }}
-          release_token: ${{ secrets.TT_FORGE_RELEASER }}
-          new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
-          target_commit: ${{ needs.build-release.outputs.target_commit }}
-          repo_short: ${{ inputs.repo_short }}
-          prerelease: ${{ inputs.prerelease || steps.set-release-facts.outputs.prerelease }}
-          release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
-          unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
-          make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
+  #     - uses: ./.github/actions/publish-tenstorrent-pypi
+  #       # Skip Wheel PyPI upload in workflow test
+  #       if: ${{ !inputs.draft }}
+  #       #if: ${{ !inputs.draft && '${{ github.head_ref || github.ref_name }}' == 'main' }}
+  #       with:
+  #         release-artifacts-name: build-release-${{ inputs.repo_short }}
+  #         release-artifacts-wheel-path: artifacts
+  #         role-to-assume: ${{ secrets.PYPI_ROLE }}
+  #         region: ${{ secrets.PYPI_REGION }}
+  #         bucket: ${{ secrets.PYPI_BUCKET }}
+  #         new_version_tag: ${{ steps.set-release-facts.outputs.new_version_tag }}
+  #         repo: ${{ inputs.repo }}
+  #         overwrite_releases: ${{ inputs.overwrite_releases }}
 
 
-  # TODO: Shift this back up to test release after adding tt-mlir version to frontend setup.py description
-  # REF: https://github.com/tenstorrent/tt-forge/issues/170
-  test-release-after-publish:
-    name: "${{ inputs.draft && 'Draft' || '' }} Test after publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
-    if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
-    needs:
-      - build-release
-      - test-release
-      - publish-release
-      - generate-seed
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  #     - name: "${{ inputs.draft && 'Draft' || '' }} Set to latest Docker Image ${{ steps.set-release-facts.outputs.repo_short }} ${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+  #       if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' }}
+  #       id: docker-build-push
+  #       uses: ./.github/actions/docker-build-push
+  #       with:
+  #         image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
+  #         docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+  #         make_latest: ${{ steps.set-release-facts.outputs.make_latest }}
+  #         draft: ${{ inputs.draft }}
+  #         dockerfile: ".github/Dockerfile.single-wheel-slim"
 
-      - uses: ./.github/actions/set-release-facts
-        id: set-release-facts
-        with:
-          repo: ${{ inputs.repo }}
-          release_type: ${{ inputs.release_type }}
-          draft: ${{ inputs.draft }}
-          new_version_tag: ${{ inputs.new_version_tag }}
+  #     - uses: ./.github/actions/push-annotated-git-tag
+  #       if: ${{ !(inputs.release_type == 'nightly' && inputs.draft == true) }}
+  #       with:
+  #         repo: ${{ steps.set-release-facts.outputs.repo_full }}
+  #         draft: ${{ inputs.draft }}
+  #         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
+  #         new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
+  #         commit: ${{ inputs.latest_branch_commit }}
+  #         gpg_private_key: ${{ secrets.FORGE_GPG_PRIVATE_KEY }}
+  #         gpg_passphrase: ${{ secrets.FORGE_GPG_PASSPHRASE }}
 
-      - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }}
-        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' }}
-        uses: ./.github/actions/trigger-workflow
-        id: trigger-perf-test
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          workflow_name: "Performance benchmark"
-          parent_run_id: "perf-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
-          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
-          wait_for_run_url: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}", "perf_regression_check": "true", "runs-on-filter": "n150", "skip-device-perf": "false" }'
+  #     - uses: ./.github/actions/publish-github-release
+  #       with:
+  #         draft: ${{ inputs.draft }}
+  #         repo: ${{ steps.set-release-facts.outputs.repo_full }}
+  #         release_type: ${{ inputs.release_type }}
+  #         release_token: ${{ secrets.TT_FORGE_RELEASER }}
+  #         new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
+  #         target_commit: ${{ needs.build-release.outputs.target_commit }}
+  #         repo_short: ${{ inputs.repo_short }}
+  #         prerelease: ${{ inputs.prerelease || steps.set-release-facts.outputs.prerelease }}
+  #         release-artifacts-id: ${{ needs.build-release.outputs.release-artifacts-id }}
+  #         unique_artifact_suffix: ${{ needs.generate-seed.outputs.random-seed }}
+  #         make_latest: ${{ inputs.make_latest || steps.set-release-facts.outputs.make_latest }}
 
-      - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }} (llmbox)
-        if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' && steps.set-release-facts.outputs.repo_short == 'tt-xla' }}
-        uses: ./.github/actions/trigger-workflow
-        id: trigger-perf-test-llmbox
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          workflow_name: "Performance benchmark"
-          parent_run_id: "perf-test-llmbox-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
-          wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
-          wait_for_run_url: true
-          json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}", "perf_regression_check": "true", "runs-on-filter": "llmbox", "skip-device-perf": "false" }'
+
+  # # TODO: Shift this back up to test release after adding tt-mlir version to frontend setup.py description
+  # # REF: https://github.com/tenstorrent/tt-forge/issues/170
+  # test-release-after-publish:
+  #   name: "${{ inputs.draft && 'Draft' || '' }} Test after publish Release ${{ inputs.repo_short }} ${{ inputs.release_type }} ${{ inputs.new_version_tag}} ${{ inputs.branch }}"
+  #   if: ${{ inputs.draft || inputs.overwrite_releases || needs.build-release.outputs.release_exists == 'false'  }}
+  #   needs:
+  #     - build-release
+  #     - test-release
+  #     - publish-release
+  #     - generate-seed
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: ./.github/actions/set-release-facts
+  #       id: set-release-facts
+  #       with:
+  #         repo: ${{ inputs.repo }}
+  #         release_type: ${{ inputs.release_type }}
+  #         draft: ${{ inputs.draft }}
+  #         new_version_tag: ${{ inputs.new_version_tag }}
+
+  #     - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }}
+  #       if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' }}
+  #       uses: ./.github/actions/trigger-workflow
+  #       id: trigger-perf-test
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #       with:
+  #         workflow_name: "Performance benchmark"
+  #         parent_run_id: "perf-test-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+  #         wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
+  #         wait_for_run_url: true
+  #         json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}", "perf_regression_check": "true", "runs-on-filter": "n150", "skip-device-perf": "false" }'
+
+  #     - name: Trigger Docker Performance test ${{ steps.set-release-facts.outputs.repo_short }} (llmbox)
+  #       if: ${{  steps.set-release-facts.outputs.skip_docker_build == 'false' && steps.set-release-facts.outputs.test_perf == 'true' && steps.set-release-facts.outputs.repo_short == 'tt-xla' }}
+  #       uses: ./.github/actions/trigger-workflow
+  #       id: trigger-perf-test-llmbox
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #       with:
+  #         workflow_name: "Performance benchmark"
+  #         parent_run_id: "perf-test-llmbox-${{ steps.set-release-facts.outputs.repo_short }}-${{ steps.set-release-facts.outputs.gh_new_version_tag }}-${{ needs.generate-seed.outputs.random-seed }}"
+  #         wait: ${{ steps.set-release-facts.outputs.test_demo_wait }}
+  #         wait_for_run_url: true
+  #         json_params: '{"docker-image": "${{ needs.build-release.outputs.image_tag }}", "project-filter": "${{ steps.set-release-facts.outputs.repo_short }}", "test-filter": "${{ steps.set-release-facts.outputs.test_perf_filter }}", "sh-runner": "${{ steps.set-release-facts.outputs.test_perf_sh_runner }}", "perf_regression_check": "true", "runs-on-filter": "llmbox", "skip-device-perf": "false" }'
