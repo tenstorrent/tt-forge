@@ -17,13 +17,14 @@ on:
         type: string
         description: 'Repo to release e.g tt-forge-onnx. Default to all repos'
         required: false
-        default: ''
+        default: 'tt-xla'
       overwrite_releases:
         type: boolean
         default: false
         description: Overwrite releases
       branch:
         type: string
+        default: 'vmilosevic/torch-url'
 
   workflow_call:
     inputs:
