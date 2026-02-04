@@ -108,32 +108,9 @@ runs:
             run_conclusion=$(echo $runs | jq -r --arg array_ptr $array_ptr '.[$array_ptr|tonumber].conclusion')
           fi
 
-          if [[ "$run_status" == "completed" ]]; then
-
-            run_artifact_count=$(gh api repos/${{ inputs.repo }}/actions/runs/$run_id/artifacts | jq -r '.total_count')
-
-            if [[ "$run_artifact_count" == "0" && "${{ inputs.ignore_artifacts }}" == "false" ]]; then
-              echo "Skipping Workflow Run: $run_url due to artifact count being zero"
-              array_ptr=$((array_ptr+1))
-              continue
-
-            elif [[ "$run_conclusion" == "success" ]]; then
-              run_status_symbol=":white_check_mark:"
-              success=true
-              break
-
-            # Select if we don't care about workflow failures
-            elif [[ "${{ inputs.workflow_allow_failed }}" == "true" ]]; then
-              run_status_symbol=":x:"
-              success=true
-              break
-
-            else
-              echo "Skipping Workflow Run: $run_url due to run failure run_conclusion: $run_conclusion"
-              array_ptr=$((array_ptr+1))
-              continue
-            fi
-          fi
+          run_status_symbol=":white_check_mark:"
+          success=true
+          break
 
           echo "Skipping Workflow Run: $run_url due to in progress"
           array_ptr=$((array_ptr+1))
