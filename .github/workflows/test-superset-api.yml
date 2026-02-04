@@ -29,6 +29,23 @@ jobs:
       #     query: 'benchmarks/last_measurement'
       #     query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
 
+
+      - name: Testing
+        shell: bash
+        run: |
+          workflow_id=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?status=completed&branch=main&per_page=100&actor=github-actions\[bot\]" \
+            | jq -r '.workflow_runs[] | select(.name | contains("draft") | not) | .id' | head -1)
+
+          workflow_id_2=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?status=completed&branch=main&per_page=100&actor=github-actions\[bot\]" \
+            | jq -r '.workflow_runs[] | select(.name | (contains("draft") | not) and contains("parent_run_id")) | .id' | head -1)
+
+          echo "without parent_run_id filter: $workflow_id"
+          echo "with parent_run_id filter: $workflow_id_2"
+
       - name: Call Superset API
         id: api-call-2
         uses: ./.github/actions/superset-api
