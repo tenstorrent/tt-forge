@@ -175,7 +175,7 @@ jobs:
       uses: ./.github/actions/docker-build-push
       with:
         image_name: "ghcr.io/tenstorrent/${{ steps.set-release-facts.outputs.repo_short }}-slim"
-        docker_tag: "${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
+        docker_tag: "draft-${{ steps.set-release-facts.outputs.gh_new_version_tag }}"
         make_latest: false
         force_rebuild: ${{ inputs.overwrite_releases }}
         draft: ${{ inputs.draft }}
