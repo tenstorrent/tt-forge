@@ -377,7 +377,6 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           "https://api.github.com/repos/tenstorrent/tt-forge/actions/workflows/perf-benchmark.yml/runs?status=completed&branch=main&per_page=100&actor=github-actions\[bot\]" \
           | jq -r '.workflow_runs[] | select(.name | contains("draft") | not) | .id' | head -1)
-          | jq -r '.workflow_runs[] | select(.name | (contains("draft") | not) and contains("parent_run_id")) | .id' | head -1)
         echo "last_nightly_workflow_id=$workflow_id" >> $GITHUB_OUTPUT
 
         arch=""
