@@ -495,6 +495,10 @@ def benchmark_llm_torch_xla(
     pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=required_pcc)
     print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
+    # Get device count and mesh info for metrics
+    device_count = xr.global_runtime_device_count()
+    mesh_shape = tuple(mesh.shape()) if mesh is not None else None
+
     result = create_benchmark_result(
         full_model_name=full_model_name,
         model_type=model_type,
@@ -520,6 +524,8 @@ def benchmark_llm_torch_xla(
         arch=arch or get_xla_device_arch(),
         input_is_image=False,
         input_sequence_length=input_sequence_length,
+        device_count=device_count,
+        mesh_shape=mesh_shape,
     )
 
     return result

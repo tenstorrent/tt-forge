@@ -256,6 +256,7 @@ def benchmark_vision_torch_xla(
         backend="tt",
         device_name=socket.gethostname(),
         arch=get_xla_device_arch(),
+        device_count=xr.global_runtime_device_count(),
     )
 
     return result

@@ -103,6 +103,27 @@ def get_benchmark_metadata() -> Dict[str, str]:
     }
 
 
+def get_device_type(arch: str, device_count: int) -> str:
+    """Determine device type string based on architecture and device count."""
+
+    if device_count == 32:
+        return "galaxy"
+    if device_count == 8:
+        return "llmbox"
+    if arch == "wormhole":
+        if device_count == 1:
+            return "n150"
+        if device_count == 2:
+            return "n300"
+    if arch == "blackhole":
+        if device_count == 1:
+            return "p150"
+        if device_count == 2:
+            return "p300"
+
+    return "unknown"
+
+
 def sanitize_model_name(value: Any) -> str:
     text = str(value).strip()
     text = re.sub(r"\s+", "_", text)
@@ -285,9 +306,10 @@ def create_benchmark_result(
     device_name: str = "",
     galaxy: bool = False,
     arch: str = "",
-    chips: int = 1,
     input_is_image: bool = True,
     input_sequence_length: Optional[int] = -1,
+    device_count: int = 1,
+    mesh_shape: Optional[tuple] = None,
 ) -> Dict[str, Any]:
     """Create a standardized benchmark result dictionary.
 
@@ -368,7 +390,9 @@ def create_benchmark_result(
             "device_name": device_name,
             "galaxy": galaxy,
             "arch": arch,
-            "chips": chips,
+            "device_count": device_count,
+            "mesh_shape": mesh_shape,
+            "device_type": get_device_type(arch, device_count),
         },
     }
 

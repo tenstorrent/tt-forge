@@ -218,6 +218,7 @@ def benchmark_resnet_jax(
         torch_xla_enabled=False,
         device_name=socket.gethostname(),
         arch=get_jax_device_arch(),
+        device_count=len(jax.devices("tt")),
     )
 
     return result
