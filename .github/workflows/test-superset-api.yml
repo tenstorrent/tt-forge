@@ -30,11 +30,23 @@ jobs:
       #     query_params: '{"project":"tenstorrent/tt-metal","ml_model_name":"tiiuae/falcon-7b-instruct","batch_size":"32","precision":"prefill[BFLOAT16-DRAM]_decode[BFLOAT16-L1_SHARDED]"}'
 
       - name: Call Superset API
+        id: api-call-2
+        uses: ./.github/actions/superset-api
+        with:
+          query: 'benchmarks/last_measurement'
+          query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"pytorch_bge_m3_encode_base_nlp_embed_gen_custom","github_pipeline_id":"21577945488","arch":"wormhole","batch_size":"12","precision":"bfloat16"}'
+
+      - name: Display Response
+        run: |
+          echo "API Response:"
+          echo '${{ steps.api-call-2.outputs.response }}'
+
+      - name: Call Superset API
         id: api-call
         uses: ./.github/actions/superset-api
         with:
           query: 'benchmarks/last_measurement'
-          query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"pytorch_bge_m3_encode_base_nlp_embed_gen_custom","github_pipeline_id":"21577949649","arch":"wormhole"}'
+          query_params: '{"project":"tt-forge/tt-xla","ml_model_name":"pytorch_bge_m3_encode_base_nlp_embed_gen_custom","github_pipeline_id":"21577945488","arch":"wormhole"}'
 
       - name: Display Response
         run: |
