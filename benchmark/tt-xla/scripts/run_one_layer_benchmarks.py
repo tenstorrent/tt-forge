@@ -215,29 +215,8 @@ def _is_test_failed(test_file: Path, test_name: str) -> bool:
 
 
 def _is_test_completed(test_name: str, output_dir: Path, group: str) -> bool:
-    if not output_dir.exists():
-        return False
-
-    model_name = _model_name_from_test(test_name)
-
-    has_prefill = False
-    has_decode = False
-    for ttir_file in output_dir.glob("*.ttir"):
-        stem = ttir_file.stem.lower()
-        has_model_name = f"_{model_name.lower()}_" in stem
-        has_1lyr = "1lyr" in stem
-        if not (has_model_name and has_1lyr):
-            continue
-        if group == "encoder":
-            return "encoder" in stem
-        if "prefill" in stem:
-            has_prefill = True
-        if "decode" in stem:
-            has_decode = True
-        if has_prefill and has_decode:
-            return True
-
-    return False
+    completed, _missing = _get_output_status(test_name, output_dir, group)
+    return completed
 
 
 def _get_output_status(test_name: str, output_dir: Path, group: str) -> tuple[bool, list[str]]:
@@ -246,13 +225,14 @@ def _get_output_status(test_name: str, output_dir: Path, group: str) -> tuple[bo
         return False, expected
 
     model_name = _model_name_from_test(test_name)
+    model_key = model_name.lower()
 
     found_prefill = False
     found_decode = False
     found_encoder = False
     for ttir_file in output_dir.glob("*.ttir"):
         stem = ttir_file.stem.lower()
-        has_model_name = f"_{model_name.lower()}_" in stem
+        has_model_name = stem.startswith(f"{model_key}_")
         has_1lyr = "1lyr" in stem
         if not (has_model_name and has_1lyr):
             continue
