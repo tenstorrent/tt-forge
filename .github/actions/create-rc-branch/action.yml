@@ -94,7 +94,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
       with:
         repo: ${{ inputs.repo }}
-        branch: ${{ inputs.branch || 'main' }}
+        branch: vmilosevic/torch-url
         workflow: ${{ inputs.workflow || steps.set-release-facts.outputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ inputs.workflow_result_in_job }}

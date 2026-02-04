@@ -76,7 +76,7 @@ runs:
       uses: ./.github/actions/find-workflow
       with:
         repo: ${{ inputs.repo }}
-        branch: ${{ steps.set-release-facts.outputs.build_release_find_workflow_branch }}
+        branch: vmilosevic/torch-url
         workflow: ${{ steps.set-release-facts.outputs.workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed }}
         workflow_result_in_job: ${{ steps.set-release-facts.outputs.workflow_result_in_job }}
