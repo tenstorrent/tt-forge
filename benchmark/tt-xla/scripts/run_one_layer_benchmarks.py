@@ -52,11 +52,13 @@ def _ensure_import_paths(repo_root: Path, tt_xla_dir: Path) -> None:
         sys.path.insert(0, tt_xla_str)
 
 
-def _find_ttirs_by_model(export_path: Path, model_name: str, min_mtime: Optional[float] = None) -> list[Path]:
+def _find_mlirs_by_model(
+    export_path: Path, model_name: str, prefix: str, min_mtime: Optional[float] = None
+) -> list[Path]:
     if not export_path.exists():
         return []
 
-    name_pattern = re.compile(rf"^ttir_{re.escape(model_name)}_1lyr_bs\d+_isl\d+")
+    name_pattern = re.compile(rf"^{re.escape(prefix)}_{re.escape(model_name)}_1lyr_bs\d+_isl\d+")
     matches = []
     for path in export_path.rglob("*.mlir"):
         if not name_pattern.search(path.stem):
@@ -67,8 +69,8 @@ def _find_ttirs_by_model(export_path: Path, model_name: str, min_mtime: Optional
     return sorted(matches, key=lambda p: p.stat().st_mtime, reverse=True)
 
 
-def _parse_ttir_stem(ttir_stem: str, model_name: str) -> tuple[Optional[str], Optional[str]]:
-    match = re.search(rf"^ttir_{re.escape(model_name)}_1lyr_bs(\d+)_isl(\d+)", ttir_stem)
+def _parse_mlir_stem(stem: str, model_name: str, prefix: str) -> tuple[Optional[str], Optional[str]]:
+    match = re.search(rf"^{re.escape(prefix)}_{re.escape(model_name)}_1lyr_bs(\d+)_isl(\d+)", stem)
     if not match:
         return None, None
     return match.group(1), match.group(2)
@@ -83,34 +85,63 @@ def _graph_label_from_stem(stem: str) -> str:
     return "graph"
 
 
-def _normalize_ttir_name(
-    ttir_path: Path, group: str, model_name: str, graph_label_override: Optional[str] = None
+def _scan_output_dir(output_dir: Path, model_key: str) -> tuple[bool, bool, bool]:
+    found_prefill = False
+    found_decode = False
+    found_encoder = False
+    if not output_dir.exists():
+        return found_prefill, found_decode, found_encoder
+
+    for mlir_file in output_dir.glob("*.mlir"):
+        stem = mlir_file.stem.lower()
+        has_model_name = stem.startswith(f"{model_key}_")
+        has_1lyr = "1lyr" in stem
+        if not (has_model_name and has_1lyr):
+            continue
+        if "encoder" in stem:
+            found_encoder = True
+        if "prefill" in stem:
+            found_prefill = True
+        if "decode" in stem:
+            found_decode = True
+
+    return found_prefill, found_decode, found_encoder
+
+
+def _normalize_mlir_name(
+    mlir_path: Path,
+    group: str,
+    model_name: str,
+    prefix: str,
+    graph_label_override: Optional[str] = None,
 ) -> str:
-    bs, isl = _parse_ttir_stem(ttir_path.stem, model_name)
-    assert bs is not None and isl is not None, f"Expected bs/isl in {ttir_path.stem}"
+    bs, isl = _parse_mlir_stem(mlir_path.stem, model_name, prefix)
+    assert bs is not None and isl is not None, f"Expected bs/isl in {mlir_path.stem}"
     base = f"{model_name}_1lyr_bs{bs}"
-    graph_label = graph_label_override or _graph_label_from_stem(ttir_path.stem)
+    graph_label = graph_label_override or _graph_label_from_stem(mlir_path.stem)
     if group == "encoder":
         suffix = f"encoder_isl{isl}"
     elif graph_label == "decode":
         suffix = "decode"
     else:
         suffix = f"prefill_isl{isl}"
-    return f"{base}_{suffix}.ttir"
+    ttnn_suffix = "_ttnn" if prefix == "ttnn" else ""
+    return f"{base}_{suffix}{ttnn_suffix}.mlir"
 
 
-def _copy_ttirs(
-    ttir_paths: list[Path],
+def _copy_mlirs(
+    mlir_paths: list[Path],
     output_dir: Path,
     group: str,
     model_name: str,
+    prefix: str,
     graph_labels: Optional[dict[Path, str]] = None,
 ) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     copied = []
-    for ttir_path in ttir_paths:
-        graph_label_override = graph_labels.get(ttir_path) if graph_labels else None
-        target_name = _normalize_ttir_name(ttir_path, group, model_name, graph_label_override)
+    for mlir_path in mlir_paths:
+        graph_label_override = graph_labels.get(mlir_path) if graph_labels else None
+        target_name = _normalize_mlir_name(mlir_path, group, model_name, prefix, graph_label_override)
         target_path = output_dir / target_name
 
         if target_path.exists():
@@ -124,7 +155,7 @@ def _copy_ttirs(
                     break
                 counter += 1
 
-        shutil.copy2(ttir_path, target_path)
+        shutil.copy2(mlir_path, target_path)
         copied.append(target_path)
 
     return copied
@@ -214,43 +245,51 @@ def _is_test_failed(test_file: Path, test_name: str) -> bool:
     return False
 
 
-def _is_test_completed(test_name: str, output_dir: Path, group: str) -> bool:
-    completed, _missing = _get_output_status(test_name, output_dir, group)
+def _is_test_completed(test_name: str, output_dir: Path, group: str, ttnn_dir: Optional[Path] = None) -> bool:
+    completed, _missing = _get_output_status(test_name, output_dir, group, ttnn_dir)
     return completed
 
 
-def _get_output_status(test_name: str, output_dir: Path, group: str) -> tuple[bool, list[str]]:
+def _get_output_status(
+    test_name: str, output_dir: Path, group: str, ttnn_dir: Optional[Path] = None
+) -> tuple[bool, list[str]]:
+    expected = ["encoder"] if group == "encoder" else ["prefill", "decode"]
     if not output_dir.exists():
-        expected = ["encoder"] if group == "encoder" else ["prefill", "decode"]
-        return False, expected
+        missing = expected.copy()
+        if ttnn_dir is not None and not ttnn_dir.exists():
+            missing.extend(f"ttnn_{item}" for item in expected)
+        return False, missing
 
     model_name = _model_name_from_test(test_name)
     model_key = model_name.lower()
 
-    found_prefill = False
-    found_decode = False
-    found_encoder = False
-    for ttir_file in output_dir.glob("*.ttir"):
-        stem = ttir_file.stem.lower()
-        has_model_name = stem.startswith(f"{model_key}_")
-        has_1lyr = "1lyr" in stem
-        if not (has_model_name and has_1lyr):
-            continue
-        if "encoder" in stem:
-            found_encoder = True
-        if "prefill" in stem:
-            found_prefill = True
-        if "decode" in stem:
-            found_decode = True
-
-    if group == "encoder":
-        return found_encoder, ([] if found_encoder else ["encoder"])
+    found_prefill, found_decode, found_encoder = _scan_output_dir(output_dir, model_key)
 
     missing = []
-    if not found_prefill:
-        missing.append("prefill")
-    if not found_decode:
-        missing.append("decode")
+    if group == "encoder":
+        if not found_encoder:
+            missing.append("encoder")
+    else:
+        if not found_prefill:
+            missing.append("prefill")
+        if not found_decode:
+            missing.append("decode")
+
+    if ttnn_dir is not None:
+        if not ttnn_dir.exists():
+            missing.extend(f"ttnn_{item}" for item in expected)
+        else:
+            found_ttnn_prefill, found_ttnn_decode, found_ttnn_encoder = _scan_output_dir(ttnn_dir, model_key)
+
+            if group == "encoder":
+                if not found_ttnn_encoder:
+                    missing.append("ttnn_encoder")
+            else:
+                if not found_ttnn_prefill:
+                    missing.append("ttnn_prefill")
+                if not found_ttnn_decode:
+                    missing.append("ttnn_decode")
+
     return len(missing) == 0, missing
 
 
@@ -311,6 +350,7 @@ def _run_tests(
     test_names: list[str],
     export_path: Path,
     output_dir: Path,
+    ttnn_output_dir: Path,
     include_prefixes: set[str],
     resume: bool,
     max_ttirs: int,
@@ -325,7 +365,7 @@ def _run_tests(
         if not _matches_prefixes(name, include_prefixes):
             continue
 
-        if resume and _is_test_completed(name, output_dir, group):
+        if resume and _is_test_completed(name, output_dir, group, ttnn_output_dir):
             continue
 
         print(f"🚀 Starting {group}::{name}")
@@ -346,13 +386,18 @@ def _run_tests(
                 status = "failed"
                 error = error_msg
 
-        ttir_paths = _find_ttirs_by_model(export_path, model_name, min_mtime=test_start_time)
+        ttir_paths = _find_mlirs_by_model(export_path, model_name, "ttir", min_mtime=test_start_time)
+        ttnn_paths = _find_mlirs_by_model(export_path, model_name, "ttnn", min_mtime=test_start_time)
         graph_labels = None
+        ttnn_graph_labels = None
         if model_name.endswith("_tp"):
             ttir_paths, graph_labels = _select_tp_ttirs(ttir_paths)
+            ttnn_paths, ttnn_graph_labels = _select_tp_ttirs(ttnn_paths)
         else:
             ttir_paths = ttir_paths[:max_ttirs]
-        copied_paths = _copy_ttirs(ttir_paths, output_dir, group, model_name, graph_labels)
+            ttnn_paths = ttnn_paths[:max_ttirs]
+        copied_paths = _copy_mlirs(ttir_paths, output_dir, group, model_name, "ttir", graph_labels)
+        copied_ttnn_paths = _copy_mlirs(ttnn_paths, ttnn_output_dir, group, model_name, "ttnn", ttnn_graph_labels)
         status_note = f"{status}"
         if error:
             status_note = f"{status} ({error})"
@@ -374,6 +419,7 @@ def _run_tests(
                 "status": status,
                 "error": error,
                 "ttir": [str(path) for path in copied_paths],
+                "ttnn": [str(path) for path in copied_ttnn_paths],
             }
         )
 
@@ -385,13 +431,14 @@ def _collect_status_results(
     test_file_path: Path,
     test_names: list[str],
     output_dir: Path,
+    ttnn_output_dir: Path,
     include_prefixes: set[str],
 ) -> list[dict]:
     results = []
     for name in test_names:
         if _is_test_failed(test_file_path, name) or not _matches_prefixes(name, include_prefixes):
             continue
-        completed, missing = _get_output_status(name, output_dir, group)
+        completed, missing = _get_output_status(name, output_dir, group, ttnn_output_dir)
         results.append(
             {
                 "group": group,
@@ -408,9 +455,13 @@ def _print_summary(results: list[dict]) -> None:
     print("\n📋 One-layer benchmark results:")
     for result in results:
         ttir_summary = result["ttir"] if result["ttir"] else ["none"]
+        ttnn_summary = result.get("ttnn") if result.get("ttnn") else ["none"]
         status = result["status"]
         status_icon = "✅" if status == "ok" else "⚠️" if status in {"skipped", "unsupported"} else "❌"
-        print(f"{status_icon} {result['group']}::{result['test']} status={status} ttir={ttir_summary}")
+        print(
+            f"{status_icon} {result['group']}::{result['test']} status={status} "
+            f"ttir={ttir_summary} ttnn={ttnn_summary}"
+        )
         if result["error"]:
             print(f"   🧾 error={result['error']}")
 
@@ -466,6 +517,7 @@ def main() -> int:
 
     export_path = (tt_xla_dir / "modules").resolve()
     output_dir = (tt_xla_dir / "single_layer_tests").resolve()
+    ttnn_output_dir = (tt_xla_dir / "single_layer_tests_ttnn").resolve()
     include_prefixes = _parse_prefix_patterns(args.prefix)
 
     print(f"\n{'='*60}")
@@ -473,6 +525,7 @@ def main() -> int:
     print(f"{'='*60}")
     print(f"Export path:     {export_path}")
     print(f"Output directory: {output_dir}")
+    print(f"TTNN directory:   {ttnn_output_dir}")
     include_tp = args.include_tp or args.tp_only
     test_types = "LLM" + (" + TP" if include_tp else "")
     if args.tp_only:
@@ -495,6 +548,7 @@ def main() -> int:
                 tt_xla_dir / "test_llms.py",
                 _test_names_llm(include_tp, args.tp_only),
                 output_dir,
+                ttnn_output_dir,
                 include_prefixes,
             )
         )
@@ -505,6 +559,7 @@ def main() -> int:
                     tt_xla_dir / "test_encoders.py",
                     _test_names_encoder(),
                     output_dir,
+                    ttnn_output_dir,
                     include_prefixes,
                 )
             )
@@ -520,6 +575,7 @@ def main() -> int:
             _test_names_llm(include_tp, args.tp_only),
             export_path,
             output_dir,
+            ttnn_output_dir,
             include_prefixes,
             args.resume,
             max_ttirs=2,
@@ -533,6 +589,7 @@ def main() -> int:
                 _test_names_encoder(),
                 export_path,
                 output_dir,
+                ttnn_output_dir,
                 include_prefixes,
                 args.resume,
                 max_ttirs=1,
