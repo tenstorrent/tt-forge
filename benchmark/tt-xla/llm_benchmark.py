@@ -383,7 +383,7 @@ def benchmark_llm_torch_xla(
             xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
         # Apply sharding constraint on lm_head output to all_gather logits
-        if hasattr(model, 'lm_head') and model.lm_head is not None:
+        if hasattr(model, "lm_head") and model.lm_head is not None:
             hook = sharding_constraint_hook(model.lm_head, mesh, (None, None, None))
             model.lm_head.register_forward_hook(hook)
 
