@@ -11,7 +11,7 @@ import torch
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from encoder_benchmark import benchmark_encoder_torch_xla
-from utils import apply_mean_pooling, apply_last_token_pooling, create_model_loader
+from utils import apply_mean_pooling, apply_last_token_pooling, create_model_loader, resolve_display_name
 
 
 DTYPE_MAP = {
@@ -65,7 +65,8 @@ def test_encoder(
     load_inputs_fn,
     output_processor_fn,
     preprocess_fn,
-    model_nickname=None,
+    display_name=None,
+    request=None,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -101,9 +102,11 @@ def test_encoder(
         load_inputs_fn: Optional function to load raw inputs.
             Signature: fn(batch_size) -> List[str]. Defaults to get_default_inputs.
     """
-    # Sanitize model name for safe filesystem usage
-    sanitized_model_name = sanitize_filename(model_info_name)
-    ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
+    resolved_display_name = resolve_display_name(
+        request=request,
+        fallback=display_name or model_info_name,
+    )
+    ttnn_perf_metrics_output_file = f"tt_xla_{resolved_display_name}_perf_metrics"
 
     print(f"Running encoder benchmark for model: {model_info_name}")
     print(
@@ -125,7 +128,7 @@ def test_encoder(
     results = benchmark_encoder_torch_xla(
         model=model,
         model_info_name=model_info_name,
-        model_nickname=model_nickname,
+        display_name=resolved_display_name,
         num_layers_override=num_layers,
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
@@ -153,7 +156,7 @@ def test_encoder(
             json.dump(results, file, indent=2)
 
 
-def test_bert(output_file, num_layers):
+def test_bert(output_file, num_layers, request):
     from third_party.tt_forge_models.bert.sentence_embedding_generation.pytorch.loader import ModelLoader
 
     # Configuration
@@ -192,7 +195,8 @@ def test_bert(output_file, num_layers):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
-        model_nickname="bert",
+        display_name="bert",
+        request=request,
         load_inputs_fn=load_inputs_fn,
         preprocess_fn=preprocess_fn,
         output_processor_fn=output_processor_fn,
@@ -205,7 +209,7 @@ def test_bert(output_file, num_layers):
     )
 
 
-def test_qwen3_embedding_4b(output_file, num_layers):
+def test_qwen3_embedding_4b(output_file, num_layers, request):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -244,7 +248,8 @@ def test_qwen3_embedding_4b(output_file, num_layers):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
-        model_nickname="qwen3_embedding_4b",
+        display_name=variant.name,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         preprocess_fn=preprocess_fn,
         output_processor_fn=output_processor_fn,
@@ -258,7 +263,7 @@ def test_qwen3_embedding_4b(output_file, num_layers):
 
 
 # [pytest.skip] Too large for single chip
-def test_qwen3_embedding_8b(output_file, num_layers):
+def test_qwen3_embedding_8b(output_file, num_layers, request):
     from third_party.tt_forge_models.qwen_3.embedding.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -298,7 +303,8 @@ def test_qwen3_embedding_8b(output_file, num_layers):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
-        model_nickname="qwen3_embedding_8b",
+        display_name=variant.name,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         output_processor_fn=output_processor_fn,
         preprocess_fn=preprocess_fn,
@@ -310,7 +316,7 @@ def test_qwen3_embedding_8b(output_file, num_layers):
     )
 
 
-def test_bge_m3(output_file):
+def test_bge_m3(output_file, request):
     """Test BGE-M3 encoder model with custom postprocessing.
 
     BGE-M3 has a unique architecture that produces dense, sparse, and colbert embeddings.
@@ -453,7 +459,8 @@ def test_bge_m3(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
-        model_nickname="bge_m3",
+        display_name="bge_m3",
+        request=request,
         load_inputs_fn=load_inputs_fn,
         preprocess_fn=bge_m3_preprocess,
         output_processor_fn=bge_m3_output_processor,
@@ -466,7 +473,7 @@ def test_bge_m3(output_file):
     )
 
 
-def test_unet_for_conditional_generation(output_file):
+def test_unet_for_conditional_generation(output_file, request):
     """Test UNet for Conditional Generation model. This is a core component of the Stable Diffusion XL pipeline (https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0)"""
     from third_party.tt_forge_models.unet_for_conditional_generation.pytorch.loader import ModelLoader
 
@@ -501,7 +508,8 @@ def test_unet_for_conditional_generation(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
-        model_nickname="unet_conditional_generation",
+        display_name="unet_conditional_generation",
+        request=request,
         load_inputs_fn=load_inputs_fn,
         preprocess_fn=preprocess_fn,
         output_processor_fn=output_processor_fn,

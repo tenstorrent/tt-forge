@@ -112,6 +112,19 @@ def sanitize_model_name(value: Any) -> str:
     return text or "na"
 
 
+def resolve_display_name(request: Any = None, fallback: Optional[str] = None) -> str:
+    """Resolve a display name, optionally overriding with pytest test name."""
+    name = None
+    if request is not None and hasattr(request, "node") and hasattr(request.node, "name"):
+        test_name = request.node.name
+        if test_name and test_name.startswith("test_"):
+            name = test_name[5:]
+
+    if not name:
+        name = sanitize_model_name(fallback or "")
+    return name
+
+
 def create_model_loader(ModelLoader, num_layers: Optional[int] = None, *args, **kwargs):
     """Create a model loader with optional num_layers override.
 
@@ -266,6 +279,7 @@ def create_benchmark_result(
     trace_enabled: bool = False,
     enable_weight_bfp8_conversion: bool = False,
     model_info: str = "",
+    display_name: str = "",
     torch_xla_enabled: bool = True,
     backend: str = "tt",
     device_name: str = "",
@@ -319,6 +333,7 @@ def create_benchmark_result(
         "trace_enabled": trace_enabled,
         "enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
         "model_info": model_info,
+        "display_name": display_name,
     }
 
     if torch_xla_enabled:

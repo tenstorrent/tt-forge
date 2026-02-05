@@ -251,7 +251,7 @@ def check_transformers_version():
 def benchmark_llm_torch_xla(
     model_loader,
     model_variant,
-    model_nickname,
+    display_name,
     optimization_level,
     trace_enabled,
     batch_size,
@@ -387,7 +387,7 @@ def benchmark_llm_torch_xla(
     # Set XLA compilation options
     num_layers_override = getattr(model_loader, "num_layers", None)
     export_model_name = build_xla_export_name(
-        model_name=model_nickname,
+        model_name=display_name,
         num_layers=num_layers_override,
         batch_size=batch_size,
         input_sequence_length=input_sequence_length,
@@ -513,6 +513,7 @@ def benchmark_llm_torch_xla(
         trace_enabled=trace_enabled,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         model_info=full_model_name,
+        display_name=display_name,
         torch_xla_enabled=True,
         backend="tt",
         device_name=socket.gethostname(),

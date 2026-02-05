@@ -9,7 +9,7 @@ from loguru import logger
 
 from benchmark.utils import sanitize_filename
 from llm_benchmark import benchmark_llm_torch_xla
-from utils import create_model_loader
+from utils import create_model_loader, resolve_display_name
 
 import torch_xla.runtime as xr
 from torch_xla.distributed.spmd import Mesh
@@ -77,15 +77,10 @@ def test_llm(
     model_loader = create_model_loader(ModelLoaderModule, num_layers=num_layers, variant=variant)
     if num_layers is not None and model_loader is None:
         pytest.fail("num_layers override requested but ModelLoader does not support it.")
-    model_nickname = variant.name if hasattr(variant, "name") else str(variant)
-    # Use test name from pytest request if available, otherwise detect from caller
-    test_name = None
-    if request is not None and hasattr(request, "node") and hasattr(request.node, "name"):
-        test_name = request.node.name
-        if test_name and test_name.startswith("test_"):
-            model_nickname = test_name[5:]
+    model_info_name = model_loader.get_model_info(variant=variant).name
+    display_name = resolve_display_name(request=request, fallback=model_info_name)
 
-    ttnn_perf_metrics_output_file = f"tt_xla_{model_nickname}_perf_metrics"
+    ttnn_perf_metrics_output_file = f"tt_xla_{display_name}_perf_metrics"
 
     print(f"Running LLM benchmark for variant: {variant}")
     print(
@@ -110,7 +105,7 @@ def test_llm(
         trace_enabled=trace_enabled,
         model_loader=model_loader,
         model_variant=variant,
-        model_nickname=model_nickname,
+        display_name=display_name,
         batch_size=batch_size,
         loop_count=loop_count,
         task=task,
@@ -129,7 +124,7 @@ def test_llm(
 
     if output_file:
         results["project"] = "tt-forge/tt-xla"
-        results["model_rawname"] = model_loader.get_model_info(variant=variant).name
+        results["model_rawname"] = model_info_name
 
         # LLM-specific perf metrics handling: Use only decode graph (second file)
         # LLMs split into 2 graphs: prefill (index 0) and decode (index 1)

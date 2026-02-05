@@ -97,7 +97,7 @@ def benchmark_vision_torch_xla(
     ttnn_perf_metrics_output_file,
     load_inputs_fn,
     extract_output_tensor_fn,
-    model_nickname=None,
+    display_name=None,
     required_pcc=0.97,
 ):
     """
@@ -139,7 +139,7 @@ def benchmark_vision_torch_xla(
         golden_output = extract_output_tensor_fn(golden_output)
 
     export_model_name = build_xla_export_name(
-        model_name=model_nickname or model_info_name,
+        model_name=display_name,
         num_layers=None,
         batch_size=batch_size,
         input_sequence_length=None,
@@ -251,6 +251,7 @@ def benchmark_vision_torch_xla(
         program_cache_enabled=True,
         trace_enabled=trace_enabled,
         model_info=model_info_name,
+        display_name=display_name,
         torch_xla_enabled=True,
         backend="tt",
         device_name=socket.gethostname(),
