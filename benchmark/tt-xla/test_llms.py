@@ -16,7 +16,7 @@ from torch_xla.distributed.spmd import Mesh
 import numpy as np
 
 # Defaults for all llms
-DEFAULT_OPTIMIZATION_LEVEL = 1
+DEFAULT_OPTIMIZATION_LEVEL = 0
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 32
@@ -604,3 +604,10 @@ def test_llama_3_1_70b_tp(output_file, num_layers, request):
         request=request,
         required_pcc=-1.0,
     )  # https://github.com/tenstorrent/tt-xla/issues/2976
+
+
+def test_gpt_oss_20b_tp(output_file):
+    from third_party.tt_forge_models.gpt_oss.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GPT_OSS_20B
+    test_llm_tp(ModelLoader, variant, output_file, required_pcc=0.86)
