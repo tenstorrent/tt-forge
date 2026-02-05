@@ -484,3 +484,10 @@ def test_llama_3_1_70b_tp(output_file):
     test_llm_tp(
         ModelLoader, variant, output_file, required_pcc=-1.0
     )  # https://github.com/tenstorrent/tt-xla/issues/2976
+
+
+def test_gpt_oss_20b_tp(output_file):
+    from third_party.tt_forge_models.gpt_oss.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GPT_OSS_20B
+    test_llm_tp(ModelLoader, variant, output_file, optimization_level=0)
