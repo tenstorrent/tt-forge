@@ -25,6 +25,7 @@ import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
 from transformers.cache_utils import StaticCache
 from transformers.modeling_outputs import CausalLMOutputWithPast
+import tracy
 
 from benchmark.utils import get_xla_device_arch
 from utils import (
@@ -194,6 +195,7 @@ def generate_and_benchmark(
     iteration_times: List[float] = []
     with torch.no_grad():
         for step in range(max_tokens_to_generate):
+            tracy.signpost("token_generation_start")
             start = time.perf_counter_ns()
 
             # Run forward pass
@@ -223,6 +225,8 @@ def generate_and_benchmark(
             input_args["cache_position"] = host_cache_pos.to(device)
 
             end = time.perf_counter_ns()
+            tracy.signpost("token_generation_end")
+
             iteration_times.append(end - start)
             if verbose:
                 print(f"Iteration\t{step}/{max_tokens_to_generate}\ttook {iteration_times[-1] / 1e6:.04} ms")
@@ -269,6 +273,7 @@ def benchmark_llm_torch_xla(
     shard_spec_fn,
     arch,
     required_pcc,
+    profile=False,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -353,6 +358,10 @@ def benchmark_llm_torch_xla(
     # Limit maximum generation count to fit within preallocated static cache
     max_tokens_to_generate: int = max_cache_len - input_args["input_ids"].shape[1]
 
+    # In profile mode, limit tokens to 2 for faster profiling
+    if profile:
+        max_tokens_to_generate = 2
+
     # Get CPU result
     cpu_logits, _ = generate_and_benchmark(
         model,
@@ -429,6 +438,8 @@ def benchmark_llm_torch_xla(
         mesh=mesh,
     )
 
+    tracy.signpost("warmup_complete")
+
     # Reconstruct inputs for the actual benchmark run
     input_args = construct_inputs(
         tokenizer, model.config, batch_size, max_cache_len, past_key_values=input_args["past_key_values"]
@@ -449,7 +460,7 @@ def benchmark_llm_torch_xla(
         mesh=mesh,
     )
 
-    if len(iteration_times) < 10:
+    if not profile and len(iteration_times) < 10:
         raise RuntimeError("LLM benchmark failed: insufficient number of iterations completed.")
 
     ttft_ns = iteration_times[0]

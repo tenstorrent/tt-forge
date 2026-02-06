@@ -55,6 +55,7 @@ def test_llm(
     required_pcc=DEFAULT_REQUIRED_PCC,
     num_layers=None,
     request=None,
+    profile=False,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -73,6 +74,7 @@ def test_llm(
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
         read_logits_fn: Function to extract logits from model output
         required_pcc: Required PCC threshold
+        profile: Enable profiling mode with single layer, minimal iterations, and tracy signposts
     """
     model_loader = create_model_loader(ModelLoaderModule, num_layers=num_layers, variant=variant)
     if num_layers is not None and model_loader is None:
@@ -120,6 +122,7 @@ def test_llm(
         shard_spec_fn=shard_spec_fn,
         arch=arch,
         required_pcc=required_pcc,
+        profile=profile,
     )
 
     if output_file:
@@ -162,7 +165,7 @@ def test_llm(
             json.dump(results, file, indent=2)
 
 
-def test_llm_tp(ModelLoaderModule, variant, output_file, num_layers=None, request=None, **kwargs):
+def test_llm_tp(ModelLoaderModule, variant, output_file, num_layers=None, request=None, profile=False, **kwargs):
     # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
     arch = "wormhole_llmbox"
     mesh_config_fn = ModelLoaderModule.get_mesh_config
@@ -179,29 +182,40 @@ def test_llm_tp(ModelLoaderModule, variant, output_file, num_layers=None, reques
         arch=arch,
         num_layers=num_layers,
         request=request,
+        profile=profile,
         **kwargs,
     )
 
 
-def test_llama_3_2_1b(output_file, num_layers, request):
+def test_llama_3_2_1b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_llama_3_2_3b(output_file, num_layers, request):
+def test_llama_3_2_3b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_gemma_1_1_2b(output_file, num_layers, request):
+def test_gemma_1_1_2b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_1_1_2B_IT
@@ -213,10 +227,11 @@ def test_gemma_1_1_2b(output_file, num_layers, request):
         experimental_compile=experimental_compile,
         num_layers=num_layers,
         request=request,
+        profile=profile,
     )
 
 
-def test_gemma_2_2b(output_file, num_layers, request):
+def test_gemma_2_2b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_2_2B_IT
@@ -228,28 +243,39 @@ def test_gemma_2_2b(output_file, num_layers, request):
         output_file=output_file,
         num_layers=num_layers,
         request=request,
+        profile=profile,
     )
 
 
-def test_phi1(output_file, num_layers, request):
+def test_phi1(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI1
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_phi1_5(output_file, num_layers, request):
+def test_phi1_5(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI1_5
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_phi2(output_file, num_layers, request):
+def test_phi2(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.PHI2
@@ -259,10 +285,11 @@ def test_phi2(output_file, num_layers, request):
         output_file=output_file,
         num_layers=num_layers,
         request=request,
+        profile=profile,
     )
 
 
-def test_falcon3_1b(output_file, num_layers, request):
+def test_falcon3_1b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_1B
@@ -275,10 +302,11 @@ def test_falcon3_1b(output_file, num_layers, request):
         read_logits_fn=read_logits_fn,
         num_layers=num_layers,
         request=request,
+        profile=profile,
     )
 
 
-def test_falcon3_3b(output_file, num_layers, request):
+def test_falcon3_3b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_3B
@@ -291,10 +319,11 @@ def test_falcon3_3b(output_file, num_layers, request):
         read_logits_fn=read_logits_fn,
         num_layers=num_layers,
         request=request,
+        profile=profile,
     )
 
 
-def test_qwen_2_5_0_5b(output_file, num_layers, request):
+def test_qwen_2_5_0_5b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_0_5B_INSTRUCT
@@ -305,113 +334,169 @@ def test_qwen_2_5_0_5b(output_file, num_layers, request):
         required_pcc=0.94,
         num_layers=num_layers,
         request=request,
+        profile=profile,
     )
 
 
-def test_qwen_3_0_6b(output_file, num_layers, request):
+def test_qwen_3_0_6b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_0_6B
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_qwen_3_1_7b(output_file, num_layers, request):
+def test_qwen_3_1_7b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_1_7B
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_qwen_3_4b(output_file, num_layers, request):
+def test_qwen_3_4b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_4B
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_qwen_2_5_1_5b(output_file, num_layers, request):
+def test_qwen_2_5_1_5b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_1_5B_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_qwen_2_5_3b(output_file, num_layers, request):
+def test_qwen_2_5_3b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_3B_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_qwen_3_8b(output_file, num_layers, request):
+def test_qwen_3_8b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_8B
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_qwen_2_5_7b(output_file, num_layers, request):
+def test_qwen_2_5_7b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_7B_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
 # FAILED: KeyError: "L['self'].model.lifted_tensor_0"
-def test_gemma_1_1_7b(output_file, num_layers, request):
+def test_gemma_1_1_7b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GEMMA_1_1_7B_IT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
 # FAILED: TypeError: Phi3ForCausalLM.forward() got an unexpected keyword argument 'cache_position'
-def test_phi3_mini(output_file, num_layers, request):
+def test_phi3_mini(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.phi3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINI_4K
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
 # FAILED: KeyError: 'lifted_tensor_0'
-def test_phi3_5_mini(output_file, num_layers, request):
+def test_phi3_5_mini(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.phi3.phi_3_5.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINI_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
 # FAILED: AttributeError: 'MambaConfig' object has no attribute 'num_attention_heads'
-def test_mamba_2_8b(output_file, num_layers, request):
+def test_mamba_2_8b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.mamba.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MAMBA_2_8B
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_falcon3_7b(output_file, num_layers, request):
+def test_falcon3_7b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_7B
@@ -424,143 +509,160 @@ def test_falcon3_7b(output_file, num_layers, request):
         read_logits_fn=read_logits_fn,
         num_layers=num_layers,
         request=request,
+        profile=profile,
     )
 
 
-def test_mistral_7b(output_file, num_layers, request):
+def test_mistral_7b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_ministral_8b(output_file, num_layers, request):
+def test_ministral_8b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINISTRAL_8B
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_llama_3_1_8b(output_file, num_layers, request):
+def test_llama_3_1_8b(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        profile=profile,
     )
 
 
-def test_falcon3_7b_tp(output_file, num_layers, request):
+def test_falcon3_7b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_7B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_falcon3_10b_tp(output_file, num_layers, request):
+def test_falcon3_10b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.FALCON_10B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_llama_3_1_8b_instruct_tp(output_file, num_layers, request):
+def test_llama_3_1_8b_instruct_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_mistral_7b_tp(output_file, num_layers, request):
+def test_mistral_7b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_ministral_8b_tp(output_file, num_layers, request):
+def test_ministral_8b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MINISTRAL_8B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_mistral_nemo_instruct_2407_tp(output_file, num_layers, request):
+def test_mistral_nemo_instruct_2407_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.MISTRAL_NEMO_INSTRUCT_2407
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_qwen_2_5_14b_instruct_tp(output_file, num_layers, request):
+def test_qwen_2_5_14b_instruct_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_2_5_14B_INSTRUCT
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_qwen_3_0_6b_tp(output_file, num_layers, request):
+def test_qwen_3_0_6b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_0_6B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_qwen_3_1_7b_tp(output_file, num_layers, request):
+def test_qwen_3_1_7b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_1_7B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_qwen_3_8b_tp(output_file, num_layers, request):
+def test_qwen_3_8b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_8B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_qwen_3_14b_tp(output_file, num_layers, request):
+def test_qwen_3_14b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.QWEN_3_14B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_llama_3_8b_instruct_tp(output_file, num_layers, request):
+def test_llama_3_8b_instruct_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_8B_INSTRUCT
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_llama_3_1_8b_tp(output_file, num_layers, request):
+def test_llama_3_1_8b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_1_8B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_llama_3_8b_tp(output_file, num_layers, request):
+def test_llama_3_8b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.LLAMA_3_8B
-    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request)
+    test_llm_tp(ModelLoader, variant, output_file, num_layers=num_layers, request=request, profile=profile)
 
 
-def test_llama_3_1_70b_tp(output_file, num_layers, request):
+def test_llama_3_3_70b_tp(output_file, num_layers, request, profile):
     from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
 
-    variant = ModelVariant.LLAMA_3_1_70B_INSTRUCT
+    variant = ModelVariant.LLAMA_3_3_70B_INSTRUCT
     test_llm_tp(
         ModelLoader,
         variant,
         output_file,
         num_layers=num_layers,
         request=request,
+        profile=profile,
         required_pcc=-1.0,
     )  # https://github.com/tenstorrent/tt-xla/issues/2976
