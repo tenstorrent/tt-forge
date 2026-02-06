@@ -4,6 +4,7 @@
 
 import os
 import torch
+import transformers
 from loguru import logger
 from pathlib import Path
 
@@ -36,9 +37,6 @@ class TokenAccuracy:
         if reference_dir is None:
             reference_dir = str(Path(__file__).parent / "reference_outputs")
 
-        self.gt_pos = -1  # Current ground truth position (-1 = not started)
-        self.store_predicted_tokens = []  # Store predictions for accuracy calculation
-
         # Load reference data file
         reference_data_file = os.path.join(reference_dir, f"{model_name}.refpt")
         if not os.path.exists(reference_data_file):
@@ -49,6 +47,38 @@ class TokenAccuracy:
 
         logger.info(f"Loading reference data from {reference_data_file}")
         reference_data = torch.load(reference_data_file)
+
+        # Validate library versions
+        if "library_versions" in reference_data:
+            saved_versions = reference_data["library_versions"]
+            current_torch_version = torch.__version__
+            current_transformers_version = transformers.__version__
+
+            if saved_versions["torch"] != current_torch_version:
+                raise RuntimeError(
+                    f"PyTorch version mismatch!\n"
+                    f"  Reference file was generated with: torch {saved_versions['torch']}\n"
+                    f"  Current environment has: torch {current_torch_version}\n"
+                    f"Please regenerate the reference file with the current library versions."
+                )
+
+            if saved_versions["transformers"] != current_transformers_version:
+                raise RuntimeError(
+                    f"Transformers version mismatch!\n"
+                    f"  Reference file was generated with: transformers {saved_versions['transformers']}\n"
+                    f"  Current environment has: transformers {current_transformers_version}\n"
+                    f"Please regenerate the reference file with the current library versions."
+                )
+
+            logger.info(
+                f"Library versions validated: torch={current_torch_version}, "
+                f"transformers={current_transformers_version}"
+            )
+        else:
+            logger.warning(
+                "Reference file does not contain library version information. "
+                "This file may be outdated. Consider regenerating it."
+            )
 
         # Extract data
         reference_tokens = reference_data["reference_tokens"]  # Shape: [1, total_length]
@@ -80,7 +110,6 @@ class TokenAccuracy:
         top5_end_idx = top5_start_idx + len(self.reference_tokens)
         self.top5_tokens = full_top5_tokens[top5_start_idx:top5_end_idx, :]
 
-        self.maxindex = len(self.reference_tokens) - 1
         logger.info(
             f"Loaded {len(self.input_prompt)} input tokens (from position {prefill_start_idx}), "
             f"{len(self.reference_tokens)} ground truth tokens"
@@ -99,49 +128,30 @@ class TokenAccuracy:
         text_data = tokenizer.decode(self.input_prompt.tolist())
         return text_data
 
-    def collect_predicted_tokens(self, predicted_token: int) -> torch.Tensor:
+    def compute_accuracy(self, predicted_tokens: list[int]) -> tuple[float, float]:
         """
-        Store predicted token and return ground truth token for teacher forcing.
+        Compute TOP1 and TOP5 token accuracy from predicted tokens.
 
-        This implements teacher forcing: the model's prediction is stored for
-        accuracy calculation, but the GROUND TRUTH token is returned to be
-        used as input for the next iteration. This prevents error accumulation
-        and allows independent accuracy measurement at each position.
+        TOP1: Percentage of positions where predicted token matches top-1 token from reference model
+        TOP5: Percentage of positions where predicted token is within top-5 tokens from reference model
 
         Args:
-            predicted_token: Token predicted by the model (scalar integer)
-
-        Returns:
-            Ground truth token tensor with shape [1, 1] for next iteration input
-        """
-        self.store_predicted_tokens.append(predicted_token)
-        self.gt_pos += 1
-
-        # Return ground truth token (not the prediction!)
-        gt_token = self.reference_tokens[min(self.gt_pos, self.maxindex)]
-        return gt_token.unsqueeze(-1).unsqueeze(-1)  # Shape: [1, 1]
-
-    def compute_accuracy(self) -> tuple[float, float]:
-        """
-        Compute TOP1 and TOP5 token accuracy.
-
-        TOP1: Percentage of positions where predicted token (on TT device) matches predicted token of reference model
-        TOP5: Percentage of positions where predicted token (on TT device) is within the top 5 predicted tokens of reference model
+            predicted_tokens: List of predicted token IDs from the model
 
         Returns:
             Tuple of (top1_accuracy, top5_accuracy) as floats in range [0.0, 1.0]
         """
         count_top1 = 0
         count_top5 = 0
-        matching_sz = min(len(self.reference_tokens), len(self.store_predicted_tokens))
+        matching_sz = min(len(self.top5_tokens), len(predicted_tokens))
 
         for i in range(matching_sz):
             # TOP1: Check if prediction matches first entry in top5_tokens
-            if self.top5_tokens[i, 0].item() == self.store_predicted_tokens[i]:
+            if self.top5_tokens[i, 0].item() == predicted_tokens[i]:
                 count_top1 += 1
 
             # TOP5: Check if prediction is in any of the top 5
-            if self.store_predicted_tokens[i] in self.top5_tokens[i, :]:
+            if predicted_tokens[i] in self.top5_tokens[i, :]:
                 count_top5 += 1
 
         accuracy_top1 = count_top1 / matching_sz if matching_sz > 0 else 0.0

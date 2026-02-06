@@ -176,10 +176,20 @@ def generate_and_benchmark(
     verbose: bool = True,
     is_multichip: bool = False,
     mesh: Mesh = None,
-    token_accuracy=None,
+    ground_truth_tokens: torch.Tensor = None,
 ):
     """
-    Run the generation loop and measure time.
+    Run the generation loop with optional teacher forcing.
+
+    This function performs token generation and implements teacher forcing when
+    ground_truth_tokens are provided. It only handles generation - no accuracy
+    computation is done here.
+
+    Teacher Forcing:
+        When ground_truth_tokens is provided, the GROUND TRUTH token at each
+        step is used as input for the next iteration (not the prediction).
+        This prevents error accumulation and allows independent accuracy
+        measurement at each position.
 
     Args:
         model: Model instance
@@ -187,15 +197,24 @@ def generate_and_benchmark(
         tokenizer: Tokenizer instance
         device: Device
         max_tokens_to_generate: Maximum number of tokens to generate
+        read_logits_fn: Function to extract logits from model output
         verbose: Whether to print generation output
-        token_accuracy: TokenAccuracy instance for teacher forcing (optional)
+        is_multichip: Whether running on multiple chips
+        mesh: Device mesh for multi-chip setup
+        ground_truth_tokens: Ground truth tokens for teacher forcing (optional)
+                           Shape: [sequence_length] containing token IDs
 
     Returns:
-        Tuple of (output_logits, iteration_times)
+        Tuple of (output_logits, predicted_tokens, iteration_times)
+            - output_logits: List of logit tensors for each generation step
+            - predicted_tokens: List of predicted token IDs (integers)
+            - iteration_times: List of iteration times in nanoseconds
     """
     output_tokens: List[str] = []
     output_logits: List[torch.Tensor] = []
+    predicted_tokens: List[int] = []
     iteration_times: List[float] = []
+
     with torch.no_grad():
         for step in range(max_tokens_to_generate):
             start = time.perf_counter_ns()
@@ -206,6 +225,9 @@ def generate_and_benchmark(
             logits = read_logits_fn(output).to("cpu")
             output_logits.append(logits)
             next_token_ids = logits[:, -1].argmax(dim=-1)
+            predicted_token = next_token_ids[0].item()  # Assuming batch_size=1
+            predicted_tokens.append(predicted_token)
+
             output_text = [tokenizer.decode(token_id) for token_id in next_token_ids]
             output_tokens.append(output_text)
 
@@ -220,15 +242,12 @@ def generate_and_benchmark(
                 break
 
             # Update inputs for next iteration
-            # Apply teacher forcing if accuracy testing is enabled
-            if token_accuracy is not None:
-                # Store prediction and get ground truth token for next iteration
-                predicted_token = next_token_ids[0].item()  # Assuming batch_size=1 for accuracy
-                ground_truth_token = token_accuracy.collect_predicted_tokens(predicted_token)
-                # Use ground truth token as next input (teacher forcing)
-                input_args["input_ids"] = ground_truth_token.to(device)
+            if ground_truth_tokens is not None:
+                # Teacher forcing: use ground truth token as next input
+                gt_token = ground_truth_tokens[step]
+                input_args["input_ids"] = gt_token.unsqueeze(0).unsqueeze(0).to(device)  # Shape: [1, 1]
             else:
-                # Original behavior: use predicted token
+                # Standard generation: use predicted token as next input
                 input_args["input_ids"] = next_token_ids.unsqueeze(-1).to(device)
 
             host_cache_pos = input_args["cache_position"].to("cpu")
@@ -243,7 +262,7 @@ def generate_and_benchmark(
     if verbose:
         print("Output tokens:", output_tokens)
 
-    return output_logits, iteration_times
+    return output_logits, predicted_tokens, iteration_times
 
 
 def check_transformers_version():
@@ -400,7 +419,7 @@ def benchmark_llm_torch_xla(
 
     # Get CPU result (skip in accuracy testing mode - not needed with ground truth)
     if not accuracy_testing:
-        cpu_logits, _ = generate_and_benchmark(
+        cpu_logits, _, _ = generate_and_benchmark(
             model,
             input_args,
             tokenizer,
@@ -458,7 +477,8 @@ def benchmark_llm_torch_xla(
     # Warmup run
     print("Warming up...")
     warmup_tokens = min(MIN_STEPS, max_tokens_to_generate)
-    _, _ = generate_and_benchmark(
+    ground_truth_for_warmup = token_accuracy.reference_tokens[:warmup_tokens] if accuracy_testing else None
+    _, _, _ = generate_and_benchmark(
         compiled_model,
         input_args,
         tokenizer,
@@ -468,14 +488,10 @@ def benchmark_llm_torch_xla(
         verbose=False,
         is_multichip=is_multichip,
         mesh=mesh,
-        token_accuracy=token_accuracy,
+        ground_truth_tokens=ground_truth_for_warmup,
     )
 
     # Reconstruct inputs for the actual benchmark run
-    # Reset token_accuracy state for the actual run
-    if accuracy_testing:
-        token_accuracy.gt_pos = -1
-        token_accuracy.store_predicted_tokens = []
     input_args = construct_inputs(
         tokenizer,
         model.config,
@@ -488,7 +504,8 @@ def benchmark_llm_torch_xla(
 
     # Run benchmark once
     print(f"\nStarting benchmark...")
-    output_logits, iteration_times = generate_and_benchmark(
+    ground_truth_for_benchmark = token_accuracy.reference_tokens if accuracy_testing else None
+    output_logits, predicted_tokens, iteration_times = generate_and_benchmark(
         compiled_model,
         input_args,
         tokenizer,
@@ -498,7 +515,7 @@ def benchmark_llm_torch_xla(
         verbose=True,
         is_multichip=is_multichip,
         mesh=mesh,
-        token_accuracy=token_accuracy,
+        ground_truth_tokens=ground_truth_for_benchmark,
     )
 
     if len(iteration_times) < 10:
@@ -551,8 +568,8 @@ def benchmark_llm_torch_xla(
 
     # Validation: PCC or Token Accuracy
     if accuracy_testing:
-        # Compute token accuracy
-        top1_accuracy, top5_accuracy = token_accuracy.compute_accuracy()
+        # Compute token accuracy from predictions (after generation completes)
+        top1_accuracy, top5_accuracy = token_accuracy.compute_accuracy(predicted_tokens)
 
         print(f"\n=== Token Accuracy Results ===")
         print(f"TOP1 Accuracy: {top1_accuracy * 100:.2f}%")

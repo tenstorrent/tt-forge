@@ -29,6 +29,7 @@ import bz2
 import os
 
 import torch
+import transformers
 from loguru import logger
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
@@ -152,10 +153,15 @@ def generate_reference_outputs(total_length, output_file, model_name):
     data = {
         "top5_tokens": torch.cat(all_top5_tokens, dim=0).cpu(),
         "reference_tokens": encoded_tokens_tensor[:, :total_length].clone().cpu(),
+        "library_versions": {
+            "torch": torch.__version__,
+            "transformers": transformers.__version__,
+        },
     }
 
     torch.save(data, output_file)
     logger.info(f"Saved reference outputs to {output_file}")
+    logger.info(f"Library versions: torch={torch.__version__}, transformers={transformers.__version__}")
 
     # Print all segment accuracy summaries as a table
     print("\nSegment Accuracy Summaries:")
