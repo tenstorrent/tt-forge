@@ -3,7 +3,10 @@
 
 # BERT Demo Script
 
-import sys
+import os
+import torch
+import onnx
+
 import forge
 from third_party.tt_forge_models.bert.masked_lm.pytorch import (
     ModelLoader as MaskedLMLoader,
@@ -29,26 +32,56 @@ from third_party.tt_forge_models.bert.sentence_embedding_generation.pytorch.load
 )
 
 
-def run_bert_demo_case(task_type, variant, loader_class):
+def run_bert_demo_case(task_type, variant, loader_class, opset_version=17):
+    """
+    Run a BERT model using ONNX and the Forge compiler.
 
-    # Load Model and inputs
+    Args:
+        task_type: String indicating the task type
+        variant: ModelVariant enum specifying which variant to use
+        loader_class: The ModelLoader class for this task
+        opset_version (int): The ONNX opset version to use
+    """
+    print(f"Running BERT ONNX demo with task: {task_type}, variant: {variant}")
+
+    # Load Model and inputs using the ModelLoader
     loader = loader_class(variant=variant)
     framework_model = loader.load_model()
     input_dict = loader.load_inputs()
+    onnx_inputs = (input_dict["input_ids"],)
 
-    if task_type in ["token_classification", "sequence_classification"]:
-        inputs = [input_dict["input_ids"]]
-    else:
-        inputs = [input_dict["input_ids"], input_dict["attention_mask"]]
+    # Create a temporary path for the ONNX model
+    # Use variant name to create unique filename
+    variant_name = variant.value.replace("/", "_").replace("-", "_").replace(" ", "_")
+    onnx_path = f"bert_{task_type}_{variant_name}.onnx"
 
-    # Compile the model using Forge
-    compiled_model = forge.compile(framework_model, sample_inputs=inputs)
+    # Get the module name from the loader
+    module_name = loader._get_model_info().name.replace("pytorch", "onnx").replace("/", "_").replace("-", "_").replace(" ", "_")
+
+    # Export model to ONNX
+    print(f"Exporting model to ONNX with opset version {opset_version}...")
+    torch.onnx.export(framework_model, onnx_inputs, onnx_path, opset_version=opset_version)
+
+    # Load ONNX model
+    print("Loading ONNX model...")
+    onnx_model = onnx.load(onnx_path)
+    onnx.checker.check_model(onnx_model)
+
+    # Compile model using Forge
+    print("Compiling model using Forge...")
+    compiled_model = forge.compile(onnx_model, onnx_inputs, module_name=module_name)
 
     # Run inference on Tenstorrent device
-    output = compiled_model(*inputs)
+    print("Running inference...")
+    output = compiled_model(*onnx_inputs)
 
-    # post-processing
+    # Post-process and display results using the loader's method
     loader.decode_output(output)
+
+    # Clean up temporary ONNX file
+    if os.path.exists(onnx_path):
+        os.remove(onnx_path)
+        print(f"Removed temporary ONNX file: {onnx_path}")
 
     print("=" * 60, flush=True)
 
