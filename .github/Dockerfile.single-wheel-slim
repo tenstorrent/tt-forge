@@ -17,7 +17,7 @@ RUN --mount=type=bind,source=$WHEEL_FILES_PATH,target=/wheels \
     eval "$(pyenv init -)" && \
     for wheel in /wheels/*.whl; do \
       pip install "$wheel"; \
-      if [[ "$wheel" == "tt_pjrt_"* || "$wheel" == "tt_forge-"* ]]; then \
+      if [[ "$wheel" == *"tt_pjrt_"* || "$wheel" == *"tt_forge-"* ]]; then \
         tt-forge-install; \
       fi; \
     done && \
