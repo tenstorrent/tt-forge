@@ -200,6 +200,26 @@ jobs:
           pytest -svv "${{ matrix.build.pytest }}" --output-file=${{ steps.strings.outputs.perf_report_json_file }}
         fi
 
+    - name: Dump stablehlo to report
+      if: (success() || failure()) && !matrix.build.skip-stablehlo-dump
+      shell: bash
+      run: |
+        echo "Dump stablehlo to report"
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}/stablehlo
+        if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+          cp ./modules/${{ matrix.build.name }}_stablehlo.mlir ${{ steps.strings.outputs.perf_report_path }}/stablehlo/stablehlo.mlir 2>/dev/null || true
+        else
+          cp ./modules/irs/shlo_*.mlir ${{ steps.strings.outputs.perf_report_path }}/stablehlo/ 2>/dev/null || true
+        fi
+
+    - name: Upload StableHLO MLIR separately
+      id: upload-stablehlo-mlir
+      uses: actions/upload-artifact@v4
+      if: (success() || failure()) && !matrix.build.skip-stablehlo-dump
+      with:
+        name: stablehlo-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/stablehlo/
+
     - name: Dump ttir to report
       id: dump-ttir
       if: (success() || failure()) && !matrix.build.skip-ttir-dump
@@ -371,6 +391,7 @@ jobs:
       shell: bash
       run: |
         PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_json_file }}"
+        STABLEHLO_URL="${{ !matrix.build.skip-stablehlo-dump && steps.upload-stablehlo-mlir.outputs.artifact-url || '' }}"
         TTIR_URL="${{ !matrix.build.skip-ttir-dump && steps.upload-ttir-mlir.outputs.artifact-url || '' }}"
         TTNN_URL="${{ !matrix.build.skip-ttnn-dump && steps.upload-ttnn-mlir.outputs.artifact-url || '' }}"
         DEVICE_PERF_URL="${{ !matrix.build.skip-device-perf && !inputs.skip-device-perf && matrix.build.runs-on != 'p150' && matrix.build.runs-on != 'llmbox' && steps.upload-device-perf.outputs.artifact-url || '' }}"
@@ -378,6 +399,7 @@ jobs:
         JOB_ID_URL="https://github.com/tenstorrent/tt-forge/actions/runs/${{ github.run_id }}/job/${{ steps.fetch-job-id.outputs.job_id }}"
 
         python benchmark/extend_result_config.py "$PERF_REPORT_FILE" \
+          ${STABLEHLO_URL:+--stablehlo-url "$STABLEHLO_URL"} \
           ${TTIR_URL:+--ttir-url "$TTIR_URL"} \
           ${TTNN_URL:+--ttnn-url "$TTNN_URL"} \
           ${DEVICE_PERF_URL:+--device-perf-url "$DEVICE_PERF_URL"} \
