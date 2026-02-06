@@ -304,16 +304,11 @@ jobs:
   produce-data:
     needs:
       - fail-send-msg
-    if: always()
+    if: ${{ always() && github.event_name != 'workflow_call' }}
     runs-on: ubuntu-latest
     steps:
       - name: checkout repository
         uses: actions/checkout@v4
-        with:
-          repository: 'tenstorrent/tt-forge'
-          fetch-depth: 1
-          ref: ${{ inputs.ref || github.ref }}
-          submodules: 'recursive'
       - name: Trigger produce_data.yml
         uses: ./.github/actions/trigger-workflow
         env:
