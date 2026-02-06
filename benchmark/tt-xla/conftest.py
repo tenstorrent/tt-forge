@@ -121,6 +121,13 @@ def pytest_addoption(parser):
         help="Batch size (positive integer). Overrides config value.",
     )
     parser.addoption(
+        "--num-layers",
+        action="store",
+        default=None,
+        type=make_validator_positive_int("--num-layers"),
+        help="Number of model layers (positive integer). Overrides model config when supported.",
+    )
+    parser.addoption(
         "--loop-count",
         action="store",
         default=None,
@@ -180,6 +187,11 @@ def trace_enabled(request):
 @pytest.fixture
 def batch_size(request):
     return request.config.getoption("--batch-size")
+
+
+@pytest.fixture
+def num_layers(request):
+    return request.config.getoption("--num-layers")
 
 
 @pytest.fixture

@@ -31,6 +31,7 @@ from utils import (
     print_benchmark_results,
     create_benchmark_result,
     compute_pcc,
+    build_xla_export_name,
 )
 
 xr.set_device_type("TT")
@@ -250,6 +251,7 @@ def check_transformers_version():
 def benchmark_llm_torch_xla(
     model_loader,
     model_variant,
+    display_name,
     optimization_level,
     trace_enabled,
     batch_size,
@@ -342,6 +344,7 @@ def benchmark_llm_torch_xla(
 
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
+    full_model_name = model_loader.get_model_info(variant=model_variant).name
 
     # Construct inputs, including static cache
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
@@ -382,10 +385,18 @@ def benchmark_llm_torch_xla(
             xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
 
     # Set XLA compilation options
+    num_layers_override = getattr(model_loader, "num_layers", None)
+    export_model_name = build_xla_export_name(
+        model_name=display_name,
+        num_layers=num_layers_override,
+        batch_size=batch_size,
+        input_sequence_length=input_sequence_length,
+    )
     options = {
         "optimization_level": optimization_level,
         "enable_trace": trace_enabled,
         "export_path": MODULE_EXPORT_PATH,
+        "export_model_name": export_model_name,
         "ttnn_perf_metrics_enabled": True,
         "ttnn_perf_metrics_output_file": ttnn_perf_metrics_output_file,
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
@@ -448,7 +459,6 @@ def benchmark_llm_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    full_model_name = model_loader.get_model_info(variant=model_variant).name
     model_type = "text-generation"
     dataset_name = "Random Data"
 
@@ -503,6 +513,7 @@ def benchmark_llm_torch_xla(
         trace_enabled=trace_enabled,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         model_info=full_model_name,
+        display_name=display_name,
         torch_xla_enabled=True,
         backend="tt",
         device_name=socket.gethostname(),

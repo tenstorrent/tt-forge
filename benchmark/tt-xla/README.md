@@ -19,7 +19,36 @@ pytest -svv benchmark/tt-xla/test_llms.py::test_phi1
 
 # Save results to JSON
 pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b --output results.json
+
+# Override number of hidden layers (supported for LLMs and encoders only).
+pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b --num-layers 1
 ```
+
+### One-Layer Exports
+
+Use the one-layer runner to generate one-layer tests for LLMs and encoders:
+
+```bash
+# Run all LLM + encoder one-layer exports
+python benchmark/tt-xla/scripts/run_one_layer_benchmarks.py
+
+# Include TP LLM tests
+python benchmark/tt-xla/scripts/run_one_layer_benchmarks.py --include-tp
+
+# Only run TP LLM tests
+python benchmark/tt-xla/scripts/run_one_layer_benchmarks.py --tp-only
+
+# Resume / status-only
+python benchmark/tt-xla/scripts/run_one_layer_benchmarks.py --continue
+python benchmark/tt-xla/scripts/run_one_layer_benchmarks.py --status
+
+# Filter by model prefix
+python benchmark/tt-xla/scripts/run_one_layer_benchmarks.py --prefix llama,gemma
+```
+
+Outputs are saved under `benchmark/tt-xla/`:
+- TTIRs: `single_layer_tests/`
+- TTNN IRs: `single_layer_tests_ttnn/`
 
 ### Legacy Runner (benchmark.py)
 

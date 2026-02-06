@@ -201,43 +201,67 @@ jobs:
         fi
 
     - name: Dump ttir to report
+      id: dump-ttir
       if: (success() || failure()) && !matrix.build.skip-ttir-dump
       shell: bash
       run: |
         echo "Dump ttir to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttir
+        ttir_artifact_name="ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}"
         if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
           cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
         else
           cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
         fi
+        # Group TTIR MLIR files under a folder named like the files but without the gN segment
+        ttir_first_file="$(ls -1 ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir_*.mlir 2>/dev/null | head -n 1 || true)"
+        if [ -n "$ttir_first_file" ]; then
+          ttir_base_name="$(basename "$ttir_first_file")"
+          ttir_folder_name="$(echo "$ttir_base_name" | sed -E 's/_g[0-9]+_/_/' | sed -E 's/_run[0-9a-fA-F]+_/_/' | sed -E 's/\.mlir$//')"
+          mkdir -p "${{ steps.strings.outputs.perf_report_path }}/ttir/${ttir_folder_name}"
+          mv ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir_*.mlir "${{ steps.strings.outputs.perf_report_path }}/ttir/${ttir_folder_name}/"
+          ttir_artifact_name="ttir-mlir-${ttir_folder_name}"
+        fi
+        echo "artifact_name=${ttir_artifact_name}" >> "$GITHUB_OUTPUT"
 
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
       uses: actions/upload-artifact@v4
       if: (success() || failure()) && !matrix.build.skip-ttir-dump
       with:
-        name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        name: ${{ steps.dump-ttir.outputs.artifact_name }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttir/
 
     - name: Dump ttnn to report
+      id: dump-ttnn
       if: (success() || failure()) && !matrix.build.skip-ttnn-dump
       shell: bash
       run: |
         echo "Dump ttnn to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttnn
+        ttnn_artifact_name="ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}"
         if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
           cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
         else
           cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
         fi
+        # Group TTNN MLIR files under a folder named like the files but without the gN segment
+        ttnn_first_file="$(ls -1 ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn_*.mlir 2>/dev/null | head -n 1 || true)"
+        if [ -n "$ttnn_first_file" ]; then
+          ttnn_base_name="$(basename "$ttnn_first_file")"
+          ttnn_folder_name="$(echo "$ttnn_base_name" | sed -E 's/_g[0-9]+_/_/' | sed -E 's/_run[0-9a-fA-F]+_/_/' | sed -E 's/\.mlir$//')"
+          mkdir -p "${{ steps.strings.outputs.perf_report_path }}/ttnn/${ttnn_folder_name}"
+          mv ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn_*.mlir "${{ steps.strings.outputs.perf_report_path }}/ttnn/${ttnn_folder_name}/"
+          ttnn_artifact_name="ttnn-mlir-${ttnn_folder_name}"
+        fi
+        echo "artifact_name=${ttnn_artifact_name}" >> "$GITHUB_OUTPUT"
 
     - name: Upload TTNN MLIR separately
       id: upload-ttnn-mlir
       uses: actions/upload-artifact@v4
       if: (success() || failure()) && !matrix.build.skip-ttnn-dump
       with:
-        name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        name: ${{ steps.dump-ttnn.outputs.artifact_name }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttnn/
 
     - name: Find workflow run ID for ttrt wheel download
