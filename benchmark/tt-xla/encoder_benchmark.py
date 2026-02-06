@@ -306,6 +306,7 @@ def benchmark_encoder_torch_xla(
         input_is_image=False,
         input_sequence_length=input_sequence_length,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
+        device_count=xr.global_runtime_device_count(),
     )
 
     return result
