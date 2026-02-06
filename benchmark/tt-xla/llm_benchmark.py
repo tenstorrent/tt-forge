@@ -269,6 +269,7 @@ def benchmark_llm_torch_xla(
     shard_spec_fn,
     arch,
     required_pcc,
+    fp32_dest_acc_en=None,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
@@ -408,6 +409,8 @@ def benchmark_llm_torch_xla(
         "experimental_enable_weight_bfp8_conversion": enable_weight_bfp8_conversion,
         "experimental_enable_permute_matmul_fusion": experimental_enable_permute_matmul_fusion,
     }
+    if fp32_dest_acc_en is not None:
+        options["fp32_dest_acc_en"] = fp32_dest_acc_en
 
     torch_xla.set_custom_compile_options(options)
 
