@@ -41,8 +41,11 @@ def run_bert_demo_case(task_type, variant, loader_class):
     else:
         inputs = [input_dict["input_ids"], input_dict["attention_mask"]]
 
+    mlir_config = forge.config.MLIRConfig()
+    mlir_config.set_custom_config("enable-cpu-hoisted-const-eval=false")
+    
     # Compile the model using Forge
-    compiled_model = forge.compile(framework_model, sample_inputs=inputs)
+    compiled_model = forge.compile(framework_model, sample_inputs=inputs, compiler_cfg=forge.CompilerConfig(mlir_config=mlir_config))
 
     # Run inference on Tenstorrent device
     output = compiled_model(*inputs)

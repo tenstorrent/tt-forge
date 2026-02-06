@@ -22,6 +22,7 @@ def run_resnet_demo_case(variant):
 
     data_format_override = DataFormat.Float16_b
     compiler_cfg = CompilerConfig(default_df_override=data_format_override)
+    compiler_cfg.mlir_config = forge.config.MLIRConfig().set_custom_config("enable-cpu-hoisted-const-eval=false")
 
     # Compile the model using Forge
     compiled_model = forge.compile(model, sample_inputs=[inputs], compiler_cfg=compiler_cfg)
