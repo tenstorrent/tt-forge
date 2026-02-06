@@ -111,6 +111,31 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
           submodules: 'recursive'
 
+      - name: Install dependencies
+        if: matrix.project == 'tt-forge-onnx'
+        shell: bash
+        run: |
+          if command -v ld.lld-17 &> /dev/null; then
+            echo "ld.lld-17 is already available"
+            ld.lld-17 --version
+          else
+            echo "ld.lld-17 not found, installing lld-17..."
+
+            wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && \
+            chmod +x /tmp/llvm.sh && \
+            /tmp/llvm.sh 17 >/dev/null 2>&1 || true
+
+            apt-get update -qq && apt-get install -y -qq lld-17 >/dev/null 2>&1
+
+            if command -v ld.lld-17 &> /dev/null || [ -x /usr/bin/ld.lld-17 ]; then
+              echo "Successfully installed ld.lld-17"
+              ld.lld-17 --version || /usr/bin/ld.lld-17 --version
+            else
+              echo "ERROR: Failed to install ld.lld-17"
+              exit 1
+            fi
+          fi
+
       - name: Run ${{ matrix.project }} demo ${{ matrix.name }}
         shell: bash
         run: |
