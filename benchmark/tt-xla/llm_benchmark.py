@@ -20,6 +20,7 @@ import torch_xla.runtime as xr
 import torch_xla.distributed.spmd as xs
 from torch_xla.distributed.spmd import Mesh
 import tt_torch
+from tt_torch.sharding import sharding_constraint_hook
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
 from transformers.cache_utils import StaticCache
@@ -383,6 +384,11 @@ def benchmark_llm_torch_xla(
         for layer in input_args["past_key_values"].layers:
             xs.mark_sharding(layer.keys, mesh, (None, "model", None, None))
             xs.mark_sharding(layer.values, mesh, (None, "model", None, None))
+
+        # Apply sharding constraint on lm_head output to all_gather logits
+        if hasattr(model, "lm_head") and model.lm_head is not None:
+            hook = sharding_constraint_hook(model.lm_head, mesh, (None, None, None))
+            model.lm_head.register_forward_hook(hook)
 
     # Set XLA compilation options
     num_layers_override = getattr(model_loader, "num_layers", None)
