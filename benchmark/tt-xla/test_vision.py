@@ -36,6 +36,7 @@ def test_vision(
     data_format=DEFAULT_DATA_FORMAT,
     experimental_compile=DEFAULT_EXPERIMENTAL_COMPILE,
     required_pcc=DEFAULT_REQUIRED_PCC,
+    task=None,
 ):
     """Test vision model with the given configuration.
 
@@ -88,6 +89,7 @@ def test_vision(
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         required_pcc=required_pcc,
+        task=task,
     )
 
     if output_file:
@@ -110,7 +112,7 @@ def test_efficientnet(output_file, request):
     # Load model
     variant = ModelVariant.TIMM_EFFICIENTNET_B0
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -122,13 +124,14 @@ def test_efficientnet(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -142,7 +145,7 @@ def test_mnist(output_file, request):
 
     # Load model
     loader = ModelLoader()
-    model_info_name = loader.get_model_info().name
+    model_info = loader.get_model_info()
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -155,7 +158,7 @@ def test_mnist(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
@@ -163,6 +166,7 @@ def test_mnist(output_file, request):
         batch_size=batch_size,
         input_size=input_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -176,7 +180,7 @@ def test_mobilenetv2(output_file, request):
     # Load model
     variant = ModelVariant.MOBILENET_V2_TORCH_HUB
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -188,13 +192,14 @@ def test_mobilenetv2(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -208,7 +213,7 @@ def test_resnet50(output_file, request):
     # Load model
     variant = ModelVariant.RESNET_50_HF
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -220,7 +225,7 @@ def test_resnet50(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
@@ -228,6 +233,7 @@ def test_resnet50(output_file, request):
         batch_size=batch_size,
         data_format=data_format,
         required_pcc=0.90,
+        task=str(model_info.task),
     )
 
 
@@ -242,7 +248,7 @@ def test_segformer(output_file, request):
     # Load model
     variant = ModelVariant.B0_FINETUNED
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -255,7 +261,7 @@ def test_segformer(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
@@ -263,6 +269,7 @@ def test_segformer(output_file, request):
         batch_size=batch_size,
         input_size=input_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -277,7 +284,7 @@ def test_swin(output_file, request):
     # Load model
     variant = ModelVariant.SWIN_S
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -289,7 +296,7 @@ def test_swin(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
@@ -298,6 +305,7 @@ def test_swin(output_file, request):
         input_size=input_size,
         data_format=data_format,
         required_pcc=0.90,
+        task=str(model_info.task),
     )
 
 
@@ -311,7 +319,7 @@ def test_ufld(output_file, request):
     # Load model
     variant = ModelVariant.TUSIMPLE_RESNET34
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     input_size = (3, *loader.config.input_size)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
@@ -324,7 +332,7 @@ def test_ufld(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
@@ -332,6 +340,7 @@ def test_ufld(output_file, request):
         batch_size=batch_size,
         input_size=input_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -345,7 +354,7 @@ def test_ufld_v2(output_file, request):
     # Load model
     variant = ModelVariant.TUSIMPLE_RESNET34
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     input_size = (3, loader.config.input_height, loader.config.input_width)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
@@ -358,7 +367,7 @@ def test_ufld_v2(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
@@ -366,6 +375,7 @@ def test_ufld_v2(output_file, request):
         batch_size=batch_size,
         input_size=input_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -379,7 +389,7 @@ def test_unet(output_file, request):
 
     # Load model
     loader = ModelLoader()
-    model_info_name = loader.get_model_info().name
+    model_info = loader.get_model_info()
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -391,7 +401,7 @@ def test_unet(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
@@ -399,6 +409,7 @@ def test_unet(output_file, request):
         batch_size=batch_size,
         input_size=input_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -412,7 +423,7 @@ def test_vit(output_file, request):
     # Load model
     variant = ModelVariant.BASE
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -424,13 +435,14 @@ def test_vit(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         data_format=data_format,
+        task=str(model_info.task),
     )
 
 
@@ -444,7 +456,7 @@ def test_vovnet(output_file, request):
     # Load model
     variant = ModelVariant.TIMM_VOVNET19B_DW_RAIN1K
     loader = ModelLoader(variant=variant)
-    model_info_name = loader.get_model_info(variant=variant).name
+    model_info = loader.get_model_info(variant=variant)
     model = loader.load_model(dtype_override=data_format)
     model = model.eval()
 
@@ -456,11 +468,12 @@ def test_vovnet(output_file, request):
 
     test_vision(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
         data_format=data_format,
+        task=str(model_info.task),
     )

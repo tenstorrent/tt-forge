@@ -344,7 +344,8 @@ def benchmark_llm_torch_xla(
 
     # Instantiate model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
-    full_model_name = model_loader.get_model_info(variant=model_variant).name
+    model_info = model_loader.get_model_info(variant=model_variant)
+    full_model_name = model_info.name
 
     # Construct inputs, including static cache
     input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
@@ -459,7 +460,7 @@ def benchmark_llm_torch_xla(
 
     metadata = get_benchmark_metadata()
 
-    model_type = "text-generation"
+    model_type = str(model_info.task)
     dataset_name = "Random Data"
 
     # Extract number of layers from model config if available

@@ -99,6 +99,7 @@ def benchmark_vision_torch_xla(
     extract_output_tensor_fn,
     display_name=None,
     required_pcc=0.97,
+    task=None,
 ):
     """
     Benchmark a vision model using PyTorch and torch-xla.
@@ -202,7 +203,7 @@ def benchmark_vision_torch_xla(
     metadata = get_benchmark_metadata()
 
     full_model_name = model_info_name
-    model_type = "Vision, Random Input Data"
+    model_type = task if task else "Vision, Random Input Data"
     dataset_name = "Random Data"
     num_layers = -1
 

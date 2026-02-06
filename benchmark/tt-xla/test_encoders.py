@@ -78,6 +78,7 @@ def test_encoder(
     enable_weight_bfp8_conversion=DEFAULT_ENABLE_WEIGHT_BFP8_CONVERSION,
     experimental_enable_permute_matmul_fusion=DEFAULT_EXPERIMENTAL_ENABLE_PERMUTE_MATMUL_FUSION,
     num_layers=None,
+    task=None,
 ):
     """Test encoder model with the given variant and optional configuration overrides.
 
@@ -144,6 +145,7 @@ def test_encoder(
         required_pcc=required_pcc,
         enable_weight_bfp8_conversion=enable_weight_bfp8_conversion,
         experimental_enable_permute_matmul_fusion=experimental_enable_permute_matmul_fusion,
+        task=task,
     )
 
     if output_file:
@@ -167,8 +169,8 @@ def test_bert(output_file, num_layers, request):
     loader = create_model_loader(ModelLoader, num_layers=num_layers)
     if num_layers is not None and loader is None:
         pytest.fail("num_layers override requested but ModelLoader does not support it.")
-    model_info_name = loader.get_model_info().name
-    print(f"\nLoading model {model_info_name}...")
+    model_info = loader.get_model_info()
+    print(f"\nLoading model {model_info.name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
 
     # Create function for loading raw inputs
@@ -193,7 +195,7 @@ def test_bert(output_file, num_layers, request):
 
     test_encoder(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         display_name="bert",
         request=request,
@@ -206,6 +208,7 @@ def test_bert(output_file, num_layers, request):
         input_sequence_length=input_sequence_length,
         loop_count=32,
         optimization_level=2,
+        task=str(model_info.task),
     )
 
 
@@ -221,8 +224,8 @@ def test_qwen3_embedding_4b(output_file, num_layers, request):
     loader = create_model_loader(ModelLoader, num_layers=num_layers, variant=variant)
     if num_layers is not None and loader is None:
         pytest.fail("num_layers override requested but ModelLoader does not support it.")
-    model_info_name = loader.get_model_info(variant=variant).name
-    print(f"\nLoading model {model_info_name}...")
+    model_info = loader.get_model_info(variant=variant)
+    print(f"\nLoading model {model_info.name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
 
     # Create function for loading raw inputs
@@ -246,7 +249,7 @@ def test_qwen3_embedding_4b(output_file, num_layers, request):
 
     test_encoder(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         display_name=variant.name,
         request=request,
@@ -259,6 +262,7 @@ def test_qwen3_embedding_4b(output_file, num_layers, request):
         input_sequence_length=input_sequence_length,
         loop_count=32,
         optimization_level=0,
+        task=str(model_info.task),
     )
 
 
@@ -275,8 +279,8 @@ def test_qwen3_embedding_8b(output_file, num_layers, request):
     loader = create_model_loader(ModelLoader, num_layers=num_layers, variant=variant)
     if num_layers is not None and loader is None:
         pytest.fail("num_layers override requested but ModelLoader does not support it.")
-    model_info_name = loader.get_model_info(variant=variant).name
-    print(f"\nLoading model {model_info_name}...")
+    model_info = loader.get_model_info(variant=variant)
+    print(f"\nLoading model {model_info.name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
 
     # Create function for loading raw inputs
@@ -301,7 +305,7 @@ def test_qwen3_embedding_8b(output_file, num_layers, request):
 
     test_encoder(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         display_name=variant.name,
         request=request,
@@ -313,6 +317,7 @@ def test_qwen3_embedding_8b(output_file, num_layers, request):
         batch_size=1,
         input_sequence_length=input_sequence_length,
         loop_count=32,
+        task=str(model_info.task),
     )
 
 
@@ -334,8 +339,8 @@ def test_bge_m3(output_file, request):
 
     # Load bge-m3 model
     loader = ModelLoader()
-    model_info_name = loader.get_model_info().name
-    print(f"\nLoading model {model_info_name}...")
+    model_info = loader.get_model_info()
+    print(f"\nLoading model {model_info.name}...")
     model = BGEM3FlagModel("BAAI/bge-m3").model
     if data_format == "bfloat16":
         model = model.to(torch.bfloat16)
@@ -457,7 +462,7 @@ def test_bge_m3(output_file, request):
 
     test_encoder(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         display_name="bge_m3",
         request=request,
@@ -470,6 +475,7 @@ def test_bge_m3(output_file, request):
         loop_count=32,
         optimization_level=0,
         required_pcc=0.97,
+        task=str(model_info.task),
     )
 
 
@@ -496,8 +502,8 @@ def test_unet_for_conditional_generation(output_file, request):
 
     # Load model
     loader = ModelLoader()
-    model_info_name = loader.get_model_info().name
-    print(f"\nLoading model {model_info_name}...")
+    model_info = loader.get_model_info()
+    print(f"\nLoading model {model_info.name}...")
     model = loader.load_model(dtype_override=DTYPE_MAP[data_format])
 
     load_inputs_fn = lambda batch_size: loader.load_inputs(batch_size=batch_size, dtype_override=DTYPE_MAP[data_format])
@@ -506,7 +512,7 @@ def test_unet_for_conditional_generation(output_file, request):
 
     test_encoder(
         model=model,
-        model_info_name=model_info_name,
+        model_info_name=model_info.name,
         output_file=output_file,
         display_name="unet_conditional_generation",
         request=request,
@@ -518,4 +524,5 @@ def test_unet_for_conditional_generation(output_file, request):
         input_sequence_length=unet_max_seqlen,  # for UNet it is always set to the max sequence length
         loop_count=128,
         optimization_level=1,
+        task=str(model_info.task),
     )

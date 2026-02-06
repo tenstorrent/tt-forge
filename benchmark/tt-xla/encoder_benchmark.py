@@ -156,6 +156,7 @@ def benchmark_encoder_torch_xla(
     required_pcc=0.97,
     enable_weight_bfp8_conversion=False,
     experimental_enable_permute_matmul_fusion=False,
+    task=None,
 ):
     """
     Benchmark an encoder model using PyTorch and torch-xla.
@@ -262,7 +263,7 @@ def benchmark_encoder_torch_xla(
     metadata = get_benchmark_metadata()
 
     full_model_name = model_info_name
-    model_type = "Encoder, Text Embedding"
+    model_type = task if task else "Encoder, Text Embedding"
     dataset_name = "Benchmark Sentences"
     num_layers = -1
 
