@@ -91,6 +91,6 @@ runs:
           cd $(ls | grep -E "${{ steps.set-wheel-name.outputs.artifact }}")
         fi
         pip install ${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade
-        if [[ "$wheel" == *"tt_pjrt_"* ]]; then
+        if [[ "$wheel" == *"pjrt_"* ]]; then
           tt-forge-install;
         fi;
