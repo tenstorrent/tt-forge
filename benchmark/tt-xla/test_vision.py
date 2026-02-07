@@ -413,7 +413,7 @@ def test_vit(output_file, request):
     variant = ModelVariant.BASE
     loader = ModelLoader(variant=variant)
     model_info_name = loader.get_model_info(variant=variant).name
-    model = loader.load_model(dtype_override=data_format)
+    model = loader.load_model(dtype_override=data_format, attn_implementation="eager")
     model = model.eval()
 
     def load_inputs_fn(batch_size, dtype):
