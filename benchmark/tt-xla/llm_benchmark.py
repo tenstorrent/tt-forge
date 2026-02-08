@@ -40,7 +40,7 @@ xr.set_device_type("TT")
 MIN_STEPS = 16
 
 # Default input prompt
-DEFAULT_INPUT_PROMPT = "Here is an exaustive list of the best practices for writing clean code:"
+DEFAULT_INPUT_PROMPT = "Explain quantum mechanics."
 
 MODULE_EXPORT_PATH = "modules"
 
