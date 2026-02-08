@@ -34,6 +34,7 @@ from utils import (
     compute_pcc,
     build_xla_export_name,
 )
+from token_accuracy import TokenAccuracy
 
 xr.set_device_type("TT")
 
@@ -73,21 +74,23 @@ def construct_inputs(
     batch_size: int,
     max_cache_len: int,
     past_key_values: Optional[StaticCache] = None,
+    input_prompt: str = None,
 ) -> dict:
     """
     Construct inputs including static cache.
 
     Args:
-        input_prompt: Input text prompt
         tokenizer: Tokenizer instance
         model_config: Model configuration
         batch_size: Batch size
         max_cache_len: Maximum cache length
+        input_prompt: Input text prompt (optional, defaults to DEFAULT_INPUT_PROMPT)
 
     Returns:
         Dictionary containing input_ids, past_key_values, cache_position, and use_cache
     """
-    input_prompt = DEFAULT_INPUT_PROMPT
+    if input_prompt is None:
+        input_prompt = DEFAULT_INPUT_PROMPT
     input_prompt = [input_prompt] * batch_size
 
     # TODO: Only works on same length inputs for now
@@ -174,9 +177,20 @@ def generate_and_benchmark(
     verbose: bool = True,
     is_multichip: bool = False,
     mesh: Mesh = None,
+    ground_truth_tokens: torch.Tensor = None,
 ):
     """
-    Run the generation loop and measure time.
+    Run the generation loop with optional teacher forcing.
+
+    This function performs token generation and implements teacher forcing when
+    ground_truth_tokens are provided. It only handles generation - no accuracy
+    computation is done here.
+
+    Teacher Forcing:
+        When ground_truth_tokens is provided, the GROUND TRUTH token at each
+        step is used as input for the next iteration (not the prediction).
+        This prevents error accumulation and allows independent accuracy
+        measurement at each position.
 
     Args:
         model: Model instance
@@ -184,14 +198,24 @@ def generate_and_benchmark(
         tokenizer: Tokenizer instance
         device: Device
         max_tokens_to_generate: Maximum number of tokens to generate
+        read_logits_fn: Function to extract logits from model output
         verbose: Whether to print generation output
+        is_multichip: Whether running on multiple chips
+        mesh: Device mesh for multi-chip setup
+        ground_truth_tokens: Ground truth tokens for teacher forcing (optional)
+                           Shape: [sequence_length] containing token IDs
 
     Returns:
-        Tuple of (output_logits, iteration_times)
+        Tuple of (output_logits, predicted_tokens, iteration_times)
+            - output_logits: List of logit tensors for each generation step
+            - predicted_tokens: List of predicted token IDs (integers)
+            - iteration_times: List of iteration times in nanoseconds
     """
     output_tokens: List[str] = []
     output_logits: List[torch.Tensor] = []
+    predicted_tokens: List[int] = []
     iteration_times: List[float] = []
+
     with torch.no_grad():
         for step in range(max_tokens_to_generate):
             start = time.perf_counter_ns()
@@ -202,6 +226,9 @@ def generate_and_benchmark(
             logits = read_logits_fn(output).to("cpu")
             output_logits.append(logits)
             next_token_ids = logits[:, -1].argmax(dim=-1)
+            predicted_token = next_token_ids[0].item()  # Assuming batch_size=1
+            predicted_tokens.append(predicted_token)
+
             output_text = [tokenizer.decode(token_id) for token_id in next_token_ids]
             output_tokens.append(output_text)
 
@@ -216,7 +243,13 @@ def generate_and_benchmark(
                 break
 
             # Update inputs for next iteration
-            input_args["input_ids"] = next_token_ids.unsqueeze(-1).to(device)
+            if ground_truth_tokens is not None:
+                # Teacher forcing: use ground truth token as next input
+                gt_token = ground_truth_tokens[step]
+                input_args["input_ids"] = gt_token.unsqueeze(0).unsqueeze(0).to(device)  # Shape: [1, 1]
+            else:
+                # Standard generation: use predicted token as next input
+                input_args["input_ids"] = next_token_ids.unsqueeze(-1).to(device)
 
             host_cache_pos = input_args["cache_position"].to("cpu")
             host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
@@ -230,7 +263,7 @@ def generate_and_benchmark(
     if verbose:
         print("Output tokens:", output_tokens)
 
-    return output_logits, iteration_times
+    return output_logits, predicted_tokens, iteration_times
 
 
 def check_transformers_version():
@@ -269,14 +302,17 @@ def benchmark_llm_torch_xla(
     shard_spec_fn,
     arch,
     required_pcc,
+    accuracy_testing: bool = False,
+    model_name_for_accuracy: str = None,
 ):
     """
     Benchmark an LLM (Large Language Model) using PyTorch and torch-xla.
 
     This function loads an LLM, compiles it with torch-xla for the Tenstorrent backend,
     and measures its text generation performance. It performs warmup runs, collects token
-    generation metrics, and validates output correctness via PCC (Pearson Correlation Coefficient).
-    The benchmark measures tokens per second on the device backend.
+    generation metrics, and validates output correctness via PCC (Pearson Correlation Coefficient)
+    or token accuracy (TOP1/TOP5) when accuracy_testing is enabled.
+    The benchmark measures tokens per second on the device backends.
 
     Args:
         model_loader: Model loader instance for loading the LLM
@@ -293,6 +329,8 @@ def benchmark_llm_torch_xla(
         ttnn_perf_metrics_output_file: Path to save TTNN performance metrics
         read_logits_fn: Callback function to extract logits from model output
         required_pcc: Required PCC threshold for validation
+        accuracy_testing: Whether to perform token accuracy testing
+        model_name_for_accuracy: Model name for .refpt file lookup (required if accuracy_testing=True)
 
     Returns:
         Benchmark result containing token generation performance metrics and model information
@@ -347,27 +385,55 @@ def benchmark_llm_torch_xla(
     model, tokenizer = setup_model_and_tokenizer(model_loader, model_variant)
     full_model_name = model_loader.get_model_info(variant=model_variant).name
 
+    # Initialize accuracy testing if enabled
+    token_accuracy = None
+    custom_input_prompt = None
+    if accuracy_testing:
+        if model_name_for_accuracy is None:
+            raise ValueError("model_name_for_accuracy must be provided when accuracy_testing=True")
+
+        # Use half the cache for prefill, half for decode
+        # This ensures we fit within hardware constraints
+        max_prefill = max_cache_len // 2
+        max_decode = max_cache_len // 2
+
+        token_accuracy = TokenAccuracy(
+            model_name=model_name_for_accuracy,
+            max_prefill_tokens=max_prefill,
+            max_decode_tokens=max_decode,
+        )
+
+        # Get Tale of Two Cities text from reference data
+        custom_input_prompt = token_accuracy.prepare_ref_tokens(tokenizer)
+        print(
+            f"Using reference text for accuracy testing:"
+            f"\n  Max prefill: {max_prefill} tokens"
+            f"\n  Max decode: {max_decode} tokens"
+            f"\n  Text preview: {custom_input_prompt[:100]}..."
+        )
+
     # Construct inputs, including static cache
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len, input_prompt=custom_input_prompt)
 
     # Limit maximum generation count to fit within preallocated static cache
     max_tokens_to_generate: int = max_cache_len - input_args["input_ids"].shape[1]
 
-    # Get CPU result
-    cpu_logits, _ = generate_and_benchmark(
-        model,
-        input_args,
-        tokenizer,
-        torch.device("cpu"),
-        1,
-        read_logits_fn=read_logits_fn,
-        verbose=False,
-    )
-    # Only one output makes sense to compare.
-    cpu_logits = cpu_logits[0]
+    # Get CPU result (skip in accuracy testing mode - not needed with ground truth)
+    if not accuracy_testing:
+        cpu_logits, _, _ = generate_and_benchmark(
+            model,
+            input_args,
+            tokenizer,
+            torch.device("cpu"),
+            1,
+            read_logits_fn=read_logits_fn,
+            verbose=False,
+        )
+        # Only one output makes sense to compare.
+        cpu_logits = cpu_logits[0]
 
     # Transfer model and inputs to device
-    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len)
+    input_args = construct_inputs(tokenizer, model.config, batch_size, max_cache_len, input_prompt=custom_input_prompt)
     input_args = transfer_to_device(input_args, device)
     model = model.to(device, dtype=torch.bfloat16)
 
@@ -417,7 +483,8 @@ def benchmark_llm_torch_xla(
     # Warmup run
     print("Warming up...")
     warmup_tokens = min(MIN_STEPS, max_tokens_to_generate)
-    _, _ = generate_and_benchmark(
+    ground_truth_for_warmup = token_accuracy.reference_tokens[:warmup_tokens] if accuracy_testing else None
+    _, _, _ = generate_and_benchmark(
         compiled_model,
         input_args,
         tokenizer,
@@ -427,17 +494,24 @@ def benchmark_llm_torch_xla(
         verbose=False,
         is_multichip=is_multichip,
         mesh=mesh,
+        ground_truth_tokens=ground_truth_for_warmup,
     )
 
     # Reconstruct inputs for the actual benchmark run
     input_args = construct_inputs(
-        tokenizer, model.config, batch_size, max_cache_len, past_key_values=input_args["past_key_values"]
+        tokenizer,
+        model.config,
+        batch_size,
+        max_cache_len,
+        past_key_values=input_args["past_key_values"],
+        input_prompt=custom_input_prompt,
     )
     input_args = transfer_to_device(input_args, device)
 
     # Run benchmark once
     print(f"\nStarting benchmark...")
-    output_logits, iteration_times = generate_and_benchmark(
+    ground_truth_for_benchmark = token_accuracy.reference_tokens if accuracy_testing else None
+    output_logits, predicted_tokens, iteration_times = generate_and_benchmark(
         compiled_model,
         input_args,
         tokenizer,
@@ -447,6 +521,7 @@ def benchmark_llm_torch_xla(
         verbose=True,
         is_multichip=is_multichip,
         mesh=mesh,
+        ground_truth_tokens=ground_truth_for_benchmark,
     )
 
     if len(iteration_times) < 10:
@@ -466,7 +541,7 @@ def benchmark_llm_torch_xla(
     metadata = get_benchmark_metadata()
 
     model_type = "text-generation"
-    dataset_name = "Random Data"
+    dataset_name = "Tale of Two Cities (Reference Data)" if accuracy_testing else "Random Data"
 
     # Extract number of layers from model config if available
     num_layers = model.config.num_hidden_layers if hasattr(model.config, "num_hidden_layers") else -1
@@ -497,9 +572,33 @@ def benchmark_llm_torch_xla(
         ttft_ms=ttft_ms,
     )
 
-    # Check PCC
-    pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=required_pcc)
-    print(f"PCC verification passed with PCC={pcc_value:.6f}")
+    # Validation: PCC or Token Accuracy
+    if accuracy_testing:
+        # Compute token accuracy from predictions (after generation completes)
+        top1_accuracy, top5_accuracy = token_accuracy.compute_accuracy(predicted_tokens)
+
+        print(f"\n=== Token Accuracy Results ===")
+        print(f"TOP1 Accuracy: {top1_accuracy * 100:.2f}%")
+        print(f"TOP5 Accuracy: {top5_accuracy * 100:.2f}%")
+
+        # Store accuracy scores
+        evaluation_score = top1_accuracy  # Use TOP1 as primary score
+        custom_measurements.extend(
+            [
+                {
+                    "measurement_name": "top1_accuracy",
+                    "value": top1_accuracy * 100,  # Store as percentage
+                },
+                {
+                    "measurement_name": "top5_accuracy",
+                    "value": top5_accuracy * 100,  # Store as percentage
+                },
+            ]
+        )
+    else:
+        # Check PCC
+        pcc_value = compute_pcc(output_logits[0][0], cpu_logits[0], required_pcc=required_pcc)
+        print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
     # Get device count and mesh info for metrics
     device_count = xr.global_runtime_device_count()

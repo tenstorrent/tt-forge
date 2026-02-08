@@ -15,6 +15,8 @@ import torch_xla.runtime as xr
 from torch_xla.distributed.spmd import Mesh
 import numpy as np
 
+from token_accuracy import TokenAccuracy
+
 # Defaults for all llms
 DEFAULT_OPTIMIZATION_LEVEL = 1
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
@@ -55,6 +57,7 @@ def test_llm(
     required_pcc=DEFAULT_REQUIRED_PCC,
     num_layers=None,
     request=None,
+    accuracy_testing: bool = False,
 ):
     """Test LLM model with the given variant and optional configuration overrides.
 
@@ -73,6 +76,7 @@ def test_llm(
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
         read_logits_fn: Function to extract logits from model output
         required_pcc: Required PCC threshold
+        accuracy_testing: Enable token accuracy testing with reference data
     """
     model_loader = create_model_loader(ModelLoaderModule, num_layers=num_layers, variant=variant)
     if num_layers is not None and model_loader is None:
@@ -100,6 +104,11 @@ def test_llm(
     """
     )
 
+    # Resolve model name for accuracy testing
+    model_name_for_accuracy = None
+    if accuracy_testing:
+        model_name_for_accuracy = TokenAccuracy.get_model_name_from_variant(model_loader, variant)
+
     results = benchmark_llm_torch_xla(
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
@@ -120,6 +129,8 @@ def test_llm(
         shard_spec_fn=shard_spec_fn,
         arch=arch,
         required_pcc=required_pcc,
+        accuracy_testing=accuracy_testing,
+        model_name_for_accuracy=model_name_for_accuracy,
     )
 
     if output_file:
@@ -592,3 +603,311 @@ def test_llama_3_1_70b_tp(output_file, num_layers, request):
         request=request,
         required_pcc=-1.0,
     )  # https://github.com/tenstorrent/tt-xla/issues/2976
+
+
+# ============================================================================
+# Accuracy Testing Functions
+# ============================================================================
+
+
+def test_llama_3_2_1b_accuracy(output_file):
+    """Test Llama 3.2 1B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_2_1B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_llama_3_2_3b_accuracy(output_file):
+    """Test Llama 3.2 3B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_2_3B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_llama_3_1_8b_accuracy(output_file):
+    """Test Llama 3.1 8B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.llama.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_mistral_7b_accuracy(output_file):
+    """Test Mistral 7B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MISTRAL_7B_INSTRUCT_V03
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_2_5_7b_accuracy(output_file):
+    """Test Qwen 2.5 7B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_7B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_gemma_1_1_2b_accuracy(output_file):
+    """Test Gemma 1.1 2B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_1_1_2B_IT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_gemma_2_2b_accuracy(output_file):
+    """Test Gemma 2 2B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.gemma.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.GEMMA_2_2B_IT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_phi1_accuracy(output_file):
+    """Test Phi-1 with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.phi1.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.PHI1
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_phi1_5_accuracy(output_file):
+    """Test Phi-1.5 with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.phi1_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.PHI1_5
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_phi2_accuracy(output_file):
+    """Test Phi-2 with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.phi2.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.PHI2
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_falcon3_1b_accuracy(output_file):
+    """Test Falcon 3 1B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_1B
+    # Tuple format: (logits, past_key_values, ...)
+    read_logits_fn = lambda output: output[0]
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        read_logits_fn=read_logits_fn,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_falcon3_3b_accuracy(output_file):
+    """Test Falcon 3 3B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_3B
+    # Tuple format: (logits, past_key_values, ...)
+    read_logits_fn = lambda output: output[0]
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        read_logits_fn=read_logits_fn,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_falcon3_7b_accuracy(output_file):
+    """Test Falcon 3 7B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.falcon.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.FALCON_7B
+    # Tuple format: (logits, past_key_values, ...)
+    read_logits_fn = lambda output: output[0]
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        read_logits_fn=read_logits_fn,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_2_5_0_5b_accuracy(output_file):
+    """Test Qwen 2.5 0.5B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_0_5B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_2_5_1_5b_accuracy(output_file):
+    """Test Qwen 2.5 1.5B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_1_5B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_2_5_3b_accuracy(output_file):
+    """Test Qwen 2.5 3B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_2_5.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_2_5_3B_INSTRUCT
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_3_0_6b_accuracy(output_file):
+    """Test Qwen 3 0.6B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_0_6B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_3_1_7b_accuracy(output_file):
+    """Test Qwen 3 1.7B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_1_7B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_3_4b_accuracy(output_file):
+    """Test Qwen 3 4B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_4B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_qwen_3_8b_accuracy(output_file):
+    """Test Qwen 3 8B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.qwen_3.causal_lm.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.QWEN_3_8B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
+
+
+def test_ministral_8b_accuracy(output_file):
+    """Test Ministral 8B with token accuracy metrics on Tale of Two Cities."""
+    from third_party.tt_forge_models.mistral.pytorch.loader import ModelLoader, ModelVariant
+
+    variant = ModelVariant.MINISTRAL_8B
+    test_llm(
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        accuracy_testing=True,
+        batch_size=1,  # Accuracy testing requires batch_size=1
+    )
