@@ -53,6 +53,7 @@ def test_llm(
     shard_spec_fn=None,
     arch=None,
     required_pcc=DEFAULT_REQUIRED_PCC,
+    fp32_dest_acc_en=None,
     num_layers=None,
     request=None,
 ):
@@ -120,6 +121,7 @@ def test_llm(
         shard_spec_fn=shard_spec_fn,
         arch=arch,
         required_pcc=required_pcc,
+        fp32_dest_acc_en=fp32_dest_acc_en,
     )
 
     if output_file:
@@ -441,7 +443,12 @@ def test_ministral_8b(output_file, num_layers, request):
 
     variant = ModelVariant.MINISTRAL_8B
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        fp32_dest_acc_en=False,
     )
 
 
@@ -450,7 +457,12 @@ def test_llama_3_1_8b(output_file, num_layers, request):
 
     variant = ModelVariant.LLAMA_3_1_8B_INSTRUCT
     test_llm(
-        ModelLoaderModule=ModelLoader, variant=variant, output_file=output_file, num_layers=num_layers, request=request
+        ModelLoaderModule=ModelLoader,
+        variant=variant,
+        output_file=output_file,
+        num_layers=num_layers,
+        request=request,
+        fp32_dest_acc_en=False,
     )
 
 
