@@ -15,8 +15,6 @@ from filelock import FileLock
 from tqdm import tqdm
 import numpy as np
 import torch
-from transformers import AutoImageProcessor
-from datasets import load_dataset
 
 try:
     import paddle
@@ -199,6 +197,9 @@ def load_dataset_classification(model_version, dataset_name, split, batch_size, 
     labels: list
         The labels for the input data.
     """
+
+    from transformers import AutoImageProcessor
+    from datasets import load_dataset
 
     image_processor = AutoImageProcessor.from_pretrained(model_version)
     # Load the dataset as a generator

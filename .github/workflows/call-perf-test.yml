@@ -138,6 +138,9 @@ jobs:
         if [ -n "${{ matrix.build.pyreq }}" ]; then
           pip install ${{ matrix.build.pyreq }}
         fi
+        if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
+          pip install torchvision==0.24.0+cpu --index-url https://download.pytorch.org/whl/cpu
+        fi
 
     - name: Install upgraded wheel
       if: (inputs.project && inputs.run_id) || inputs.update-wheel
@@ -197,44 +200,88 @@ jobs:
           pytest -svv "${{ matrix.build.pytest }}" --output-file=${{ steps.strings.outputs.perf_report_json_file }}
         fi
 
+    - name: Dump stablehlo to report
+      if: (success() || failure()) && !matrix.build.skip-stablehlo-dump
+      shell: bash
+      run: |
+        echo "Dump stablehlo to report"
+        mkdir -p ${{ steps.strings.outputs.perf_report_path }}/stablehlo
+        if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
+          cp ./modules/${{ matrix.build.name }}_stablehlo.mlir ${{ steps.strings.outputs.perf_report_path }}/stablehlo/stablehlo.mlir 2>/dev/null || true
+        else
+          cp ./modules/irs/shlo_*.mlir ${{ steps.strings.outputs.perf_report_path }}/stablehlo/ 2>/dev/null || true
+        fi
+
+    - name: Upload StableHLO MLIR separately
+      id: upload-stablehlo-mlir
+      uses: actions/upload-artifact@v4
+      if: (success() || failure()) && !matrix.build.skip-stablehlo-dump
+      with:
+        name: stablehlo-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        path: ${{ steps.strings.outputs.perf_report_path }}/stablehlo/
+
     - name: Dump ttir to report
+      id: dump-ttir
       if: (success() || failure()) && !matrix.build.skip-ttir-dump
       shell: bash
       run: |
         echo "Dump ttir to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttir
+        ttir_artifact_name="ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}"
         if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
           cp ./modules/${{ matrix.build.name }}_ttir.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir.mlir
         else
           cp ./modules/irs/ttir_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttir/
         fi
+        # Group TTIR MLIR files under a folder named like the files but without the gN segment
+        ttir_first_file="$(ls -1 ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir_*.mlir 2>/dev/null | head -n 1 || true)"
+        if [ -n "$ttir_first_file" ]; then
+          ttir_base_name="$(basename "$ttir_first_file")"
+          ttir_folder_name="$(echo "$ttir_base_name" | sed -E 's/_g[0-9]+_/_/' | sed -E 's/_run[0-9a-fA-F]+_/_/' | sed -E 's/\.mlir$//')"
+          mkdir -p "${{ steps.strings.outputs.perf_report_path }}/ttir/${ttir_folder_name}"
+          mv ${{ steps.strings.outputs.perf_report_path }}/ttir/ttir_*.mlir "${{ steps.strings.outputs.perf_report_path }}/ttir/${ttir_folder_name}/"
+          ttir_artifact_name="ttir-mlir-${ttir_folder_name}"
+        fi
+        echo "artifact_name=${ttir_artifact_name}" >> "$GITHUB_OUTPUT"
 
     - name: Upload TTIR MLIR separately
       id: upload-ttir-mlir
       uses: actions/upload-artifact@v4
       if: (success() || failure()) && !matrix.build.skip-ttir-dump
       with:
-        name: ttir-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        name: ${{ steps.dump-ttir.outputs.artifact_name }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttir/
 
     - name: Dump ttnn to report
+      id: dump-ttnn
       if: (success() || failure()) && !matrix.build.skip-ttnn-dump
       shell: bash
       run: |
         echo "Dump ttnn to report"
         mkdir -p ${{ steps.strings.outputs.perf_report_path }}/ttnn
+        ttnn_artifact_name="ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}"
         if [ "${{ matrix.build.name }}" == "resnet_jax" ]; then
           cp ./modules/${{ matrix.build.name }}_ttnn.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn.mlir
         else
           cp ./modules/irs/ttnn_*.mlir ${{ steps.strings.outputs.perf_report_path }}/ttnn/
         fi
+        # Group TTNN MLIR files under a folder named like the files but without the gN segment
+        ttnn_first_file="$(ls -1 ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn_*.mlir 2>/dev/null | head -n 1 || true)"
+        if [ -n "$ttnn_first_file" ]; then
+          ttnn_base_name="$(basename "$ttnn_first_file")"
+          ttnn_folder_name="$(echo "$ttnn_base_name" | sed -E 's/_g[0-9]+_/_/' | sed -E 's/_run[0-9a-fA-F]+_/_/' | sed -E 's/\.mlir$//')"
+          mkdir -p "${{ steps.strings.outputs.perf_report_path }}/ttnn/${ttnn_folder_name}"
+          mv ${{ steps.strings.outputs.perf_report_path }}/ttnn/ttnn_*.mlir "${{ steps.strings.outputs.perf_report_path }}/ttnn/${ttnn_folder_name}/"
+          ttnn_artifact_name="ttnn-mlir-${ttnn_folder_name}"
+        fi
+        echo "artifact_name=${ttnn_artifact_name}" >> "$GITHUB_OUTPUT"
 
     - name: Upload TTNN MLIR separately
       id: upload-ttnn-mlir
       uses: actions/upload-artifact@v4
       if: (success() || failure()) && !matrix.build.skip-ttnn-dump
       with:
-        name: ttnn-mlir-${{ steps.fetch-job-id.outputs.job_id }}
+        name: ${{ steps.dump-ttnn.outputs.artifact_name }}
         path: ${{ steps.strings.outputs.perf_report_path }}/ttnn/
 
     - name: Find workflow run ID for ttrt wheel download
@@ -344,6 +391,7 @@ jobs:
       shell: bash
       run: |
         PERF_REPORT_FILE="${{ steps.strings.outputs.perf_report_json_file }}"
+        STABLEHLO_URL="${{ !matrix.build.skip-stablehlo-dump && steps.upload-stablehlo-mlir.outputs.artifact-url || '' }}"
         TTIR_URL="${{ !matrix.build.skip-ttir-dump && steps.upload-ttir-mlir.outputs.artifact-url || '' }}"
         TTNN_URL="${{ !matrix.build.skip-ttnn-dump && steps.upload-ttnn-mlir.outputs.artifact-url || '' }}"
         DEVICE_PERF_URL="${{ !matrix.build.skip-device-perf && !inputs.skip-device-perf && matrix.build.runs-on != 'p150' && matrix.build.runs-on != 'llmbox' && steps.upload-device-perf.outputs.artifact-url || '' }}"
@@ -351,6 +399,7 @@ jobs:
         JOB_ID_URL="https://github.com/tenstorrent/tt-forge/actions/runs/${{ github.run_id }}/job/${{ steps.fetch-job-id.outputs.job_id }}"
 
         python benchmark/extend_result_config.py "$PERF_REPORT_FILE" \
+          ${STABLEHLO_URL:+--stablehlo-url "$STABLEHLO_URL"} \
           ${TTIR_URL:+--ttir-url "$TTIR_URL"} \
           ${TTNN_URL:+--ttnn-url "$TTNN_URL"} \
           ${DEVICE_PERF_URL:+--device-perf-url "$DEVICE_PERF_URL"} \
@@ -396,7 +445,7 @@ jobs:
       uses: ./.github/actions/superset-api
       with:
         query: 'benchmarks/last_measurement'
-        query_params: '{"project":"tt-forge/${{ matrix.build.project }}","ml_model_name":"${{ steps.set-query-strings.outputs.model_name }}","batch_size":"${{ matrix.build.bs }}","precision":"${{ matrix.build.df }}","github_pipeline_id":"${{ steps.set-query-strings.outputs.last_nightly_workflow_id }}","arch":"${{ steps.set-query-strings.outputs.arch }}"}'
+        query_params: '{"project":"tt-forge/${{ matrix.build.project }}","ml_model_name":"${{ steps.set-query-strings.outputs.model_name }}","github_pipeline_id":"${{ steps.set-query-strings.outputs.last_nightly_workflow_id }}","arch":"${{ steps.set-query-strings.outputs.arch }}"}'
 
     - name: Check perf regression
       if: inputs.perf_regression_check

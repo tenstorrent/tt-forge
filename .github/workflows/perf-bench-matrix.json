@@ -19,13 +19,12 @@
     "tests": [
       {
         "name": "resnet_jax",
-        "bs": 8,
-        "lp": 4,
-        "pyreq": "pytest tqdm loguru requests transformers==4.57.1 datasets flax==0.10.4 torch==2.9.0"
+        "pyreq": "pytest tqdm loguru requests transformers==4.57.1 datasets flax==0.10.4 torch==2.9.0",
+        "pytest": "benchmark/tt-xla/resnet_jax_benchmark.py::test_resnet_jax"
       },
       {
         "name": "mnist",
-        "pyreq": "datasets loguru pytest requests torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_vision.py::test_mnist"
       },
       {
@@ -60,7 +59,7 @@
       },
       {
         "name": "unet",
-        "pyreq": "datasets loguru pytest requests torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_vision.py::test_unet"
       },
       {
@@ -130,9 +129,27 @@
         "runs-on": "llmbox"
       },
       {
+        "name": "mistral_small_24b_instruct_2501_tp",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_mistral_small_24b_instruct_2501_tp",
+        "runs-on": "llmbox"
+      },
+      {
         "name": "qwen_2_5_14b_instruct_tp",
         "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_2_5_14b_instruct_tp",
+        "runs-on": "llmbox"
+      },
+      {
+        "name": "qwen_2_5_32b_instruct_tp",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_32b_instruct_tp",
+        "runs-on": "llmbox"
+      },
+      {
+        "name": "qwen_2_5_coder_32b_instruct_tp",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_2_5_coder_32b_instruct_tp",
         "runs-on": "llmbox"
       },
       {
@@ -157,6 +174,12 @@
         "name": "qwen_3_14b_tp",
         "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_3_14b_tp",
+        "runs-on": "llmbox"
+      },
+      {
+        "name": "qwen_3_32b_tp",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
+        "pytest": "benchmark/tt-xla/llms.py::test_qwen_3_32b_tp",
         "runs-on": "llmbox"
       },
       {
@@ -205,57 +228,57 @@
       },
       {
         "name": "tiiuae_falcon3-1b-base",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_falcon3_1b"
       },
       {
         "name": "tiiuae_falcon3-3b-base",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_falcon3_3b"
       },
       {
         "name": "tiiuae_falcon3-7b-base",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_falcon3_7b"
       },
       {
         "name": "qwen_2_5_0_5b_instruct",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_2_5_0_5b"
       },
       {
         "name": "qwen_2_5_1_5b_instruct",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_2_5_1_5b"
       },
       {
         "name": "qwen_2_5_3b_instruct",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_2_5_3b"
       },
       {
         "name": "qwen_3_0_6b",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_3_0_6b"
       },
       {
         "name": "qwen_3_1_7b",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_3_1_7b"
       },
       {
         "name": "qwen_3_4b",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_3_4b"
       },
       {
         "name": "qwen_3_8b",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_3_8b"
       },
       {
         "name": "qwen_2_5_7b_instruct",
-        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 torchvision==0.24.0 tqdm transformers==4.57.1",
+        "pyreq": "datasets loguru pytest requests tabulate timm torch==2.9.0 tqdm transformers==4.57.1",
         "pytest": "benchmark/tt-xla/test_llms.py::test_qwen_2_5_7b"
       },
       {

@@ -53,6 +53,7 @@ def add_config_fields_to_perf_report(perf_report_path, config_fields):
 def main():
     parser = argparse.ArgumentParser(description="Add config fields to performance report JSON")
     parser.add_argument("perf_report_path", help="Path to the performance report JSON file")
+    parser.add_argument("--stablehlo-url", help="URL for the StableHLO MLIR artifact")
     parser.add_argument("--ttir-url", help="URL for the TTIR MLIR artifact")
     parser.add_argument("--ttnn-url", help="URL for the TTNN MLIR artifact")
     parser.add_argument("--mlir-sha", help="MLIR commit SHA")
@@ -70,6 +71,8 @@ def main():
 
     config_fields = {}
 
+    if args.stablehlo_url:
+        config_fields["stablehlo_mlir_url"] = args.stablehlo_url
     if args.ttir_url:
         config_fields["ttir_mlir_url"] = args.ttir_url
     if args.ttnn_url:

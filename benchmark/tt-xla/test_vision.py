@@ -8,6 +8,7 @@ import torch
 
 from benchmark.utils import aggregate_ttnn_perf_metrics, sanitize_filename
 from vision_benchmark import benchmark_vision_torch_xla
+from utils import resolve_display_name
 
 # Defaults for all vision models
 DEFAULT_OPTIMIZATION_LEVEL = 2
@@ -26,6 +27,7 @@ def test_vision(
     output_file,
     load_inputs_fn,
     extract_output_tensor_fn,
+    request=None,
     optimization_level=DEFAULT_OPTIMIZATION_LEVEL,
     trace_enabled=DEFAULT_TRACE_ENABLED,
     batch_size=DEFAULT_BATCH_SIZE,
@@ -53,9 +55,8 @@ def test_vision(
         experimental_compile: Enable experimental compile
         required_pcc: Required PCC threshold
     """
-    # Sanitize model name for safe filesystem usage
-    sanitized_model_name = sanitize_filename(model_info_name)
-    ttnn_perf_metrics_output_file = f"tt_xla_{sanitized_model_name}_perf_metrics"
+    resolved_display_name = resolve_display_name(request=request, fallback=model_info_name)
+    ttnn_perf_metrics_output_file = f"tt_xla_{resolved_display_name}_perf_metrics"
 
     print(f"Running vision benchmark for model: {model_info_name}")
     print(
@@ -75,6 +76,7 @@ def test_vision(
     results = benchmark_vision_torch_xla(
         model=model,
         model_info_name=model_info_name,
+        display_name=resolved_display_name,
         optimization_level=optimization_level,
         trace_enabled=trace_enabled,
         batch_size=batch_size,
@@ -98,7 +100,7 @@ def test_vision(
             json.dump(results, file, indent=2)
 
 
-def test_efficientnet(output_file):
+def test_efficientnet(output_file, request):
     from third_party.tt_forge_models.efficientnet.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -122,6 +124,7 @@ def test_efficientnet(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -129,7 +132,7 @@ def test_efficientnet(output_file):
     )
 
 
-def test_mnist(output_file):
+def test_mnist(output_file, request):
     from third_party.tt_forge_models.mnist.image_classification.pytorch.loader import ModelLoader
 
     # Configuration
@@ -154,6 +157,7 @@ def test_mnist(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -162,7 +166,7 @@ def test_mnist(output_file):
     )
 
 
-def test_mobilenetv2(output_file):
+def test_mobilenetv2(output_file, request):
     from third_party.tt_forge_models.mobilenetv2.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -186,6 +190,7 @@ def test_mobilenetv2(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -193,7 +198,7 @@ def test_mobilenetv2(output_file):
     )
 
 
-def test_resnet50(output_file):
+def test_resnet50(output_file, request):
     from third_party.tt_forge_models.resnet.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -217,6 +222,7 @@ def test_resnet50(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -225,7 +231,7 @@ def test_resnet50(output_file):
     )
 
 
-def test_segformer(output_file):
+def test_segformer(output_file, request):
     from third_party.tt_forge_models.segformer.semantic_segmentation.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -251,6 +257,7 @@ def test_segformer(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -259,7 +266,7 @@ def test_segformer(output_file):
     )
 
 
-def test_swin(output_file):
+def test_swin(output_file, request):
     from third_party.tt_forge_models.swin.image_classification.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -284,6 +291,7 @@ def test_swin(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -293,7 +301,7 @@ def test_swin(output_file):
     )
 
 
-def test_ufld(output_file):
+def test_ufld(output_file, request):
     from third_party.tt_forge_models.ultra_fast_lane_detection.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -318,6 +326,7 @@ def test_ufld(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -326,7 +335,7 @@ def test_ufld(output_file):
     )
 
 
-def test_ufld_v2(output_file):
+def test_ufld_v2(output_file, request):
     from third_party.tt_forge_models.ultra_fast_lane_detection_v2.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -351,6 +360,7 @@ def test_ufld_v2(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -359,7 +369,7 @@ def test_ufld_v2(output_file):
     )
 
 
-def test_unet(output_file):
+def test_unet(output_file, request):
     from third_party.tt_forge_models.vgg19_unet.pytorch.loader import ModelLoader
 
     # Configuration
@@ -383,6 +393,7 @@ def test_unet(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -391,7 +402,7 @@ def test_unet(output_file):
     )
 
 
-def test_vit(output_file):
+def test_vit(output_file, request):
     from third_party.tt_forge_models.vit.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -415,6 +426,7 @@ def test_vit(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
@@ -422,7 +434,7 @@ def test_vit(output_file):
     )
 
 
-def test_vovnet(output_file):
+def test_vovnet(output_file, request):
     from third_party.tt_forge_models.vovnet.pytorch.loader import ModelLoader, ModelVariant
 
     # Configuration
@@ -446,6 +458,7 @@ def test_vovnet(output_file):
         model=model,
         model_info_name=model_info_name,
         output_file=output_file,
+        request=request,
         load_inputs_fn=load_inputs_fn,
         extract_output_tensor_fn=extract_output_tensor_fn,
         batch_size=batch_size,
