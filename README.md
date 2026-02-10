@@ -89,11 +89,6 @@ python tt-forge/demos/tt-xla/cnn/resnet_demo.py
 python tt-forge/demos/tt-xla/nlp/jax/gpt_demo.py
 ```
 
-## Troubleshooting
-- **Import errors**: Ensure you've installed the correct extras ([torch] or [jax])
-- **Device not found**: Verify hardware connection with `tt_forge.list_devices()`
-- **Performance issues**: Enable logging with `tt_forge.set_log_level("DEBUG")`
-
 -----
 # Quick Links
 - [Getting Started / How to Run a Model](https://docs.tenstorrent.com/tt-forge/getting_started.html)
