@@ -16,7 +16,7 @@ from torch_xla.distributed.spmd import Mesh
 import numpy as np
 
 # Defaults for all llms
-DEFAULT_OPTIMIZATION_LEVEL = 0
+DEFAULT_OPTIMIZATION_LEVEL = 1
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 32
@@ -78,6 +78,8 @@ def test_llm(
     model_loader = create_model_loader(ModelLoaderModule, num_layers=num_layers, variant=variant)
     if num_layers is not None and model_loader is None:
         pytest.fail("num_layers override requested but ModelLoader does not support it.")
+    assert optimization_level in [0, 1, 2], "optimization_level must be 0, 1, or 2"
+
     model_info_name = model_loader.get_model_info(variant=variant).name
     display_name = resolve_display_name(request=request, fallback=model_info_name)
 
@@ -164,11 +166,24 @@ def test_llm(
             json.dump(results, file, indent=2)
 
 
-def test_llm_tp(ModelLoaderModule, variant, output_file, num_layers=None, request=None, **kwargs):
+def test_llm_tp(
+    ModelLoaderModule,
+    variant,
+    output_file,
+    num_layers=None,
+    batch_size=None,
+    optimization_level=None,
+    request=None,
+    **kwargs,
+):
     # Need to define arch since get_xla_device_arch() doesn't work when spmd is enabled
     arch = "wormhole_llmbox"
     mesh_config_fn = ModelLoaderModule.get_mesh_config
     shard_spec_fn = ModelLoaderModule.load_shard_spec
+    if batch_size is None:
+        batch_size = DEFAULT_BATCH_SIZE
+    if optimization_level is None:
+        optimization_level = DEFAULT_OPTIMIZATION_LEVEL
 
     test_llm(
         ModelLoaderModule=ModelLoaderModule,
@@ -176,8 +191,9 @@ def test_llm_tp(ModelLoaderModule, variant, output_file, num_layers=None, reques
         output_file=output_file,
         mesh_config_fn=mesh_config_fn,
         shard_spec_fn=shard_spec_fn,
-        batch_size=32,
-        input_sequence_length=128,
+        batch_size=batch_size,
+        input_sequence_length=DEFAULT_INPUT_SEQUENCE_LENGTH,
+        optimization_level=optimization_level,
         arch=arch,
         num_layers=num_layers,
         request=request,
@@ -606,8 +622,17 @@ def test_llama_3_1_70b_tp(output_file, num_layers, request):
     )  # https://github.com/tenstorrent/tt-xla/issues/2976
 
 
-def test_gpt_oss_20b_tp(output_file):
+def test_gpt_oss_20b_tp(output_file, num_layers, request):
     from third_party.tt_forge_models.gpt_oss.pytorch.loader import ModelLoader, ModelVariant
 
     variant = ModelVariant.GPT_OSS_20B
-    test_llm_tp(ModelLoader, variant, output_file, required_pcc=0.86)
+    test_llm_tp(
+        ModelLoader,
+        variant,
+        output_file,
+        num_layers=num_layers,
+        batch_size=16,  # https://github.com/tenstorrent/tt-xla/issues/3251
+        optimization_level=0,
+        request=request,
+        required_pcc=0.86,
+    )
