@@ -79,8 +79,6 @@ def test_llm(
     model_loader = create_model_loader(ModelLoaderModule, num_layers=num_layers, variant=variant)
     if num_layers is not None and model_loader is None:
         pytest.fail("num_layers override requested but ModelLoader does not support it.")
-    assert optimization_level in [0, 1, 2], "optimization_level must be 0, 1, or 2"
-
     model_info_name = model_loader.get_model_info(variant=variant).name
     display_name = resolve_display_name(request=request, fallback=model_info_name)
 
@@ -173,8 +171,6 @@ def test_llm_tp(
     variant,
     output_file,
     num_layers=None,
-    batch_size=None,
-    optimization_level=None,
     request=None,
     **kwargs,
 ):
@@ -182,10 +178,6 @@ def test_llm_tp(
     arch = "wormhole_llmbox"
     mesh_config_fn = ModelLoaderModule.get_mesh_config
     shard_spec_fn = ModelLoaderModule.load_shard_spec
-    if batch_size is None:
-        batch_size = DEFAULT_BATCH_SIZE
-    if optimization_level is None:
-        optimization_level = DEFAULT_OPTIMIZATION_LEVEL
 
     test_llm(
         ModelLoaderModule=ModelLoaderModule,
@@ -193,9 +185,6 @@ def test_llm_tp(
         output_file=output_file,
         mesh_config_fn=mesh_config_fn,
         shard_spec_fn=shard_spec_fn,
-        batch_size=batch_size,
-        input_sequence_length=DEFAULT_INPUT_SEQUENCE_LENGTH,
-        optimization_level=optimization_level,
         arch=arch,
         num_layers=num_layers,
         request=request,
@@ -633,8 +622,8 @@ def test_gpt_oss_20b_tp(output_file, num_layers, request):
         variant,
         output_file,
         num_layers=num_layers,
+        request=request,
         batch_size=16,  # https://github.com/tenstorrent/tt-xla/issues/3251
         optimization_level=0,
-        request=request,
         required_pcc=0.86,
     )
