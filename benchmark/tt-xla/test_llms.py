@@ -74,6 +74,7 @@ def test_llm(
         experimental_enable_permute_matmul_fusion: Enable permute matmul fusion optimization
         read_logits_fn: Function to extract logits from model output
         required_pcc: Required PCC threshold
+        num_layers: Number of layers
     """
     model_loader = create_model_loader(ModelLoaderModule, num_layers=num_layers, variant=variant)
     if num_layers is not None and model_loader is None:
@@ -99,6 +100,7 @@ def test_llm(
     enable_weight_bfp8_conversion={enable_weight_bfp8_conversion}
     experimental_enable_permute_matmul_fusion={experimental_enable_permute_matmul_fusion}
     required_pcc={required_pcc}
+    num_layers={num_layers}
     ttnn_perf_metrics_output_file={ttnn_perf_metrics_output_file}
     """
     )
