@@ -154,7 +154,7 @@ runs:
         # Full repository name with "tenstorrent/" prefix
         repo_full="tenstorrent/${repo_short}"
         # List of all repos that will release nightly on a schedule
-        schedule_nightly_repos='tenstorrent/tt-forge-onnx tenstorrent/tt-mlir tenstorrent/tt-forge tenstorrent/tt-xla'
+        schedule_nightly_repos='tenstorrent/tt-forge-onnx tenstorrent/tt-mlir'
         # List of repos that are allowed to update RC and Stable releases on a schedule
         schedule_rc_stable_update_repos='tenstorrent/tt-forge-onnx tenstorrent/tt-xla tenstorrent/tt-forge'
         # Allow workflow failures when finding build workflows
