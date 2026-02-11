@@ -16,7 +16,7 @@ from torch_xla.distributed.spmd import Mesh
 import numpy as np
 
 # Defaults for all llms
-DEFAULT_OPTIMIZATION_LEVEL = 1
+DEFAULT_OPTIMIZATION_LEVEL = 2
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 32
