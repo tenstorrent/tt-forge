@@ -148,3 +148,61 @@ jobs:
           TRACY_NO_INVARIANT_CHECK: 1
         run: |
             python "basic_tests/${{ matrix.frontend }}/demo_test.py"
+
+  fail-notify:
+    if: always()
+    needs:
+      - basic-test
+    runs-on: ubuntu-latest
+    outputs:
+      is-main: ${{ steps.branch-check.outputs.IS_MAIN }}
+      failed: ${{ steps.check.outputs.failure }}
+      is-draft: ${{ steps.draft-check.outputs.IS_DRAFT }}
+      version_tag: ${{ steps.version-tag.outputs.version_tag }}
+    steps:
+      - name: Check if branch is main
+        id: branch-check
+        run: echo "IS_MAIN=$(if [ '${{ github.ref }}' == 'refs/heads/main' ]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+      - name: Get version tag
+        id: version-tag
+        shell: bash
+        run: |
+          docker_image="${{ inputs.docker-image }}"
+          version_tag="${docker_image##*:}"
+          echo "version_tag=$version_tag"
+          echo "version_tag=$version_tag" >> $GITHUB_OUTPUT
+      - name: Check draft
+        id: draft-check
+        run: |
+          parent_run_id="${{ inputs.parent_run_id }}"
+          set +e
+          draft_check="$(echo "$parent_run_id" | grep 'draft')"
+          set -e
+          echo "draft_check=$draft_check"
+          IS_DRAFT="$(if [ -n "$draft_check" ]; then echo true; else echo false; fi)"
+          echo "IS_DRAFT=$IS_DRAFT"
+          echo "IS_DRAFT=$IS_DRAFT" >> $GITHUB_OUTPUT
+      - name: Check if the needed jobs succeeded or failed
+        id: check
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: basic-test
+
+  fail-send-msg:
+    if: always()
+    needs:
+      - fail-notify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Fail Notification
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' && inputs.fail-notify == 'true' }}
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Basic tests ${{ inputs.project-filter }} ${{ needs.fail-notify.outputs.version_tag }} failed: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}",
+              "channel": "C088QN7E0R3"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ inputs.slack-token || secrets.SLACK_NIGHTLY_FAIL }}
