@@ -221,6 +221,9 @@ def print_benchmark_results(
     data_format: str = None,
     input_size: tuple = None,
     input_sequence_length: Optional[int] = None,
+    top1_accuracy: Optional[float] = None,
+    top5_accuracy: Optional[float] = None,
+    pcc_value: Optional[float] = None,
 ) -> None:
     """Print formatted benchmark results."""
     print("====================================================================")
@@ -257,6 +260,14 @@ def print_benchmark_results(
         print(f"| Input sequence length: {input_sequence_length}")
 
     print("====================================================================")
+
+    # Print validation results (Token Accuracy or PCC)
+    if top1_accuracy is not None and top5_accuracy is not None:
+        print(f"\n=== Token Accuracy Results ===")
+        print(f"TOP1 Accuracy: {top1_accuracy * 100:.2f}%")
+        print(f"TOP5 Accuracy: {top5_accuracy * 100:.2f}%")
+    elif pcc_value is not None:
+        print(f"PCC verification passed with PCC={pcc_value:.6f}")
 
 
 def create_measurement(
