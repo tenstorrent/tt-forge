@@ -33,6 +33,11 @@ on:
           - p150
           - All
         default: All
+      fail-notify:
+        description: "Should the fail notification be sent"
+        required: false
+        type: boolean
+        default: false
 
   workflow_call:
     inputs:
@@ -54,6 +59,11 @@ on:
         required: false
         type: string
         default: All
+      fail-notify:
+        description: "Should the fail notification be sent"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build_matrix:
