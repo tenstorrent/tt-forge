@@ -174,6 +174,7 @@ def test_llm_tp(ModelLoaderModule, variant, output_file, num_layers=None, reques
         ModelLoaderModule=ModelLoaderModule,
         variant=variant,
         output_file=output_file,
+        optimization_level=1,
         mesh_config_fn=mesh_config_fn,
         shard_spec_fn=shard_spec_fn,
         batch_size=32,
