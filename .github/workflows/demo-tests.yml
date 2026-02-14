@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: ""
+      fail-notify:
+        description: "Should the fail notification be sent"
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       docker-image:
@@ -44,6 +49,11 @@ on:
         description: "Git ref to checkout"
         required: false
         type: string
+      fail-notify:
+        description: "Should the fail notification be sent"
+        required: false
+        type: boolean
+        default: false
 
 
 # Used for produce_data.yml workflow dispatch trigger
@@ -169,7 +179,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Fail Notification
-        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' && inputs.parent_run_id != ''  }}
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' && inputs.fail-notify == 'true' }}
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |

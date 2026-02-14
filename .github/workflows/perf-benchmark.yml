@@ -55,6 +55,11 @@ on:
         required: false
         type: boolean
         default: true
+      fail-notify:
+        description: "Should the fail notification be sent"
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       docker-image:
@@ -102,6 +107,11 @@ on:
         required: false
         type: boolean
         default: true
+      fail-notify:
+        description: "Should the fail notification be sent"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
@@ -289,7 +299,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Fail Notification
-        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' && inputs.parent_run_id != '' }}
+        if: ${{ needs.fail-notify.outputs.failed == 'true' && needs.fail-notify.outputs.is-main == 'true' && needs.fail-notify.outputs.is-draft == 'false' && inputs.fail-notify == 'true' }}
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
