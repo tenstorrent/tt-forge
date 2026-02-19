@@ -1,21 +1,38 @@
-# SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
+# SPDX-FileCopyrightText: © 2026 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# Googlenet Demo Script
+# GoogLeNet PaddlePaddle Demo Script
 
 import forge
-from third_party.tt_forge_models.googlenet.image_classification.paddlepaddle import ModelLoader
+from third_party.tt_forge_models.googlenet.image_classification.paddlepaddle import ModelLoader, ModelVariant
 
-# Load model and input
-loader = ModelLoader()
-model = loader.load_model()
-inputs = loader.load_inputs()
 
-# Compile the model using Forge
-compiled_model = forge.compile(model, inputs)
+def run_googlenet_demo_case(variant):
+    """
+    Run a GoogLeNet PaddlePaddle model
+    """
 
-# Run inference on Tenstorrent device
-output = compiled_model(*inputs)
+    # Load Model and inputs using the ModelLoader
+    loader = ModelLoader(variant=variant)
+    model = loader.load_model()
+    inputs = loader.load_inputs()
 
-# Post-process the output
-loader.print_results(output)
+    # Compile the model
+    compiled_model = forge.compile(model, inputs)
+
+    # Run inference
+    output = compiled_model(*inputs)
+
+    # Post-process
+    loader.print_results(output)
+
+
+if __name__ == "__main__":
+
+    demo_cases = [
+        ModelVariant.DEFAULT,
+    ]
+
+    # Run each demo case
+    for variant in demo_cases:
+        run_googlenet_demo_case(variant)
