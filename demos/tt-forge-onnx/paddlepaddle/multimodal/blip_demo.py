@@ -10,13 +10,16 @@ from third_party.tt_forge_models.blip.vision_language.paddlepaddle import ModelL
 
 
 def run_blip_demo_case(variant):
+    """
+    Run a BLIP PaddlePaddle model
+    """
 
     # Load model and input
     loader = ModelLoader(variant=variant)
     model = loader.load_model()
     inputs = loader.load_inputs()
 
-    # Compile the model using Forge
+    # Compile the model
     framework_model, _ = paddle_trace(model, inputs=inputs)
     compiled_model = forge.compile(framework_model, inputs)
 
@@ -36,15 +39,13 @@ def run_blip_demo_case(variant):
         for t, sim in zip(loader.text, similarities):
             print(f"{t}: similarity = {sim:.4f}")
 
-        # Compile model
+        # Compile the model
         framework_model, _ = paddle_trace(model, inputs=inputs)
         compiled_model = forge.compile(framework_model, inputs)
         outputs = compiled_model(*inputs)
     else:
-        # Run inference on Tenstorrent device
+        # Run inference
         outputs = compiled_model(*inputs)
-
-    print("=" * 60, flush=True)
 
 
 if __name__ == "__main__":

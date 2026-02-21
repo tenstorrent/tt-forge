@@ -5,10 +5,11 @@
       "runs-on": ["n150", "p150"]
     },
     "tests": [
-      { "name": "mobile_netv2", "path": "cnn/mobile_netv2_demo.py" },
-      { "name": "resnet",       "path": "cnn/resnet_demo.py" },
-      { "name": "resnet_onnx",  "path": "cnn/resnet_onnx_demo.py" },
-      { "name": "bert",         "path": "nlp/bert_demo.py" }
+      { "name": "resnet50_onnx", "path": "onnx/cnn/resnet_demo.py" },
+      { "name": "resnet50_paddlepaddle", "path": "paddlepaddle/cnn/resnet_demo.py" },
+      { "name": "alexnet_paddlepaddle", "path": "paddlepaddle/cnn/alexnet_demo.py" },
+      { "name": "densenet_paddlepaddle", "path": "paddlepaddle/cnn/densenet_demo.py" },
+      { "name": "googlenet_paddlepaddle", "path": "paddlepaddle/cnn/googlenet_demo.py" }
     ]
   },
   {
