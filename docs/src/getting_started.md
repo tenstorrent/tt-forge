@@ -19,7 +19,6 @@ Before running one of the demos in TT-Forge, you must:
 1. Determine which frontend you want to use:
    * [TT-XLA](https://github.com/tenstorrent/tt-xla) - For use with JAX, TensorFlow, PyTorch
    * [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx) - For use with ONNX and PaddlePaddle
-   * [TT-Torch](https://github.com/tenstorrent/tt-torch) - (Deprecated, if you want to use PyTorch use TT-XLA)
 
 2. Decide what setup you want to use for the frontend:
    * Wheel
@@ -33,8 +32,6 @@ Before running one of the demos in TT-Forge, you must:
    * [TT-XLA Docker](https://docs.tenstorrent.com/tt-xla/getting_started_docker.html)
    * [TT-Forge-ONNX Docker](https://docs.tenstorrent.com/tt-forge-onnx/getting_started_docker.html)
    * [TT-Forge-ONNX Build From Source](https://docs.tenstorrent.com/tt-forge-onnx/getting_started_build_from_source.html)
-   * [TT-Torch Wheel](https://docs.tenstorrent.com/tt-torch/getting_started.html) - (deprecated)
-   * [TT-Torch Docker](https://docs.tenstorrent.com/tt-torch/getting_started_docker.html) - (deprecated)
 
 4. Return to this repo and follow the instructions in the [Running a Demo](#running-a-demo) section.
 
@@ -57,7 +54,6 @@ git submodule update --init --recursive
 3. Navigate to the folder for the frontend you want:
    * [TT-XLA Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla)
    * [TT-Forge-ONNX Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-onnx)
-   * [TT-Torch Models](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-torch) - (deprecated)
 
 In this walkthrough, the [**resnet_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-xla/cnn/resnet_demo.py) from the TT-XLA folder is used.
 
@@ -86,10 +82,10 @@ To run performance benchmarks for all models, you need to install additional lib
 
    **Example:**
 
-   If you want to test a model from the TT-Torch project, you would run:
+   If you want to test a model from the tt-xla project, you would run:
 
    ```bash
-   pip install -r benchmark/tt-torch/requirements.txt
+   pip install -r benchmark/tt-xla/requirements.txt
    ```
 
 2. **Install System Dependencies**
