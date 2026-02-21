@@ -162,6 +162,13 @@ def pytest_addoption(parser):
         type=make_validator_boolean("--experimental-compile"),
         help="Enable experimental compile flag (true/false). Overrides config value.",
     )
+    parser.addoption(
+        "--accuracy-testing",
+        action="store",
+        default=None,
+        type=make_validator_boolean("--accuracy-testing"),
+        help="Enable accuracy testing mode (true/false). Uses reference data for TOP1/TOP5 accuracy.",
+    )
 
 
 @pytest.fixture
@@ -217,3 +224,9 @@ def task(request):
 @pytest.fixture
 def experimental_compile(request):
     return request.config.getoption("--experimental-compile")
+
+
+@pytest.fixture
+def accuracy_testing(request):
+    value = request.config.getoption("--accuracy-testing")
+    return value if value is not None else False
