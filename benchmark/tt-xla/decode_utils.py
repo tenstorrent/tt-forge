@@ -77,6 +77,8 @@ def teacher_forced_generate(
 
     assert_eval_no_dropout(model, verbose=verbose)
 
+    batch_size = input_args["input_ids"].shape[0]
+
     output_tokens: list[list[str]] = []
     output_logits: list[torch.Tensor] = []
     predicted_tokens: list[int] = []
@@ -97,22 +99,16 @@ def teacher_forced_generate(
                 output_text = [tokenizer.decode(token_id) for token_id in next_token_ids]
                 output_tokens.append(output_text)
 
-            # Teacher forcing update: feed ground truth for next step.
-            if step < ground_truth_tokens.shape[0]:
-                batch_size = input_args["input_ids"].shape[0]
-                gt_token = ground_truth_tokens[step].to(device)
-                input_args["input_ids"] = gt_token.view(1, 1).expand(batch_size, 1).contiguous()
-            else:
-                # If caller asks for more steps than ground truth provides, keep feeding last GT token.
-                batch_size = input_args["input_ids"].shape[0]
-                gt_token = ground_truth_tokens[-1].to(device)
-                input_args["input_ids"] = gt_token.view(1, 1).expand(batch_size, 1).contiguous()
+            # Teacher forcing: keep token as runtime data (stable shape) to avoid scalar-constant specialization.
+            next_tok_host = ground_truth_tokens[step : step + 1].view(1, 1)  # CPU [1,1]
+            input_args["input_ids"] = next_tok_host.expand(batch_size, 1).contiguous().to(device)
 
-            host_cache_pos = input_args["cache_position"].to("cpu")
-            host_cache_pos = torch.tensor([host_cache_pos[-1:] + 1])
-            input_args["cache_position"] = host_cache_pos.to(device)
+            # cache_position: host normalize/update to keep a stable [1] shape.
+            host_cache_pos = input_args["cache_position"].to("cpu").reshape(-1)[-1:]  # CPU [1]
+            input_args["cache_position"] = (host_cache_pos + 1).to(device)
 
             iteration_times_ns.append(time.perf_counter_ns() - start)
+
             if verbose:
                 print(f"Iteration\t{step}/{max_tokens_to_generate}\ttook {iteration_times_ns[-1] / 1e6:.04} ms")
 
