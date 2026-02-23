@@ -1,6 +1,4 @@
 transformers==4.57.1
 datasets
-torch==2.9.0
-torchvision
 timm
 tabulate
