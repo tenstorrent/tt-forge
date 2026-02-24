@@ -158,7 +158,7 @@ jobs:
           cache_docker_tag: true
           make_latest: true
           force_rebuild: false
-          dockerfile: ".github/Dockerfile.ubuntu-22-04-py3-11"
+          dockerfile: ".github/Dockerfile.ubuntu-22-04-py3-12"
 
     - name: "Determine Docker Base Image"
       id: determine-docker-base-image
