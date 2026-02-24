@@ -16,7 +16,7 @@ from torch_xla.distributed.spmd import Mesh
 import numpy as np
 
 # Defaults for all llms
-DEFAULT_OPTIMIZATION_LEVEL = 1
+DEFAULT_OPTIMIZATION_LEVEL = 2
 DEFAULT_MEMORY_LAYOUT_ANALYSIS = False
 DEFAULT_TRACE_ENABLED = False
 DEFAULT_BATCH_SIZE = 32
@@ -174,6 +174,7 @@ def test_llm_tp(ModelLoaderModule, variant, output_file, num_layers=None, reques
         ModelLoaderModule=ModelLoaderModule,
         variant=variant,
         output_file=output_file,
+        optimization_level=1,
         mesh_config_fn=mesh_config_fn,
         shard_spec_fn=shard_spec_fn,
         batch_size=32,
