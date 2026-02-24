@@ -149,12 +149,12 @@ jobs:
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
 
-    - name: "Build Forge Ubuntu 22.04 Py 3.11"
-      if: ${{ steps.set-release-facts.outputs.python_version == '3.11' }}
+    - name: "Build Forge Ubuntu 22.04 Py 3.12"
+      if: ${{ steps.set-release-facts.outputs.python_version == '3.12' }}
       uses: ./.github/actions/docker-build-push
-      id: docker-build-push-3-11
+      id: docker-build-push-3-12
       with:
-          image_name: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11"
+          image_name: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-12"
           cache_docker_tag: true
           make_latest: true
           force_rebuild: false
@@ -163,7 +163,7 @@ jobs:
     - name: "Determine Docker Base Image"
       id: determine-docker-base-image
       run: |
-        if [ "${{ steps.set-release-facts.outputs.python_version }}" == '3.11' ]; then
+        if [ "${{ steps.set-release-facts.outputs.python_version }}" == '3.12' ]; then
           DOCKER_BASE_IMAGE="${{ steps.docker-build-push-3-11.outputs.image_tag }}"
         fi
         echo "DOCKER_BASE_IMAGE=${DOCKER_BASE_IMAGE}"
