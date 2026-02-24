@@ -11,7 +11,7 @@ setup(
         "pjrt-plugin-tt @https://pypi.eng.aws.tenstorrent.com/pjrt-plugin-tt/pjrt_plugin_tt-${PJRT_PLUGIN_TT_TAG}-cp311-cp311-linux_x86_64.whl",
         "vllm_tt @https://pypi.eng.aws.tenstorrent.com/vllm-tt/vllm_tt-${PJRT_PLUGIN_TT_TAG}-cp311-cp311-linux_x86_64.whl",
     ],
-    python_requires=">=3.11",
+    python_requires=">=3.12",
     py_modules=[],
     has_ext_modules=lambda: True,  # Force platform-specific wheel
 )
