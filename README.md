@@ -23,7 +23,6 @@ TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compil
 - [TT-MLIR](https://github.com/tenstorrent/tt-mlir) - Open source compiler framework for compiling and optimizing machine learning models for Tenstorrent hardware
 - [TT-Metal](https://github.com/tenstorrent/tt-metal) - Low-level programming model, enabling kernel development for Tenstorrent hardware
 - [TT-TVM](https://github.com/tenstorrent/tt-tvm) - A compiler stack for deep learning systems designed to close the gap between the productivity-focused deep learning frameworks, and the performance and efficiency-focused hardware backends
-- [TT-Torch](https://github.com/tenstorrent/tt-torch) - (Deprecated) Previously for use with PyTorch. It is recommended that you use TT-XLA for PyTorch.
 
 -----
 # What Is This Repo?
@@ -318,10 +317,6 @@ xs.mark_sharding(my_input_tensor, mesh, ("model", None))
 - [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx)
   - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([TT-TVM](https://github.com/tenstorrent/tt-tvm)). It also supports ingestion of PyTorch, however it is recommended that you use TT-XLA. TT-Forge-ONNX does not support multi-chip configurations; it is for single-chip projects only.
   - See the [TT-Forge-ONNX docs pages](https://docs.tenstorrent.com/tt-forge-onnx/getting-started.html) for an overview and getting started guide.
-
-- [TT-Torch](https://github.com/tenstorrent/tt-torch) - (deprecated)
-  - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to TT-MLIR. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
-  - See the [TT-Torch docs pages](https://docs.tenstorrent.com/tt-torch) (deprecated) for an overview and getting started guide.
 
 # [TT-MLIR](https://github.com/tenstorrent/tt-mlir) Project
 

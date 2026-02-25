@@ -1,6 +1,10 @@
 # TT-Forge Model Benchmarks
 
-This directory contains benchmark implementations of popular deep learning models using TT-Forge (TT-Forge-ONNX, TT-XLA, and TT-Torch (deprecated)). These benchmarks are designed to measure performance across various computer vision and natural language processing models.
+This directory contains benchmark implementations of popular deep learning models using TT-Forge (TT-Forge-ONNX,and TT-XLA). These benchmarks are designed to measure performance across various computer vision and natural language processing models.
+
+## Running Benchmarks
+
+Instructions for running performance benchmarks can be found [here](../docs/src/getting_started.md#running-performance-benchmark-tests).
 
 ## Available Benchmarks
 
@@ -13,17 +17,3 @@ This directory contains benchmark implementations of popular deep learning model
 | ViT (Vision Transformer) | TT-Forge-ONNX   | Transformer, CNN    | Vision Transformer for image classification                             | [`tt-forge-onnx/vit.py`](tt-forge-onnx/vit.py)                                    | 23.58                 |           na              |
 | VovNet (OSMR)            | TT-Forge-ONNX   | CNN            | Variety of Overparam Network for image classification                   | [`tt-forge-onnx/vovnet.py`](tt-forge-onnx/vovnet.py)                              | 248                | 240                       |
 | ResNet-50                | TT-XLA        | CNN            | Deep residual network for image classification                   | [`tt-xla/resnet.py`](tt-xla/resnet.py)                                    | 0.14                 |             500            |
-| ResNet-50                | TT-Torch (deprecated)      | CNN            | Deep residual network for image classification        | [`tt-torch/resnet.py`](tt-torch/resnet.py)                                | 4.32                 |       500                  |
-
-> *Last updated: July 31, 2025
-
-## Running Benchmarks
-
-Instructions for running performance benchmarks can be found [here](../docs/src/getting_started.md#running-performance-benchmark-tests).
-
-## Additional Resources
-
-- [TT-Forge-ONNX Documentation](https://docs.tenstorrent.com/tt-forge-onnx/)
-- [TT-Forge-ONNX GitHub Repository](https://github.com/tenstorrent/tt-forge-onnx)
-
-For issues or questions about benchmarks, please file them at [github.com/tenstorrent/tt-forge/issues](https://github.com/tenstorrent/tt-forge/issues).
