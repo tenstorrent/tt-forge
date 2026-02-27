@@ -164,7 +164,7 @@ jobs:
       id: determine-docker-base-image
       run: |
         if [ "${{ steps.set-release-facts.outputs.python_version }}" == '3.12' ]; then
-          DOCKER_BASE_IMAGE="${{ steps.docker-build-push-3-11.outputs.image_tag }}"
+          DOCKER_BASE_IMAGE="${{ steps.docker-build-push-3-12.outputs.image_tag }}"
         fi
         echo "DOCKER_BASE_IMAGE=${DOCKER_BASE_IMAGE}"
         echo "DOCKER_BASE_IMAGE=${DOCKER_BASE_IMAGE}" >> $GITHUB_OUTPUT
