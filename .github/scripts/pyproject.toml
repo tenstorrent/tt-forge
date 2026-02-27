@@ -9,7 +9,7 @@ readme = "../../README.md"
 authors = [
   { name = "Tenstorrent", email = "info@tenstorrent.com" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 keywords = ["forge", "tt-forge", "machine learning", "tenstorrent"]
 license = "Apache-2.0"
 license-files = ["../../LICENSE*"]

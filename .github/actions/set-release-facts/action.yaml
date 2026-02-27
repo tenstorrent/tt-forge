@@ -194,7 +194,7 @@ runs:
         # Wait for demo tests to complete
         test_demo_wait="false"
         # Python version to use for builds and tests
-        python_version="3.11"
+        python_version="3.12"
         # Filter for which test runners to use for basic tests
         basic_tests_runner_filter="All"
         # Uplift artifacts by commit
