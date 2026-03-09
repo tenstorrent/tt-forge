@@ -89,6 +89,22 @@ python tt-forge/demos/tt-xla/cnn/resnet_demo.py
 python tt-forge/demos/tt-xla/nlp/jax/gpt_demo.py
 ```
 
+## Running a Benchmark
+
+Run a model benchmark using pytest:
+```bash
+# Run ResNet-50 vision benchmark
+pytest -svv benchmark/tt-xla/test_vision.py::test_resnet50
+
+# Run Llama 3.2 1B LLM benchmark
+pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b
+
+# Save results to JSON
+pytest -svv benchmark/tt-xla/test_llms.py::test_llama_3_2_1b --output results.json
+```
+
+After running a benchmark, look for the `Sample per second:` line in the output for performance results.
+
 -----
 # Quick Links
 - [Getting Started / How to Run a Model](https://docs.tenstorrent.com/tt-forge/getting_started.html)
