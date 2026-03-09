@@ -52,8 +52,8 @@ RUN apt-get update && \
 RUN set -ex \
     && curl https://pyenv.run | bash \
     && pyenv update \
-    && pyenv install 3.11 \
-    && pyenv global 3.11 \
+    && pyenv install 3.12 \
+    && pyenv global 3.12 \
     && pyenv rehash \
     && python -m pip install --upgrade pip --no-cache-dir
 

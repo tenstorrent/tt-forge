@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 import tempfile
 import forge
-from third_party.tt_forge_models.resnet.image_classification.onnx import ModelLoader, ModelVariant
+from third_party.tt_forge_models.squeezebert.sequence_classification.onnx import ModelLoader, ModelVariant
 
 
-def run_resnet_onnx(variant):
+def run_squeezebert_demo_case(variant):
     """
-    Run ResNet ONNX model
+    Run SqueezeBERT ONNX model
     """
 
     loader = ModelLoader(variant=variant)
@@ -16,7 +16,7 @@ def run_resnet_onnx(variant):
 
         # Load Model and inputs using the ModelLoader
         onnx_model = loader.load_model(onnx_tmp_path=tmpdir)
-        inputs = loader.load_inputs().contiguous()
+        inputs = loader.load_inputs()
 
         # Compile the model using Forge
         compiled_model = forge.compile(onnx_model, [inputs])
@@ -24,16 +24,14 @@ def run_resnet_onnx(variant):
         # Run inference on Tenstorrent device
         output = compiled_model(inputs)
 
-        # Print the results
-        loader.print_cls_results(output)
+        # Decode the output
+        loader.decode_output(output)
         print("=" * 60, flush=True)
 
 
 if __name__ == "__main__":
     demo_cases = [
-        ModelVariant.RESNET_50_TIMM,
+        ModelVariant.MNLI,
     ]
-
-    # Run each demo case
     for variant in demo_cases:
-        run_resnet_onnx(variant)
+        run_squeezebert_demo_case(variant)

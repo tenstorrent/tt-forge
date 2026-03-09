@@ -29,7 +29,7 @@ runs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.12'
     - name: Use yesterday version for draft
       id: use-yesterday-version
       shell: bash

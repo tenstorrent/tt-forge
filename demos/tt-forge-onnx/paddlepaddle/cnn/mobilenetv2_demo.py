@@ -17,13 +17,13 @@ def run_mobilenetv2_demo_case(variant):
     model = loader.load_model()
     inputs = loader.load_inputs()
 
-    # Compile the model
+    # Compile the model using Forge
     compiled_model = forge.compile(model, inputs)
 
-    # Run inference
+    # Run inference on Tenstorrent device
     output = compiled_model(*inputs)
 
-    # Post-process
+    # Print the results
     loader.print_results(output)
 
 

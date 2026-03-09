@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 import tempfile
 import forge
-from third_party.tt_forge_models.resnet.image_classification.onnx import ModelLoader, ModelVariant
+from third_party.tt_forge_models.efficientnet.image_classification.onnx import ModelLoader, ModelVariant
 
 
-def run_resnet_onnx(variant):
+def run_efficientnet_demo_case(variant):
     """
-    Run ResNet ONNX model
+    Run EfficientNet ONNX model
     """
 
     loader = ModelLoader(variant=variant)
@@ -31,9 +31,9 @@ def run_resnet_onnx(variant):
 
 if __name__ == "__main__":
     demo_cases = [
-        ModelVariant.RESNET_50_TIMM,
+        ModelVariant.B0,
     ]
 
     # Run each demo case
     for variant in demo_cases:
-        run_resnet_onnx(variant)
+        run_efficientnet_demo_case(variant)
