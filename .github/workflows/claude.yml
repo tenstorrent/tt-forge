@@ -32,6 +32,64 @@ jobs:
       id-token: write
       actions: write
     steps:
+      - name: Check Authorization
+        id: auth_check
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Determine the actor and event type
+          ACTOR="${{ github.actor }}"
+          EVENT_NAME="${{ github.event_name }}"
+
+          # Get author association based on event type
+          if [[ "$EVENT_NAME" == "issue_comment" ]]; then
+            AUTHOR_ASSOC="${{ github.event.comment.author_association }}"
+            COMMENT_ID="${{ github.event.comment.id }}"
+          elif [[ "$EVENT_NAME" == "pull_request_review_comment" ]]; then
+            AUTHOR_ASSOC="${{ github.event.comment.author_association }}"
+            COMMENT_ID="${{ github.event.comment.id }}"
+          elif [[ "$EVENT_NAME" == "pull_request_review" ]]; then
+            AUTHOR_ASSOC="${{ github.event.review.author_association }}"
+            COMMENT_ID="${{ github.event.review.id }}"
+          elif [[ "$EVENT_NAME" == "issues" ]]; then
+            AUTHOR_ASSOC="${{ github.event.issue.author_association }}"
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
+          fi
+
+          echo "Actor: $ACTOR"
+          echo "Event: $EVENT_NAME"
+          echo "Author Association: $AUTHOR_ASSOC"
+
+          # Check if user is authorized (MEMBER, OWNER, or COLLABORATOR)
+          if [[ "$AUTHOR_ASSOC" == "MEMBER" || "$AUTHOR_ASSOC" == "OWNER" || "$AUTHOR_ASSOC" == "COLLABORATOR" ]]; then
+            echo "✅ Authorization successful: $ACTOR is a $AUTHOR_ASSOC"
+            echo "authorized=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Authorization failed: $ACTOR is a $AUTHOR_ASSOC (not MEMBER, OWNER, or COLLABORATOR)"
+            echo "Only organization members and repository collaborators can trigger Claude workflows."
+            echo "authorized=false" >> $GITHUB_OUTPUT
+
+            # Add reaction to the comment/issue to indicate it didn't run
+            if [[ -n "$COMMENT_ID" ]]; then
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/repos/${{ github.repository }}/issues/comments/$COMMENT_ID/reactions" \
+                -f content='-1' || true
+            elif [[ -n "$ISSUE_NUMBER" ]]; then
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/repos/${{ github.repository }}/issues/$ISSUE_NUMBER/reactions" \
+                -f content='-1' || true
+            fi
+
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
