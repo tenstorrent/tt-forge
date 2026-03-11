@@ -4,13 +4,11 @@
 # ResNet Demo following Hugging Face tutorial
 # https://huggingface.co/microsoft/resnet-50#how-to-use
 
-import sys
 import torch
 from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 from tt_torch.backend.backend import xla_backend
-import torch.nn as nn
 
 from transformers import AutoImageProcessor, ResNetForImageClassification
 from datasets import load_dataset
