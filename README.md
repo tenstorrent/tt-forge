@@ -12,39 +12,166 @@
 </div>
 <br>
 
-TT-Forge is Tenstorrent's MLIR-based compiler. It integrates into various compiler technologies from AI/ML frameworks, to both enable running models and create custom kernel generation.
+TT-Forge is Tenstorrent's open-source AI compiler stack, built on [TT-Metalium](https://github.com/tenstorrent/tt-metal). It brings together frontends, an MLIR compiler, a kernel DSL, and a model library to make running AI workloads on Tenstorrent hardware straightforward — 800+ model variants tested in CI, thousands more ran internally, if it fits in memory, it should run.
+
+Models like GPT-OSS 120B, Llama 3 70B, Stable Diffusion XL, Whisper, and YOLOv12 — all running today from PyTorch, JAX, and ONNX. Inference and training, custom kernels to full models — all open source.
 
 -----
-# Quick Links
-- [Getting Started / How to Run a Model](https://docs.tenstorrent.com/tt-forge/getting_started.html)
-- [Interactive Tenstorrent Software Diagram](#interactive-tenstorrent-sofware-architecture-diagram)
-- [TT-XLA](https://github.com/tenstorrent/tt-xla) - (single and multi-chip) For use with PyTorch and JAX.
-- [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx) - (single chip only) For use with ONNX and PaddlePaddle, it also runs PyTorch, however it is recommended to use TT-XLA for PyTorch
-- [TT-MLIR](https://github.com/tenstorrent/tt-mlir) - Open source compiler framework for compiling and optimizing machine learning models for Tenstorrent hardware
-- [TT-Metal](https://github.com/tenstorrent/tt-metal) - Low-level programming model, enabling kernel development for Tenstorrent hardware
-- [TT-TVM](https://github.com/tenstorrent/tt-tvm) - A compiler stack for deep learning systems designed to close the gap between the productivity-focused deep learning frameworks, and the performance and efficiency-focused hardware backends
+**Contents:** [Sub-Projects](#tt-forge-sub-projects) · [Run a Model](#run-a-model) · [Train a Model](#train-a-model) · [Write a Custom Kernel](#write-a-custom-kernel) · [Tested Models](#tested-models) · [Architecture](#architecture) · [FAQ](#faq)
 
 -----
-# What Is This Repo?
-This repository is the central hub for the TT-Forge compiler project, bringing together its various sub-projects into a cohesive product. Here, you'll find releases, demos, model support, roadmaps, and other key resources as the project evolves. Please file any issues with questions or feedback you may have [here](https://github.com/tenstorrent/tt-forge/issues).
+# TT-Forge Sub-Projects
 
-# Getting Started Guide
-See the documentation available for individual front ends in the [Front End](#current-ai-framework-front-end-projects) section to get started running some tests. You can also try running a demo using the [TT-Forge Getting Started](https://docs.tenstorrent.com/tt-forge/) page.
+| Project | What It Does | Links |
+|---------|-------------|-------|
+| **[TT-XLA](https://github.com/tenstorrent/tt-xla)** | Primary frontend for **PyTorch** and **JAX** models. Uses the PJRT interface to compile models into StableHLO graphs for TT-MLIR. Supports single and multi-chip. | [Docs](https://docs.tenstorrent.com/tt-xla/) · [Demos](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla) |
+| **[TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx)** | TVM-based frontend for **ONNX**, **TensorFlow**, and **PaddlePaddle** models. Single-chip only. | [Docs](https://docs.tenstorrent.com/tt-forge-onnx/) · [Demos](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-onnx) |
+| **[TT-MLIR](https://github.com/tenstorrent/tt-mlir)** | Core MLIR-based compiler. Defines TTIR, TTNN, and TTKernel dialects, applies optimization passes (fusion, sharding, layout), and lowers to TT-Metalium. | [Docs](https://docs.tenstorrent.com/tt-mlir/) · [Tools](https://docs.tenstorrent.com/tt-mlir/tools.html) |
+| **[TT-Lang](https://github.com/tenstorrent/tt-lang)** | Python DSL for custom high-performance kernels. Write fused ops in Python with built-in simulation, profiling, and AI-assisted translation from Triton-class DSLs. *(Early preview)* | [Docs](https://github.com/tenstorrent/tt-lang#readme) |
+| **[TT-Blacksmith](https://github.com/tenstorrent/tt-blacksmith)** | Optimized training recipes and experiments. 40+ examples spanning PyTorch, JAX, and Lightning across vision models, LLMs, and NLP. | [Docs](https://docs.tenstorrent.com/tt-blacksmith/) · [Experiments](https://docs.tenstorrent.com/tt-blacksmith/src/experiments.html) |
+| **[TT-Forge-Models](https://github.com/tenstorrent/tt-forge-models)** | 800+ model variants continuously tested in CI. Standardized loaders for LLMs, vision, NLP, multimodal, detection, segmentation, speech, and more. | [Repo](https://github.com/tenstorrent/tt-forge-models) |
 
-# Project Goals
-- Provide abstraction of many different frontend frameworks
-- Generically compile many kinds of model architectures without modification and with good performance
-- Abstract all Tenstorrent device architectures
+-----
+# Run a Model
 
-# Project Overview
+Get ResNet-50 running on Tenstorrent hardware in minutes:
 
-TT-Forge is composed of various projects ranging from front ends to support popular third-party AI Frameworks, MLIR compiler project, performance optimizations and tools to support the project. tt-forge lowers to our TT-Metalium project, providing additional functionality to our AI Sofware ecosystem.
+```bash
+pip install pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+pip install torchvision
+```
+
+```python
+import torch
+import torch_xla.core.xla_model as xm
+import torch_xla.runtime as xr
+from tt_torch.backend.backend import xla_backend
+from torchvision.models import resnet50, ResNet50_Weights
+
+# Set device to Tenstorrent
+xr.set_device_type("TT")
+device = xm.xla_device()
+
+# Load ResNet-50
+model = resnet50(weights=ResNet50_Weights.DEFAULT).to(torch.bfloat16).eval()
+compiled_model = torch.compile(model, backend=xla_backend)
+compiled_model = compiled_model.to(device)
+
+# Run inference on Tenstorrent
+input_tensor = torch.randn(1, 3, 224, 224, dtype=torch.bfloat16).to(device)
+with torch.no_grad():
+    output = compiled_model(input_tensor)
+
+predicted_class = output.cpu().argmax(dim=-1).item()
+print(f"Predicted ImageNet class: {predicted_class}")
+```
+
+> **Note:** Wheels are hosted on [Tenstorrent's package index](https://pypi.eng.aws.tenstorrent.com/). The `--extra-index-url` flag is required until packages are available on public PyPI.
+
+See the full [Getting Started Guide](https://docs.tenstorrent.com/tt-forge/getting_started.html) for all setup options. For ONNX models, see [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx). More demos in [TT-XLA demos](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla).
+
+-----
+# Train a Model
+
+Standard PyTorch training — just runs on Tenstorrent hardware via [TT-Blacksmith](https://github.com/tenstorrent/tt-blacksmith):
+
+```bash
+git clone https://github.com/tenstorrent/tt-blacksmith.git && cd tt-blacksmith
+source env/activate --xla
+```
+
+```python
+import torch
+import torch_xla.core.xla_model as xm
+
+# Standard PyTorch — the only difference is the device
+xr.set_device_type("TT")
+device = xm.xla_device()
+
+model = MyModel().to(device)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+loss_fn = torch.nn.CrossEntropyLoss()
+
+for inputs, targets in train_loader:
+    inputs, targets = inputs.to(device), targets.to(device)
+
+    outputs = model(inputs)
+    loss = loss_fn(outputs, targets)
+    loss.backward()
+
+    xm.optimizer_step(optimizer)  # Sync and step on TT device
+    optimizer.zero_grad()
+```
+
+40+ ready-to-run training recipes — Llama LoRA fine-tuning, Gemma, Qwen, ViT, NeRF, and more. See the [experiments table](https://docs.tenstorrent.com/tt-blacksmith/src/experiments.html).
+
+-----
+# Write a Custom Kernel
+
+[TT-Lang](https://github.com/tenstorrent/tt-lang) *(early preview)* — write high-performance kernels in Python instead of low-level C++:
+
+```python
+import ttl
+
+@ttl.kernel(grid=(1, 1))
+def fused_mul_add(a, b, c, y):
+    # Set up dataflow buffers for producer-consumer communication
+    a_dfb = ttl.make_dataflow_buffer_like(a, shape=(1, 1), buffer_factor=2)
+    b_dfb = ttl.make_dataflow_buffer_like(b, shape=(1, 1), buffer_factor=2)
+    c_dfb = ttl.make_dataflow_buffer_like(c, shape=(1, 1), buffer_factor=2)
+    y_dfb = ttl.make_dataflow_buffer_like(y, shape=(1, 1), buffer_factor=2)
+
+    @ttl.compute()
+    def compute():
+        with (
+            a_dfb.wait() as a_blk,
+            b_dfb.wait() as b_blk,
+            c_dfb.wait() as c_blk,
+            y_dfb.reserve() as y_blk,
+        ):
+            y_blk.store(a_blk * b_blk + c_blk)  # y = a * b + c
+
+    @ttl.datamovement()
+    def read():
+        with (
+            a_dfb.reserve() as a_blk,
+            b_dfb.reserve() as b_blk,
+            c_dfb.reserve() as c_blk,
+        ):
+            ttl.copy(a[0, 0], a_blk).wait()
+            ttl.copy(b[0, 0], b_blk).wait()
+            ttl.copy(c[0, 0], c_blk).wait()
+
+    @ttl.datamovement()
+    def write():
+        with y_dfb.wait() as y_blk:
+            ttl.copy(y_blk, y[0, 0]).wait()
+```
+
+Python in, optimized hardware code out. The compiler handles NOC addressing, register allocation, and memory management. See the [TT-Lang repo](https://github.com/tenstorrent/tt-lang) for tutorials, simulation, and profiling tools.
+
+-----
+# Tested Models
+
+800+ model variants in the [model library](https://github.com/tenstorrent/tt-forge-models), continuously tested in CI — with thousands more ran internally. Highlights:
+
+| Category | Models |
+|----------|--------|
+| **LLMs** | Llama 3.1/3.2 (1B–70B), Qwen 2.5/3 (0.5B–32B), Falcon-3 (1B–10B), Phi-1/2/3/3.5, Gemma 1.1/2 (2B–7B), Mistral/Ministral (7B–24B), Mamba 2.8B |
+| **Vision** | ResNet-50, ViT, EfficientNet, MobileNetV1/V2, Swin, VoVNet, SegFormer, U-Net, UFLD/UFLDv2, MNIST |
+| **NLP / Encoders** | BERT, ALBERT, BGE-M3, Qwen3-Embedding, RoBERTa, SqueezeBERT |
+| **Multimodal** | BLIP (vision-language), Stable Diffusion XL (UNet) |
+| **Multi-chip (N300+)** | Llama 3.1 8B/70B, Falcon-3 7B/10B, Mistral 7B/Nemo/Small 24B, Qwen 2.5/3 up to 32B |
+
+See the full [benchmark suite](https://github.com/tenstorrent/tt-forge/tree/main/benchmark/tt-xla) and [demos](https://github.com/tenstorrent/tt-forge/tree/main/demos) for the complete list.
+
+-----
+# Architecture
 
 ![Tenstorrent Software Overview](docs/public/images/tt-sw-overview.png)
 
-# Interactive Tenstorrent Sofware Architecture Diagram
-Overview of Tenstorrent's Opensource AI software ecosystem.
-Click on components to navigate to their repositories:
+### Interactive Tenstorrent Software Architecture Diagram
+Overview of Tenstorrent's open-source AI software ecosystem. Click on components to navigate to their repositories:
 
 ```mermaid
 flowchart TD
@@ -257,6 +384,7 @@ flowchart TD
     click BLACKHOLE "https://tenstorrent.com/hardware/blackhole" "Blackhole Hardware Product Page" _blank
 ```
 
+-----
 # FAQ
 
 - **Can the user set dtype? How?**
@@ -294,55 +422,7 @@ xs.mark_sharding(my_input_tensor, mesh, ("model", None))
     operations, and performance metrics.
   - See the [TT-MLIR Explorer docs pages](https://docs.tenstorrent.com/tt-mlir/tt-explorer/tt-explorer.html) for more information.
 
-- **User’s responsibilities**
-  - Users are responsible for ensuring that their models are compatible with
-    the Tenstorrent hardware and software stack. This includes adhering to
-    supported data types, model architectures, and sharding configurations.
-  - If a user configures their model incorrectly (e.g., using unsupported
-    data types or sharding strategies), they may encounter compilation errors,
-    runtime errors, incorrect results, or suboptimal performance. It is recommended to refer to
-    the documentation and examples provided for guidance on best practices.
-
-- **Will TT-Forge-ONNX be deprecated?**
-  - No, TT-Forge-ONNX will not be deprecated. It will continue to be supported
-    for single-chip configurations and for frameworks such as ONNX, PaddlePaddle, and
-    TensorFlow. However, for PyTorch and Jax models, it is recommended to use TT-XLA,
-    especially for multi-chip configurations.
-
-# Current AI Framework Front End Projects
-- [TT-XLA](https://github.com/tenstorrent/tt-xla)
-  - TT-XLA is the primary frontend for running PyTorch and JAX models. It leverages a PJRT interface to integrate JAX (and in the future other frameworks), TT-MLIR, and Tenstorrent hardware. It supports ingestion of JAX models via jit compile, providing StableHLO (SHLO) graph to TT-MLIR compiler. TT-XLA can be used for single and multi-chip projects.
-  - See the [TT-XLA docs pages](https://docs.tenstorrent.com/tt-xla) for an overview and getting started guide.
-
-- [TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx)
-  - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([TT-TVM](https://github.com/tenstorrent/tt-tvm)). It also supports ingestion of PyTorch, however it is recommended that you use TT-XLA. TT-Forge-ONNX does not support multi-chip configurations; it is for single-chip projects only.
-  - See the [TT-Forge-ONNX docs pages](https://docs.tenstorrent.com/tt-forge-onnx/getting-started.html) for an overview and getting started guide.
-
-# [TT-MLIR](https://github.com/tenstorrent/tt-mlir) Project
-
-At its core TT-MLIR is our compiler that is interfacing with TT-Metal our opens source low level AI Hardware SDK. TT-MLIR provides a solution for optimizing machine learning and other compute workloads for all tenstorrent hardware. TT-MLIR bridges the gap between all different ML Frameworks and Tenstorrent Hardware. TT-MLIR is broken into different dialects:
-
-- TTIR Dialect: Our common IR that can then be lowered into multiple different backends
-
-- TTNN Dialect: Our entry point into the TTNN Library of Ops
-
-- TTMetalium Dialect: Our entry point into directly accessing tt-metalium kernels.
-
-The compiler employs various optimization passes, including layout transformation, operation fusing, decomposition, and sharding, ensuring the efficient lowering to the target dialect.​
-
-## TT-MLIR Tools and Capabilities
-
-- TTMLIR-Opt: This tool is used to run the TT-MLIR compiler passes on **.mlir** source files and is central to developing and testing the cmpiler.​
-
-- TTMLIR-Translate: TTMLIR-Translate allows us to ingest something (e.g., code) into MLIR compiler, and produce something (for example, executable binary, or even code again) from MLIR compiler.​
-
-- TTRT: It is a standalone runtime tool that can inspect and run compiler executable files without front-end.​
-
-- TT-Explorer: It provides a “Human-In-Loop” interface such that the compiler results can be actively tuned and understood by the person compiling the model.​
-
-- TTNN-Standalone: This is a post-compile tuning/debugging tool for C++ TTNN generated code.
-
 -----
 # Tenstorrent Bounty Program Terms and Conditions
 
-This repo is a part of Tenstorrent’s bounty program. If you are interested in helping to improve TT-Forge, please make sure to read the [Tenstorrent Bounty Program Terms and Conditions](https://docs.tenstorrent.com/bounty_terms.html) before heading to the issues tab. Look for the issues that are tagged with both “bounty” and difficulty level!
+This repo is a part of Tenstorrent's bounty program. If you are interested in helping to improve TT-Forge, please make sure to read the [Tenstorrent Bounty Program Terms and Conditions](https://docs.tenstorrent.com/bounty_terms.html) before heading to the issues tab. Look for the issues that are tagged with both "bounty" and difficulty level!
