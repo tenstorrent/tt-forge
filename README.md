@@ -103,7 +103,7 @@ for inputs, targets in train_loader:
     optimizer.zero_grad()
 ```
 
-40+ ready-to-run training recipes — Llama LoRA fine-tuning, Gemma, Qwen, ViT, NeRF, and more. See the [experiments table](https://docs.tenstorrent.com/tt-blacksmith/src/experiments.html).
+40+ ready-to-run training recipes - LLama, Gemma, Qwen, ViT, NeRF, and more. See the [experiments table](https://docs.tenstorrent.com/tt-blacksmith/src/experiments.html).
 
 -----
 # Write a Custom Kernel
