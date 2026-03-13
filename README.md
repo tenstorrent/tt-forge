@@ -100,7 +100,8 @@ for inputs, targets in train_loader:
     loss = loss_fn(outputs, targets)
     loss.backward()
 
-    xm.optimizer_step(optimizer)  # Sync and step on TT device
+    optimizer.step()
+    torch_xla.sync(wait=True)
     optimizer.zero_grad()
 ```
 
