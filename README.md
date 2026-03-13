@@ -82,6 +82,7 @@ source env/activate --xla
 
 ```python
 import torch
+import torch_xla
 import torch_xla.core.xla_model as xm
 
 # Standard PyTorch — the only difference is the device
