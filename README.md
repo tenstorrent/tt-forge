@@ -27,7 +27,7 @@ Models like GPT-OSS 120B, Llama 3 70B, Stable Diffusion XL, Whisper, and YOLOv12
 | **[TT-XLA](https://github.com/tenstorrent/tt-xla)** | Primary frontend for **PyTorch** and **JAX** models. Uses the PJRT interface to compile models into StableHLO graphs for TT-MLIR. Supports single and multi-chip. | [Docs](https://docs.tenstorrent.com/tt-xla/) · [Demos](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla) |
 | **[TT-Forge-ONNX](https://github.com/tenstorrent/tt-forge-onnx)** | TVM-based frontend for **ONNX**, **TensorFlow**, and **PaddlePaddle** models. Single-chip only. | [Docs](https://docs.tenstorrent.com/tt-forge-onnx/) · [Demos](https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-forge-onnx) |
 | **[TT-MLIR](https://github.com/tenstorrent/tt-mlir)** | Core MLIR-based compiler. Defines TTIR, TTNN, and TTKernel dialects, applies optimization passes (fusion, sharding, layout), and lowers to TT-Metalium. | [Docs](https://docs.tenstorrent.com/tt-mlir/) · [Tools](https://docs.tenstorrent.com/tt-mlir/tools.html) |
-| **[TT-Lang](https://github.com/tenstorrent/tt-lang)** | Python DSL for custom high-performance kernels. Write fused ops in Python with built-in simulation, profiling, and AI-assisted translation from Triton-class DSLs. *(Early preview)* | [Docs](https://github.com/tenstorrent/tt-lang#readme) |
+| **[TT-Lang](https://github.com/tenstorrent/tt-lang)** | Python DSL for custom high-performance kernels. Write fused ops in Python with built-in simulation, profiling, and AI-assisted translation from Triton-class DSLs. *(Early preview)* | [Docs](https://docs.tenstorrent.com/tt-lang/) |
 | **[TT-Blacksmith](https://github.com/tenstorrent/tt-blacksmith)** | Optimized training recipes and experiments. 40+ examples spanning PyTorch, JAX, and Lightning across vision models, LLMs, and NLP. | [Docs](https://docs.tenstorrent.com/tt-blacksmith/) · [Experiments](https://docs.tenstorrent.com/tt-blacksmith/src/experiments.html) |
 | **[TT-Forge-Models](https://github.com/tenstorrent/tt-forge-models)** | 800+ model variants continuously tested in CI. Standardized loaders for LLMs, vision, NLP, multimodal, detection, segmentation, speech, and more. | [Repo](https://github.com/tenstorrent/tt-forge-models) |
 
@@ -81,16 +81,19 @@ source env/activate --xla
 ```
 
 ```python
+import os
 import torch
 import torch_xla
-import torch_xla.core.xla_model as xm
+import torch_xla.runtime as xr
+
+os.environ["PJRT_DEVICE"] = "TT"
+os.environ["XLA_STABLEHLO_COMPILE"] = "1"
 
 # Standard PyTorch — the only difference is the device
-xr.set_device_type("TT")
 device = torch_xla.xla_device()
 
 model = MyModel().to(device)
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 loss_fn = torch.nn.CrossEntropyLoss()
 
 for inputs, targets in train_loader:
@@ -105,52 +108,37 @@ for inputs, targets in train_loader:
     optimizer.zero_grad()
 ```
 
-40+ ready-to-run training recipes - LLama, Gemma, Qwen, ViT, NeRF, and more. See the [experiments table](https://docs.tenstorrent.com/tt-blacksmith/src/experiments.html).
+40+ ready-to-run training recipes - Llama, Gemma, Qwen, ViT, NeRF, and more. See the [experiments table](https://docs.tenstorrent.com/tt-blacksmith/src/experiments.html).
 
 -----
 # Write a Custom Kernel
 
-[TT-Lang](https://github.com/tenstorrent/tt-lang) *(early preview)* — write high-performance kernels in Python instead of low-level C++:
+[TT-Lang](https://github.com/tenstorrent/tt-lang) *(early preview)* — write high-performance kernels in Python instead of low-level C++. Here's a matmul with bias (`Y = A @ B + C`):
 
 ```python
-import ttl
+# Matmul with bias: Y = A @ B + C
+a_dfb = ttl.make_dataflow_buffer_like(A, shape=(1, 1, 1))
+b_dfb = ttl.make_dataflow_buffer_like(B, shape=(1, 1))
+c_dfb = ttl.make_dataflow_buffer_like(C, shape=(1, 1))
+y_dfb = ttl.make_dataflow_buffer_like(Y, shape=(1, 1, 1))
 
-@ttl.kernel(grid=(1, 1))
-def fused_mul_add(a, b, c, y):
-    # Set up dataflow buffers for producer-consumer communication
-    a_dfb = ttl.make_dataflow_buffer_like(a, shape=(1, 1), buffer_factor=2)
-    b_dfb = ttl.make_dataflow_buffer_like(b, shape=(1, 1), buffer_factor=2)
-    c_dfb = ttl.make_dataflow_buffer_like(c, shape=(1, 1), buffer_factor=2)
-    y_dfb = ttl.make_dataflow_buffer_like(y, shape=(1, 1), buffer_factor=2)
-
-    @ttl.compute()
-    def compute():
-        with (
-            a_dfb.wait() as a_blk,
-            b_dfb.wait() as b_blk,
-            c_dfb.wait() as c_blk,
-            y_dfb.reserve() as y_blk,
-        ):
-            y_blk.store(a_blk * b_blk + c_blk)  # y = a * b + c
-
-    @ttl.datamovement()
-    def read():
-        with (
-            a_dfb.reserve() as a_blk,
-            b_dfb.reserve() as b_blk,
-            c_dfb.reserve() as c_blk,
-        ):
-            ttl.copy(a[0, 0], a_blk).wait()
-            ttl.copy(b[0, 0], b_blk).wait()
-            ttl.copy(c[0, 0], c_blk).wait()
-
-    @ttl.datamovement()
-    def write():
-        with y_dfb.wait() as y_blk:
-            ttl.copy(y_blk, y[0, 0]).wait()
+@ttl.compute()
+def matmul_compute():
+    for _ in range(IT):
+        for _ in range(MT):
+            for _ in range(NT):
+                with y_dfb.reserve() as y_blk:
+                    with c_dfb.wait() as c_blk:
+                        y_blk.store(c_blk, acc=True)       # y = c
+                    for _ in range(KT):
+                        with (
+                            a_dfb.wait() as a_blk,
+                            b_dfb.wait() as b_blk,
+                        ):
+                            y_blk.store(a_blk @ b_blk, acc=True)  # y += a @ b
 ```
 
-Python in, optimized hardware code out. The compiler handles NOC addressing, register allocation, and memory management. See the [TT-Lang repo](https://github.com/tenstorrent/tt-lang) for tutorials, simulation, and profiling tools.
+Python in, optimized hardware code out. The compiler handles NOC addressing, register allocation, and memory management. See the full [matmul example](https://github.com/tenstorrent/tt-lang/blob/main/docs/sphinx/specs/TTLangSpecification.md#matmul-example) and [TT-Lang repo](https://github.com/tenstorrent/tt-lang) for tutorials, simulation, and profiling tools.
 
 -----
 # Tested Models
