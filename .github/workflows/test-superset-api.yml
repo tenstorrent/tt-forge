@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   call_api:
-    runs-on: ubuntu-latest
+    runs-on: tt-ubuntu-2204-n150-stable
     steps:
 
       - name: Checkout code # only needed when using action in same repo
