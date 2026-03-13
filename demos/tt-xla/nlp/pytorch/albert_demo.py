@@ -85,16 +85,13 @@ if __name__ == "__main__":
         ("masked_lm", MaskedLMVariant.BASE_V1, MaskedLMLoader),
         ("masked_lm", MaskedLMVariant.LARGE_V1, MaskedLMLoader),
         ("masked_lm", MaskedLMVariant.XLARGE_V1, MaskedLMLoader),
-        ("masked_lm", MaskedLMVariant.XXLARGE_V1, MaskedLMLoader),
         ("masked_lm", MaskedLMVariant.BASE_V2, MaskedLMLoader),
         ("masked_lm", MaskedLMVariant.LARGE_V2, MaskedLMLoader),
         ("masked_lm", MaskedLMVariant.XLARGE_V2, MaskedLMLoader),
-        ("masked_lm", MaskedLMVariant.XXLARGE_V2, MaskedLMLoader),
         # Token Classification
         ("token_classification", TokenClassificationVariant.BASE_V1, TokenClassificationLoader),
         ("token_classification", TokenClassificationVariant.LARGE_V1, TokenClassificationLoader),
         ("token_classification", TokenClassificationVariant.XLARGE_V1, TokenClassificationLoader),
-        ("token_classification", TokenClassificationVariant.XXLARGE_V1, TokenClassificationLoader),
         ("token_classification", TokenClassificationVariant.LARGE_V2, TokenClassificationLoader),
         # Question Answering
         ("question_answering", QuestionAnsweringVariant.SQUAD2, QuestionAnsweringLoader),
