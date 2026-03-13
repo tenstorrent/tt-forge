@@ -57,11 +57,11 @@ git submodule update --init --recursive
 
 In this walkthrough, the [**resnet_demo.py**](https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-xla/cnn/resnet_demo.py) from the TT-XLA folder is used.
 
-4. From the TT-XLA folder for models, run the **resnet_demo.py** script. Navigate to the [main folder in the TT-Forge repository](https://github.com/tenstorrent/tt-forge/tree/main) and run the following commands (add the appropriate path for `PYTHONPATH`):
+4. From the main folder in the TT-Forge repository, run the **resnet_demo.py** script:
 
 ```bash
 export PYTHONPATH=.
-python demos/tt-forge-onnx/cnn/resnet_demo.py
+python demos/tt-xla/cnn/resnet_demo.py
 ```
 
 If all goes well, you should see an image of a cat, and terminal output where the model predicts what the image is and presents a score indicating how confident it is in its prediction.
