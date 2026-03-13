@@ -86,7 +86,7 @@ import torch_xla.core.xla_model as xm
 
 # Standard PyTorch — the only difference is the device
 xr.set_device_type("TT")
-device = xm.xla_device()
+device = torch_xla.xla_device()
 
 model = MyModel().to(device)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
