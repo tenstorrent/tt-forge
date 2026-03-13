@@ -73,7 +73,7 @@ See the full [Getting Started Guide](https://docs.tenstorrent.com/tt-forge/getti
 -----
 # Train a Model
 
-Standard PyTorch training — just runs on Tenstorrent hardware via [TT-Blacksmith](https://github.com/tenstorrent/tt-blacksmith):
+Standard PyTorch training example runs on Tenstorrent hardware via [TT-Blacksmith](https://github.com/tenstorrent/tt-blacksmith):
 
 ```bash
 git clone https://github.com/tenstorrent/tt-blacksmith.git && cd tt-blacksmith
