@@ -5,7 +5,12 @@
       "runs-on": ["n150", "p150"]
     },
     "tests": [
-      { "name": "resnet50_onnx", "path": "onnx/cnn/resnet_demo.py" }
+      { "name": "resnet50_onnx",     "path": "onnx/cnn/resnet_demo.py" },
+      { "name": "alexnet_onnx",      "path": "onnx/cnn/alexnet_demo.py" },
+      { "name": "densenet_onnx",     "path": "onnx/cnn/densenet_demo.py" },
+      { "name": "efficientnet_onnx", "path": "onnx/cnn/efficientnet_demo.py" },
+      { "name": "roberta_onnx",      "path": "onnx/nlp/roberta_demo.py" },
+      { "name": "squeezebert_onnx",  "path": "onnx/nlp/squeezebert_demo.py" }
     ]
   },
   {
