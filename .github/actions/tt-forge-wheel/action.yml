@@ -75,7 +75,7 @@ runs:
         rm /tmp/wheel-env
         envsubst < .github/scripts/template-setup.py > setup.py
         cat setup.py
-        pip install wheel
+        uv pip install wheel
         python setup.py bdist_wheel
         mkdir -p ${{ github.workspace }}/release/artifacts/tt-forge
         mv ${{ github.workspace }}/dist/*.whl ${{ github.workspace }}/release/artifacts/tt-forge/.

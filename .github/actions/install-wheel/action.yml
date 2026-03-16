@@ -90,7 +90,7 @@ runs:
         if [ "${{ steps.set-wheel-name.outputs.artifact_is_regex }}" == "true" ]; then
           cd $(ls | grep -E "${{ steps.set-wheel-name.outputs.artifact }}")
         fi
-        pip install ${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade
+        uv pip install ${{ steps.set-wheel-name.outputs.wheel_name }} --upgrade
         if [[ "${{ steps.set-wheel-name.outputs.wheel_name }}" == *"pjrt_"* ]]; then
           tt-forge-install;
         fi;

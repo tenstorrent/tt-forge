@@ -6,7 +6,7 @@
 # Wheel stub testing for https://github.com/wheelnext/wheel-stub for pypi offical upload
 
 source venv/bin/activate
-pip install wheel-stub setuptools wheel build
+uv pip install wheel-stub setuptools wheel build
 
 WHEEL_TAG=tt-mlir-0.1.0.dev20250606
 WHEEL_VERSION=ttmlir-0.1.0.dev20250606

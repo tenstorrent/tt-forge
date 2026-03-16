@@ -51,7 +51,7 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        pip install s3pypi
+        uv pip install s3pypi
 
     - name: Publish Tenstorrent PyPI package
       shell: bash

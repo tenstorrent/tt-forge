@@ -30,7 +30,7 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: pip install boto3 requests
+      run: uv pip install boto3 requests
 
     - name: Call Superset API
       id: api-call

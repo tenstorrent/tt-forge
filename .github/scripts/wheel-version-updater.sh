@@ -20,7 +20,7 @@ set -e
 #### Install wheel via pip
 python3 -m venv venv
 source venv/bin/activate
-pip install wheel
+uv pip install wheel
 
 # Ref for vaild python versions
 # https://packaging.python.org/en/latest/discussions/versioning/#valid-version-numbers

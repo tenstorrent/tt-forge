@@ -149,16 +149,16 @@ jobs:
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
         workflow_allow_failed: ${{ inputs.workflow_allow_failed || steps.set-release-facts.outputs.workflow_allow_failed }}
 
-    - name: "Build Forge Ubuntu 22.04 Py 3.12"
+    - name: "Build Forge Ubuntu 24.04 Py 3.12"
       if: ${{ steps.set-release-facts.outputs.python_version == '3.12' }}
       uses: ./.github/actions/docker-build-push
       id: docker-build-push-3-12
       with:
-          image_name: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-12"
+          image_name: "ghcr.io/tenstorrent/forge-ubuntu-24-04-py3-12"
           cache_docker_tag: true
           make_latest: true
           force_rebuild: false
-          dockerfile: ".github/Dockerfile.ubuntu-22-04-py3-12"
+          dockerfile: ".github/Dockerfile.ubuntu-24-04"
 
     - name: "Determine Docker Base Image"
       id: determine-docker-base-image

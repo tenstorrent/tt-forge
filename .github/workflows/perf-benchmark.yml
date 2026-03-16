@@ -61,7 +61,7 @@ on:
         description: "Docker image used in tests"
         required: false
         # TODO(vvasin): Update this to the new forge image after 0.4.0 is published for latest tag
-        default: "ghcr.io/tenstorrent/forge-ubuntu-22-04-py3-11:latest"
+        default: "ghcr.io/tenstorrent/forge-ubuntu-24-04:latest"
         type: string
       project:
         description: "Project(s) to launch tests (space separated)"

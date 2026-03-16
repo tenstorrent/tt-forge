@@ -122,7 +122,7 @@ jobs:
           export PYTHONPATH=$(pwd) # Add repository root to PYTHONPATH so demos can find models in third_party folder
           cd $demo_folder
           if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
+            uv pip install -r requirements.txt
           fi
           python $demo_file
 

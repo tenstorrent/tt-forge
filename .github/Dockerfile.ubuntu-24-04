@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 SHELL ["/bin/bash", "-c"]
 
@@ -55,6 +55,6 @@ RUN set -ex \
     && pyenv install 3.12 \
     && pyenv global 3.12 \
     && pyenv rehash \
-    && python -m pip install --upgrade pip --no-cache-dir
+    && uv pip install --upgrade pip --no-cache-dir
 
 CMD ["/bin/bash"]

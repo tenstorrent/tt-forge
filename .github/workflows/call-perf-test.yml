@@ -136,10 +136,10 @@ jobs:
         fi
 
         if [ -n "${{ matrix.build.pyreq }}" ]; then
-          pip install ${{ matrix.build.pyreq }}
+          uv pip install ${{ matrix.build.pyreq }}
         fi
         if [ "${{ matrix.build.project }}" == "tt-xla" ]; then
-          pip install torchvision==0.24.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          uv pip install torchvision==0.24.0+cpu --index-url https://download.pytorch.org/whl/cpu
         fi
 
     - name: Install upgraded wheel
@@ -344,9 +344,9 @@ jobs:
         apt-get update -y -qq
         python --version
         apt-get install -y -qq --no-install-recommends libtbb12 libcapstone4
-        pip install ttrt-whl-tracy/ttrt*.whl --upgrade
-        pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
-        pip install pandas==2.3.3
+        uv pip install ttrt-whl-tracy/ttrt*.whl --upgrade
+        uv pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+        uv pip install pandas==2.3.3
 
     - name: Run Device Perf
       if: ${{ !matrix.build.skip-device-perf && !inputs.skip-device-perf && matrix.build.runs-on != 'p150' && matrix.build.runs-on != 'llmbox' }}

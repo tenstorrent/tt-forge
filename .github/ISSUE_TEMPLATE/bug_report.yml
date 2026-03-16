@@ -38,7 +38,7 @@ body:
       description: |
         Details about your issue.
       placeholder: |
-        - OS version (e.g. Ubuntu 22.04)
+        - OS version (e.g. Ubuntu 24.04)
         - Python version
         - Framework version (e.g. JAX version)
         - Version of software (e.g. release wheel or commit ID if you built from source)

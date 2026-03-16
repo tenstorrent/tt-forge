@@ -138,7 +138,7 @@ runs:
         mkdir -p $readme_path
         python3 -m venv venv
         source venv/bin/activate
-        pip install -r requirements.txt
+        uv pip install -r requirements.txt
         python main.py
         # Clean up XML files
         find ${{ github.workspace }}/release/artifacts -type f -iname "*.xml" -delete
@@ -224,7 +224,7 @@ runs:
         pip_install_instructions=""
         pip_wheel_names="${{ inputs.pip_wheel_names }}"
         for wheel_name in $pip_wheel_names; do
-            pip_install_instructions+="pip install $wheel_name==${{ inputs.new_version_tag }} --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
+            pip_install_instructions+="uv pip install $wheel_name==${{ inputs.new_version_tag }} --extra-index-url https://pypi.eng.aws.tenstorrent.com/<br>"
         done
 
         echo "pip_install_instructions=$pip_install_instructions"
