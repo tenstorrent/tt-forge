@@ -9,7 +9,8 @@ This directory contains example implementations of popular deep learning models 
 The demos are organized by framework and model type:
 
 - **`onnx/`** - Demos that convert PyTorch models to ONNX format
-  - `cnn/` - Computer vision models (ResNet, etc.)
+  - `cnn/` - Computer vision models (AlexNet, DenseNet, EfficientNet, GoogLeNet, MobileNetV1, ResNet)
+  - `nlp/` - Natural language processing models (RoBERTa, SqueezeBERT)
 
 - **`paddlepaddle/`** - Demos using PaddlePaddle models
   - `cnn/` - Computer vision models (ResNet, AlexNet, DenseNet, GoogLeNet, MobileNetV2)
@@ -19,9 +20,23 @@ The demos are organized by framework and model type:
 
 ### ONNX Demos (PyTorch → ONNX)
 
+#### CNN Models
+
 | Model                    | Model Type | Description                                                             | Demo Code                                              |
 |--------------------------|------------|-------------------------------------------------------------------------|--------------------------------------------------------|
+| AlexNet                  | CNN        | Classic deep CNN architecture for image classification (converted to ONNX) | [`onnx/cnn/alexnet_demo.py`](onnx/cnn/alexnet_demo.py) |
+| DenseNet                 | CNN        | Densely connected convolutional network for image classification (converted to ONNX) | [`onnx/cnn/densenet_demo.py`](onnx/cnn/densenet_demo.py) |
+| EfficientNet             | CNN        | Scalable and efficient CNN for image classification (converted to ONNX) | [`onnx/cnn/efficientnet_demo.py`](onnx/cnn/efficientnet_demo.py) |
+| GoogLeNet                | CNN        | Inception architecture for image classification (converted to ONNX)     | [`onnx/cnn/googlenet_demo.py`](onnx/cnn/googlenet_demo.py) |
+| MobileNetV1              | CNN        | Lightweight CNN optimized for mobile vision applications (converted to ONNX) | [`onnx/cnn/mobilenetv1_demo.py`](onnx/cnn/mobilenetv1_demo.py) |
 | ResNet                   | CNN        | Deep residual network for image classification (converted to ONNX)      | [`onnx/cnn/resnet_demo.py`](onnx/cnn/resnet_demo.py)   |
+
+#### NLP Models
+
+| Model                    | Model Type | Description                                                             | Demo Code                                              |
+|--------------------------|------------|-------------------------------------------------------------------------|--------------------------------------------------------|
+| RoBERTa                  | NLP        | Robustly optimized BERT for sequence classification                     | [`onnx/nlp/roberta_demo.py`](onnx/nlp/roberta_demo.py) |
+| SqueezeBERT              | NLP        | Efficient BERT variant using grouped convolutions for sequence classification | [`onnx/nlp/squeezebert_demo.py`](onnx/nlp/squeezebert_demo.py) |
 
 ### PaddlePaddle Demos
 
