@@ -7,7 +7,7 @@ import torch
 import numpy as np
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
-from tt_torch.backend.backend import xla_backend
+import tt_torch
 from third_party.tt_forge_models.bge_m3.encode.pytorch import (
     ModelLoader as BGE3EncodeLoader,
     ModelVariant as BGE3EncodeVariant,
@@ -29,7 +29,7 @@ def run_bge_m3_encode_compiled_fn_demo_case(variant):
     loader_model = BGE3Loader(variant=BGE3Variant.BASE)
     torch_model = loader_model.load_model()
 
-    compiled_torch_model = torch.compile(torch_model, backend=xla_backend)
+    compiled_torch_model = torch.compile(torch_model, backend="tt")
 
     device = xm.xla_device()
     compiled_torch_model = compiled_torch_model.to(device)

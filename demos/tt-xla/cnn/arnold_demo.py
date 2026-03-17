@@ -7,7 +7,7 @@ import torch
 from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
-from tt_torch.backend.backend import xla_backend
+import tt_torch
 
 from third_party.tt_forge_models.arnold.pytorch import ModelLoader, ModelVariant
 
@@ -23,7 +23,7 @@ def run_arnold_demo_case(variant):
     screens, variables = loader.load_inputs(dtype_override=torch.bfloat16)
 
     # Compile the model using XLA
-    compiled_model = torch.compile(model, backend=xla_backend)
+    compiled_model = torch.compile(model, backend="tt")
 
     # Move model and inputs to the TT device
     device = xm.xla_device()
