@@ -45,7 +45,7 @@ pip install torchvision
 import torch
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
-from tt_torch.backend.backend import xla_backend
+import tt_torch
 from torchvision.models import resnet50, ResNet50_Weights
 
 # Set device to Tenstorrent
@@ -54,7 +54,7 @@ device = xm.xla_device()
 
 # Load ResNet-50
 model = resnet50(weights=ResNet50_Weights.DEFAULT).to(torch.bfloat16).eval()
-compiled_model = torch.compile(model, backend=xla_backend)
+compiled_model = torch.compile(model, backend="tt")
 compiled_model = compiled_model.to(device)
 
 # Run inference on Tenstorrent

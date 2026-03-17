@@ -8,7 +8,7 @@ import torch
 from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
-from tt_torch.backend.backend import xla_backend
+import tt_torch
 import torch
 import torch.nn as nn
 import torch_xla
@@ -31,7 +31,7 @@ def run_resnet_demo_case(variant):
     inputs = loader.load_inputs(dtype_override=torch.bfloat16)
 
     # Compile the model using XLA
-    compiled_model = torch.compile(model, backend=xla_backend)
+    compiled_model = torch.compile(model, backend="tt")
 
     # Move model and inputs to the TT device
     device = xm.xla_device()

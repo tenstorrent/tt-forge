@@ -8,7 +8,7 @@ import torch
 from torch.utils._pytree import tree_map
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
-from tt_torch.backend.backend import xla_backend
+import tt_torch
 
 from transformers import AutoImageProcessor, ResNetForImageClassification
 from datasets import load_dataset
@@ -29,7 +29,7 @@ def run_resnet_demo_case():
     inputs = processor(image, return_tensors="pt")
 
     # Compile the model using XLA
-    compiled_model = torch.compile(model, backend=xla_backend)
+    compiled_model = torch.compile(model, backend="tt")
 
     # Move model and inputs to the TT device
     device = xm.xla_device()
