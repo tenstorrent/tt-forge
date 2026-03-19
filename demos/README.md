@@ -14,7 +14,7 @@ This directory contains demonstration examples for three different frontends ava
 
 Each frontend is designed to support different ML frameworks and workflows. Choose the frontend that best matches your needs:
 - Use TT-Forge-ONNX for quick deployment of pre-optimized common models for PaddlePaddle and ONNX. (Only single chip configurations are available. Also please note TT-Forge-ONNX can also be used for PyTorch, however it is recommended that you use TT-XLA for the best experience.)
-- Use TT-XLA for JAX model deployment as well as PyTorch (single and multi-chip configurations are available). 
+- Use TT-XLA for JAX model deployment as well as PyTorch (single and multi-chip configurations are available).
 
 
 For more information, visit our [GitHub repositories](https://github.com/tenstorrent) or check the README in each frontend's directory.
