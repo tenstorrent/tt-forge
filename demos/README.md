@@ -12,14 +12,9 @@ This directory contains demonstration examples for three different frontends ava
   - A TVM based graph compiler designed to optimize and transform computational graphs for deep learning models. Supports ingestion of ONNX, TensorFlow, PaddlePaddle and similar ML frameworks via TVM ([TT-TVM](https://github.com/tenstorrent/tt-tvm)). It also supports ingestion of PyTorch, however it is recommended that you use TT-XLA. TT-Forge-ONNX does not support multi-chip configurations; it is for single-chip projects only.
   - See the [TT-Forge-ONNX docs pages](https://docs.tenstorrent.com/tt-forge-onnx/getting-started.html) for an overview and getting started guide.
 
-- [TT-Torch](https://github.com/tenstorrent/tt-torch) - (deprecated)
-  - A MLIR-native, open-source, PyTorch 2.X and torch-mlir based front-end. It provides stableHLO (SHLO) graphs to TT-MLIR. Supports ingestion of PyTorch models via PT2.X compile and ONNX models via torch-mlir (ONNX->SHLO)
-  - See the [TT-Torch docs pages](https://docs.tenstorrent.com/tt-torch) for an overview and getting started guide.
-
 Each frontend is designed to support different ML frameworks and workflows. Choose the frontend that best matches your needs:
 - Use TT-Forge-ONNX for quick deployment of pre-optimized common models for PaddlePaddle and ONNX. (Only single chip configurations are available. Also please note TT-Forge-ONNX can also be used for PyTorch, however it is recommended that you use TT-XLA for the best experience.)
 - Use TT-XLA for JAX model deployment as well as PyTorch (single and multi-chip configurations are available).
-- Use TT-Torch for PyTorch model deployment (deprecated, use TT-XLA).
 
 
 For more information, visit our [GitHub repositories](https://github.com/tenstorrent) or check the README in each frontend's directory.
