@@ -405,14 +405,9 @@ with torch.no_grad():
     outputs = compiled_model(input_ids)
 ```
 
-### 6.4 Supported Hardware Configurations
+### 6.4 Supported Hardware
 
-| Card / System | Chips | Typical Mesh Shape | Use Case |
-| :---- | :---- | :---- | :---- |
-| N150 | 1 | (1, 1\) | Single-chip dev/test |
-| N300 | 2 | (1, 2\) | Tensor parallelism for medium models |
-| T3000 | 8 | (1, 8\) | Large model TP, or (2, 4\) hybrid |
-| Galaxy | 32 | (8, 4\) | Large-scale TP \+ DP |
+For the current list of supported cards, systems, and chip configurations, see [tenstorrent.com/cards](https://tenstorrent.com/cards/) and the [hardware docs](https://docs.tenstorrent.com).
 
 ---
 
@@ -426,9 +421,14 @@ This is the step-by-step process for bringing up a new HuggingFace model. It's d
 # Clone tt-forge and look for existing demos/tests
 git clone https://github.com/tenstorrent/tt-forge.git
 grep -r "YourModelName" tt-forge/demos/ tt-forge/benchmark/
-```
 
-Also check [tt-forge-models](https://github.com/tenstorrent/tt-forge-models) for community tests.
+# Clone tt-forge-models and search the community test suite
+git clone https://github.com/tenstorrent/tt-forge-models.git
+# Model directories use snake_case (e.g., llama/, gpt2/, qwen_2_5/)
+ls tt-forge-models/ | grep -i "yourmodelname"
+# Also search inside loader files for the HuggingFace model ID
+grep -r "your-org/your-model" tt-forge-models/
+```
 
 ### Step 2: Try the naive path first
 
