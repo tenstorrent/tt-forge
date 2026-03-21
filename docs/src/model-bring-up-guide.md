@@ -53,6 +53,7 @@ Your Model (PyTorch / JAX / ONNX)
 | :---- | :---- |
 | [tt-forge](https://github.com/tenstorrent/tt-forge) | Central hub — demos, benchmarks, releases |
 | [tt-xla](https://github.com/tenstorrent/tt-xla) | PJRT frontend for PyTorch and JAX |
+| [tt-forge-onnx](https://github.com/tenstorrent/tt-forge-onnx) | TVM-based frontend for ONNX, TensorFlow, PaddlePaddle |
 | [tt-mlir](https://github.com/tenstorrent/tt-mlir) | MLIR compiler (TTIR, TTNN, TTKernel dialects) |
 | [tt-metal](https://github.com/tenstorrent/tt-metal) | Low-level runtime and kernel library |
 | [tt-forge-models](https://github.com/tenstorrent/tt-forge-models) | Community model test suite |
