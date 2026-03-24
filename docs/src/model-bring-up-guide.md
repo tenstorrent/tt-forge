@@ -4,6 +4,23 @@
 
 **Goal:** Walk you from zero to a working model on device, explain the concepts that are unique to this stack, and give you a playbook for debugging the common issues.
 
+> **Just want to port a HuggingFace model?** Skip to [§7: Porting a HuggingFace Model](#7-playbook-porting-a-huggingface-model).
+
+---
+
+## Table of Contents
+
+1. [How the Stack Fits Together](#1-how-the-stack-fits-together)
+2. [Quick Start: Your First Model on Device](#2-quick-start-your-first-model-on-device)
+3. [Concepts You Need to Know](#3-concepts-you-need-to-know)
+4. [How Ops Get Lowered: Fusing and Composite Ops](#4-how-ops-get-lowered-fusing-and-composite-ops)
+5. [Performance Optimization](#5-performance-optimization)
+6. [Multi-Chip: Tensor Parallelism with SPMD](#6-multi-chip-tensor-parallelism-with-spmd)
+7. [**Playbook: Porting a HuggingFace Model**](#7-playbook-porting-a-huggingface-model)
+8. [Debugging Toolkit](#8-debugging-toolkit)
+9. [Reference: Compiler Options](#9-reference-compiler-options)
+10. [Notes for LLM Agents Porting Models](#10-notes-for-llm-agents-porting-models)
+
 ---
 
 ## 1\. How the Stack Fits Together
@@ -339,7 +356,7 @@ mesh = xs.Mesh(
 
 ### 6.2 Sharding Model Weights (Tensor Parallelism)
 
-The key idea: shard weight matrices along one dimension so each device holds a slice, then the compiler inserts collectives to produce the correct result.
+The key idea: shard weight matrices along one dimension so each device holds a slice, then the compiler inserts collectives to produce the correct result. For a complete working example, see [qwen3_tp.py](https://github.com/tenstorrent/tt-xla/blob/main/examples/pytorch/qwen3_tp.py).
 
 ```py
 import torch_xla.distributed.spmd as xs
@@ -527,11 +544,12 @@ def test_your_model(model_id, request):
 
 Apply the techniques from §5 in order:
 
-1. Cast to bfloat16  
-2. Set `optimization_level: 2`  
-3. Enable runtime trace  
-4. Tune batch size  
-5. (Optional) Enable bfloat8\_b and verify accuracy
+1. Cast to bfloat16
+2. Set `optimization_level: 1`
+3. Enable runtime trace
+4. Tune batch size
+5. Try `optimization_level: 2` for further gains
+6. (Optional) Enable bfloat8\_b and verify accuracy
 
 ---
 
