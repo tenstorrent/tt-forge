@@ -77,8 +77,8 @@ Your Model (PyTorch / JAX / ONNX)
 
 **Which frontend should I use?**
 
-- **PyTorch or JAX** → TT-XLA (supports single-chip and multi-chip)  
-- **ONNX, TensorFlow, PaddlePaddle** → TT-Forge-ONNX (single-chip only)  
+- **PyTorch or JAX** → TT-XLA (supports single-chip and multi-chip)
+- **ONNX, TensorFlow, PaddlePaddle** → TT-Forge-ONNX (single-chip only)
 - TT-Torch is deprecated; use TT-XLA for all new PyTorch work.
 
 ---
@@ -157,8 +157,8 @@ print(result.devices())  # → {TTDevice(id=0)}
 
 When you call `torch.compile(model, backend="tt")` or `jax.jit`, the graph isn't compiled immediately. Compilation happens on the first forward pass and is cached. The first two iterations are always slow:
 
-1. **Iteration 1:** Full compilation \+ weight transfer \+ kernel compilation  
-2. **Iteration 2:** Runtime trace capture (see §5.3)  
+1. **Iteration 1:** Full compilation \+ weight transfer \+ kernel compilation
+2. **Iteration 2:** Runtime trace capture (see §5.3)
 3. **Iteration 3+:** Fast steady-state
 
 **Always warm up with at least 3 dummy iterations before measuring performance.**
@@ -167,8 +167,8 @@ When you call `torch.compile(model, backend="tt")` or `jax.jit`, the graph isn't
 
 Tenstorrent hardware operates on 32×32 tiles natively. The compiler handles padding automatically, but you'll get better performance when tensor dimensions are multiples of 32\. This matters most for:
 
-- Hidden dimensions (e.g., `hidden_size`, `intermediate_size`)  
-- Sequence lengths  
+- Hidden dimensions (e.g., `hidden_size`, `intermediate_size`)
+- Sequence lengths
 - Batch sizes (to a lesser extent)
 
 If you see unexpected padding overhead, check your tensor shapes.
@@ -177,7 +177,7 @@ If you see unexpected padding overhead, check your tensor shapes.
 
 Each Tensix core has **1.5 MB of local SRAM** — there is no shared cache. The compiler controls data placement:
 
-- **Interleaved (DRAM):** Default. Tensors distributed across all DRAM banks. Safe but slower.  
+- **Interleaved (DRAM):** Default. Tensors distributed across all DRAM banks. Safe but slower.
 - **Sharded (L1/SRAM):** Tensors distributed across Tensix cores' local SRAM. Fast but constrained by 1.5 MB per core.
 
 The `optimization_level` compile option (§5.1) controls how aggressively the compiler moves data to SRAM.
@@ -246,8 +246,8 @@ TTNN-IR → Hardware
 
 These ops are recognized and mapped to optimized TTNN implementations:
 
-- `tenstorrent.gelu` / `tenstorrent.gelu_tanh`  
-- `tenstorrent.rms_norm`  
+- `tenstorrent.gelu` / `tenstorrent.gelu_tanh`
+- `tenstorrent.rms_norm`
 - `tenstorrent.layer_norm`
 
 If your model uses a custom implementation of these (e.g., HuggingFace's `LlamaRMSNorm`), the **fusion pass** will detect it and rewrite it to the standard `torch.nn.functional` version, which then gets wrapped as a composite. This means most HuggingFace models work without modification.
@@ -258,16 +258,16 @@ SDPA is handled through the composite/fusion system. When `torch.nn.functional.s
 
 **Best practices for attention:**
 
-- Use `torch.nn.functional.scaled_dot_product_attention` rather than manual Q·K^T/√d\_k softmax V implementations  
-- The compiler will handle KV cache management for autoregressive generation  
+- Use `torch.nn.functional.scaled_dot_product_attention` rather than manual Q·K^T/√d\_k softmax V implementations
+- The compiler will handle KV cache management for autoregressive generation
 - For multi-head attention, standard HuggingFace implementations (GQA, MQA, MHA) are supported
 
 ### 4.4 What Happens When an Op Isn't Supported
 
 If an op doesn't have a TTNN lowering, you'll see a compilation error. Common strategies:
 
-1. **Check if a decomposition exists.** Many complex ops decompose into supported primitives automatically.  
-2. **Rewrite to use a supported equivalent.** For example, replace a custom activation with `torch.nn.functional.gelu`.  
+1. **Check if a decomposition exists.** Many complex ops decompose into supported primitives automatically.
+2. **Rewrite to use a supported equivalent.** For example, replace a custom activation with `torch.nn.functional.gelu`.
 3. **File an issue** on [tt-forge](https://github.com/tenstorrent/tt-forge/issues) or [tt-mlir](https://github.com/tenstorrent/tt-mlir/issues) with the op name and a minimal repro.
 
 ---
@@ -586,8 +586,8 @@ Use `tt-explorer` to inspect the MLIR graph after compilation:
 
 ### Getting Help
 
-- **File issues:** [tt-forge issues](https://github.com/tenstorrent/tt-forge/issues)  
-- **Discord:** [Tenstorrent Discord](https://discord.gg/tenstorrent)  
+- **File issues:** [tt-forge issues](https://github.com/tenstorrent/tt-forge/issues)
+- **Discord:** [Tenstorrent Discord](https://discord.gg/tenstorrent)
 - **Docs:** [docs.tenstorrent.com](https://docs.tenstorrent.com)
 
 ---
@@ -611,18 +611,18 @@ All options are set via `torch_xla.set_custom_compile_options({...})` or `torch.
 
 If you are an LLM (e.g., Claude Code) working on model bring-up, here are the key things to know:
 
-1. **Start with `torch.compile(model, backend="tt")`** — this is the path of least resistance. Don't manually lower ops.  
-     
-2. **Always use bfloat16.** HuggingFace models default to float32; cast them before compilation.  
-     
-3. **The fusion system handles most HuggingFace patterns.** Custom RMSNorm, GeLU, and LayerNorm implementations are automatically fused to their `torch.nn.functional` equivalents.  
-     
-4. **If you hit an unsupported op**, check whether disabling specific model features (e.g., flash attention variants, rotary embedding implementations) resolves it. Often a simpler code path exists.  
-     
-5. **Test with `ModelGroup.VULCAN`** in tt-forge-models — this is the enum for community/bring-up models.  
-     
-6. **Pre-commit is mandatory.** Always run `pre-commit run --all-files` before committing.  
-     
+1. **Start with `torch.compile(model, backend="tt")`** — this is the path of least resistance. Don't manually lower ops.
+
+2. **Always use bfloat16.** HuggingFace models default to float32; cast them before compilation.
+
+3. **The fusion system handles most HuggingFace patterns.** Custom RMSNorm, GeLU, and LayerNorm implementations are automatically fused to their `torch.nn.functional` equivalents.
+
+4. **If you hit an unsupported op**, check whether disabling specific model features (e.g., flash attention variants, rotary embedding implementations) resolves it. Often a simpler code path exists.
+
+5. **Test with `ModelGroup.VULCAN`** in tt-forge-models — this is the enum for community/bring-up models.
+
+6. **Pre-commit is mandatory.** Always run `pre-commit run --all-files` before committing.
+
 7. **SPDX headers are required** on all source files:
 
 ```py
@@ -631,9 +631,8 @@ If you are an LLM (e.g., Claude Code) working on model bring-up, here are the ke
 # SPDX-License-Identifier: Apache-2.0
 ```
 
-8. **Common model families known to work:** Llama, Phi, Qwen, Falcon, ResNet, ViT, MobileNet, EfficientNet, GPT-2, OPT. Check existing demos in `tt-forge/demos/tt-xla/` and benchmarks in `tt-forge/benchmark/tt-xla/` for reference implementations.  
-     
-9. **For multi-chip models**, use the SPMD sharding approach (§6). The pattern is always: column-parallel for QKV/gate/up projections, row-parallel for output/down projections.  
-     
-10. **Atomic commits.** If iterating on fixes, make each fix a separate commit with a descriptive message.
+8. **Common model families known to work:** Llama, Phi, Qwen, Falcon, ResNet, ViT, MobileNet, EfficientNet, GPT-2, OPT. Check existing demos in `tt-forge/demos/tt-xla/` and benchmarks in `tt-forge/benchmark/tt-xla/` for reference implementations.
 
+9. **For multi-chip models**, use the SPMD sharding approach (§6). The pattern is always: column-parallel for QKV/gate/up projections, row-parallel for output/down projections.
+
+10. **Atomic commits.** If iterating on fixes, make each fix a separate commit with a descriptive message.
