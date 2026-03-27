@@ -72,8 +72,8 @@ jobs:
                     you tried, and end with a brief feedback summary.
 
                 Concrete tasks for this run:
-                1. From the github tenstorrent/tt-forge page follow readme and linked 
-                   documentation to understand how to install tt-forge and run demos.                    
+                1. From the github tenstorrent/tt-forge page follow readme and linked
+                   documentation to understand how to install tt-forge and run demos.
                 2. Follow the instructions to install tt-forge
                 3. Run the described demos/tests
                 4. For each failure:
