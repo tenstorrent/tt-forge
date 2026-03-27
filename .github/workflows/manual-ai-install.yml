@@ -48,6 +48,80 @@ jobs:
             python3 python3-pip python3-venv \
             build-essential pkg-config cmake > /dev/null 2>&1 || { echo "apt-get install failed"; exit 1; }
 
+      - name: Prepare agent prompt
+        run: |
+          cat <<'EOF' > /tmp/claude-prompt.txt
+          You are an autonomous assistant running inside a GitHub Actions job
+          on a Tenstorrent machine. /dev/tenstorrent is available inside this
+          Ubuntu 24.04 container.
+
+          Your goal is to evaluate how good our installation and demo
+          instructions are for tt-forge.
+
+          The tt-forge repository is already checked out in the current working
+          directory. Start by reading README.md and any linked docs to understand
+          how to install tt-forge and run demos. The demo scripts are also located
+          in this repository.
+
+          High-level instructions (from the maintainer):
+          - You should try installing and testing tt-forge.
+          - Read the README.md and docs in the current directory for install
+            and demo instructions.
+          - You are allowed to make some common-sense attempts to fix problems,
+            but not indefinitely. This is an experiment to evaluate how good
+            our instructions are, not to brute-force every issue.
+          - You should report whether you managed to follow the instructions,
+            whether you succeeded, what errors you encountered, which fixes
+            you tried, and end with a brief feedback summary.
+
+          Concrete tasks for this run:
+          1. Read README.md and linked docs in the repo to understand how to
+             install tt-forge and run demos.
+          2. Follow the instructions to install tt-forge.
+          3. Run the demo/test scripts found in the repo.
+          4. For each failure:
+             - Capture the exact command and the full error message.
+             - Make at most 2-3 reasonable, safe attempts to fix it
+               (e.g., missing packages, small environment issues).
+             - If it still fails, stop and treat it as a documented failure,
+               not something to keep retrying indefinitely.
+          5. Do NOT modify repository code, open PRs, or push anywhere.
+          6. At the end of your work, produce two files:
+
+             a) A brief summary at /github/workspace/tt-forge-ai-summary.md with:
+                - Overall result (success / partial / fail) as a one-liner
+                - Whether demos ran on hardware (yes/no)
+                - Top 3 issues encountered (one line each)
+                - One-sentence feedback on the install instructions
+
+             b) A full report at /github/workspace/tt-forge-ai-report.md with:
+                - Summary (success/fail, and whether demos ran on hardware)
+                - Steps you followed (high-level, not every tiny shell command)
+                - Failures and attempted fixes (bulleted list)
+                - Final status (what works, what is still broken)
+                - Brief feedback on clarity/completeness of the tt-forge
+                  install and demo instructions (what was easy, what was confusing,
+                  where you needed to guess).
+
+          7. Keep your shell output readable. Prefer commands that exit on
+             error and avoid interactive prompts.
+
+          Stop once you have either:
+          - Successfully installed tt-forge and run at least one demo/test, or
+          - Hit blocking issues you cannot reasonably fix with a few attempts.
+          EOF
+
+          echo "=== Agent prompt ==="
+          cat /tmp/claude-prompt.txt
+          echo "===================="
+
+          # Export for next step
+          {
+            echo "CLAUDE_PROMPT<<EOF"
+            cat /tmp/claude-prompt.txt
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
       - name: Run Claude Code agent to install and test tt-forge
         id: claude
         timeout-minutes: 30
@@ -55,7 +129,6 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          display_report: true
           settings: |
             {
               "permissions": {
@@ -63,65 +136,22 @@ jobs:
                 "deny": []
               }
             }
+          prompt: ${{ env.CLAUDE_PROMPT }}
 
-          prompt: |
-              You are an autonomous assistant running inside a GitHub Actions job
-              on a Tenstorrent machine. /dev/tenstorrent is available inside this
-              Ubuntu 24.04 container.
-
-              Your goal is to evaluate how good our installation and demo
-              instructions are for tt-forge.
-
-              The tt-forge repository is already checked out in the current working
-              directory. Start by reading README.md and any linked docs to understand
-              how to install tt-forge and run demos. The demo scripts are also located
-              in this repository
-
-              High-level instructions (from the maintainer):
-              - You should try installing and testing tt-forge.
-              - Read the README.md and docs in the current directory for install
-                  and demo instructions
-              - You are allowed to make some common-sense attempts to fix problems,
-                  but not indefinitely. This is an experiment to evaluate how good
-                  our instructions are, not to brute-force every issue.
-              - You should report whether you managed to follow the instructions,
-                  whether you succeeded, what errors you encountered, which fixes
-                  you tried, and end with a brief feedback summary.
-
-              Concrete tasks for this run:
-              1. Read README.md and linked docs in the repo to understand how to
-                  install tt-forge and run demos.
-              2. Follow the instructions to install tt-forge.
-              3. Run the demo/test scripts found in the repo
-              4. For each failure:
-                  - Capture the exact command and the full error message.
-                  - Make at most 2–3 reasonable, safe attempts to fix it
-                  (e.g., missing packages, small environment issues).
-                  - If it still fails, stop and treat it as a documented failure,
-                  not something to keep retrying indefinitely.
-              5. Do NOT modify repository code, open PRs, or push anywhere.
-              6. At the end of your work, write a concise Markdown report to
-                  /github/workspace/tt-forge-ai-report.md with the following sections:
-                  - Summary (success/fail, and whether demos ran on hardware)
-                  - Steps you followed (high-level, not every tiny shell command)
-                  - Failures and attempted fixes (bulleted list)
-                  - Final status (what works, what is still broken)
-                  - Brief feedback on clarity/completeness of the tt-forge
-                  install and demo instructions (what was easy, what was confusing,
-                  where you needed to guess).
-              7. Keep your shell output readable. Prefer commands that exit on
-                  error and avoid interactive prompts.
-
-              Stop once you have either:
-              - Successfully installed tt-forge and run at least one demo/test, or
-              - Hit blocking issues you cannot reasonably fix with a few attempts.
-
-      - name: Attach agent report to job summary
+      - name: Attach summary to job summary
         if: always()
         run: |
           echo '## TT-Forge AI install/test report' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f /github/workspace/tt-forge-ai-report.md ]; then
-            cat /github/workspace/tt-forge-ai-report.md >> "$GITHUB_STEP_SUMMARY"
+          if [ -f /github/workspace/tt-forge-ai-summary.md ]; then
+            cat /github/workspace/tt-forge-ai-summary.md >> "$GITHUB_STEP_SUMMARY"
           else
-            echo 'Agent did not produce tt-forge-ai-report.md.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Agent did not produce a summary.' >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Upload full report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tt-forge-ai-report
+          path: /github/workspace/tt-forge-ai-report.md
+          if-no-files-found: warn
