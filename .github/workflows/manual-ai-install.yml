@@ -7,7 +7,7 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
-  actions: read
+  actions: write
   id-token: write
 
 jobs:
@@ -50,26 +50,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
-          # This setting allows Claude to read CI results and trigger workflows
-          additional_permissions: |
-            actions: write
-
-          # Allow Claude to use gh cli for issues, PRs, and CI
-          allowed_tools: |
-            Bash(gh issue create:*)
-            Bash(gh issue view:*)
-            Bash(gh issue list:*)
-            Bash(gh search:*)
-            Bash(gh pr create:*)
-            Bash(gh pr comment:*)
-            Bash(gh pr diff:*)
-            Bash(gh pr view:*)
-            Bash(gh pr list:*)
-            Bash(gh run list:*)
-            Bash(gh run view:*)
-            Bash(gh workflow list:*)
-            Bash(gh workflow view:*)
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
           prompt: |
               You are an autonomous assistant running inside a GitHub Actions job
