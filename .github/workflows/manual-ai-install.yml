@@ -36,6 +36,9 @@ jobs:
             exit 1
           fi
 
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Install base dependencies for agent
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -47,10 +50,13 @@ jobs:
 
       - name: Run Claude Code agent to install and test tt-forge
         id: claude
+        timeout-minutes: 30
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
+          claude_args: --dangerously-skip-permissions
 
           prompt: |
               You are an autonomous assistant running inside a GitHub Actions job
@@ -60,10 +66,15 @@ jobs:
               Your goal is to evaluate how good our installation and demo
               instructions are for tt-forge.
 
+              The tt-forge repository is already checked out in the current working
+              directory. Start by reading README.md and any linked docs to understand
+              how to install tt-forge and run demos. The demo scripts are also located
+              in this repository
+
               High-level instructions (from the maintainer):
               - You should try installing and testing tt-forge.
-              - Look at the tenstorrent/tt-forge GitHub repository for information
-                  on how to install and run demos.
+              - Read the README.md and docs in the current directory for install
+                  and demo instructions
               - You are allowed to make some common-sense attempts to fix problems,
                   but not indefinitely. This is an experiment to evaluate how good
                   our instructions are, not to brute-force every issue.
@@ -72,10 +83,10 @@ jobs:
                   you tried, and end with a brief feedback summary.
 
               Concrete tasks for this run:
-              1. From the github tenstorrent/tt-forge page follow readme and linked
-                  documentation to understand how to install tt-forge and run demos.
-              2. Follow the instructions to install tt-forge
-              3. Run the described demos/tests
+              1. Read README.md and linked docs in the repo to understand how to
+                  install tt-forge and run demos.
+              2. Follow the instructions to install tt-forge.
+              3. Run the demo/test scripts found in the repo
               4. For each failure:
                   - Capture the exact command and the full error message.
                   - Make at most 2–3 reasonable, safe attempts to fix it
@@ -84,7 +95,7 @@ jobs:
                   not something to keep retrying indefinitely.
               5. Do NOT modify repository code, open PRs, or push anywhere.
               6. At the end of your work, write a concise Markdown report to
-                  ./tt-forge-ai-report.md with the following sections:
+                  $GITHUB_WORKSPACE/tt-forge-ai-report.md with the following sections:
                   - Summary (success/fail, and whether demos ran on hardware)
                   - Steps you followed (high-level, not every tiny shell command)
                   - Failures and attempted fixes (bulleted list)
@@ -102,9 +113,13 @@ jobs:
       - name: Attach agent report to job summary
         if: always()
         run: |
+          echo "Working directory: $(pwd)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Files in workspace:" >> "$GITHUB_STEP_SUMMARY"
+          find "$GITHUB_WORKSPACE" -name "*.md" -maxdepth 3 2>/dev/null | head -20 >> "$GITHUB_STEP_SUMMARY" || true
           echo '## TT-Forge AI install/test report' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f tt-forge-ai-report.md ]; then
-            cat tt-forge-ai-report.md >> "$GITHUB_STEP_SUMMARY"
+          REPORT=$(find "$GITHUB_WORKSPACE" -name "tt-forge-ai-report.md" -maxdepth 3 2>/dev/null | head -1)
+          if [ -n "$REPORT" ]; then
+            cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
           else
             echo '' >> "$GITHUB_STEP_SUMMARY"
             echo 'Agent did not produce tt-forge-ai-report.md.' >> "$GITHUB_STEP_SUMMARY"
