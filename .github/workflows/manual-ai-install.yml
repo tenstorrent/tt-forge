@@ -1,7 +1,6 @@
 name: AI install test
 
 on:
-  push:
   workflow_dispatch: {}
 
 permissions:
@@ -109,3 +108,4 @@ jobs:
           else
             echo '' >> "$GITHUB_STEP_SUMMARY"
             echo 'Agent did not produce tt-forge-ai-report.md.' >> "$GITHUB_STEP_SUMMARY"
+          fi
