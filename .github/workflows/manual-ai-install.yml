@@ -56,7 +56,13 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           show_full_output: true
-          claude_args: --dangerously-skip-permissions
+          settings: |
+            {
+              "permissions": {
+                "allow": ["Bash(*)", "Read(*)", "Write(*)", "Edit(*)", "Glob(*)", "Grep(*)"],
+                "deny": []
+              }
+            }
 
           prompt: |
               You are an autonomous assistant running inside a GitHub Actions job
