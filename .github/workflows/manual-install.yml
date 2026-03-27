@@ -40,13 +40,11 @@ jobs:
       - name: Install base dependencies for agent
         run: |
           export DEBIAN_FRONTEND=noninteractive
-          apt-get update -qq
+          apt-get update -qq > /dev/null 2>&1 || { echo "apt-get update failed"; exit 1; }
           apt-get install -y -qq \
-            git curl ca-certificates \
+            git curl ca-certificates unzip \
             python3 python3-pip python3-venv \
-            build-essential pkg-config cmake
-          python3 --version
-          git --version
+            build-essential pkg-config cmake > /dev/null 2>&1 || { echo "apt-get install failed"; exit 1; }
 
       - name: Run Claude Code agent to install and test tt-forge
         id: claude
