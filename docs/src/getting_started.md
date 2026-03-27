@@ -13,6 +13,9 @@ This document walks you through how to set up to run demo models using TT-Forge.
 > build instructions for the repo you want to work with.
 
 ## Setting up a Front End to Run a Demo
+
+**Requirements:** Ubuntu 24.04, Python 3.12.
+
 This section provides instructions for how to set up your frontend so you can run models from the TT-Forge repo.
 
 Before running one of the demos in TT-Forge, you must:
