@@ -1,4 +1,8 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: (c) 2026 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Smoke test: verify remote setup is working
 # This tests that REMOTE_SHELL can copy files and run Python with ttnn.
 #

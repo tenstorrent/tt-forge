@@ -1,4 +1,8 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: (c) 2026 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Copy a single file to the remote machine
 # Usage: ./copy-file.sh <local_path> [remote_dest_path]
 #
