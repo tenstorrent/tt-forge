@@ -14,8 +14,8 @@ jobs:
 
   tt-forge-ai-agent:
 
-    # Runner must be a self-hosted machine with Tenstorrent hardware and /dev/tenstorrent
-    runs-on: n300
+    # !!! Use Civ2 runners for Claude action as they have better isolation  !!!
+    runs-on: tt-ubuntu-2204-n300-stable
 
     container:
       image: ubuntu:24.04
@@ -140,3 +140,14 @@ jobs:
           else
             echo 'Agent did not produce a summary.' >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Cleanup after claude action
+        if: always()
+        shell: bash
+        run: |
+          # The claude-code-action may leave behind files owned by root or with restrictive permissions,
+          # which can cause issues for subsequent runs. We need to ensure everything is cleaned up properly.
+          # Set premissions to all files under /home/ubuntu/actions-runner/_work/_actions/anthropics
+          # to ensure runner we can delete them (ubuntu user)
+          echo "Cleaning up after Claude agent..."
+          chmod -R 777 /home/ubuntu/actions-runner/_work/_actions/anthropics
