@@ -41,7 +41,7 @@ Get ResNet-50 running on Tenstorrent hardware in minutes:
 python3.12 -m venv tt-forge-env
 source tt-forge-env/bin/activate
 pip install tt-forge --extra-index-url https://pypi.eng.aws.tenstorrent.com/
-tt-forge-install   # sets up system dependencies (hugepages, firmware, etc.)
+tt-forge-install
 pip install torchvision
 ```
 
