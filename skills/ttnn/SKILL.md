@@ -128,4 +128,3 @@ result = ttnn.to_torch(y)
 
 ttnn.close_device(device)
 ```
-

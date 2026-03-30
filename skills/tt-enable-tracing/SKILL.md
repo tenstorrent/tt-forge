@@ -70,4 +70,3 @@ ttnn.end_trace_capture(mesh_device, trace_id, cq_id=0)
 
 ttnn.execute_trace(mesh_device, trace_id, cq_id=0, blocking=True)
 ```
-
