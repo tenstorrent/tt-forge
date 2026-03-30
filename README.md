@@ -37,7 +37,11 @@ Models like GPT-OSS 120B, Llama 3 70B, Stable Diffusion XL, Whisper, and YOLOv12
 Get ResNet-50 running on Tenstorrent hardware in minutes:
 
 ```bash
-pip install pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+# Requires Ubuntu 24.04 and Python 3.12
+python3.12 -m venv tt-forge-env
+source tt-forge-env/bin/activate
+pip install tt-forge --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+tt-forge-install
 pip install torchvision
 ```
 
