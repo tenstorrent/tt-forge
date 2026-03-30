@@ -8,7 +8,9 @@ remote_run() {
     if [ -n "$REMOTE_HOST" ] && [ -n "$REMOTE_CONTAINER" ]; then
         local DOCKER_CMD="docker"
         [ "${DOCKER_SUDO:-0}" = "1" ] && DOCKER_CMD="sudo docker"
-        ssh "$REMOTE_HOST" "$DOCKER_CMD exec -i $REMOTE_CONTAINER bash -c 'source ~/.bashrc 2>/dev/null; $*'"
+        local SSH_PORT_FLAG=""
+        [ -n "$REMOTE_PORT" ] && SSH_PORT_FLAG="-p $REMOTE_PORT"
+        ssh $SSH_PORT_FLAG "$REMOTE_HOST" "$DOCKER_CMD exec -i $REMOTE_CONTAINER bash -c 'source ~/.bashrc 2>/dev/null; $*'"
     else
         $REMOTE_SHELL "$@"
     fi
@@ -23,10 +25,12 @@ remote_copy_file() {
     if [ -n "$REMOTE_HOST" ] && [ -n "$REMOTE_CONTAINER" ]; then
         local DOCKER_CMD="docker"
         [ "${DOCKER_SUDO:-0}" = "1" ] && DOCKER_CMD="sudo docker"
+        local SSH_PORT_FLAG="" SCP_PORT_FLAG=""
+        [ -n "$REMOTE_PORT" ] && SSH_PORT_FLAG="-p $REMOTE_PORT" && SCP_PORT_FLAG="-P $REMOTE_PORT"
 
         local TEMP_REMOTE="/tmp/ttl_copy_$$_$(basename "$LOCAL_PATH")"
-        scp -q "$LOCAL_PATH" "$REMOTE_HOST:$TEMP_REMOTE" && \
-        ssh "$REMOTE_HOST" "$DOCKER_CMD cp '$TEMP_REMOTE' '$REMOTE_CONTAINER:$REMOTE_DEST'"
+        scp -q $SCP_PORT_FLAG "$LOCAL_PATH" "$REMOTE_HOST:$TEMP_REMOTE" && \
+        ssh $SSH_PORT_FLAG "$REMOTE_HOST" "$DOCKER_CMD cp '$TEMP_REMOTE' '$REMOTE_CONTAINER:$REMOTE_DEST'"
     else
         cat "$LOCAL_PATH" | $REMOTE_SHELL bash -l -c "cat > '$REMOTE_DEST'"
     fi
@@ -41,10 +45,12 @@ remote_copy_from() {
     if [ -n "$REMOTE_HOST" ] && [ -n "$REMOTE_CONTAINER" ]; then
         local DOCKER_CMD="docker"
         [ "${DOCKER_SUDO:-0}" = "1" ] && DOCKER_CMD="sudo docker"
+        local SSH_PORT_FLAG="" SCP_PORT_FLAG=""
+        [ -n "$REMOTE_PORT" ] && SSH_PORT_FLAG="-p $REMOTE_PORT" && SCP_PORT_FLAG="-P $REMOTE_PORT"
 
         local TEMP_REMOTE="/tmp/ttl_copy_$$_$(basename "$REMOTE_PATH")"
-        ssh "$REMOTE_HOST" "$DOCKER_CMD cp '$REMOTE_CONTAINER:$REMOTE_PATH' '$TEMP_REMOTE'" && \
-        scp -q "$REMOTE_HOST:$TEMP_REMOTE" "$LOCAL_PATH"
+        ssh $SSH_PORT_FLAG "$REMOTE_HOST" "$DOCKER_CMD cp '$REMOTE_CONTAINER:$REMOTE_PATH' '$TEMP_REMOTE'" && \
+        scp -q $SCP_PORT_FLAG "$REMOTE_HOST:$TEMP_REMOTE" "$LOCAL_PATH"
     else
         remote_run cat "$REMOTE_PATH" > "$LOCAL_PATH"
     fi
