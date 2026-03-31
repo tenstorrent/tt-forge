@@ -2,6 +2,68 @@ name: AI install test
 
 on:
   workflow_dispatch:
+    inputs:
+      prompt:
+        description: Prompt to send to the Claude agent
+        required: true
+        type: string
+        default: |
+          You are an autonomous assistant running inside a GitHub Actions job
+          on a Tenstorrent machine. /dev/tenstorrent is available inside this
+          Ubuntu 24.04 container.
+
+          Your goal is to evaluate how good our installation and demo
+          instructions are for tt-forge.
+
+          The tt-forge repository is already checked out in the current working
+          directory. Start by reading README.md and any linked docs to understand
+          how to install tt-forge and run demos. The demo scripts are also located
+          in this repository.
+
+          High-level instructions (from the maintainer):
+          - You should try installing and testing tt-forge.
+          - Read the README.md and docs in the current directory for install
+            and demo instructions.
+          - You are allowed to make some common-sense attempts to fix problems,
+            but not indefinitely. This is an experiment to evaluate how good
+            our instructions are, not to brute-force every issue.
+          - You should report whether you managed to follow the instructions,
+            whether you succeeded, what errors you encountered, which fixes
+            you tried, and end with a brief feedback summary.
+
+          Concrete tasks for this run:
+          1. Read README.md and linked docs in the repo to understand how to
+             install tt-forge and run demos.
+          2. Follow the instructions to install tt-forge.
+          3. Run the demo/test scripts found in the repo.
+          4. For each failure:
+             - Capture the exact command and the full error message.
+             - Make at most 2-3 reasonable, safe attempts to fix it
+               (e.g., missing packages, small environment issues).
+             - If it still fails, stop and treat it as a documented failure,
+               not something to keep retrying indefinitely.
+          5. Do NOT modify repository code, open PRs, or push anywhere.
+          6. At the end of your work, produce a report at /github/workspace/tt-forge-ai-report.md with:
+                - Summary (success/fail, and whether demos ran on hardware)
+                - Steps you followed (high-level, not every tiny shell command)
+                - Which versions of tt-forge and other tenstorrent packages have been installed
+                - Failures and attempted fixes (bulleted list)
+                - Final status (what works, what is still broken)
+                - Brief feedback on clarity/completeness of the tt-forge
+                  install and demo instructions (what was easy, what was confusing,
+                  where you needed to guess).
+
+          7. Keep your shell output readable. Prefer commands that exit on
+             error and avoid interactive prompts.
+
+          Stop once you have either:
+          - Successfully installed tt-forge and run at least one demo/test, or
+          - Hit blocking issues you cannot reasonably fix with a few attempts.
+      summary_path:
+        description: Path to the summary markdown file produced by the agent
+        required: true
+        type: string
+        default: /github/workspace/tt-forge-ai-report.md
 
 permissions:
   contents: read
@@ -14,56 +76,5 @@ jobs:
   tt-forge-ai-agent:
     uses: ./.github/workflows/call-claude.yml
     with:
-      summary_path: /github/workspace/tt-forge-ai-report.md
-      prompt: |
-        You are an autonomous assistant running inside a GitHub Actions job
-        on a Tenstorrent machine. /dev/tenstorrent is available inside this
-        Ubuntu 24.04 container.
-
-        Your goal is to evaluate how good our installation and demo
-        instructions are for tt-forge.
-
-        The tt-forge repository is already checked out in the current working
-        directory. Start by reading README.md and any linked docs to understand
-        how to install tt-forge and run demos. The demo scripts are also located
-        in this repository.
-
-        High-level instructions (from the maintainer):
-        - You should try installing and testing tt-forge.
-        - Read the README.md and docs in the current directory for install
-          and demo instructions.
-        - You are allowed to make some common-sense attempts to fix problems,
-          but not indefinitely. This is an experiment to evaluate how good
-          our instructions are, not to brute-force every issue.
-        - You should report whether you managed to follow the instructions,
-          whether you succeeded, what errors you encountered, which fixes
-          you tried, and end with a brief feedback summary.
-
-        Concrete tasks for this run:
-        1. Read README.md and linked docs in the repo to understand how to
-           install tt-forge and run demos.
-        2. Follow the instructions to install tt-forge.
-        3. Run the demo/test scripts found in the repo.
-        4. For each failure:
-           - Capture the exact command and the full error message.
-           - Make at most 2-3 reasonable, safe attempts to fix it
-             (e.g., missing packages, small environment issues).
-           - If it still fails, stop and treat it as a documented failure,
-             not something to keep retrying indefinitely.
-        5. Do NOT modify repository code, open PRs, or push anywhere.
-        6. At the end of your work, produce a report at /github/workspace/tt-forge-ai-report.md with:
-              - Summary (success/fail, and whether demos ran on hardware)
-              - Steps you followed (high-level, not every tiny shell command)
-              - Which versions of tt-forge and other tenstorrent packages have been installed
-              - Failures and attempted fixes (bulleted list)
-              - Final status (what works, what is still broken)
-              - Brief feedback on clarity/completeness of the tt-forge
-                install and demo instructions (what was easy, what was confusing,
-                where you needed to guess).
-
-        7. Keep your shell output readable. Prefer commands that exit on
-           error and avoid interactive prompts.
-
-        Stop once you have either:
-        - Successfully installed tt-forge and run at least one demo/test, or
-        - Hit blocking issues you cannot reasonably fix with a few attempts.
+      summary_path: ${{ inputs.summary_path }}
+      prompt: ${{ inputs.prompt }}
