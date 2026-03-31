@@ -14,8 +14,10 @@ jobs:
 
   tt-forge-ai-agent:
 
-    # !!! Use Civ2 runners for Claude action as they have better isolation  !!!
-    runs-on: tt-ubuntu-2204-n300-stable
+    # Use claude labeled runners for Claude action
+    runs-on: 
+      - n300 
+      - claude
 
     container:
       image: ubuntu:24.04
