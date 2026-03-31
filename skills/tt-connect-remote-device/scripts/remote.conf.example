@@ -1,0 +1,21 @@
+# Remote shell configuration for tt-lang tools
+# Copy this file to remote.conf and configure for your setup.
+#
+# REMOTE_SHELL is the command used to execute commands on the remote machine
+# where tt-lang is built and tests run. All tools (run-test.sh, copy-file.sh,
+# etc.) use this single command for both execution and file transfer.
+#
+# Examples:
+#   SSH + Docker:  REMOTE_SHELL="ssh user@server docker exec -i my-container"
+#   Direct SSH:    REMOTE_SHELL="ssh user@server"
+#   Lima VM:       REMOTE_SHELL="limactl shell ttsim --"
+
+REMOTE_SHELL="ssh user@server docker exec -i tt-lang"
+
+# For Docker setups: set these for reliable file copying.
+# Stdin piping can fail when sudo or other intermediaries are in the chain.
+# When set, file copies use scp + docker cp instead of stdin piping.
+#
+# REMOTE_HOST="user@server"
+# REMOTE_CONTAINER="tt-lang"
+# DOCKER_SUDO=0    # Set to 1 if docker requires sudo
