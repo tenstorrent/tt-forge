@@ -95,4 +95,4 @@ jobs:
           # Set premissions to all files under /home/ubuntu/actions-runner/_work/_actions/anthropics
           # to ensure runner we can delete them (ubuntu user)
           echo "Cleaning up after Claude agent..."
-          chmod -R 777 /home/ubuntu/actions-runner/_work/_actions/anthropics
+          chmod -R 777 /__w/_actions/anthropics
