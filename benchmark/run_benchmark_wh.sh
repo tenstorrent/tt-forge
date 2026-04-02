@@ -35,6 +35,9 @@ python benchmark/benchmark.py -p tt-forge-onnx -m mnist_linear -bs 32 -df float3
 # Resnet HF
 python benchmark/benchmark.py -p tt-forge-onnx -m resnet_hf -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-resnet_hf.json
 
+# Resnet50 HF Onnx
+python benchmark/benchmark.py -p tt-forge-onnx -m resnet50_hf_onnx -ts classification -bs 8 -df bfloat16 -lp 128 -wc 32 -o forge-benchmark-e2e-tt-forge-onnx-resnet50_hf_onnx.json
+
 # MobileNetV2 Basic
 python benchmark/benchmark.py -p tt-forge-onnx -m mobilenetv2_basic -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-mobilenetv2_basic.json
 

@@ -216,6 +216,16 @@ def read_args():
     parser.add_argument("-df", "--data_format", default="float32", help="Data format i.e. float32, bfloat16, etc.")
     parser.add_argument("-r", "--run_origin", default="tt-forge", help="Repo where the benchmark is run from.")
     parser.add_argument("-mc", "--measure_cpu", action="store_true", default=False, help="Measure CPU FPS.")
+    parser.add_argument(
+        "-wc",
+        "--warmup_count",
+        type=int,
+        default=None,
+        help=(
+            "Number of warmup iterations to run before the timed benchmark. "
+            "If not set, each model uses its own built-in default."
+        ),
+    )
     args = parser.parse_args()
 
     config = {}
@@ -244,6 +254,7 @@ def read_args():
     config["data_format"] = args.data_format
     config["run_origin"] = args.run_origin
     config["measure_cpu"] = args.measure_cpu
+    config["warmup_count"] = args.warmup_count  # None when not provided; each model falls back to its own default
 
     return config
 
