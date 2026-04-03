@@ -209,7 +209,7 @@ def test_resnet50_hf_onnx(
     if training:
         pytest.skip("Training is not supported")
 
-    full_model_name = "ResNet-50 HF"
+    full_model_name = "ResNet-50 HF ONNX"
 
     if task == "classification":
         inputs, labels = load_benchmark_dataset(
@@ -244,6 +244,8 @@ def test_resnet50_hf_onnx(
     onnx.checker.check_model(onnx_model)
 
     onnx_module = forge.OnnxModule("ResNet50HF", onnx_model)
+    if data_format == "bfloat16":
+        onnx_module.set_data_format_override(forge._C.DataFormat.Float16_b)
 
     if measure_cpu:
         # Use batch size 1
@@ -322,7 +324,7 @@ def test_resnet50_hf_onnx(
     elif task == "na":
         fw_out = onnx_module(inputs[-1])[0]
         co_out = co_out.to("cpu")
-        AutomaticValueChecker(pcc=0.95).check(fw_out=fw_out, co_out=co_out)
+        AutomaticValueChecker(pcc=0.99).check(fw_out=fw_out, co_out=co_out)
     else:
         raise ValueError(f"Unsupported task: {task}.")
 
@@ -343,7 +345,6 @@ def test_resnet50_hf_onnx(
         },
         "batch_size": batch_size,
         "precision": data_format,
-        # "math_fidelity": math_fidelity, @TODO - For now, we are skipping these parameters, because we are not supporting them
         "dataset_name": dataset_name,
         "profile_name": "",
         "input_sequence_length": -1,  # When this value is negative, it means it is not applicable

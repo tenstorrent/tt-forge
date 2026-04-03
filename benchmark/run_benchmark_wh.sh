@@ -16,6 +16,7 @@
 # -bs: Batch size
 # -df: Data format, for example, bfloat16
 # -lp: Loop count, number of times to run the model
+# -wc: warmup count, number of warmup iterations to run before the timed benchmark
 # -o:  Output file name
 # ================================================================================================== #
 
@@ -23,41 +24,8 @@
 # ------------------------------------------------------- #
 # TT-Forge-Onnx Compiler
 # ------------------------------------------------------- #
-# Llama Prefill
-python benchmark/benchmark.py -p tt-forge-onnx -m llama_prefill -bs 1 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-llama_prefill.json
-
-# Llama Decode
-python benchmark/benchmark.py -p tt-forge-onnx -m llama_decode -bs 1 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-llama_decode.json
-
-# MNIST Linear
-python benchmark/benchmark.py -p tt-forge-onnx -m mnist_linear -bs 32 -df float32 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-mnist_linear.json
-
-# Resnet HF
-python benchmark/benchmark.py -p tt-forge-onnx -m resnet_hf -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-resnet_hf.json
-
 # Resnet50 HF Onnx
 python benchmark/benchmark.py -p tt-forge-onnx -m resnet50_hf_onnx -ts classification -bs 8 -df bfloat16 -lp 128 -wc 32 -o forge-benchmark-e2e-tt-forge-onnx-resnet50_hf_onnx.json
-
-# MobileNetV2 Basic
-python benchmark/benchmark.py -p tt-forge-onnx -m mobilenetv2_basic -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-mobilenetv2_basic.json
-
-# EfficientNet Timm
-python benchmark/benchmark.py -p tt-forge-onnx -m efficientnet_timm -ts classification -bs 6 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-efficientnet_timm.json
-
-# Segformer
-python benchmark/benchmark.py -p tt-forge-onnx -m segformer -bs 1 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-segformer.json
-
-# ViT
-python benchmark/benchmark.py -p tt-forge-onnx -m vit -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-vit.json
-
-# Vovnet
-python benchmark/benchmark.py -p tt-forge-onnx -m vovnet -ts classification -bs 8 -df bfloat16 -lp 32 -o forge-benchmark-e2e-tt-forge-onnx-vovnet.json
-
-# ------------------------------------------------------- #
-# TT-Torch Compiler
-# ------------------------------------------------------- #
-# Resnet
-python benchmark/benchmark.py -p tt-torch -m resnet -bs 8 -lp 32 -o forge-benchmark-e2e-tt-torch-resnet.json
 
 # ------------------------------------------------------- #
 # TT-XLA Compiler
