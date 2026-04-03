@@ -118,7 +118,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'tenstorrent/tt-forge'
           fetch-depth: 1
@@ -147,4 +147,7 @@ jobs:
           # TODO: Revisit the addition of these env vars https://github.com/tenstorrent/tt-metal/issues/20161
           TRACY_NO_INVARIANT_CHECK: 1
         run: |
-            python "basic_tests/${{ matrix.frontend }}/demo_test.py"
+          if [ -d "/opt/venv" ]; then
+            source /opt/venv/bin/activate
+          fi
+          python "basic_tests/${{ matrix.frontend }}/demo_test.py"

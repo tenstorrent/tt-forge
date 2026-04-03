@@ -90,7 +90,7 @@ jobs:
     name: "${{ matrix.build.project }}-${{ matrix.build.name }} (${{ inputs.sh-runner && format('{0}-shared', matrix.build.runs-on) || (matrix.build.runs-on) }}, ${{ matrix.build.bs }}, ${{ matrix.build.lp }}) benchmark"
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         repository: 'tenstorrent/tt-forge'
         fetch-depth: 1

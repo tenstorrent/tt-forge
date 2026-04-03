@@ -99,7 +99,7 @@ jobs:
       schedule_nightly_repos_results: ${{ steps.get-repos.outputs.schedule_nightly_repos_results }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Get Repos
         id: get-repos
         uses: ./.github/actions/get-repos
@@ -126,7 +126,7 @@ jobs:
       non_expected_tags: ${{ steps.set-expected.outputs.non_expected_tags }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -192,7 +192,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/trigger-workflow
         id: trigger-workflow
         with:
@@ -234,7 +234,7 @@ jobs:
     name: ${{ matrix.repo_short }} Get Release RC Branches
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Get Release Branches
@@ -261,7 +261,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Mock commit & tag & merge to release branch
         id: mock-commit-tag-merge
         uses: ./.github/actions/mock-commit-tag-merge
@@ -272,7 +272,7 @@ jobs:
           mock_merge_branch_tag: ${{ env.FIRST_COMMIT_PRE_RELEASE_TAG }}
           mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
           release_branch: ${{ matrix.branch }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
@@ -313,7 +313,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Mock commit & tag & merge to release branch
         id: mock-commit-tag-merge
         uses: ./.github/actions/mock-commit-tag-merge
@@ -324,7 +324,7 @@ jobs:
           mock_merge_branch_tag: ${{ env.SECOND_COMMIT_PRE_RELEASE_TAG }}
           mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
           release_branch: ${{ matrix.branch }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
@@ -382,7 +382,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Mock commit & tag & merge to release branch
         id: mock-commit-tag-merge
         uses: ./.github/actions/mock-commit-tag-merge
@@ -393,7 +393,7 @@ jobs:
           mock_merge_branch_tag: ${{ env.FIRST_COMMIT_STABLE_TAG }}
           mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
           release_branch: ${{ matrix.branch }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
@@ -433,7 +433,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Mock commit & tag & merge to release branch
         id: mock-commit-tag-merge
         uses: ./.github/actions/mock-commit-tag-merge
@@ -444,7 +444,7 @@ jobs:
           mock_merge_branch_tag: ${{ env.SECOND_COMMIT_STABLE_TAG }}
           mock_merge_branch: ${{ env.MOCK_MERGE_BRANCH }}
           release_branch: ${{ matrix.branch }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/trigger-workflow
         with:
           workflow_name: 'Mock Successful'
@@ -489,7 +489,7 @@ jobs:
       expected_branches: ${{ steps.set-expected.outputs.expected_branches }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -614,7 +614,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

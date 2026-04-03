@@ -40,7 +40,7 @@ jobs:
         GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
     steps:
     - name: Checkout target repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
     - uses: ./.github/actions/set-release-facts

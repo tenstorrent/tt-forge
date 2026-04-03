@@ -55,7 +55,7 @@ runs:
   steps:
     - name: Checkout target repo
       if: ${{ inputs.draft == 'false' }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: ${{ inputs.repo }}
         token: ${{ inputs.GH_TOKEN }}
@@ -78,5 +78,5 @@ runs:
         ./git_facts.sh >> $GITHUB_OUTPUT
 
     # Recheckout forge repo to fix side effects for clean up job
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       if: ${{ inputs.draft == 'false' }}

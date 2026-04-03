@@ -17,7 +17,7 @@ jobs:
       matrix_p150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_p150_skip }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'tenstorrent/tt-forge'
         fetch-depth: 1
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Trigger produce_data.yml
         uses: ./.github/actions/trigger-workflow
         env:

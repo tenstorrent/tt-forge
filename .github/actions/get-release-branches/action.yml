@@ -30,7 +30,7 @@ runs:
   steps:
     - name: Checkout target repo
       if: ${{ inputs.draft == 'false' }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: ${{ inputs.repo }}
         token: ${{ env.GH_TOKEN }}
@@ -166,5 +166,5 @@ runs:
         echo "no_release_branches_or_new_commits=$no_release_branches_or_new_commits" >> $GITHUB_OUTPUT
 
     # Recheckout forge repo to fix side effects for clean up job
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       if: ${{ inputs.draft == 'false' }}

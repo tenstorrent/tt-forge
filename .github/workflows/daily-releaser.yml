@@ -59,7 +59,7 @@ jobs:
       schedule_rc_stable_update_repos_results: ${{ steps.get-repos.outputs.schedule_rc_stable_update_repos_results }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Get Repos
       id: get-repos
       uses: ./.github/actions/get-repos

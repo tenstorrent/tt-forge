@@ -119,7 +119,7 @@ jobs:
       matrix_llmbox_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_llmbox_skip }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'tenstorrent/tt-forge'
         fetch-depth: 1
@@ -308,7 +308,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'tenstorrent/tt-forge'
           fetch-depth: 1

@@ -103,7 +103,7 @@ runs:
         override_release_fact_workflow: ${{ inputs.override_release_fact_workflow }}
 
     - name: Checkout target repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       if: ${{ inputs.draft == 'false' }}
       with:
         repository: ${{ inputs.repo }}
@@ -134,5 +134,5 @@ runs:
 
 
     # Recheckout forge repo to fix side effects for clean up job
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       if: ${{  inputs.draft == 'false' }}

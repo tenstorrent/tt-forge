@@ -59,7 +59,7 @@ jobs:
       matrix_skip: ${{ steps.set-matrix-json.outputs.matrix_skip }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'tenstorrent/tt-forge'
         fetch-depth: 1
@@ -104,7 +104,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'tenstorrent/tt-forge'
           fetch-depth: 1
@@ -116,6 +116,10 @@ jobs:
         env:
           DOWNLOAD_RETRY_LIMIT: 10
         run: |
+          if [ -d "/opt/venv" ]; then
+            source /opt/venv/bin/activate
+          fi
+
           demo_file=$(basename "${{ matrix.path }}")
           demo_folder=$(dirname demos/${{ matrix.project }}/${{ matrix.path }})
 
@@ -192,7 +196,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'tenstorrent/tt-forge'
           fetch-depth: 1
