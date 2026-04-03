@@ -68,7 +68,7 @@ Your Model (PyTorch / JAX / ONNX)
 
 | Repo | What it does |
 | :---- | :---- |
-| [tt-forge](https://github.com/tenstorrent/tt-forge) | Central hub — demos, benchmarks, releases |
+| [tt-forge](https://github.com/tenstorrent/tt-forge) | Central hub — demos, releases |
 | [tt-xla](https://github.com/tenstorrent/tt-xla) | PJRT frontend for PyTorch and JAX |
 | [tt-forge-onnx](https://github.com/tenstorrent/tt-forge-onnx) | TVM-based frontend for ONNX, TensorFlow, PaddlePaddle |
 | [tt-mlir](https://github.com/tenstorrent/tt-mlir) | MLIR compiler (TTIR, TTNN, TTKernel dialects) |
@@ -438,7 +438,7 @@ This is the step-by-step process for bringing up a new HuggingFace model. It's d
 ```shell
 # Clone tt-forge and look for existing demos/tests
 git clone https://github.com/tenstorrent/tt-forge.git
-grep -r "YourModelName" tt-forge/demos/ tt-forge/benchmark/
+grep -r "YourModelName" tt-forge/demos/
 
 # Clone tt-forge-models and search the community test suite
 git clone https://github.com/tenstorrent/tt-forge-models.git
@@ -631,7 +631,7 @@ If you are an LLM (e.g., Claude Code) working on model bring-up, here are the ke
 # SPDX-License-Identifier: Apache-2.0
 ```
 
-8. **Common model families known to work:** Llama, Phi, Qwen, Falcon, ResNet, ViT, MobileNet, EfficientNet, GPT-2, OPT. Check existing demos in `tt-forge/demos/tt-xla/` and benchmarks in `tt-forge/benchmark/tt-xla/` for reference implementations.
+8. **Common model families known to work:** Llama, Phi, Qwen, Falcon, ResNet, ViT, MobileNet, EfficientNet, GPT-2, OPT. Check existing demos in `tt-forge/demos/tt-xla/` for reference implementations.
 
 9. **For multi-chip models**, use the SPMD sharding approach (§6). The pattern is always: column-parallel for QKV/gate/up projections, row-parallel for output/down projections.
 

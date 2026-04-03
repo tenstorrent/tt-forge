@@ -15,8 +15,8 @@ jobs:
   tt-forge-ai-agent:
 
     # Use claude labeled runners for Claude action
-    runs-on: 
-      - n300 
+    runs-on:
+      - n300
       - claude
 
     container:
