@@ -15,6 +15,8 @@ jobs:
     outputs:
       matrix_p150: ${{ steps.set-perf-benchmarks.outputs.matrix_p150 }}
       matrix_p150_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_p150_skip }}
+      matrix_n150_accuracy: ${{ steps.set-perf-benchmarks.outputs.matrix_n150_accuracy }}
+      matrix_n150_accuracy_skip: ${{ steps.set-perf-benchmarks.outputs.matrix_n150_accuracy_skip }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -28,6 +30,7 @@ jobs:
       id: set-perf-benchmarks
       shell: bash
       run: |
+        # Filter for regular p150 tests
         result=$(python .github/workflows/filter-test-matrix.py \
           .github/workflows/perf-bench-matrix.json \
           "tt-forge")
@@ -44,6 +47,25 @@ jobs:
         echo "matrix_p150=$matrix_p150" >> $GITHUB_OUTPUT
         echo "matrix_p150_skip=$matrix_p150_skip" >> $GITHUB_OUTPUT
 
+        # Filter for n150 accuracy tests
+        # Call filter-test-matrix.py with --sh-runner flag to map n150 to shared runners
+        result_sh=$(python .github/workflows/filter-test-matrix.py \
+          .github/workflows/perf-bench-matrix.json \
+          "tt-forge" \
+          --sh-runner)
+
+        # Filter by: runs-on contains "n150" AND accuracy-testing == true
+        matrix_n150_accuracy=$(echo $result_sh | jq -r -c '.matrix | map(select((."runs-on" | contains("n150")) and (.["accuracy-testing"] == true)))')
+
+        matrix_n150_accuracy_skip="false"
+
+        if [ "$matrix_n150_accuracy" == "[]" ]; then
+          matrix_n150_accuracy_skip="true"
+        fi
+
+        echo "matrix_n150_accuracy=$matrix_n150_accuracy" >> $GITHUB_OUTPUT
+        echo "matrix_n150_accuracy_skip=$matrix_n150_accuracy_skip" >> $GITHUB_OUTPUT
+
   run-p150-perf-benchmarks:
     needs: filter-tests
     if: ${{ needs.filter-tests.outputs.matrix_p150_skip == 'false' }}
@@ -53,9 +75,19 @@ jobs:
       matrix: ${{ needs.filter-tests.outputs.matrix_p150 }}
       docker-image: "ghcr.io/tenstorrent/tt-xla-slim:nightly-latest"
 
+  run-n150-accuracy-benchmarks:
+    needs: filter-tests
+    if: ${{ needs.filter-tests.outputs.matrix_n150_accuracy_skip == 'false' }}
+    secrets: inherit
+    uses: ./.github/workflows/call-perf-test.yml
+    with:
+      matrix: ${{ needs.filter-tests.outputs.matrix_n150_accuracy }}
+      docker-image: "ghcr.io/tenstorrent/tt-xla-slim:nightly-latest"
+
   produce-data:
     needs:
       - run-p150-perf-benchmarks
+      - run-n150-accuracy-benchmarks
     if: always()
     runs-on: ubuntu-latest
     steps:
