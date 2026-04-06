@@ -157,7 +157,7 @@ Python in, optimized hardware code out. The compiler handles NOC addressing, reg
 | **Multimodal** | BLIP (vision-language), Stable Diffusion XL (UNet) |
 | **Multi-chip (N300+)** | Llama 3.1 8B/70B, Falcon-3 7B/10B, Mistral 7B/Nemo/Small 24B, Qwen 2.5/3 up to 32B |
 
-See the full [benchmark suite](https://github.com/tenstorrent/tt-forge/tree/main/benchmark/tt-xla) and [demos](https://github.com/tenstorrent/tt-forge/tree/main/demos) for the complete list.
+See the full [demos](https://github.com/tenstorrent/tt-forge/tree/main/demos) for the complete list.
 
 -----
 # Architecture

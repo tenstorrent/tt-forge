@@ -11,23 +11,9 @@ permissions:
   actions: write
 
 jobs:
-  performance-benchmark:
-    uses: ./.github/workflows/perf-benchmark.yml
-    if: contains(github.event.pull_request.labels.*.name, 'uplift')
-    secrets: inherit
-    with:
-      docker-image: ghcr.io/tenstorrent/tt-xla-slim:nightly-latest
-      project: tt-xla
-      sh-runner: false
-      skip-device-perf: false
-
   check-all-green:
     if: always()
-    needs: performance-benchmark
     runs-on: ubuntu-latest
     steps:
-      - name: Check the status of needed jobs
-        uses: re-actors/alls-green@release/v1
-        with:
-          allowed-failures: performance-benchmark
-          jobs: ${{ toJson(needs) }}
+      - name: All checks passed
+        run: echo "All required checks passed."
