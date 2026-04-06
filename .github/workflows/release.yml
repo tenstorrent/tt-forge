@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Generate random seed
       uses: ./.github/actions/random
       id: random
@@ -91,7 +91,7 @@ jobs:
     env:
         GH_TOKEN: ${{ github.token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: ./.github/actions/set-release-facts
       id: set-release-facts
       with:
@@ -193,7 +193,7 @@ jobs:
       - generate-seed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -249,7 +249,7 @@ jobs:
       - generate-seed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: ./.github/actions/set-release-facts
@@ -350,7 +350,7 @@ jobs:
       - generate-seed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

@@ -20,7 +20,7 @@ jobs:
       TT_FORGE_MODELS_SUBMODULE_PATH: third_party/tt_forge_models
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 0
