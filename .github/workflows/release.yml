@@ -320,8 +320,6 @@ jobs:
           GH_TOKEN: ${{ secrets.TT_FORGE_RELEASER }}
           new_version_tag: ${{ steps.set-release-facts.outputs.gh_new_version_tag }}
           commit: ${{ inputs.latest_branch_commit }}
-          gpg_private_key: ${{ secrets.FORGE_GPG_PRIVATE_KEY }}
-          gpg_passphrase: ${{ secrets.FORGE_GPG_PASSPHRASE }}
 
       - uses: ./.github/actions/publish-github-release
         with:
