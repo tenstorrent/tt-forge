@@ -39,6 +39,9 @@ TT-XLA is the primary frontend for PyTorch and JAX. It leverages a PJRT interfac
 
 ## Running the Demos
 
+> **Prerequisites: Ubuntu 24.04 and Python 3.12.**
+> Using an older Python version (e.g. 3.10) will result in `jax` installation errors.
+
 For details about how to set up an environment and run a demo, please see the [TT-Forge Getting Started](../../docs/src/getting_started.md) page.
 
 If you encounter any issues or have questions, please file them at [github.com/tenstorrent/tt-forge/issues](https://github.com/tenstorrent/tt-forge/issues).

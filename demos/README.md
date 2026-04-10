@@ -1,5 +1,7 @@
 # TT-Forge Demos
 
+> **Prerequisites: Ubuntu 24.04 and Python 3.12.** See the [Getting Started guide](../docs/src/getting_started.md) for setup instructions.
+
 This directory contains demonstration examples for three different frontends available for Tenstorrent hardware:
 
 ## Available Frontends
