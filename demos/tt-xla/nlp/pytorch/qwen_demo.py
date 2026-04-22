@@ -1,35 +1,38 @@
-# SPDX-FileCopyrightText: (c) 2026 Tenstorrent AI ULC
-#
-# SPDX-License-Identifier: Apache-2.0
 """
 Based on:
     - https://github.com/tenstorrent/tt-forge-models/blob/main/qwen_3/causal_lm/pytorch/loader.py
     - https://github.com/tenstorrent/tt-forge/blob/main/demos/tt-xla/nlp/pytorch/llama_demo.py
+    - https://qwen.readthedocs.io/en/latest/getting_started/quickstart.html
 """
 
 import torch
 import torch_xla
 import torch_xla.runtime as xr
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from third_party.tt_forge_models.qwen_3.causal_lm.pytorch import ModelLoader, ModelVariant
-import sys
 
 
 xr.set_device_type("TT")
 device = torch_xla.device()
 
-# Load model and inputs.
-loader = ModelLoader(variant=ModelVariant.QWEN_3_0_6B)
-tokenizer = loader.tokenizer
-assert tokenizer is not None
-prompt = loader.sample_text
-framework_model = loader.load_model()
-inputs = loader.load_inputs()
-
-# Compile for Tenstorrent.
-model = framework_model.to(device)
+# Load the HuggingFace model.
+model_id = "Qwen/Qwen3-0.6B"
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id)
+model = model.to(device)
 model.eval()
 compiled_model = torch.compile(model, backend="tt")
+
+# Prepare the model input.
+prompt = "Give me a short introduction to large language models."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+)
+inputs = tokenizer([text], return_tensors="pt").to(model.device)
 
 # Run inference.
 input_ids = inputs["input_ids"].to(device)
