@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: (c) 2026 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
 """
 Based on:
     - https://github.com/tenstorrent/tt-forge-models/blob/main/qwen_3/causal_lm/pytorch/loader.py
@@ -24,9 +27,7 @@ compiled_model = torch.compile(model, backend="tt")
 
 # Prepare the model input.
 prompt = "Give me a short introduction to large language models."
-messages = [
-    {"role": "user", "content": prompt}
-]
+messages = [{"role": "user", "content": prompt}]
 text = tokenizer.apply_chat_template(
     messages,
     tokenize=False,
