@@ -1,0 +1,140 @@
+name: Call Claude
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Prompt to send to the Claude agent"
+        required: true
+        type: string
+      runs-on:
+        description: "Hardware runner label (e.g. n300, n150)"
+        required: false
+        type: string
+        default: "n300"
+      report-file:
+        description: "Workspace-relative path to the report file to upload and print as summary"
+        required: false
+        type: string
+        default: "tt-forge-ai-report.md"
+      summary-title:
+        description: "Title printed as a header in the GitHub step summary"
+        required: false
+        type: string
+        default: "AI Report"
+  workflow_call:
+    inputs:
+      prompt:
+        description: "Prompt to send to the Claude agent"
+        required: true
+        type: string
+      runs-on:
+        description: "Hardware runner label (e.g. n300, n150)"
+        required: false
+        type: string
+        default: "n300"
+      report-file:
+        description: "Workspace-relative path to the report file to upload and print as summary"
+        required: false
+        type: string
+        default: "tt-forge-ai-report.md"
+      summary-title:
+        description: "Title printed as a header in the GitHub step summary"
+        required: false
+        type: string
+        default: "AI Report"
+    secrets:
+      anthropic_api_key:
+        required: true
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  actions: write
+  id-token: write
+
+jobs:
+
+  claude-agent:
+
+    # Use claude labeled runners for Claude action
+    runs-on:
+      - ${{ inputs.runs-on }}
+      - claude
+
+    container:
+      image: ubuntu:24.04
+      options: --device /dev/tenstorrent
+      volumes:
+        - /dev/hugepages:/dev/hugepages
+        - /dev/hugepages-1G:/dev/hugepages-1G
+
+    steps:
+
+      - name: Check /dev/tenstorrent is available
+        run: |
+          if [ -e /dev/tenstorrent ]; then
+            echo "✓ /dev/tenstorrent is available in container"
+            ls -l /dev/tenstorrent || true
+          else
+            echo "✗ /dev/tenstorrent is NOT available in container"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install base dependencies for agent
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -qq > /dev/null 2>&1 || { echo "apt-get update failed"; exit 1; }
+          apt-get install -y -qq \
+            git curl ca-certificates unzip \
+            python3 python3-pip python3-venv \
+            build-essential pkg-config cmake > /dev/null 2>&1 || { echo "apt-get install failed"; exit 1; }
+
+      - name: Run Claude Code agent
+        id: claude
+        timeout-minutes: 30
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.anthropic_api_key || secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          settings: |
+            {
+              "permissions": {
+                "allow": ["Bash(*)", "Read(*)", "Write(*)", "Edit(*)", "Glob(*)", "Grep(*)"],
+                "deny": []
+              }
+            }
+          prompt: ${{ inputs.prompt }}
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.report-file }}
+          path: /github/workspace/${{ inputs.report-file }}
+          if-no-files-found: warn
+
+      - name: Attach summary to job summary
+        if: always()
+        run: |
+          echo "## ${{ inputs.summary-title }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f /github/workspace/${{ inputs.report-file }} ]; then
+            cat /github/workspace/${{ inputs.report-file }} >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Agent did not produce a report.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Cleanup after claude action
+        if: always()
+        shell: bash
+        run: |
+          # The claude-code-action may leave behind files owned by root or with restrictive permissions,
+          # which can cause issues for subsequent runs. We need to ensure everything is cleaned up properly.
+          # Set premissions to all files under /home/ubuntu/actions-runner/_work/_actions/anthropics
+          # to ensure runner we can delete them (ubuntu user)
+          echo "Cleaning up after Claude agent..."
+          chmod -R 777 /__w/_actions/anthropics
