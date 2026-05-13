@@ -88,7 +88,7 @@ jobs:
         run: |
           cd "$TT_XLA_DIR"
           source venv/activate
-          pip install tt-xla --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+          pip install tt-forge --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 
       - name: Run Claude Code agent (CPU bringup)
         id: claude
