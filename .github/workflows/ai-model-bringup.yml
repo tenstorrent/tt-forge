@@ -158,7 +158,7 @@ jobs:
   #               base deps (git, python3, pip, gh CLI) installed in pre-steps
   #   tt-forge  : installed via pip from pypi.eng.aws.tenstorrent.com; tt-forge-install
   #               initialises the TT hardware driver
-  #   tt-forge-models : cloned from the CPU bringup branch to $FORGE_MODELS_DIR
+  #   tt-forge-models : tt-xla submodule at $FORGE_MODELS_DIR, switched to the CPU bringup branch
   #   Skill     : /model-bringup-tt-hardware — reads $FORGE_MODELS_DIR from env,
   #               runs the loader on TT hardware (up to 4 fix attempts), then writes
   #               bringup-hw-status.txt (SUCCESS/FAILED); all GitHub interactions
@@ -192,6 +192,8 @@ jobs:
       - name: Clone tt-xla with all submodules
         run: |
           git clone --recurse-submodules https://github.com/tenstorrent/tt-xla.git "$TT_XLA_DIR"
+          cd "$FORGE_MODELS_DIR"
+          git checkout "${{ needs.parse-model.outputs.branch_name }}"
 
       - name: Set up tt-xla environment and install latest wheel
         run: |
