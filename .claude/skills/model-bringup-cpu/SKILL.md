@@ -18,7 +18,7 @@ Parse from the invocation line before proceeding:
 | `<branch_name>` | `claude/bringup-llama-3-2-1b` | yes |
 | `--report <path>` | `--report /github/workspace/report.md` | no |
 
-**`REPORT_PATH`** — if `--report` is present use that value; otherwise default to `./bringup-report-cpu.md` (relative to the current working directory, useful when running locally).
+**`REPORT_PATH`** — resolved in this order: (1) `$GITHUB_WORKSPACE/$REPORT_FILE` if both env vars are set, (2) the `--report <path>` argument if present, (3) `./bringup-report-cpu.md` as a local fallback.
 
 **`STATUS_FILE`** — always `$GITHUB_WORKSPACE/bringup-cpu-status.txt` (the workflow reads exactly this path to decide whether to commit and push).
 
@@ -152,7 +152,9 @@ On failure:
 ## Step 7 — Write status file and report
 
 ```
-REPORT_PATH = <--report value>  OR  ./bringup-report-cpu.md
+REPORT_PATH = $GITHUB_WORKSPACE/$REPORT_FILE  (if both env vars are set)
+              OR  <--report value>             (if --report arg is present)
+              OR  ./bringup-report-cpu.md      (local fallback)
 STATUS_FILE = $GITHUB_WORKSPACE/bringup-cpu-status.txt
              (if GITHUB_WORKSPACE is not set, fall back to ./bringup-cpu-status.txt)
 ```

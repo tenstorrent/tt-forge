@@ -19,7 +19,7 @@ Parse from the invocation line before proceeding:
 | `<device>` | `n150` | yes |
 | `--report <path>` | `--report /github/workspace/report.md` | no |
 
-**`REPORT_PATH`** — if `--report` is present use that value; otherwise default to `./bringup-report-tt-hardware.md` (relative to current working directory, useful when running locally).
+**`REPORT_PATH`** — resolved in this order: (1) `$GITHUB_WORKSPACE/$REPORT_FILE` if both env vars are set, (2) the `--report <path>` argument if present, (3) `./bringup-report-tt-hardware.md` as a local fallback.
 
 **`FORGE_MODELS_DIR`** — set by the workflow to `$GITHUB_WORKSPACE/tt-xla/third_party/tt_forge_models` (already populated as a submodule; Step 2 switches it to the CPU bringup branch).
 

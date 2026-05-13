@@ -98,6 +98,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           TT_XLA_DIR: ${{ env.TT_XLA_DIR }}
           FORGE_MODELS_DIR: ${{ env.FORGE_MODELS_DIR }}
+          REPORT_FILE: ${{ env.REPORT_FILE }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           settings: |
@@ -107,7 +108,7 @@ jobs:
                 "deny": []
               }
             }
-          prompt: /model-bringup-cpu ${{ needs.parse-model.outputs.model_id }} ${{ needs.parse-model.outputs.branch_name }} --report ${{ github.workspace }}/${{ env.REPORT_FILE }}
+          prompt: /model-bringup-cpu ${{ needs.parse-model.outputs.model_id }} ${{ needs.parse-model.outputs.branch_name }}
 
       - name: Commit and push loader to tt-forge-models
         env:
@@ -120,15 +121,20 @@ jobs:
             exit 1
           fi
           cd "$FORGE_MODELS_DIR"
-          echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth setup-git
           git config user.name "AI Model Bringup"
           git config user.email "ai-bringup@tenstorrent.com"
           git checkout -b "${{ needs.parse-model.outputs.branch_name }}"
           git add .
+          STAGED=$(git diff --cached --name-status)
+          if [ -z "$STAGED" ]; then
+            echo "No files staged — loader was not written. Aborting."
+            exit 1
+          fi
+          echo "Staged files:"
+          echo "$STAGED"
           git commit -m "Add ${{ needs.parse-model.outputs.model_name }} loader (AI-generated)"
-          git push \
-            "https://$(gh auth token)@github.com/tenstorrent/tt-forge-models.git" \
-            "${{ needs.parse-model.outputs.branch_name }}"
+          git push origin "${{ needs.parse-model.outputs.branch_name }}"
           echo "Pushed branch: ${{ needs.parse-model.outputs.branch_name }}"
 
       - name: Upload CPU report artifact
@@ -144,11 +150,8 @@ jobs:
         shell: bash
         run: |
           echo "## CPU Bringup: ${{ needs.parse-model.outputs.model_id }}" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f "$GITHUB_WORKSPACE/${{ env.REPORT_FILE }}" ]; then
-            cat "$GITHUB_WORKSPACE/${{ env.REPORT_FILE }}" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'Agent did not produce a report.' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          cat "$GITHUB_WORKSPACE/${{ env.REPORT_FILE }}" >> "$GITHUB_STEP_SUMMARY" \
+            || echo 'Agent did not produce a report.' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cleanup after Claude action
         if: always()
@@ -213,6 +216,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           FORGE_MODELS_DIR: ${{ env.FORGE_MODELS_DIR }}
+          REPORT_FILE: ${{ env.REPORT_FILE }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           settings: |
@@ -222,7 +226,15 @@ jobs:
                 "deny": []
               }
             }
-          prompt: /model-bringup-tt-hardware ${{ needs.parse-model.outputs.model_id }} ${{ needs.parse-model.outputs.branch_name }} ${{ inputs.device }} --report ${{ github.workspace }}/${{ env.REPORT_FILE }}
+          prompt: /model-bringup-tt-hardware ${{ needs.parse-model.outputs.model_id }} ${{ needs.parse-model.outputs.branch_name }} ${{ inputs.device }}
+
+      - name: Upload TT hardware report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.REPORT_FILE }}
+          path: ${{ github.workspace }}/${{ env.REPORT_FILE }}
+          if-no-files-found: warn
 
       - name: Push loader fixes and open PR to tt-forge-models
         env:
@@ -235,41 +247,36 @@ jobs:
             exit 1
           fi
           cd "$FORGE_MODELS_DIR"
+          gh auth setup-git
+          git config user.name "AI Model Bringup"
+          git config user.email "ai-bringup@tenstorrent.com"
           if [ -n "$(git status --porcelain)" ]; then
-            echo "$GH_TOKEN" | gh auth login --with-token
-            git config user.name "AI Model Bringup"
-            git config user.email "ai-bringup@tenstorrent.com"
             git add .
             git commit -m "Adjust ${{ needs.parse-model.outputs.model_name }} loader for TT hardware"
-            git push \
-              "https://$(gh auth token)@github.com/tenstorrent/tt-forge-models.git" \
-              "${{ needs.parse-model.outputs.branch_name }}"
+            git push --force-with-lease origin "${{ needs.parse-model.outputs.branch_name }}"
           fi
-          gh pr create \
+          EXISTING_PR=$(gh pr list \
             --repo tenstorrent/tt-forge-models \
-            --base main \
             --head "${{ needs.parse-model.outputs.branch_name }}" \
-            --title "feat: add ${{ needs.parse-model.outputs.model_name }} loader (${{ needs.parse-model.outputs.model_id }})" \
-            --body "AI-generated loader for \`${{ needs.parse-model.outputs.model_id }}\`. Validated on CPU and ${{ inputs.device }}. Created by AI Model Bringup workflow."
-
-      - name: Upload TT hardware report artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.REPORT_FILE }}
-          path: ${{ github.workspace }}/${{ env.REPORT_FILE }}
-          if-no-files-found: warn
+            --json url --jq '.[0].url')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR already exists: $EXISTING_PR"
+          else
+            gh pr create \
+              --repo tenstorrent/tt-forge-models \
+              --base main \
+              --head "${{ needs.parse-model.outputs.branch_name }}" \
+              --title "feat: add ${{ needs.parse-model.outputs.model_name }} loader (${{ needs.parse-model.outputs.model_id }})" \
+              --body "AI-generated loader for \`${{ needs.parse-model.outputs.model_id }}\`. Validated on CPU and ${{ inputs.device }}. Created by AI Model Bringup workflow."
+          fi
 
       - name: Attach TT hardware report to job summary
         if: always()
         shell: bash
         run: |
           echo "## TT Hardware Bringup (${{ inputs.device }}): ${{ needs.parse-model.outputs.model_id }}" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f "$GITHUB_WORKSPACE/${{ env.REPORT_FILE }}" ]; then
-            cat "$GITHUB_WORKSPACE/${{ env.REPORT_FILE }}" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'Agent did not produce a report.' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          cat "$GITHUB_WORKSPACE/${{ env.REPORT_FILE }}" >> "$GITHUB_STEP_SUMMARY" \
+            || echo 'Agent did not produce a report.' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cleanup after Claude action
         if: always()
