@@ -84,6 +84,7 @@ jobs:
           git clone --recurse-submodules https://github.com/tenstorrent/tt-xla.git "$TT_XLA_DIR"
 
       - name: Set up tt-xla environment and install latest wheel
+        shell: bash
         run: |
           cd "$TT_XLA_DIR"
           source venv/activate
@@ -196,6 +197,7 @@ jobs:
           git checkout "${{ needs.parse-model.outputs.branch_name }}"
 
       - name: Set up tt-xla environment and install latest wheel
+        shell: bash
         run: |
           cd "$TT_XLA_DIR"
           source venv/activate
