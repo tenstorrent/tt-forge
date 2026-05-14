@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: AI Model Bringup
+run-name: "AI Model Bringup ${{ inputs.model_url }}"
 
 on:
   workflow_dispatch:
@@ -80,8 +81,18 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Clone tt-xla with all submodules
+        shell: bash
         run: |
           git clone --recurse-submodules https://github.com/tenstorrent/tt-xla.git "$TT_XLA_DIR"
+          cd "$FORGE_MODELS_DIR"
+          BRANCH="${{ needs.parse-model.outputs.branch_name }}"
+          # If the bringup branch already exists on the remote (re-run for this
+          # model), check it out now so the agent's writes layer on top and we
+          # push a new commit instead of starting over.
+          if git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+            echo "Existing bringup branch $BRANCH found — checking it out"
+            git checkout "$BRANCH"
+          fi
 
       - name: Set up tt-xla environment and install latest wheel
         shell: bash
@@ -111,6 +122,7 @@ jobs:
           prompt: /model-bringup-cpu ${{ needs.parse-model.outputs.model_id }} ${{ needs.parse-model.outputs.branch_name }}
 
       - name: Commit and push loader to tt-forge-models
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         shell: bash
@@ -124,18 +136,24 @@ jobs:
           gh auth setup-git
           git config user.name "AI Model Bringup"
           git config user.email "ai-bringup@tenstorrent.com"
-          git checkout -b "${{ needs.parse-model.outputs.branch_name }}"
-          git add .
+          BRANCH="${{ needs.parse-model.outputs.branch_name }}"
+          MODEL_NAME="${{ needs.parse-model.outputs.model_name }}"
+          # The clone step already checked out $BRANCH if it existed remotely;
+          # otherwise we're on the cloned default branch and need to create it.
+          if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BRANCH" ]; then
+            git checkout -b "$BRANCH"
+          fi
+          git add -A
           STAGED=$(git diff --cached --name-status)
           if [ -z "$STAGED" ]; then
-            echo "No files staged — loader was not written. Aborting."
-            exit 1
+            echo "No staged changes — agent's output matches current branch. Nothing to push."
+            exit 0
           fi
           echo "Staged files:"
           echo "$STAGED"
-          git commit -m "Add ${{ needs.parse-model.outputs.model_name }} loader (AI-generated)"
-          git push origin "${{ needs.parse-model.outputs.branch_name }}"
-          echo "Pushed branch: ${{ needs.parse-model.outputs.branch_name }}"
+          git commit -m "$MODEL_NAME loader (AI-generated)"
+          git push -u origin "$BRANCH"
+          echo "Pushed branch: $BRANCH"
 
       - name: Upload CPU report artifact
         if: always()
@@ -238,6 +256,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Push loader fixes and open PR to tt-forge-models
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         shell: bash
@@ -251,14 +270,26 @@ jobs:
           gh auth setup-git
           git config user.name "AI Model Bringup"
           git config user.email "ai-bringup@tenstorrent.com"
+          BRANCH="${{ needs.parse-model.outputs.branch_name }}"
+          MODEL_NAME="${{ needs.parse-model.outputs.model_name }}"
+          # HEAD is already on $BRANCH (set up in the clone step), so we commit
+          # the agent's hardware-side adjustments on top as a new commit. Plain
+          # push (no force) lands as a fast-forward and fails loudly if the
+          # remote branch was advanced by another run rather than clobbering it.
           if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "Adjust ${{ needs.parse-model.outputs.model_name }} loader for TT hardware"
-            git push --force-with-lease origin "${{ needs.parse-model.outputs.branch_name }}"
+            git add -A
+            STAGED=$(git diff --cached --name-status)
+            echo "Staged files:"
+            echo "$STAGED"
+            git commit -m "Adjust $MODEL_NAME loader for TT hardware"
+            git push -u origin "$BRANCH"
+            echo "Pushed branch: $BRANCH"
+          else
+            echo "Agent produced no changes — branch already matches; nothing to push."
           fi
           EXISTING_PR=$(gh pr list \
             --repo tenstorrent/tt-forge-models \
-            --head "${{ needs.parse-model.outputs.branch_name }}" \
+            --head "$BRANCH" \
             --json url --jq '.[0].url')
           if [ -n "$EXISTING_PR" ]; then
             echo "PR already exists: $EXISTING_PR"
@@ -266,8 +297,8 @@ jobs:
             gh pr create \
               --repo tenstorrent/tt-forge-models \
               --base main \
-              --head "${{ needs.parse-model.outputs.branch_name }}" \
-              --title "feat: add ${{ needs.parse-model.outputs.model_name }} loader (${{ needs.parse-model.outputs.model_id }})" \
+              --head "$BRANCH" \
+              --title "feat: add $MODEL_NAME loader (${{ needs.parse-model.outputs.model_id }})" \
               --body "AI-generated loader for \`${{ needs.parse-model.outputs.model_id }}\`. Validated on CPU and ${{ inputs.device }}. Created by AI Model Bringup workflow."
           fi
 
