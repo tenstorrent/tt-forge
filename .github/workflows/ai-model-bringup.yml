@@ -62,7 +62,7 @@ jobs:
   #               (SUCCESS/FAILED) which the next step reads to gate the git push
   bringup-cpu:
     needs: parse-model
-    runs-on: ubuntu-latest
+    runs-on: tt-ubuntu-2204-xlarge-stable
 
     container:
       image: ghcr.io/tenstorrent/tt-xla/tt-xla-base-ubuntu-24-04:latest
@@ -138,6 +138,7 @@ jobs:
           git config user.email "ai-bringup@tenstorrent.com"
           BRANCH="${{ needs.parse-model.outputs.branch_name }}"
           MODEL_NAME="${{ needs.parse-model.outputs.model_name }}"
+          BRANCH_URL="https://github.com/tenstorrent/tt-forge-models/tree/$BRANCH"
           # The clone step already checked out $BRANCH if it existed remotely;
           # otherwise we're on the cloned default branch and need to create it.
           if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BRANCH" ]; then
@@ -147,6 +148,9 @@ jobs:
           STAGED=$(git diff --cached --name-status)
           if [ -z "$STAGED" ]; then
             echo "No staged changes — agent's output matches current branch. Nothing to push."
+            if git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+              echo "**Branch:** [\`$BRANCH\`]($BRANCH_URL)" >> "$GITHUB_STEP_SUMMARY"
+            fi
             exit 0
           fi
           echo "Staged files:"
@@ -154,6 +158,7 @@ jobs:
           git commit -m "$MODEL_NAME loader (AI-generated)"
           git push -u origin "$BRANCH"
           echo "Pushed branch: $BRANCH"
+          echo "**Branch:** [\`$BRANCH\`]($BRANCH_URL)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CPU report artifact
         if: always()
@@ -189,6 +194,10 @@ jobs:
   #               (force-push of fixes, PR creation) are handled by workflow steps
   bringup-hardware:
     needs: [parse-model, bringup-cpu]
+    # Run even if the CPU bringup job failed — some models OOM on the host runner
+    # but can still be brought up directly on the TT card. parse-model is the only
+    # hard prerequisite (we need the parsed model_id / branch_name).
+    if: always() && needs.parse-model.result == 'success'
     runs-on:
       - ${{ inputs.device }}
       - in-service
@@ -219,7 +228,17 @@ jobs:
         run: |
           git clone --recurse-submodules https://github.com/tenstorrent/tt-xla.git "$TT_XLA_DIR"
           cd "$FORGE_MODELS_DIR"
-          git checkout "${{ needs.parse-model.outputs.branch_name }}"
+          BRANCH="${{ needs.parse-model.outputs.branch_name }}"
+          # If the CPU job produced a bringup branch, check it out so the agent
+          # picks up the CPU-validated loader. Otherwise stay on the default
+          # branch — the agent will write the loader from scratch and the push
+          # step will create the branch.
+          if git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+            echo "Existing bringup branch $BRANCH found — checking it out"
+            git checkout "$BRANCH"
+          else
+            echo "No existing bringup branch — agent will create the loader from scratch on hardware"
+          fi
 
       - name: Set up tt-xla environment and install latest wheel
         shell: bash
@@ -272,34 +291,49 @@ jobs:
           git config user.email "ai-bringup@tenstorrent.com"
           BRANCH="${{ needs.parse-model.outputs.branch_name }}"
           MODEL_NAME="${{ needs.parse-model.outputs.model_name }}"
-          # HEAD is already on $BRANCH (set up in the clone step), so we commit
-          # the agent's hardware-side adjustments on top as a new commit. Plain
-          # push (no force) lands as a fast-forward and fails loudly if the
-          # remote branch was advanced by another run rather than clobbering it.
+          BRANCH_URL="https://github.com/tenstorrent/tt-forge-models/tree/$BRANCH"
+          # If CPU bringup produced a branch the clone step already checked it out;
+          # otherwise we're on the default branch and need to create it now so the
+          # agent's hardware-only output gets pushed as a new branch.
+          if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BRANCH" ]; then
+            git checkout -b "$BRANCH"
+          fi
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             STAGED=$(git diff --cached --name-status)
             echo "Staged files:"
             echo "$STAGED"
-            git commit -m "Adjust $MODEL_NAME loader for TT hardware"
+            git commit -m "$MODEL_NAME loader hardware bringup (AI-generated)"
             git push -u origin "$BRANCH"
             echo "Pushed branch: $BRANCH"
           else
             echo "Agent produced no changes — branch already matches; nothing to push."
           fi
+          # Skip PR if the branch never made it to the remote (e.g., HW-only run
+          # with no agent changes and no CPU branch to start from).
+          if ! git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+            echo "No remote branch — skipping PR."
+            exit 0
+          fi
+          echo "**Branch:** [\`$BRANCH\`]($BRANCH_URL)" >> "$GITHUB_STEP_SUMMARY"
           EXISTING_PR=$(gh pr list \
             --repo tenstorrent/tt-forge-models \
             --head "$BRANCH" \
             --json url --jq '.[0].url')
           if [ -n "$EXISTING_PR" ]; then
             echo "PR already exists: $EXISTING_PR"
+            PR_URL="$EXISTING_PR"
           else
-            gh pr create \
+            PR_URL=$(gh pr create \
               --repo tenstorrent/tt-forge-models \
               --base main \
               --head "$BRANCH" \
               --title "feat: add $MODEL_NAME loader (${{ needs.parse-model.outputs.model_id }})" \
-              --body "AI-generated loader for \`${{ needs.parse-model.outputs.model_id }}\`. Validated on CPU and ${{ inputs.device }}. Created by AI Model Bringup workflow."
+              --body "AI-generated loader for \`${{ needs.parse-model.outputs.model_id }}\`. Validated on CPU and ${{ inputs.device }}. Created by AI Model Bringup workflow.")
+            echo "Created PR: $PR_URL"
+          fi
+          if [ -n "$PR_URL" ]; then
+            echo "**Pull request:** $PR_URL" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Attach TT hardware report to job summary
