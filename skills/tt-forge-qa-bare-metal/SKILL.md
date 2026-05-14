@@ -23,9 +23,10 @@ You are a QA agent simulating a **brand-new user** installing and using tt-forge
 
 - Ubuntu 24.04 LTS, fresh install
 - Python 3.12 available
-- Tenstorrent card present and detected (Wormhole or Blackhole)
+- **QB2 platform: 4× Blackhole P150B cards** (not Wormhole — many docs were originally written for Wormhole and may use language that doesn't apply)
+- Motherboard B850M-C (known to be absent from `physical_system_discovery.cpp` mobo DB — expect "Unknown motherboard" warnings)
 - Internet access for pip/wget
-- No TT software pre-installed
+- TT software *may or may not* be pre-installed. If drivers/tt-smi/sfpi are already present, log versions and continue — do NOT uninstall.
 
 ---
 
@@ -56,13 +57,31 @@ SLOW threshold: 10s
 **Step 2 — Install TT-Installer (hardware + driver setup)**
 ```bash
 # From: https://docs.tenstorrent.com/getting-started/README.html#quick-installation
-curl -sSL https://raw.githubusercontent.com/tenstorrent/tt-installer/main/install.sh | bash -s
+/bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)" -- \
+  --reboot-option=never \
+  --mode-non-interactive \
+  --install-container-runtime=no \
+  --no-install-metalium-container \
+  --no-install-forge-container \
+  --no-install-inference-server \
+  --no-install-studio \
+  --update-firmware=off
 ```
 SLOW threshold: 300s (downloads drivers, sets up firmware)
-After this: reboot is likely required. If the installer says reboot, reboot and continue.
+Non-interactive flags are required so the agent doesn't hang on prompts. `--reboot-option=never` defers the reboot decision to Step 3 (see policy there). `--update-firmware=off` avoids surprise firmware flashes during a QA run.
+After this: reboot may be requested. See Step 3 for the decision policy.
 
-**Step 3 — Reboot (if required by installer)**
-Log whether installer required a reboot. If yes, log duration of reboot before system came back.
+**Step 3 — Reboot decision**
+
+Reboot policy (in order):
+1. If installer did NOT request reboot → skip, log `PASS` with note "no reboot requested".
+2. If installer requested reboot AND `ls /dev/tenstorrent` shows no devices OR `tt-smi` fails → reboot is required. Reboot, log duration of downtime before system came back, mark `PASS`.
+3. If installer requested reboot BUT `tt-smi` already reports working devices → **defer the reboot** to keep the QA run going. Mark `UNCLEAR` and log:
+   - The newly-installed KMD version that won't activate until reboot.
+   - The currently-loaded KMD version that will remain active for the rest of the run.
+   - That all subsequent steps run against the old KMD.
+
+Rationale: a forced reboot mid-run loses agent state. Only reboot if the device is unusable without it.
 
 **Step 4 — Enable hugepages**
 ```bash
@@ -256,9 +275,11 @@ After completing all steps, output this JSON block followed by a markdown summar
   "persona": "bare-metal",
   "repo": "tt-forge",
   "timestamp": "<ISO 8601 UTC>",
-  "hardware": "QB2-<instance-id>",
+  "hardware": "QB2-<instance-id> (4x Blackhole P150B)",
   "os": "Ubuntu 24.04",
   "python_version": "3.12.x",
+  "firmware_version": "<firmware bundle version reported by tt-smi, e.g. 19.6.0>",
+  "kmd_version": "<TT-KMD version loaded at run time, e.g. 2.6.0>",
   "commit": "<tt-forge HEAD sha at time of run>",
   "overall_result": "pass | partial | fail",
   "steps": [
