@@ -173,10 +173,11 @@ jobs:
     needs: [parse-model, bringup-cpu]
     runs-on:
       - ${{ inputs.device }}
+      - in-service
       - claude
 
     container:
-      image: ubuntu:24.04
+      image: ghcr.io/tenstorrent/tt-xla/tt-xla-base-ubuntu-24-04:latest
       options: --device /dev/tenstorrent
       volumes:
         - /dev/hugepages:/dev/hugepages
