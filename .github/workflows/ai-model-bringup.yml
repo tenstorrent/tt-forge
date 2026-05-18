@@ -62,7 +62,10 @@ jobs:
   #               (SUCCESS/FAILED) which the next step reads to gate the git push
   bringup-cpu:
     needs: parse-model
-    runs-on: tt-ubuntu-2204-xlarge-stable
+    runs-on:
+      - builder
+      - in-service
+      - claude
 
     container:
       image: ghcr.io/tenstorrent/tt-xla/tt-xla-base-ubuntu-24-04:latest
@@ -100,6 +103,7 @@ jobs:
           cd "$TT_XLA_DIR"
           source venv/activate
           pip install tt-forge --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+          tt-forge-install
 
       - name: Run Claude Code agent (CPU bringup)
         id: claude
@@ -128,10 +132,6 @@ jobs:
         shell: bash
         run: |
           STATUS=$(cat "$GITHUB_WORKSPACE/bringup-cpu-status.txt" 2>/dev/null || echo "FAILED")
-          if [ "$STATUS" != "SUCCESS" ]; then
-            echo "CPU bringup did not succeed — skipping push."
-            exit 1
-          fi
           cd "$FORGE_MODELS_DIR"
           gh auth setup-git
           git config user.name "AI Model Bringup"
@@ -155,7 +155,7 @@ jobs:
           fi
           echo "Staged files:"
           echo "$STAGED"
-          git commit -m "$MODEL_NAME loader (AI-generated)"
+          git commit -m "$MODEL_NAME loader (AI-generated, CPU status: $STATUS)"
           git push -u origin "$BRANCH"
           echo "Pushed branch: $BRANCH"
           echo "**Branch:** [\`$BRANCH\`]($BRANCH_URL)" >> "$GITHUB_STEP_SUMMARY"
@@ -246,6 +246,7 @@ jobs:
           cd "$TT_XLA_DIR"
           source venv/activate
           pip install tt-forge --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+          tt-forge-install
 
       - name: Run Claude Code agent (TT hardware bringup)
         id: claude
@@ -281,10 +282,6 @@ jobs:
         shell: bash
         run: |
           STATUS=$(cat "$GITHUB_WORKSPACE/bringup-hw-status.txt" 2>/dev/null || echo "FAILED")
-          if [ "$STATUS" != "SUCCESS" ]; then
-            echo "Hardware bringup did not succeed — skipping PR."
-            exit 1
-          fi
           cd "$FORGE_MODELS_DIR"
           gh auth setup-git
           git config user.name "AI Model Bringup"
@@ -303,7 +300,7 @@ jobs:
             STAGED=$(git diff --cached --name-status)
             echo "Staged files:"
             echo "$STAGED"
-            git commit -m "$MODEL_NAME loader hardware bringup (AI-generated)"
+            git commit -m "$MODEL_NAME loader hardware bringup (AI-generated, HW status: $STATUS)"
             git push -u origin "$BRANCH"
             echo "Pushed branch: $BRANCH"
           else
@@ -316,6 +313,10 @@ jobs:
             exit 0
           fi
           echo "**Branch:** [\`$BRANCH\`]($BRANCH_URL)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$STATUS" != "SUCCESS" ]; then
+            echo "Hardware bringup did not succeed — skipping PR creation."
+            exit 0
+          fi
           EXISTING_PR=$(gh pr list \
             --repo tenstorrent/tt-forge-models \
             --head "$BRANCH" \
