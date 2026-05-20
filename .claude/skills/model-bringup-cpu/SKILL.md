@@ -20,7 +20,7 @@ Parse from the invocation line before proceeding:
 
 **`REPORT_PATH`** — resolved in this order: (1) `$GITHUB_WORKSPACE/$REPORT_FILE` if both env vars are set, (2) the `--report <path>` argument if present, (3) `./bringup-report-cpu.md` as a local fallback.
 
-**`STATUS_FILE`** — always `$GITHUB_WORKSPACE/bringup-cpu-status.txt` (the workflow reads exactly this path to decide whether to commit and push).
+**`STATUS_FILE`** — resolved as `$GITHUB_WORKSPACE/$STATUS_FILE` if both env vars are set, otherwise falls back to `$GITHUB_WORKSPACE/bringup-cpu-status.txt`. The workflow reads this path to decide whether to commit and push.
 
 **`FORGE_MODELS_DIR`** — read from the `$FORGE_MODELS_DIR` environment variable (set by the workflow to `$GITHUB_WORKSPACE/tt-xla/third_party/tt_forge_models`). tt-forge-models is already checked out here as a submodule by the workflow.
 
@@ -155,20 +155,21 @@ On failure:
 REPORT_PATH = $GITHUB_WORKSPACE/$REPORT_FILE  (if both env vars are set)
               OR  <--report value>             (if --report arg is present)
               OR  ./bringup-report-cpu.md      (local fallback)
-STATUS_FILE = $GITHUB_WORKSPACE/bringup-cpu-status.txt
-             (if GITHUB_WORKSPACE is not set, fall back to ./bringup-cpu-status.txt)
+STATUS_PATH = $GITHUB_WORKSPACE/$STATUS_FILE  (if both env vars are set)
+              OR  $GITHUB_WORKSPACE/bringup-cpu-status.txt  (if only GITHUB_WORKSPACE is set)
+              OR  ./bringup-cpu-status.txt     (local fallback)
 ```
 
 On CPU test **success**:
 ```bash
 mkdir -p "$(dirname "$REPORT_PATH")"
-echo "SUCCESS" > "${GITHUB_WORKSPACE:-$(dirname "$REPORT_PATH")}/bringup-cpu-status.txt"
+echo "SUCCESS" > "${STATUS_PATH}"
 ```
 
 On CPU test **failure** (after all attempts):
 ```bash
 mkdir -p "$(dirname "$REPORT_PATH")"
-echo "FAILED" > "${GITHUB_WORKSPACE:-$(dirname "$REPORT_PATH")}/bringup-cpu-status.txt"
+echo "FAILED" > "${STATUS_PATH}"
 ```
 
 The workflow reads `$STATUS_FILE` to decide whether to commit and push — you do not need to run any git commands.
