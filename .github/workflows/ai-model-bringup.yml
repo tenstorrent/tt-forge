@@ -177,7 +177,6 @@ jobs:
           if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BRANCH" ]; then
             git checkout -b "$BRANCH"
           fi
-          echo 'venv/' >> .git/info/exclude
           git add -A
           STAGED=$(git diff --cached --name-status)
           if [ -z "$STAGED" ]; then
@@ -326,7 +325,6 @@ jobs:
           if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BRANCH" ]; then
             git checkout -b "$BRANCH"
           fi
-          echo 'venv/' >> .git/info/exclude
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             STAGED=$(git diff --cached --name-status)
