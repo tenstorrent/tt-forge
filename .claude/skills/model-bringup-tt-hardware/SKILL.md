@@ -63,16 +63,17 @@ print("HARDWARE SUCCESS")
 
 ## Step 3 — Write status file
 
-Write `$GITHUB_WORKSPACE/bringup-hw-status.txt` (the workflow reads this to decide whether to push fixes and open the PR):
+Write to `$GITHUB_WORKSPACE/$STATUS_FILE` (the workflow reads this to decide whether to push fixes and open the PR).
+Fall back to `$GITHUB_WORKSPACE/bringup-hw-status.txt` if `$STATUS_FILE` is not set.
 
 On hardware **success**:
 ```bash
-echo "SUCCESS" > "$GITHUB_WORKSPACE/bringup-hw-status.txt"
+echo "SUCCESS" > "${GITHUB_WORKSPACE}/${STATUS_FILE:-bringup-hw-status.txt}"
 ```
 
 On hardware **failure** (after all attempts):
 ```bash
-echo "FAILED" > "$GITHUB_WORKSPACE/bringup-hw-status.txt"
+echo "FAILED" > "${GITHUB_WORKSPACE}/${STATUS_FILE:-bringup-hw-status.txt}"
 ```
 
 ## Step 4 — Write report
