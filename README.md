@@ -46,9 +46,9 @@ pip install torchvision
 ```
 
 > **Note:** These quickstart steps were validated on Ubuntu 24.04 with Python 3.12.
-> The main Tenstorrent software installation guide may recommend a different Ubuntu
-> LTS release for the broader software stack. Follow the frontend-specific install
-> guide if you need a different supported environment.
+> The main Tenstorrent software installation guide currently recommends Ubuntu
+> 22.04 LTS for the broader software stack. Follow the frontend-specific install
+> guide if you need to match that wider environment recommendation.
 
 ```python
 import torch

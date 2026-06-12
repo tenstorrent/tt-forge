@@ -16,9 +16,9 @@ This document walks you through how to set up to run demo models using TT-Forge.
 **Validated environment for this quickstart:** Ubuntu 24.04, Python 3.12.
 
 > **NOTE:** These demo steps were validated on Ubuntu 24.04 with Python 3.12.
-> The broader Tenstorrent software installation docs may recommend a different
-> Ubuntu LTS release for other workflows. Follow the frontend-specific install
-> guide if you need a different supported environment.
+> The broader Tenstorrent software installation docs currently recommend Ubuntu
+> 22.04 LTS for other workflows. Follow the frontend-specific install guide if
+> you need to match that wider environment recommendation.
 
 This section provides instructions for how to set up your frontend so you can run models from the TT-Forge repo.
 
