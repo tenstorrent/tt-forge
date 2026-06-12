@@ -37,13 +37,18 @@ Models like GPT-OSS 120B, Llama 3 70B, Stable Diffusion XL, Whisper, and YOLOv12
 Get ResNet-50 running on Tenstorrent hardware in minutes:
 
 ```bash
-# Requires Ubuntu 24.04 and Python 3.12
+# Quickstart validated on Ubuntu 24.04 and Python 3.12
 python3.12 -m venv tt-forge-env
 source tt-forge-env/bin/activate
 pip install tt-forge --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 tt-forge-install
 pip install torchvision
 ```
+
+> **Note:** These quickstart steps were validated on Ubuntu 24.04 with Python 3.12.
+> The main Tenstorrent software installation guide may recommend a different Ubuntu
+> LTS release for the broader software stack. Follow the frontend-specific install
+> guide if you need a different supported environment.
 
 ```python
 import torch
