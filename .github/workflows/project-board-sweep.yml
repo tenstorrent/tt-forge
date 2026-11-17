@@ -1,0 +1,102 @@
+# Forge project board sweep (org Project 54), ITSEC-295.
+# Every 30 minutes this job sets "Last Updated" and "Work Started" on the board for
+# issues of tt-forge, tt-mlir, tt-forge-onnx, tt-torch, tt-xla and tt-blacksmith.
+# It replaces issue-last-updated.yml (one run per issue event) and issue-work-started.yml.
+#
+# The token comes from the OSPO Vault at run time. Only scheduled runs on main can get
+# it. It lives at most one hour and is revoked at the end of the job. It can change
+# every project of the organization, so keep this job small: every action pinned by
+# full sha, no package install, no step that runs other code while the token exists.
+# If a run ends with exit code 8 (guard), disable this workflow and tell OSPO: see the script's message.
+# Until it is disabled, every later run makes one more write and stops again.
+# The logic and its tests: .github/scripts/project_board_sweep.py and
+# .github/scripts/test_project_board_sweep.py. To ask for a change, open an OSPO ticket.
+
+name: Project board sweep
+
+on:
+  schedule:
+    - cron: '11,41 * * * *'
+
+permissions: {} # the job lists what it needs
+
+jobs:
+  sweep:
+    if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Two sweeps never run at the same time. A run that starts while one is active waits.
+    concurrency:
+      group: project-board-sweep
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # OSPO Vault sign-in only
+    env:
+      VAULT_URL: https://vault-ospo.eng-svc.aws.tenstorrent.com
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Join tailnet (OSPO Vault)
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TS_VAULT_OSPO_CLIENT_ID }}
+          audience: ${{ vars.TS_VAULT_OSPO_AUDIENCE }}
+          tags: tag:tt-gha-vault-ospo
+
+      - name: Wait for Vault
+        run: |
+          set -euo pipefail
+          for _ in 1 2 3 4 5 6; do
+            curl -fsS --max-time 5 "${VAULT_URL}/v1/sys/health?standbyok=true&uninitcode=204&sealedcode=204" >/dev/null && exit 0
+            sleep 2
+          done
+          echo "Vault ${VAULT_URL} did not become reachable over Tailscale" >&2
+          exit 1
+
+      - name: Get a token for the project board
+        id: vault
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ env.VAULT_URL }}
+          method: jwt
+          path: jwt-github
+          role: tenstorrent--tt-forge--projects
+          jwtGithubAudience: ${{ env.VAULT_URL }}
+          exportEnv: false
+          secrets: |
+            github/token/tenstorrent--tt-forge--projects-write token | PROJECT_BOARD_TOKEN
+
+      - name: Sweep the board
+        env:
+          PROJECT_BOARD_TOKEN: ${{ steps.vault.outputs.PROJECT_BOARD_TOKEN }}
+          SWEEP_MODE: write
+          # At most 20 writes per run for the first runs, on purpose. The team raises this to 300 (the script's
+          # upper limit) by a later pull request once the first runs are checked.
+          SWEEP_MAX_WRITES: '20'
+          # SWEEP_LOG_DETAILS is not set on purpose: this repository is public, so the run logs are public,
+          # and the board is private. Without it the log shows counts only, never items.
+        run: python3 .github/scripts/project_board_sweep.py
+
+      - name: Revoke the token
+        if: ${{ always() }}
+        env:
+          PROJECT_BOARD_TOKEN: ${{ steps.vault.outputs.PROJECT_BOARD_TOKEN }}
+        run: |
+          if [ -n "${PROJECT_BOARD_TOKEN:-}" ]; then
+            curl -sS -o /dev/null -w 'revoke: HTTP %{http_code}\n' -X DELETE \
+              -H "Authorization: Bearer ${PROJECT_BOARD_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/installation/token
+          else
+            echo "no token to revoke"
+          fi
+
+      # Leaving the tailnet cuts this job off from Vault.
+      - name: Leave tailnet
+        if: ${{ always() }}
+        run: sudo tailscale logout || { echo "::warning::tailscale logout failed; taking the interface down"; sudo tailscale down || true; }
