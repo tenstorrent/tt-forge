@@ -8,23 +8,27 @@ on:
     - cron: '0 8 * * 6'
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {} # the job lists what it needs
 
 jobs:
   uplift-pr:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # built-in token: comment with the commit list
+      id-token: write # OSPO Vault sign-in only (scheduled runs on main)
 
     env:
       TT_FORGE_MODELS_SUBMODULE_PATH: third_party/tt_forge_models
+      VAULT_URL: https://vault-ospo.eng-svc.aws.tenstorrent.com
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           submodules: recursive
           fetch-depth: 0
           ref: main
+          persist-credentials: false
 
       - name: Fetch commit history and set env variables
         id: set-env-variables
@@ -56,8 +60,51 @@ jobs:
           cd ${{ runner.temp }}
           cat commit_list.txt
 
+      # ITSEC-295: the uplift PR is pushed and opened with a short-lived token
+      # from OSPO Vault (contents and pull requests on tt-forge only). It is given
+      # only to the weekly scheduled run on main. This job does not approve or
+      # merge. A person reviews and merges the PR.
+      - name: Manual run opens no PR
+        if: ${{ github.event_name != 'schedule' || github.ref != 'refs/heads/main' }}
+        run: |
+          echo "::notice::Manual run: the steps above show what the next uplift contains. Only the weekly scheduled run on main opens the PR (ITSEC-295)."
+
+      - name: Join tailnet (OSPO Vault)
+        if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TS_VAULT_OSPO_CLIENT_ID }}
+          audience: ${{ vars.TS_VAULT_OSPO_AUDIENCE }}
+          tags: tag:tt-gha-vault-ospo
+
+      - name: Wait for Vault
+        if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+        run: |
+          set -euo pipefail
+          for _ in 1 2 3 4 5 6; do
+            curl -fsS --max-time 5 "${VAULT_URL}/v1/sys/health?standbyok=true&uninitcode=204&sealedcode=204" >/dev/null && exit 0
+            sleep 2
+          done
+          echo "Vault ${VAULT_URL} did not become reachable over Tailscale" >&2
+          exit 1
+
+      - name: Get a token to open the PR
+        if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+        id: vault
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ env.VAULT_URL }}
+          method: jwt
+          path: jwt-github
+          role: tenstorrent--tt-forge--main
+          jwtGithubAudience: ${{ env.VAULT_URL }}
+          exportEnv: false
+          secrets: |
+            github/token/tenstorrent--tt-forge--uplift-pr token | UPLIFT_PR_TOKEN
+
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
         id: create-pr
         with:
           branch: uplift-forge-models
@@ -69,23 +116,19 @@ jobs:
           body: "This PR uplifts the ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to the ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }}"
           labels: uplift
           delete-branch: true
-          token: ${{ secrets.GH_UPLIFT_TOKEN }}
+          token: ${{ steps.vault.outputs.UPLIFT_PR_TOKEN }}
 
-      - name: Approve Pull Request
-        if: ${{ steps.create-pr.outputs.pull-request-number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_APPROVE_TOKEN }}
-        run: |
-          echo "Pull Request Number - ${{ steps.create-pr.outputs.pull-request-number }}"
-          echo "Pull Request URL - ${{ steps.create-pr.outputs.pull-request-url }}"
-          gh pr review ${{ steps.create-pr.outputs.pull-request-number }} --approve
+      # Last use of the token is above. Leaving the tailnet cuts this job off from Vault.
+      - name: Leave tailnet
+        if: ${{ always() && github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+        run: sudo tailscale logout || { echo "::warning::tailscale logout failed; taking the interface down"; sudo tailscale down || true; }
 
-      - name: Enable Pull Request Automerge and Add Comment with Commit List
+      # No approve step and no auto-merge (ITSEC-295). A person reviews and merges the uplift PR.
+      - name: Add Comment with Commit List
         if: ${{ steps.create-pr.outputs.pull-request-number }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr merge --squash --auto "${{ steps.create-pr.outputs.pull-request-number }}"
           gh pr comment ${{ steps.create-pr.outputs.pull-request-number }} --body "$(cat ${{ runner.temp }}/commit_list.txt)"
           rm -rf ${{ runner.temp }}/tt-forge-models
           rm -f ${{ runner.temp }}/commit_list.txt
