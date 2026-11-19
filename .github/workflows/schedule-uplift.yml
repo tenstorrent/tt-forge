@@ -20,7 +20,6 @@ jobs:
 
     env:
       TT_FORGE_MODELS_SUBMODULE_PATH: third_party/tt_forge_models
-      VAULT_URL: https://vault-ospo.eng-svc.aws.tenstorrent.com
 
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -69,38 +68,13 @@ jobs:
         run: |
           echo "::notice::Manual run: the steps above show what the next uplift contains. Only the weekly scheduled run on main opens the PR (ITSEC-295)."
 
-      - name: Join tailnet (OSPO Vault)
-        if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
-        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
-        with:
-          oauth-client-id: ${{ vars.TS_VAULT_OSPO_CLIENT_ID }}
-          audience: ${{ vars.TS_VAULT_OSPO_AUDIENCE }}
-          tags: tag:tt-gha-vault-ospo
-
-      - name: Wait for Vault
-        if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
-        run: |
-          set -euo pipefail
-          for _ in 1 2 3 4 5 6; do
-            curl -fsS --max-time 5 "${VAULT_URL}/v1/sys/health?standbyok=true&uninitcode=204&sealedcode=204" >/dev/null && exit 0
-            sleep 2
-          done
-          echo "Vault ${VAULT_URL} did not become reachable over Tailscale" >&2
-          exit 1
-
       - name: Get a token to open the PR
         if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
         id: vault
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: tenstorrent/.github/actions/vault-secrets@a697f1bb22ad8b488b0ac63f9a261e462179fe13 # vault-secrets-v1.0.0
         with:
-          url: ${{ env.VAULT_URL }}
-          method: jwt
-          path: jwt-github
           role: tenstorrent--tt-forge--main
-          jwtGithubAudience: ${{ env.VAULT_URL }}
-          exportEnv: false
-          secrets: |
-            github/token/tenstorrent--tt-forge--uplift-pr token | UPLIFT_PR_TOKEN
+          github-token: tenstorrent--tt-forge--uplift-pr
 
       - name: Create Pull Request
         if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
@@ -116,7 +90,7 @@ jobs:
           body: "This PR uplifts the ${{ env.TT_FORGE_MODELS_SUBMODULE_PATH }} to the ${{ steps.set-env-variables.outputs.LATEST_TT_FORGE_MODELS_VERSION }}"
           labels: uplift
           delete-branch: true
-          token: ${{ steps.vault.outputs.UPLIFT_PR_TOKEN }}
+          token: ${{ steps.vault.outputs.token }}
 
       # Last use of the token is above. Leaving the tailnet cuts this job off from Vault.
       - name: Leave tailnet
