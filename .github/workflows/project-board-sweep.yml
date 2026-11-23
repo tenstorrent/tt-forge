@@ -1,0 +1,77 @@
+# Forge project board sweep (org Project 54), ITSEC-295.
+# Every 30 minutes this job sets "Last Updated" and "Work Started" on the board for
+# issues of tt-forge, tt-mlir, tt-forge-onnx, tt-torch, tt-xla and tt-blacksmith.
+# It replaces issue-last-updated.yml (one run per issue event) and issue-work-started.yml.
+#
+# The token comes from the OSPO Vault at run time. Only scheduled runs on main can get
+# it. It lives at most one hour and is revoked at the end of the job. It can change
+# every project of the organization, so keep this job small: every action pinned by
+# full sha, no package install, no step that runs other code while the token exists.
+# If a run ends with exit code 8 (guard), disable this workflow and tell OSPO: see the script's message.
+# Until it is disabled, every later run makes one more write and stops again.
+# The logic and its tests: .github/scripts/project_board_sweep.py and
+# .github/scripts/test_project_board_sweep.py. To ask for a change, open an OSPO ticket.
+
+name: Project board sweep
+
+on:
+  schedule:
+    - cron: '11,41 * * * *'
+
+permissions: {} # the job lists what it needs
+
+jobs:
+  sweep:
+    if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Two sweeps never run at the same time. A run that starts while one is active waits.
+    concurrency:
+      group: project-board-sweep
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # OSPO Vault sign-in only
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Get a token for the project board
+        id: vault
+        uses: tenstorrent/.github/actions/vault-secrets@a697f1bb22ad8b488b0ac63f9a261e462179fe13 # vault-secrets-v1.0.0
+        with:
+          role: tenstorrent--tt-forge--projects
+          github-token: tenstorrent--tt-forge--projects-write
+
+      - name: Sweep the board
+        env:
+          PROJECT_BOARD_TOKEN: ${{ steps.vault.outputs.token }}
+          SWEEP_MODE: write
+          # At most 20 writes per run for the first runs, on purpose. The team raises this to 300 (the script's
+          # upper limit) by a later pull request once the first runs are checked.
+          SWEEP_MAX_WRITES: '20'
+          # SWEEP_LOG_DETAILS is not set on purpose: this repository is public, so the run logs are public,
+          # and the board is private. Without it the log shows counts only, never items.
+        run: python3 .github/scripts/project_board_sweep.py
+
+      - name: Revoke the token
+        if: ${{ always() }}
+        env:
+          PROJECT_BOARD_TOKEN: ${{ steps.vault.outputs.token }}
+        run: |
+          if [ -n "${PROJECT_BOARD_TOKEN:-}" ]; then
+            curl -sS -o /dev/null -w 'revoke: HTTP %{http_code}\n' -X DELETE \
+              -H "Authorization: Bearer ${PROJECT_BOARD_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/installation/token
+          else
+            echo "no token to revoke"
+          fi
+
+      # Leaving the tailnet cuts this job off from Vault.
+      - name: Leave tailnet
+        if: ${{ always() }}
+        run: sudo tailscale logout || { echo "::warning::tailscale logout failed; taking the interface down"; sudo tailscale down || true; }
