@@ -380,9 +380,7 @@ class GuardTest(unittest.TestCase):
         sleeps = []
         code, lines = run_quiet(client, sleep=sleeps.append)
         self.assertEqual(code, 0)
-        self.assertEqual(
-            client.calls, ["fields", "items", "read", "write", "read", "write", "read", "read", "write"]
-        )
+        self.assertEqual(client.calls, ["fields", "items", "read", "write", "read", "write", "read", "read", "write"])
         self.assertEqual(client.reads, ["I2", "I1", "I1", "I1"])
         self.assertEqual(sleeps, [1.0, sweep.GUARD_WAIT_SECONDS, sweep.GUARD_SECOND_WAIT_SECONDS, 1.0])
         self.assertIn("write_errors=1 ", lines[-1])
